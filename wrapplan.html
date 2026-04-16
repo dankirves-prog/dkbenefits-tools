@@ -2681,7 +2681,7 @@ async function handleGenerate() {
 document.getElementById('section125Nudge').style.display = 'block';
 
     statusEl.className = 'ok-msg';
-    statusEl.textContent = 'Your Wrap Plan Document is ready. Download it below and retain it with the underlying plan materials.';
+    statusEl.textContent = 'Your Wrap Plan Document is ready. Download it above and retain it with the underlying plan materials.';
 
     if (result.warnings && result.warnings.length) {
       warningsArea.innerHTML = `<div class="warnings-list"><strong>Notes from backend validation:</strong><ul>${result.warnings.map(w => `<li>${w}</li>`).join('')}</ul></div>`;
@@ -2723,7 +2723,7 @@ document.getElementById('employerName').addEventListener('blur', function () {
   const pn = document.getElementById('planName');
   if (!pn.value && this.value) pn.value = this.value + ' Group Welfare Benefit Plan';
   const nf = document.getElementById('namedFiduciary');
-  if (!nf.value) nf.value = 'Plan Administrator';
+  if (!nf.value) nf.value = this.value;
 });
 
 document.getElementById('employerEIN').addEventListener('input', function () {
