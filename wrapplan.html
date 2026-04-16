@@ -1,0 +1,2770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Wrap Plan Document Tool</title>
+<style>
+  :root {
+    --navy:      #1a2e4a;
+    --navy-deep: #111f33;
+    --gold:      #c8a951;
+    --gold-lt:   #e8d08a;
+    --white:     #ffffff;
+    --off-white: #f7f9fc;
+    --light:     #e8edf3;
+    --mid:       #8a9ab0;
+    --dark:      #2c3e55;
+    --text:      #1a2e4a;
+    --err:       #c0392b;
+    --ok:        #1e7e4e;
+    --radius:    8px;
+    --shadow:    0 2px 16px rgba(26,46,74,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Georgia, serif;
+    background: var(--off-white);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 0 60px 0;
+  }
+
+  .tool-header {
+    background: var(--navy);
+    padding: 22px 32px 18px;
+    border-bottom: 3px solid var(--gold);
+  }
+  .tool-header h1 {
+    color: var(--white);
+    font-size: 1.25rem;
+    font-weight: normal;
+    letter-spacing: 0.04em;
+  }
+  .tool-header h1 span { color: var(--gold); font-weight: bold; }
+  .tool-header p {
+    color: var(--mid);
+    font-size: 0.78rem;
+    margin-top: 4px;
+    font-family: Arial, sans-serif;
+  }
+
+  .progress-wrap {
+    background: var(--navy-deep);
+    padding: 14px 32px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .progress-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 7px;
+    gap: 10px;
+  }
+  .progress-labels span {
+    font-size: 0.66rem;
+    font-family: Arial, sans-serif;
+    color: var(--mid);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    transition: color 0.3s;
+    white-space: nowrap;
+  }
+  .progress-labels span.active { color: var(--gold); }
+  .progress-labels span.done   { color: var(--gold-lt); }
+  .progress-bar-track {
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold), var(--gold-lt));
+    border-radius: 4px;
+    transition: width 0.35s ease;
+  }
+  .step-counter {
+    color: var(--mid);
+    font-size: 0.72rem;
+    font-family: Arial, sans-serif;
+    margin-top: 6px;
+    text-align: right;
+  }
+
+  .card {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    max-width: 790px;
+    margin: 28px auto 0;
+    padding: 36px 40px 32px;
+    border-top: 4px solid var(--gold);
+  }
+
+  .step { display: none; }
+  .step.active { display: block; }
+
+  .step-title {
+    font-size: 1.2rem;
+    color: var(--navy);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .step-title .badge {
+    background: var(--navy);
+    color: var(--gold);
+    font-size: 0.7rem;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    letter-spacing: 0.08em;
+    padding: 3px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+  }
+  .step-subtitle {
+    color: var(--mid);
+    font-size: 0.82rem;
+    font-family: Arial, sans-serif;
+    margin-bottom: 26px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--light);
+  }
+
+  .field-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .field-group.single  { grid-template-columns: 1fr; }
+  .field-group.thirds  { grid-template-columns: 1fr 1fr 1fr; }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+
+  label {
+    font-size: 0.78rem;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    color: var(--navy);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  label .req { color: var(--gold); margin-left: 2px; }
+  label .opt {
+    color: var(--mid);
+    font-weight: normal;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.74rem;
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="date"],
+  input[type="number"],
+  select,
+  textarea {
+    border: 1.5px solid var(--light);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    font-size: 0.88rem;
+    font-family: Arial, sans-serif;
+    color: var(--text);
+    background: var(--white);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    width: 100%;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(200,169,81,0.15);
+  }
+  input.error, select.error, textarea.error { border-color: var(--err); }
+  textarea { resize: vertical; min-height: 85px; }
+
+  .radio-group, .check-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .radio-group.inline, .check-group.inline {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .radio-option, .check-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    padding: 10px 14px;
+    border: 1.5px solid var(--light);
+    border-radius: var(--radius);
+    transition: border-color 0.2s, background 0.2s;
+    font-family: Arial, sans-serif;
+    font-size: 0.85rem;
+    color: var(--dark);
+    user-select: none;
+  }
+  .radio-option:hover, .check-option:hover {
+    border-color: var(--gold);
+    background: #fffbf0;
+  }
+  .radio-option.selected, .check-option.selected {
+    border-color: var(--gold);
+    background: #fffbf0;
+  }
+  .radio-option input, .check-option input {
+    margin-top: 1px;
+    accent-color: var(--gold);
+    width: auto;
+    flex-shrink: 0;
+  }
+  .radio-option .opt-label { font-weight: bold; color: var(--navy); }
+  .radio-option .opt-desc, .check-option .opt-desc {
+    font-size: 0.76rem;
+    color: var(--mid);
+    margin-top: 2px;
+    line-height: 1.4;
+  }
+
+  .info-box {
+    background: #f0f6ff;
+    border-left: 3px solid var(--navy);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 12px 16px;
+    font-size: 0.8rem;
+    font-family: Arial, sans-serif;
+    color: var(--dark);
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+  .warn-box {
+    background: #fffbf0;
+    border-left: 3px solid var(--gold);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 12px 16px;
+    font-size: 0.8rem;
+    font-family: Arial, sans-serif;
+    color: var(--dark);
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+  .stop-box {
+    background: #fff5f5;
+    border-left: 3px solid var(--err);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 12px 16px;
+    font-size: 0.8rem;
+    font-family: Arial, sans-serif;
+    color: var(--err);
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+  .ok-box {
+    background: #f0fff6;
+    border-left: 3px solid var(--ok);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 12px 16px;
+    font-size: 0.8rem;
+    font-family: Arial, sans-serif;
+    color: var(--dark);
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+  .err-box {
+    background: #fff5f5;
+    border-left: 3px solid var(--err);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 10px 14px;
+    font-size: 0.8rem;
+    font-family: Arial, sans-serif;
+    color: var(--err);
+    margin-bottom: 16px;
+    display: none;
+    white-space: pre-line;
+  }
+  .info-box strong, .warn-box strong, .stop-box strong, .ok-box strong {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--navy);
+  }
+  .stop-box strong { color: var(--err); }
+
+  .section-divider {
+    font-size: 0.72rem;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--gold);
+    margin: 24px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--light);
+  }
+
+  /* Inferred group health banner */
+  .inferred-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f0fff6;
+    border: 1.5px solid var(--ok);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-family: Arial, sans-serif;
+    font-size: 0.82rem;
+    color: var(--dark);
+    margin-bottom: 16px;
+  }
+  .inferred-banner .banner-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+  .inferred-banner strong { color: var(--ok); }
+
+  /* Tooltip */
+  .tooltip-wrap {
+    position: relative;
+    display: inline-block;
+    margin-left: 5px;
+    cursor: help;
+  }
+  .tooltip-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--mid);
+    color: white;
+    font-size: 0.62rem;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    vertical-align: middle;
+  }
+  .tooltip-text {
+    display: none;
+    position: absolute;
+    left: 24px;
+    top: -4px;
+    background: var(--navy-deep);
+    color: var(--white);
+    font-size: 0.75rem;
+    font-family: Arial, sans-serif;
+    padding: 8px 12px;
+    border-radius: 6px;
+    width: 260px;
+    line-height: 1.45;
+    z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .tooltip-wrap:hover .tooltip-text { display: block; }
+
+  .conditional { display: none; }
+  .conditional.visible { display: block; }
+
+  /* Agent selector pattern */
+  .agent-selector { margin-bottom: 10px; }
+  .agent-selector select { margin-bottom: 8px; }
+
+  .nav-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid var(--light);
+  }
+  .btn {
+    padding: 11px 28px;
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  .btn-back {
+    background: transparent;
+    color: var(--mid);
+    border: 1.5px solid var(--light);
+  }
+  .btn-back:hover { border-color: var(--navy); color: var(--navy); }
+  .btn-next { background: var(--navy); color: var(--white); }
+  .btn-next:hover { background: var(--navy-deep); }
+  .btn-generate {
+    background: var(--gold);
+    color: var(--navy-deep);
+    padding: 13px 36px;
+    font-size: 0.92rem;
+  }
+  .btn-generate:hover { background: var(--gold-lt); }
+  .btn-generate:disabled { background: var(--light); color: var(--mid); cursor: not-allowed; }
+  .btn-download {
+    background: var(--ok);
+    color: var(--white);
+    padding: 13px 36px;
+    font-size: 0.92rem;
+    text-decoration: none;
+    display: inline-block;
+    border-radius: var(--radius);
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    letter-spacing: 0.04em;
+  }
+  .btn-download:hover { background: #166040; }
+
+  #statusMsg {
+    font-family: Arial, sans-serif;
+    font-size: 0.82rem;
+    color: var(--mid);
+    text-align: center;
+    margin-top: 10px;
+    min-height: 20px;
+    white-space: pre-line;
+  }
+  #statusMsg.ok-msg  { color: var(--ok); font-weight: bold; }
+  #statusMsg.err-msg { color: var(--err); font-weight: bold; }
+
+  .review-section { margin-bottom: 20px; }
+  .review-section h4 {
+    font-size: 0.72rem;
+    font-family: Arial, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--gold);
+    border-bottom: 1px solid var(--light);
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+  }
+  .review-row {
+    display: flex;
+    gap: 8px;
+    font-size: 0.83rem;
+    font-family: Arial, sans-serif;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--off-white);
+  }
+  .review-row .rl { color: var(--mid); min-width: 220px; flex-shrink: 0; }
+  .review-row .rv { color: var(--dark); font-weight: bold; }
+
+  .mini-note {
+    font-size: 0.75rem;
+    color: var(--mid);
+    font-family: Arial, sans-serif;
+    line-height: 1.45;
+    margin-top: 6px;
+  }
+
+  .warnings-list {
+    background: #fffbf0;
+    border-left: 3px solid var(--gold);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 12px 16px;
+    font-size: 0.8rem;
+    font-family: Arial, sans-serif;
+    color: var(--dark);
+    margin-top: 16px;
+  }
+  .warnings-list strong { display: block; margin-bottom: 6px; color: var(--navy); }
+  .warnings-list li { margin-left: 16px; margin-bottom: 4px; }
+
+  @media (max-width: 760px) {
+    .progress-labels span { font-size: 0.56rem; }
+  }
+  @media (max-width: 600px) {
+    .card { margin: 16px 12px 0; padding: 24px 20px 24px; }
+    .field-group, .field-group.thirds { grid-template-columns: 1fr; }
+    .tool-header { padding: 16px 20px; }
+    .review-row { flex-direction: column; gap: 2px; }
+    .review-row .rl { min-width: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="tool-header">
+  <h1>DK Benefits <span>Wrap Plan Document Tool</span></h1>
+  <p>ERISA Private-Employer Wrap Plan Document &amp; Summary Plan Description Generator</p>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-labels" id="progressLabels">
+    <span data-step="1">Employer</span>
+    <span data-step="2">ERISA Scope</span>
+    <span data-step="3">Benefits</span>
+    <span data-step="4">Funding</span>
+    <span data-step="5">Eligibility</span>
+    <span data-step="6">Tax / Docs</span>
+    <span data-step="7">COBRA / Claims</span>
+    <span data-step="8">5500 / HIPAA</span>
+    <span data-step="9">Adoption</span>
+    <span data-step="10">Review</span>
+  </div>
+  <div class="progress-bar-track">
+    <div class="progress-bar-fill" id="progressFill" style="width:10%"></div>
+  </div>
+  <div class="step-counter" id="stepCounter">Step 1 of 10</div>
+</div>
+
+<div class="card">
+
+  <!-- ═══ STEP 1 ═══ -->
+  <div class="step active" id="step1">
+    <div class="step-title"><span class="badge">Step 1</span> Employer &amp; Plan Identity</div>
+    <div class="step-subtitle">Basic employer and plan information that will appear in the document and on any Form 5500 filing.</div>
+
+    <div class="field-group single">
+      <div class="field">
+        <label>Legal Employer Name <span class="req">*</span></label>
+        <input type="text" id="employerName" placeholder="ABC Company LLC" autocomplete="organization"/>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field">
+        <label>Employer EIN <span class="req">*</span>
+          <span class="tooltip-wrap">
+            <span class="tooltip-icon">?</span>
+            <span class="tooltip-text">The Employer Identification Number assigned by the IRS. Format: XX-XXXXXXX. This appears on the plan document and any Form 5500 filing.</span>
+          </span>
+        </label>
+        <input type="text" id="employerEIN" placeholder="12-3456789" maxlength="10"/>
+      </div>
+      <div class="field">
+        <label>Employer Phone <span class="req">*</span></label>
+        <input type="tel" id="employerPhone" placeholder="(407) 555-1234" maxlength="14"/>
+      </div>
+    </div>
+
+    <div class="field-group single">
+      <div class="field">
+        <label>Street Address <span class="req">*</span></label>
+        <input type="text" id="employerAddressStreet" placeholder="123 Main Street, Suite 100"/>
+      </div>
+    </div>
+
+    <div class="field-group thirds">
+      <div class="field">
+        <label>City <span class="req">*</span></label>
+        <input type="text" id="employerAddressCity" placeholder="Orlando"/>
+      </div>
+      <div class="field">
+        <label>State / Territory <span class="req">*</span></label>
+        <select id="employerState">
+          <option value="">Select…</option>
+          <option>AL</option><option>AK</option><option>AZ</option><option>AR</option>
+          <option>CA</option><option>CO</option><option>CT</option><option>DE</option>
+          <option>DC</option>
+          <option>FL</option><option>GA</option><option>HI</option><option>ID</option>
+          <option>IL</option><option>IN</option><option>IA</option><option>KS</option>
+          <option>KY</option><option>LA</option><option>ME</option><option>MD</option>
+          <option>MA</option><option>MI</option><option>MN</option><option>MS</option>
+          <option>MO</option><option>MT</option><option>NE</option><option>NV</option>
+          <option>NH</option><option>NJ</option><option>NM</option><option>NY</option>
+          <option>NC</option><option>ND</option><option>OH</option><option>OK</option>
+          <option>OR</option><option>PA</option><option>PR</option><option>RI</option>
+          <option>SC</option><option>SD</option><option>TN</option><option>TX</option>
+          <option>UT</option><option>VT</option><option>VA</option><option>VI</option>
+          <option>WA</option><option>WV</option><option>WI</option><option>WY</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>ZIP Code <span class="req">*</span></label>
+        <input type="text" id="employerZip" placeholder="32835" maxlength="5"/>
+      </div>
+    </div>
+
+    <div class="field-group single">
+      <div class="field">
+        <label>Plan Admin Email <span class="req">*</span>
+          <span class="tooltip-wrap">
+            <span class="tooltip-icon">?</span>
+            <span class="tooltip-text">The email address of the person or department responsible for plan administration. Used for participant and DOL correspondence references.</span>
+          </span>
+        </label>
+        <input type="email" id="planAdminEmail" placeholder="hr@abccompany.com"/>
+      </div>
+    </div>
+
+    <div class="section-divider">Plan Information</div>
+
+    <div class="field-group">
+      <div class="field">
+        <label>Plan Name <span class="req">*</span></label>
+        <input type="text" id="planName" placeholder="ABC Company Group Welfare Benefit Plan"/>
+      </div>
+      <div class="field">
+        <label>Plan Number <span class="req">*</span>
+          <span class="tooltip-wrap">
+            <span class="tooltip-icon">?</span>
+            <span class="tooltip-text">Welfare plans are numbered starting at 501. If this is your only welfare plan wrap, use 501. If you already have a 501, use 502, etc.</span>
+          </span>
+        </label>
+        <input type="text" id="planNumber" value="501" placeholder="501"/>
+      </div>
+    </div>
+
+    <div class="field-group">
+<div class="field">
+        <label>Plan Effective Date <span class="req">*</span>
+          <span class="tooltip-wrap">
+            <span class="tooltip-icon">?</span>
+            <span class="tooltip-text">The date this wrap plan document takes effect. Use the date this wrap plan is intended to govern the employer's benefits -- whether that is the start of a new plan year, the date benefits were first offered, or the date of a restatement. This is specific to the wrap plan document itself, not the insurance policy effective date.</span>
+          </span>
+        </label>
+        <input type="date" id="planEffectiveDate"/>
+      </div>
+<div class="field">
+<label>Original Effective Date <span class="opt">(if restating an existing plan)</span>
+          <span class="tooltip-wrap">
+            <span class="tooltip-icon">?</span>
+            <span class="tooltip-text">Leave blank if this is the employer's first wrap plan. If the employer has had a wrap plan or written ERISA welfare benefit plan document previously, enter the date it was first established. This shows continuity of the plan rather than treating this as a brand new plan. It should reflect when the employer first had any written plan covering these benefits, not necessarily the date of a prior wrap document specifically.</span>
+          </span>
+        </label>
+        <input type="date" id="originalEffectiveDate"/>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field">
+<label>Plan Year Type <span class="req">*</span>
+          <span class="tooltip-wrap">
+            <span class="tooltip-icon">?</span>
+            <span class="tooltip-text">This is the ERISA plan year for the wrap plan itself -- not the insurance policy renewal date. However, many employers will match this to the insurance renewal cycle. If your policies renew January 1, use calendar year. If they renew on another date such as July 1 or April 1, select fiscal year and enter the last month of that cycle. The plan year determines when your Form 5500 is due and when SPD updates must be distributed. For example, if your health plan renews May 1, select fiscal year and choose April as the end month -- your plan year will run May 1 through April 30.</span>
+          </span>
+        </label>
+        <div class="radio-group inline">
+          <label class="radio-option">
+            <input type="radio" name="planYearType" value="Calendar Year" checked/>
+            <div><div class="opt-label">Calendar Year</div><div class="opt-desc">Jan 1 - Dec 31</div></div>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="planYearType" value="Fiscal Year"/>
+            <div><div class="opt-label">Fiscal Year</div><div class="opt-desc">Custom end month</div></div>
+          </label>
+        </div>
+      </div>
+      <div class="field conditional" id="fiscalYearField">
+        <label>Fiscal Year End Month <span class="req">*</span></label><select id="planYearEndMonth">
+          <option value="">Select month…</option>
+          <option value="January 31">January</option>
+          <option value="February 28">February</option>
+          <option value="March 31">March</option>
+          <option value="April 30">April</option>
+          <option value="May 31">May</option>
+          <option value="June 30">June</option>
+          <option value="July 31">July</option>
+          <option value="August 31">August</option>
+          <option value="September 30">September</option>
+          <option value="October 31">October</option>
+          <option value="November 30">November</option>
+          <option value="December 31">December</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="err1" class="err-box"></div>
+    <div class="nav-row">
+      <span></span>
+      <button class="btn btn-next" onclick="goNext(1)">Next &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 2 ═══ -->
+  <div class="step" id="step2">
+    <div class="step-title"><span class="badge">Step 2</span> ERISA Scope &amp; Fiduciaries</div>
+    <div class="step-subtitle">This version is for private-employer ERISA welfare plans only. Fiduciary roles must be explicitly identified.</div>
+
+    <div class="warn-box">
+      <strong>Scope limitation</strong>
+      Governmental plans, church or church-related plans, and arrangements of uncertain ERISA status are not supported in this version. If your plan falls into one of those categories, stop here.
+    </div>
+
+    <div class="section-divider">ERISA Applicability</div>
+    <div class="field-group single">
+      <div class="field">
+        <label>What type of plan is this? <span class="req">*</span></label>
+        <div class="radio-group">
+          <label class="radio-option">
+            <input type="radio" name="erisaApplicability" value="private-employer"/>
+            <div><div class="opt-label">Private employer ERISA welfare plan</div><div class="opt-desc">Standard private-sector employer. This tool supports this path.</div></div>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="erisaApplicability" value="governmental"/>
+            <div><div class="opt-label">Governmental plan</div><div class="opt-desc">Federal, state, or local government employer. Not supported in this version.</div></div>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="erisaApplicability" value="church"/>
+            <div><div class="opt-label">Church or church-related plan</div><div class="opt-desc">Not supported in this version.</div></div>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="erisaApplicability" value="other"/>
+            <div><div class="opt-label">Other / nonstandard arrangement</div><div class="opt-desc">Not supported in this version.</div></div>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="erisaApplicability" value="unsure"/>
+            <div><div class="opt-label">Not sure</div><div class="opt-desc">Please confirm ERISA status before proceeding.</div></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div id="erisaStopBlock" class="stop-box conditional">
+      <strong>Not supported in this version</strong>
+      This tool only generates documents for private-employer ERISA welfare plans. Please use a qualified ERISA attorney or a different tool for your plan type.
+    </div>
+
+    <div class="section-divider">Plan Administrator
+      <span class="tooltip-wrap">
+        <span class="tooltip-icon">?</span>
+        <span class="tooltip-text">The Plan Administrator is the person or entity responsible for operating the plan. For most small to mid-size employers this is the employer itself, represented by an HR director, owner, or officer.</span>
+      </span>
+    </div>
+    <div class="field-group">
+      <div class="field">
+        <label>Plan Administrator Name <span class="req">*</span></label>
+        <input type="text" id="planAdminName" placeholder="Jane Smith or ABC Company LLC"/>
+      </div>
+      <div class="field">
+        <label>Plan Administrator Title <span class="req">*</span></label>
+        <input type="text" id="planAdminTitle" placeholder="HR Director / President / Plan Administrator"/>
+      </div>
+    </div>
+    <div class="field-group single">
+      <div class="field">
+        <label>Plan Administrator Mailing Address <span class="opt">(if different from employer address)</span></label>
+        <input type="text" id="planAdminAddress" placeholder="Leave blank to use employer address"/>
+      </div>
+    </div>
+
+    <div class="section-divider">Named Fiduciary
+      <span class="tooltip-wrap">
+        <span class="tooltip-icon">?</span>
+        <span class="tooltip-text">ERISA requires every plan to name at least one fiduciary with authority to control and manage the plan. This is usually the same person or entity as the Plan Administrator.</span>
+      </span>
+    </div>
+    <div class="field-group single">
+      <div class="field">
+        <label>Named Fiduciary <span class="req">*</span></label>
+        <input type="text" id="namedFiduciary" placeholder="Usually same as Plan Administrator"/>
+      </div>
+    </div>
+
+    <div class="section-divider">Agent for Service of Legal Process
+      <span class="tooltip-wrap">
+        <span class="tooltip-icon">?</span>
+        <span class="tooltip-text">The person or entity who can accept legal process on behalf of the plan. Required by ERISA. This is often the same as the employer or the Plan Administrator.</span>
+      </span>
+    </div>
+
+    <div class="field-group single">
+      <div class="field">
+        <label>Agent is <span class="req">*</span></label>
+        <div class="radio-group" id="agentSelectorGroup">
+          <label class="radio-option">
+            <input type="radio" name="agentChoice" value="same-as-employer" onchange="updateAgentUI()"/>
+            <div><div class="opt-label">Same as Employer</div></div>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="agentChoice" value="same-as-admin" onchange="updateAgentUI()"/>
+            <div><div class="opt-label">Same as Plan Administrator</div></div>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="agentChoice" value="custom" onchange="updateAgentUI()"/>
+            <div><div class="opt-label">Custom (different person or entity)</div></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div id="agentCustomBlock" class="conditional">
+      <div class="field-group">
+        <div class="field">
+          <label>Agent Name <span class="req">*</span></label>
+          <input type="text" id="agentName" placeholder="Name of agent for legal process"/>
+        </div>
+        <div class="field">
+          <label>Agent Address <span class="opt">(if different from employer address)</span></label>
+          <input type="text" id="agentAddress" placeholder="Leave blank to use employer address"/>
+          <div class="mini-note">If left blank, the document will list the employer's business address as the address for service of legal process on the agent. Enter a separate address only if the agent operates from a different location (e.g. an attorney's office, a registered-agent service, or a corporate officer at a different site).</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-divider">Discretionary Authority</div>
+    <div class="info-box">
+      <strong>What this means</strong>
+      A discretionary authority clause gives the Plan Administrator authority to interpret plan terms and determine eligibility. Under ERISA case law this can change the standard courts apply when reviewing benefit decisions. However, for fully insured plans, state insurance laws in some states limit or prohibit discretionary clauses in insured policies, which can reduce the practical effect. Including the clause is generally recommended but is not universally effective for all insured benefits.
+    </div>
+    <div class="field-group single">
+      <div class="field">
+        <div class="radio-group">
+          <label class="radio-option">
+            <input type="radio" name="discretionaryAuth" value="yes" checked/>
+            <div>
+              <div class="opt-label">Include discretionary authority clause (recommended)</div>
+              <div class="opt-desc">Subject to applicable law and the underlying benefit documents.</div>
+            </div>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="discretionaryAuth" value="no"/>
+            <div><div class="opt-label">Omit discretionary authority clause</div></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div id="err2" class="err-box"></div>
+    <div class="nav-row">
+      <button class="btn btn-back" onclick="goBack(2)">&larr; Back</button>
+      <button class="btn btn-next" onclick="goNext(2)">Next &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 3 ═══ -->
+  <div class="step" id="step3">
+    <div class="step-title"><span class="badge">Step 3</span> Benefits &amp; Plan Structure</div>
+    <div class="step-subtitle">Select every benefit being wrapped. The system will determine the applicable legal path from your selections.</div>
+
+    <div class="section-divider">Core Health Benefits</div>
+    <div class="check-group">
+      <label class="check-option"><input type="checkbox" name="benefits" value="Medical / Major Medical"/> <div><div class="opt-label">Medical / Major Medical</div></div></label>
+      <label class="check-option"><input type="checkbox" name="benefits" value="Dental"/> <div><div class="opt-label">Dental</div></div></label>
+      <label class="check-option"><input type="checkbox" name="benefits" value="Vision"/> <div><div class="opt-label">Vision</div></div></label>
+      <label class="check-option"><input type="checkbox" name="benefits" value="Prescription Drug (administered separately from medical)"/> <div><div class="opt-label">Prescription Drug</div><div class="opt-desc">Only if administered separately from the medical plan</div></div></label>
+    </div>
+
+    <div class="section-divider">Life &amp; Disability</div>
+    <div class="check-group">
+      <label class="check-option"><input type="checkbox" name="benefits" value="Group Term Life Insurance"/> <div><div class="opt-label">Group Term Life Insurance</div></div></label>
+      <label class="check-option"><input type="checkbox" name="benefits" value="Group Accidental Death and Dismemberment (AD&D)"/> <div><div class="opt-label">Group AD&amp;D</div></div></label>
+      <label class="check-option"><input type="checkbox" name="benefits" value="Short-Term Disability (STD)"/> <div><div class="opt-label">Short-Term Disability (STD)</div></div></label>
+      <label class="check-option"><input type="checkbox" name="benefits" value="Long-Term Disability (LTD)"/> <div><div class="opt-label">Long-Term Disability (LTD)</div></div></label>
+    </div>
+
+    <div class="section-divider">Voluntary Benefits
+      <span class="tooltip-wrap">
+        <span class="tooltip-icon">?</span>
+        <span class="tooltip-text">Voluntary benefits may qualify for a payroll-practice exemption from ERISA if they are 100% employee-pay-all with no employer endorsement. If you are wrapping these, you are intentionally bringing them under ERISA and you will be asked to confirm that intent.</span>
+      </span>
+    </div>
+    <div class="check-group">
+      <label class="check-option"><input type="checkbox" name="benefits" value="Voluntary Life Insurance"/> <div><div class="opt-label">Voluntary Life Insurance</div></div></label>
+      <label class="check-option"><input type="checkbox" name="benefits" value="Voluntary AD&D"/> <div><div class="opt-label">Voluntary AD&amp;D</div></div></label>
+      <label class="check-option"><input type="checkbox" name="benefits" value="Accident Insurance"/> <div><div class="opt-label">Accident Insurance</div></div></label>
+      <label class="check-option"><input type="checkbox" name="benefits" value="Critical Illness Insurance"/> <div><div class="opt-label">Critical Illness Insurance</div></div></label>
+      <label class="check-option"><input type="checkbox" name="benefits" value="Hospital Indemnity Insurance"/> <div><div class="opt-label">Hospital Indemnity Insurance</div></div></label>
+    </div>
+
+    <div class="section-divider">Other Benefits</div>
+    <div class="check-group">
+      <label class="check-option"><input type="checkbox" name="benefits" value="Employee Assistance Program (EAP)"/> <div><div class="opt-label">Employee Assistance Program (EAP)</div><div class="opt-desc">You will be asked to specify the type on the next step</div></div></label>
+      <label class="check-option"><input type="checkbox" name="benefits" value="Health Reimbursement Arrangement (HRA)"/> <div><div class="opt-label">Health Reimbursement Arrangement (HRA)</div></div></label>
+      <label class="check-option"><input type="checkbox" name="benefits" value="Health FSA"/> <div><div class="opt-label">Health FSA</div></div></label>
+      <label class="check-option"><input type="checkbox" name="benefits" value="Dependent Care FSA"/> <div><div class="opt-label">Dependent Care FSA</div></div></label>
+    </div>
+
+    <div class="warn-box" style="margin-top:16px">
+      <strong>HSA reminder</strong>
+      Health Savings Accounts are individually owned accounts, not employer-sponsored ERISA plans. Do not include HSAs here.
+    </div>
+
+    <!-- Group health inferred banner (shown when clear) -->
+    <div id="groupHealthInferredBanner" class="inferred-banner conditional">
+      <span class="banner-icon">✓</span>
+      <div><strong>Group health plan path identified</strong> Based on your benefit selections, this plan includes group health plan benefits. COBRA, HIPAA, and related group health plan sections will be included in the document.</div>
+    </div>
+
+    <!-- Group health ambiguous question (shown only when ambiguous) -->
+    <div id="groupHealthAmbiguousBlock" class="conditional">
+      <div class="warn-box">
+        <strong>Classification check needed</strong>
+        Your selected benefits include an EAP or HRA without other clearly identified group health plan benefits. Whether these create a group health plan depends on how they are structured. Please confirm below.
+      </div>
+      <div class="field-group single">
+        <div class="field">
+          <label>Does this wrapped plan include any benefit that provides medical care? <span class="req">*</span></label>
+          <div class="radio-group inline">
+            <label class="radio-option"><input type="radio" name="groupHealthAmbiguous" value="yes"/><div><div class="opt-label">Yes</div></div></label>
+            <label class="radio-option"><input type="radio" name="groupHealthAmbiguous" value="no"/><div><div class="opt-label">No</div></div></label>
+          </div>
+          <div class="mini-note">If yes, the group health plan path will apply. If no, COBRA and related group health sections will not be generated.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- No group health note (shown when clearly no GHP) -->
+    <div id="noGroupHealthNote" class="info-box conditional">
+      <strong>No group health plan benefits detected</strong>
+      Based on your selections, this plan does not appear to include group health plan benefits. COBRA, HIPAA, and related sections will not be generated.
+    </div>
+
+    <div class="section-divider">Plan Structure Confirmations</div>
+
+    <div class="field-group single">
+      <div class="field">
+        <label>Do all wrapped benefits use the same eligibility and waiting period rules? <span class="req">*</span></label>
+        <div class="radio-group inline">
+          <label class="radio-option"><input type="radio" name="uniformEligibility" value="yes"/><div><div class="opt-label">Yes</div></div></label>
+          <label class="radio-option"><input type="radio" name="uniformEligibility" value="no"/><div><div class="opt-label">No</div></div></label>
+        </div>
+        <div class="mini-note">This version requires uniform eligibility rules across all wrapped benefits. If different benefits have different rules, use separate plan documents.</div>
+      </div>
+    </div>
+
+<div class="field-group single">
+  <div class="field">
+    <label>Does the employer use a single consistent approach to employee payroll deductions across all wrapped benefits? <span class="req">*</span></label>
+    <div class="radio-group inline">
+      <label class="radio-option"><input type="radio" name="uniformPreTax" value="yes"/><div><div class="opt-label">Yes</div></div></label>
+      <label class="radio-option"><input type="radio" name="uniformPreTax" value="no"/><div><div class="opt-label">No</div></div></label>
+    </div>
+    <div class="mini-note">This confirms the employer is using one consistent deduction approach across all wrapped benefits -- either all contributions run through a Section 125 plan or all are taken after-tax. It does not require every benefit to be eligible for pre-tax treatment, as IRS rules vary by benefit type.</div>
+  </div>
+</div>
+
+    <div id="err3" class="err-box"></div>
+    <div class="nav-row">
+      <button class="btn btn-back" onclick="goBack(3)">&larr; Back</button>
+      <button class="btn btn-next" onclick="goNext(3)">Next &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 4 ═══ -->
+  <div class="step" id="step4">
+    <div class="step-title"><span class="badge">Step 4</span> Funding &amp; Benefit Detail</div>
+    <div class="step-subtitle">Medical funding appears only when medical is wrapped. Special benefit confirmations appear based on your prior selections.</div>
+
+    <!-- Medical funding block -->
+    <div id="medicalFundingBlock" class="conditional">
+      <div class="section-divider">Medical Plan Funding</div>
+      <div class="field-group single">
+        <div class="field">
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="medicalFunding" value="Fully Insured" onchange="updateConditionalUI()"/>
+              <div><div class="opt-label">Fully Insured</div><div class="opt-desc">The insurance carrier pays claims subject to the policy terms.</div></div>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="medicalFunding" value="Level Funded" onchange="updateConditionalUI()"/>
+              <div><div class="opt-label">Level Funded</div><div class="opt-desc">Fixed monthly funding with stop-loss protection through the carrier/TPA arrangement.</div></div>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="medicalFunding" value="Self Funded" onchange="updateConditionalUI()"/>
+              <div><div class="opt-label">Self Funded (ASO)</div><div class="opt-desc">Employer pays claims directly through a TPA, typically with stop-loss insurance.</div></div>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="medicalFunding" value="Self Funded Captive" onchange="updateConditionalUI()"/>
+              <div><div class="opt-label">Self Funded with Group Captive</div><div class="opt-desc">Self-funded medical with participation in a group captive or similar stop-loss arrangement for risk management.</div></div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="field-group single">
+        <div class="field">
+          <label>Medical Claims / Network Administrator <span class="req">*</span></label>
+          <input type="text" id="medicalClaimsAdmin" placeholder="Blue Cross, Aetna, UnitedHealthcare, etc."/>
+        </div>
+      </div>
+
+      <div id="stopLossSection" class="conditional">
+        <div class="section-divider"><span id="stopLossSectionLabel">Stop-Loss &amp; TPA</span>
+          <span class="tooltip-wrap">
+            <span class="tooltip-icon">?</span>
+            <span class="tooltip-text">Stop-loss insurance (or in a captive structure, the captive layer plus reinsurance) protects the employer from catastrophic claims. It is a contract between the employer and the stop-loss carrier or captive. Plan participants have no direct rights under that contract.</span>
+          </span>
+        </div>
+
+        <div class="field-group single">
+          <div class="field">
+            <label>TPA Name <span class="req">*</span></label>
+            <input type="text" id="tpaName" placeholder="Allied, Meritain, Imagine360, etc."/>
+            <div class="mini-note">The third-party administrator that handles claims adjudication and plan administration for the medical benefit.</div>
+          </div>
+        </div>
+
+        <div class="field-group single">
+          <div class="field">
+            <label>Does this plan include stop-loss coverage? <span class="req">*</span></label>
+            <div class="radio-group inline">
+              <label class="radio-option"><input type="radio" name="hasStopLoss" value="yes" onchange="updateConditionalUI()"/><div><div class="opt-label">Yes</div></div></label>
+              <label class="radio-option"><input type="radio" name="hasStopLoss" value="no" onchange="updateConditionalUI()"/><div><div class="opt-label">No</div></div></label>
+            </div>
+          </div>
+        </div>
+
+        <!-- No-stop-loss warning: only valid for Self Funded -->
+        <div id="noStopLossBlock" class="conditional">
+          <div id="noStopLossWarnSF" class="stop-box conditional">
+            <strong>No stop-loss coverage selected</strong>
+            This medical plan does not include stop-loss coverage. The employer remains responsible for the full amount of eligible claims under the plan. Proceed only if this is an intentional pure self-funded design.
+          </div>
+          <div id="noStopLossAckBlockSF" class="field-group single conditional">
+            <div class="field">
+              <label class="check-option">
+                <input type="checkbox" id="noStopLossAcknowledged"/>
+                <div><div class="opt-label">I understand this medical plan does not include stop-loss coverage, and I want the document to state that the employer assumes full claims liability.</div></div>
+              </label>
+            </div>
+          </div>
+          <div id="noStopLossBlockLF" class="stop-box conditional">
+            <strong>Not compatible with level-funded</strong>
+            Level-funded arrangements by design include stop-loss protection. If this plan does not have stop-loss, change the funding type to Self Funded.
+          </div>
+          <div id="noStopLossBlockSFC" class="stop-box conditional">
+            <strong>Not compatible with self-funded captive</strong>
+            A captive arrangement by definition includes a captive or stop-loss layer. If this plan does not have stop-loss, change the funding type to Self Funded.
+          </div>
+        </div>
+
+        <!-- Stop-loss details (only shown when hasStopLoss = yes) -->
+        <div id="hasStopLossBlock" class="conditional">
+          <div class="field-group single">
+            <div class="field">
+              <label id="stopLossCarrierLabel">Stop-Loss Carrier Name <span class="req">*</span></label>
+              <input type="text" id="stopLossCarrier" placeholder="Sun Life, Tokio Marine, captive name, etc."/>
+            </div>
+          </div>
+
+          <div class="field-group single">
+            <div class="field">
+              <label>Stop-Loss Coverage Type <span class="req">*</span></label>
+              <div class="radio-group">
+                <label class="radio-option">
+                  <input type="radio" name="stopLossType" value="isl-only" onchange="updateConditionalUI()"/>
+                  <div><div class="opt-label">Specific (Individual) Stop-Loss only</div><div class="opt-desc">Per-person catastrophic protection above a deductible.</div></div>
+                </label>
+                <label class="radio-option">
+                  <input type="radio" name="stopLossType" value="agg-only" onchange="updateConditionalUI()"/>
+                  <div><div class="opt-label">Aggregate Stop-Loss only</div><div class="opt-desc">Total-plan-claims protection above an aggregate attachment point.</div></div>
+                </label>
+                <label class="radio-option">
+                  <input type="radio" name="stopLossType" value="both" onchange="updateConditionalUI()"/>
+                  <div><div class="opt-label">Both Specific and Aggregate</div><div class="opt-desc">Most common structure.</div></div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-group single conditional" id="islDeductibleField">
+            <div class="field">
+              <label>Specific (ISL) Stop-Loss Deductible <span class="req">*</span></label>
+              <input type="text" id="islDeductible" placeholder="$50,000 per person per year"/>
+            </div>
+          </div>
+
+          <div class="field-group single conditional" id="aggDescField">
+            <div class="field">
+              <label>Aggregate Stop-Loss Description <span class="req">*</span></label>
+              <input type="text" id="aggDescription" placeholder="e.g. 125% of expected claims, no aggregate maximum"/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Network Structure block - only for non-fully-insured medical -->
+      <div id="networkStructureBlock" class="conditional">
+        <div class="section-divider">Network Structure
+          <span class="tooltip-wrap">
+            <span class="tooltip-icon">?</span>
+            <span class="tooltip-text">Level-funded, self-funded, and captive plans can use either a traditional provider network (like Blue Cross PPO, Aetna, United) or a reference-based pricing model (RBP) that pays providers a set percentage of Medicare rates or another benchmark. Some RBP plans also offer a wraparound network for specialty providers.</span>
+          </span>
+        </div>
+        <div class="field-group single">
+          <div class="field">
+            <label>How is the provider network structured? <span class="req">*</span></label>
+            <div class="radio-group">
+              <label class="radio-option">
+                <input type="radio" name="networkStructure" value="traditional" onchange="updateConditionalUI()"/>
+                <div><div class="opt-label">Traditional Network</div><div class="opt-desc">Uses a standard PPO or HMO network (Blue Cross, Aetna, UHC, Cigna, etc.) with negotiated contracted rates.</div></div>
+              </label>
+              <label class="radio-option">
+                <input type="radio" name="networkStructure" value="rbp" onchange="updateConditionalUI()"/>
+                <div><div class="opt-label">Reference-Based Pricing (RBP)</div><div class="opt-desc">Pays providers a set multiple of Medicare rates (e.g. 150% of Medicare). No traditional network discount model. Balance-billing exposure is managed through advocacy services.</div></div>
+              </label>
+              <label class="radio-option">
+                <input type="radio" name="networkStructure" value="rbp-wraparound" onchange="updateConditionalUI()"/>
+                <div><div class="opt-label">RBP with Wraparound Network</div><div class="opt-desc">RBP as primary pricing methodology with a wraparound network (often for specialty or facility services) layered on top.</div></div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- RBP details block -->
+        <div id="rbpDetailsBlock" class="conditional">
+          <div class="field-group">
+            <div class="field">
+              <label>RBP Vendor / TPA Name <span class="req">*</span></label>
+              <input type="text" id="rbpVendorTpaName" placeholder="ELAP, 6 Degrees Health, AMPS, etc."/>
+            </div>
+            <div class="field">
+              <label>Pricing Benchmark <span class="req">*</span></label>
+              <input type="text" id="rbpBenchmark" placeholder="e.g. 150% of Medicare"/>
+              <div class="mini-note">Describe the reference pricing methodology as it will appear in the document.</div>
+            </div>
+          </div>
+
+          <div class="field-group single conditional" id="rbpWraparoundField">
+            <div class="field">
+              <label>Wraparound Network Name <span class="req">*</span></label>
+              <input type="text" id="rbpWraparoundNetwork" placeholder="e.g. First Health, PHCS, HealthSmart"/>
+            </div>
+          </div>
+
+          <div class="field-group single">
+            <div class="field">
+              <label>Does the plan include balance-billing advocacy or defense services? <span class="req">*</span></label>
+              <div class="radio-group inline">
+                <label class="radio-option"><input type="radio" name="rbpBalanceBillingAdvocacy" value="yes" onchange="updateConditionalUI()"/><div><div class="opt-label">Yes</div></div></label>
+                <label class="radio-option"><input type="radio" name="rbpBalanceBillingAdvocacy" value="no" onchange="updateConditionalUI()"/><div><div class="opt-label">No</div></div></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-group single conditional" id="rbpAdvocacyVendorField">
+            <div class="field">
+              <label>Advocacy Vendor Name <span class="opt">(optional)</span></label>
+              <input type="text" id="rbpAdvocacyVendorName" placeholder="e.g. ELAP, Payer Compass, advocacy vendor name"/>
+              <div class="mini-note">If left blank, the document will refer to "the designated advocacy vendor."</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="noMedicalNote" class="info-box conditional visible">
+      <strong>Medical not wrapped</strong>
+      Medical funding and stop-loss questions are not applicable because medical is not among the wrapped benefits.
+    </div>
+
+    <!-- Special benefit follow-up blocks -->
+    <div id="healthFsaBlock" class="conditional">
+      <div class="section-divider">Health FSA</div>
+      <div class="field-group single">
+        <div class="field">
+          <label>Separate Health FSA / cafeteria plan documentation exists and will be used alongside this wrap <span class="req">*</span></label>
+          <div class="radio-group inline">
+            <label class="radio-option"><input type="radio" name="healthFsaDoc" value="yes"/><div><div class="opt-label">Yes, confirmed</div></div></label>
+            <label class="radio-option"><input type="radio" name="healthFsaDoc" value="no"/><div><div class="opt-label">No</div></div></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="dcfsaBlock" class="conditional">
+      <div class="section-divider">Dependent Care FSA</div>
+      <div class="field-group single">
+        <div class="field">
+          <label>Separate Dependent Care FSA documentation exists and will be used alongside this wrap <span class="req">*</span></label>
+          <div class="radio-group inline">
+            <label class="radio-option"><input type="radio" name="dcfsaDoc" value="yes"/><div><div class="opt-label">Yes, confirmed</div></div></label>
+            <label class="radio-option"><input type="radio" name="dcfsaDoc" value="no"/><div><div class="opt-label">No</div></div></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="hraBlock" class="conditional">
+      <div class="section-divider">HRA</div>
+      <div class="field-group">
+        <div class="field">
+          <label>HRA Type <span class="req">*</span></label>
+          <input type="text" id="hraType" placeholder="e.g. ICHRA, QSEHRA, integrated HRA"/>
+        </div>
+        <div class="field">
+          <label>Separate HRA documentation exists and will be used alongside this wrap <span class="req">*</span></label>
+          <div class="radio-group inline">
+            <label class="radio-option"><input type="radio" name="hraDoc" value="yes"/><div><div class="opt-label">Yes, confirmed</div></div></label>
+            <label class="radio-option"><input type="radio" name="hraDoc" value="no"/><div><div class="opt-label">No</div></div></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="eapBlock" class="conditional">
+      <div class="section-divider">EAP</div>
+      <div class="field-group single">
+        <div class="field">
+          <label>EAP Type <span class="req">*</span></label>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="eapType" value="referral-only" onchange="updateConditionalUI()"/>
+              <div><div class="opt-label">Referral-only EAP</div><div class="opt-desc">Provides referrals to outside services only, no substantive medical benefit.</div></div>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="eapType" value="substantive-medical-benefit" onchange="updateConditionalUI()"/>
+              <div><div class="opt-label">Substantive medical benefit EAP</div><div class="opt-desc">Provides actual counseling sessions or other medical care, not just referrals.</div></div>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div id="eapReferralStop" class="stop-box conditional">
+        <strong>Not supported in this version</strong>
+        Referral-only EAPs are not included in the wrap flow in this version. Remove the EAP from your benefit selection or confirm it provides substantive medical benefits.
+      </div>
+      <div id="eapWrapConfirmBlock" class="conditional">
+        <div class="field-group single">
+          <div class="field">
+            <label>Confirm this substantive EAP should be wrapped as an ERISA-covered benefit under this plan <span class="req">*</span></label>
+            <div class="radio-group inline">
+              <label class="radio-option"><input type="radio" name="eapWrapConfirmed" value="yes"/><div><div class="opt-label">Yes, confirmed</div></div></label>
+              <label class="radio-option"><input type="radio" name="eapWrapConfirmed" value="no"/><div><div class="opt-label">No</div></div></label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="voluntaryBlock" class="conditional">
+      <div class="section-divider">Voluntary Benefits</div>
+      <div class="info-box">
+        <strong>ERISA applicability note</strong>
+        Voluntary benefits may qualify for the payroll-practice exemption from ERISA if they are 100% employee-pay-all with no employer endorsement or arrangement beyond payroll deduction. By wrapping them here, you are treating them as ERISA-covered plans. If that is not your intent, remove them from the benefit selection. Consult counsel if you are unsure.
+      </div>
+      <div class="field-group single">
+        <div class="field">
+          <label>Do you intentionally want these voluntary benefits treated as ERISA-wrapped benefits in this plan? <span class="opt">(optional)</span></label>
+          <div class="radio-group inline">
+            <label class="radio-option"><input type="radio" name="voluntaryErisaConfirmed" value="yes"/><div><div class="opt-label">Yes, confirmed</div></div></label>
+            <label class="radio-option"><input type="radio" name="voluntaryErisaConfirmed" value="no"/><div><div class="opt-label">No / not sure</div></div></label>
+          </div>
+          <div class="mini-note">This is advisory. If you leave it unanswered or answer "No / not sure," the document will still generate, but you will see a note in the backend validation output flagging that voluntary benefits treatment should be reviewed with counsel.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-divider">Additional Notes</div>
+    <div class="field-group single">
+      <div class="field">
+        <label>Carrier / Administrator Notes <span class="opt">(optional)</span></label>
+        <textarea id="otherCarrierDesc" placeholder="Optional notes about carriers, administrators, or supporting materials for non-medical benefits (e.g. dental carrier, vision carrier, life carrier)"></textarea>
+      </div>
+    </div>
+
+    <div id="err4" class="err-box"></div>
+    <div class="nav-row">
+      <button class="btn btn-back" onclick="goBack(4)">&larr; Back</button>
+      <button class="btn btn-next" onclick="goNext(4)">Next &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 5 ═══ -->
+  <div class="step" id="step5">
+    <div class="step-title"><span class="badge">Step 5</span> Eligibility &amp; Participation</div>
+    <div class="step-subtitle">One uniform eligibility structure applies across all wrapped benefits in this version.</div>
+
+<div class="section-divider">Eligible Employee Classes</div>
+<div class="info-box">
+  <strong>Select the class or classes that match your plan design</strong>
+  Choose only the classes that accurately reflect who is eligible. The document will list exactly what you select. If you are unsure, most employers use either "All active employees" or "Full-time employees only."
+</div>
+<div class="check-group">
+  <label class="check-option">
+    <input type="checkbox" name="eligClasses" value="All active employees (full-time and part-time)"/>
+    <div><div class="opt-label">All Active Employees</div><div class="opt-desc">Full-time and part-time employees. Confirm your carriers support part-time eligibility before selecting.</div></div>
+  </label>
+  <label class="check-option">
+    <input type="checkbox" name="eligClasses" value="Full-time employees"/>
+    <div><div class="opt-label">Full-Time Employees Only</div><div class="opt-desc">All full-time employees regardless of whether they are salaried or hourly.</div></div>
+  </label>
+  <label class="check-option">
+    <input type="checkbox" name="eligClasses" value="Full-time salaried employees"/>
+    <div><div class="opt-label">Full-Time Salaried Employees</div><div class="opt-desc">Only if the plan design specifically limits eligibility to salaried employees.</div></div>
+  </label>
+  <label class="check-option">
+    <input type="checkbox" name="eligClasses" value="Full-time hourly employees"/>
+    <div><div class="opt-label">Full-Time Hourly Employees</div><div class="opt-desc">Only if the plan design specifically limits eligibility to hourly employees.</div></div>
+  </label>
+  <label class="check-option">
+    <input type="checkbox" name="eligClasses" value="Part-time employees"/>
+    <div><div class="opt-label">Part-Time Employees</div><div class="opt-desc">Only if part-time employees are affirmatively eligible. Verify carrier certificate support before selecting.</div></div>
+  </label>
+</div>
+<div class="warn-box" id="partTimeWarn" style="display:none; margin-top:10px">
+  <strong>Part-time eligibility selected</strong>
+  Not all carriers extend coverage to part-time employees. Before finalizing this document, confirm that each carrier certificate for the wrapped benefits affirmatively supports part-time participation.
+</div>
+
+<script>
+document.querySelectorAll('input[name="eligClasses"]').forEach(cb => {
+  cb.addEventListener('change', function () {
+    const hasPartTime = Array.from(
+      document.querySelectorAll('input[name="eligClasses"]:checked')
+    ).some(c => c.value === 'Part-time employees');
+    document.getElementById('partTimeWarn').style.display = hasPartTime ? 'block' : 'none';
+  });
+});
+</script>
+
+<div class="field-group" style="margin-top:16px">
+  <div class="field">
+    <label>Minimum Hours Per Week <span class="opt">(if applicable)</span></label>
+    <input type="number" id="hoursPerWeek" placeholder="30" min="1" max="60"/>
+    <div class="mini-note">30 hours per week is the ACA threshold for full-time employee status. Most carriers and plans use 30 as the standard minimum. Leave blank if no hours requirement applies.</div>
+  </div>
+  <div class="field">
+    <label>Waiting Period <span class="req">*</span></label>
+    <select id="waitingPeriod">
+      <option value="">Select waiting period…</option>
+      <option>Immediately upon hire</option>
+      <option>First of the month following date of hire</option>
+      <option>First of the month following 30 days of employment</option>
+      <option>First of the month following 60 days of employment</option>
+      <option>90-day waiting period (coverage begins on the 91st day)</option>
+      <option>As specified in the applicable carrier benefit materials</option>
+    </select>
+    <div class="mini-note">The ACA prohibits waiting periods exceeding 90 days for group health plan coverage. "First of the month following 90 days" can push past 90 days and is not a compliant option for health benefits.</div>
+  </div>
+</div>
+
+    <div class="section-divider">Dependent Eligibility</div>
+    <div class="info-box">
+      <strong>Only what you select will appear in the document</strong>
+      The generated document will list only the dependent categories you select below. If a category is not selected, it will not be affirmatively stated as eligible. Make sure your selections match what your carrier or TPA materials support.
+    </div>
+    <div class="check-group">
+      <label class="check-option"><input type="checkbox" name="dependents" value="Legally married spouse"/> <div><div class="opt-label">Legally Married Spouse</div></div></label>
+      <label class="check-option"><input type="checkbox" name="dependents" value="Domestic partner (where recognized by applicable law and the underlying benefit materials)"/> <div><div class="opt-label">Domestic Partner</div><div class="opt-desc">Only where recognized by applicable law and supported by the underlying benefit materials</div></div></label>
+      <label class="check-option"><input type="checkbox" name="dependents" value="Dependent children to age 26"/> <div><div class="opt-label">Dependent Children to Age 26</div></div></label>
+      <label class="check-option"><input type="checkbox" name="dependents" value="Disabled dependent children beyond age 26, where supported by the underlying benefit materials"/> <div><div class="opt-label">Disabled Dependents Beyond Age 26</div><div class="opt-desc">Only where supported by the underlying benefit materials</div></div></label>
+    </div>
+
+    <div id="err5" class="err-box"></div>
+    <div class="nav-row">
+      <button class="btn btn-back" onclick="goBack(5)">&larr; Back</button>
+      <button class="btn btn-next" onclick="goNext(5)">Next &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 6 ═══ -->
+  <div class="step" id="step6">
+    <div class="step-title"><span class="badge">Step 6</span> Tax Treatment &amp; Underlying Documents</div>
+    <div class="step-subtitle">Pre-tax treatment requires a confirmed Section 125 plan. Underlying documents must exist and will be distributed.</div>
+
+    <div class="section-divider">Payroll &amp; Contributions</div>
+   <div class="field-group">
+  <div class="field">
+    <label>Payroll Frequency <span class="req">*</span></label>
+    <select id="payrollFrequency">
+      <option value="">Select…</option>
+      <option>Weekly (52 pay periods per year)</option>
+      <option>Bi-Weekly (26 pay periods per year)</option>
+      <option>Semi-Monthly (24 pay periods per year)</option>
+      <option>Monthly (12 pay periods per year)</option>
+    </select>
+    <div class="mini-note">Select how often employees are paid. This affects how salary reductions are structured.</div>
+  </div>
+  <div class="field">
+    <label>Do employees make contributions toward these wrapped benefits? <span class="req">*</span></label>
+    <div class="radio-group inline">
+      <label class="radio-option"><input type="radio" name="employeeContribsExist" value="yes" onchange="updateConditionalUI()"/><div><div class="opt-label">Yes</div></div></label>
+      <label class="radio-option"><input type="radio" name="employeeContribsExist" value="no" onchange="updateConditionalUI()"/><div><div class="opt-label">No, employer pays all</div></div></label>
+    </div>
+  </div>
+</div>
+
+<div class="field-group single conditional" id="deductionCycleQuestion">
+  <div class="field">
+    <label>Are employee contributions deducted every pay period? <span class="req">*</span></label>
+    <div class="radio-group inline">
+      <label class="radio-option">
+        <input type="radio" name="deductionCycleMatches" value="yes" onchange="updateConditionalUI()"/>
+        <div><div class="opt-label">Yes, every pay period</div></div>
+      </label>
+      <label class="radio-option">
+        <input type="radio" name="deductionCycleMatches" value="no" onchange="updateConditionalUI()"/>
+        <div><div class="opt-label">No, different schedule</div></div>
+      </label>
+    </div>
+    <div class="mini-note">Most employers deduct every pay period. If your plan deducts only on certain pay periods (e.g. first two pay periods of each month on a bi-weekly schedule), select "different schedule."</div>
+  </div>
+</div>
+
+<div id="deductionCycleDetail" class="field-group single conditional">
+  <div class="field">
+    <label>Describe the deduction schedule <span class="req">*</span></label>
+    <input type="text" id="deductionCycleDescription" placeholder="e.g. First two pay periods of each month"/>
+    <div class="mini-note">This will appear in the plan document to accurately describe how employee contributions are collected.</div>
+  </div>
+</div>
+
+    <!-- Pre-tax question only shows if employee contributions exist -->
+    <div id="preTaxBlock" class="conditional">
+      <div class="field-group single">
+        <div class="field">
+          <label>Are employee contributions taken pre-tax through a Section 125 plan? <span class="req">*</span></label>
+          <div class="radio-group inline">
+            <label class="radio-option"><input type="radio" name="preTax" value="yes" onchange="updateConditionalUI()"/><div><div class="opt-label">Yes</div></div></label>
+            <label class="radio-option"><input type="radio" name="preTax" value="no" onchange="updateConditionalUI()"/><div><div class="opt-label">No, after-tax only</div></div></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 125 confirmations (pre-tax = yes) -->
+    <div id="section125Block" class="conditional">
+      <div class="section-divider">Section 125 Confirmations
+        <span class="tooltip-wrap">
+          <span class="tooltip-icon">?</span>
+          <span class="tooltip-text">A Section 125 cafeteria plan must be a written plan adopted before the first day of the plan year. The wrap plan document cannot assert pre-tax status as a fact unless a valid, timely-adopted Section 125 plan exists.</span>
+        </span>
+      </div>
+      <div class="field-group">
+        <div class="field">
+          <label>A separate written Section 125 plan exists for this employer <span class="req">*</span></label>
+          <div class="radio-group inline">
+            <label class="radio-option"><input type="radio" name="section125Exists" value="yes"/><div><div class="opt-label">Yes</div></div></label>
+            <label class="radio-option"><input type="radio" name="section125Exists" value="no"/><div><div class="opt-label">No</div></div></label>
+          </div>
+        </div>
+        <div class="field">
+          <label>The Section 125 plan was timely adopted on or before the effective date <span class="req">*</span></label>
+          <div class="radio-group inline">
+            <label class="radio-option"><input type="radio" name="section125Timely" value="yes"/><div><div class="opt-label">Yes</div></div></label>
+            <label class="radio-option"><input type="radio" name="section125Timely" value="no"/><div><div class="opt-label">No</div></div></label>
+          </div>
+        </div>
+      </div>
+<div class="info-box">
+  If you need to establish or restate a Section 125 Plan Document, DK Benefits offers a free Section 125 Plan Builder tool on our website. A link will appear after you download your Wrap Plan Document.
+</div>
+    </div>
+
+    <!-- After-tax confirmation (pre-tax = no and employee contributions exist) -->
+    <div id="afterTaxConfirmBlock" class="conditional">
+      <div class="section-divider">After-Tax Confirmation</div>
+      <div class="field-group single">
+        <div class="field">
+          <label>Please confirm which applies <span class="req">*</span></label>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="afterTaxConfirm" value="employer-pays-all"/>
+              <div>
+                <div class="opt-label">The employer pays the full cost of all wrapped benefits</div>
+                <div class="opt-desc">No employee contributions are taken from payroll for these benefits.</div>
+              </div>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="afterTaxConfirm" value="after-tax-deductions"/>
+              <div>
+                <div class="opt-label">Employee contributions are taken from payroll on an after-tax basis</div>
+                <div class="opt-desc">Employees contribute but through post-tax payroll deductions.</div>
+              </div>
+            </label>
+          </div>
+          <div class="mini-note">If you intended to use pre-tax deductions, you need a separate Section 125 plan. DK Benefits offers a free Section 125 Plan Builder at <strong>dkbenefits.net/section125plantool</strong>.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- No contributions (employer pays all, skips pre-tax question) -->
+    <div id="noContribNote" class="info-box conditional">
+      <strong>Employer-paid benefits</strong>
+      Since employees do not contribute, no pre-tax or Section 125 confirmation is required for this wrap document.
+    </div>
+
+    <div class="section-divider">Underlying Documents &amp; Distribution
+      <span class="tooltip-wrap">
+        <span class="tooltip-icon">?</span>
+        <span class="tooltip-text">A wrap plan works by incorporating carrier and TPA materials by reference. This only works if those materials actually exist and are distributed to participants alongside this wrap. Without distribution, the SPD is incomplete.</span>
+      </span>
+    </div>
+    <div class="field-group single">
+      <div class="field">
+        <label>The underlying carrier and TPA documents exist for all wrapped benefits <span class="req">*</span></label>
+        <div class="radio-group inline">
+          <label class="radio-option"><input type="radio" name="underlyingDocsConfirmed" value="yes"/><div><div class="opt-label">Yes, confirmed</div></div></label>
+          <label class="radio-option"><input type="radio" name="underlyingDocsConfirmed" value="no"/><div><div class="opt-label">No</div></div></label>
+        </div>
+        <div class="mini-note">This includes certificates of coverage, evidence of coverage documents, TPA benefit booklets, claims procedures, schedules, and riders.</div>
+      </div>
+    </div>
+
+    <div class="field-group single">
+      <div class="field">
+        <label>Those underlying documents will be distributed with or alongside this wrap/SPD <span class="req">*</span></label>
+        <div class="radio-group inline">
+          <label class="radio-option"><input type="radio" name="willDistributeDocs" value="yes"/><div><div class="opt-label">Yes, confirmed</div></div></label>
+          <label class="radio-option"><input type="radio" name="willDistributeDocs" value="no"/><div><div class="opt-label">No</div></div></label>
+        </div>
+      </div>
+    </div>
+
+    <div id="err6" class="err-box"></div>
+    <div class="nav-row">
+      <button class="btn btn-back" onclick="goBack(6)">&larr; Back</button>
+      <button class="btn btn-next" onclick="goNext(6)">Next &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 7 ═══ -->
+  <div class="step" id="step7">
+    <div class="step-title"><span class="badge">Step 7</span> COBRA &amp; Claims</div>
+    <div class="step-subtitle">COBRA applies only to the group health plan path. Claims and appeals fiduciary designation applies to all paths.</div>
+
+    <div id="cobraBlock" class="conditional">
+      <div class="section-divider">COBRA Threshold
+        <span class="tooltip-wrap">
+          <span class="tooltip-icon">?</span>
+          <span class="tooltip-text">Federal COBRA applies to employers that had 20 or more employees on more than 50% of typical business days in the prior calendar year. Count both full-time and part-time employees. If you are not sure, this version cannot generate definitive COBRA language and you should stop and verify before proceeding.</span>
+        </span>
+      </div>
+      <div class="field-group single">
+        <div class="field">
+          <label>Did this employer have 20 or more employees on more than 50% of its typical business days in the prior calendar year? <span class="req">*</span></label>
+          <div class="radio-group">
+            <label class="radio-option"><input type="radio" name="cobraThreshold" value="yes" onchange="checkCobraCrossCheck()"/><div><div class="opt-label">Yes</div></div></label>
+            <label class="radio-option"><input type="radio" name="cobraThreshold" value="no" onchange="checkCobraCrossCheck()"/><div><div class="opt-label">No</div></div></label>
+            <label class="radio-option"><input type="radio" name="cobraThreshold" value="unsure"/><div><div class="opt-label">Not sure</div><div class="opt-desc">This version requires a definitive answer. If you are unsure, do not proceed until you verify.</div></div></label>
+          </div>
+          <div id="cobraCrossCheckWarn" class="warn-box conditional" style="margin-top:10px">
+            <strong>Potential inconsistency</strong>
+            You answered "No" to federal COBRA but entered a participant count of 100 or more on Step 8. These answers may be inconsistent. Please verify before continuing.
+          </div>
+        </div>
+      </div>
+
+<div id="cobraAdminBlock" class="conditional">
+        <div class="section-divider">COBRA Administrator</div>
+        <div class="field-group single">
+          <div class="field">
+            <label>Who administers COBRA for this plan? <span class="req">*</span></label>
+            <div class="radio-group">
+              <label class="radio-option"><input type="radio" name="cobraAdminType" value="employer" onchange="updateConditionalUI()"/><div><div class="opt-label">The employer self-administers</div></div></label>
+              <label class="radio-option"><input type="radio" name="cobraAdminType" value="third-party" onchange="updateConditionalUI()"/><div><div class="opt-label">Third-party COBRA administrator</div></div></label>
+              <label class="radio-option"><input type="radio" name="cobraAdminType" value="carrier" onchange="updateConditionalUI()"/><div><div class="opt-label">Carrier or carrier-affiliated administrator</div></div></label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="cobraAdminNameBlock" class="conditional">
+        <div class="field-group single">
+          <div class="field">
+            <label>COBRA Administrator Name <span class="req">*</span></label>
+            <input type="text" id="cobraAdminName" placeholder="WEX, BASIC, Businessolver, carrier name, etc."/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="noCobraBlock" class="info-box conditional visible">
+      <strong>No group health plan benefits in scope</strong>
+      Federal COBRA questions are not applicable because the selected benefits do not include a group health plan benefit path.
+    </div>
+
+    <div class="section-divider">Claims &amp; Appeals</div>
+    <div class="field-group single">
+      <div class="field">
+        <label>Appeals Fiduciary <span class="req">*</span>
+          <span class="tooltip-wrap">
+            <span class="tooltip-icon">?</span>
+            <span class="tooltip-text">The carrier or TPA is the standard choice for group health plan claims. The employer cannot serve as appeals fiduciary for group health plan claims in this version.</span>
+          </span>
+        </label>
+        <div class="radio-group">
+          <label class="radio-option">
+            <input type="radio" name="appealsFiduciary" value="carrier-tpa" onchange="updateConditionalUI()"/>
+            <div><div class="opt-label">Carrier / TPA (recommended for group health)</div></div>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="appealsFiduciary" value="benefits-committee" onchange="updateConditionalUI()"/>
+            <div><div class="opt-label">Benefits Committee</div></div>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="appealsFiduciary" value="employer" onchange="updateConditionalUI()"/>
+            <div><div class="opt-label">Employer</div><div class="opt-desc">Not supported for group health plan paths in this version.</div></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div id="appealsEmployerWarn" class="stop-box conditional">
+      <strong>Not supported in this version</strong>
+      The employer cannot serve as appeals fiduciary when the wrapped plan includes group health plan benefits. Change the appeals fiduciary selection or remove health benefits from the plan.
+    </div>
+
+    <div class="field-group">
+      <div class="field">
+        <label>Lawsuit Limitation Period <span class="req">*</span></label>
+<div class="radio-group inline">
+          <label class="radio-option"><input type="radio" name="lawsuitYears" value="1"/><div><div class="opt-label">1 Year</div></div></label>
+          <label class="radio-option"><input type="radio" name="lawsuitYears" value="2"/><div><div class="opt-label">2 Years</div></div></label>
+          <label class="radio-option"><input type="radio" name="lawsuitYears" value="3" checked/><div><div class="opt-label">3 Years</div></div></label>
+        </div>
+        <div class="mini-note">Three years is the most commonly used contractual limitation period for ERISA welfare plans and was upheld as reasonable by the U.S. Supreme Court in Heimeshoff v. Hartford Life (2013). One year is generally considered too short and risks being found unreasonable by some courts. Whatever period you select must be disclosed in the plan document, the SPD, and in any adverse benefit determination letters for it to be enforceable.</div>
+      </div>
+      <div class="field">
+        <label>Custom Appeals Fiduciary Label <span class="opt">(optional)</span></label>
+        <input type="text" id="appealsFiduciaryLabel" placeholder="Optional if different from default label"/>
+      </div>
+    </div>
+
+    <div id="err7" class="err-box"></div>
+    <div class="nav-row">
+      <button class="btn btn-back" onclick="goBack(7)">&larr; Back</button>
+      <button class="btn btn-next" onclick="goNext(7)">Next &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 8 ═══ -->
+  <div class="step" id="step8">
+    <div class="step-title"><span class="badge">Step 8</span> Form 5500 &amp; HIPAA / PHI</div>
+    <div class="step-subtitle">Filing status requires more than a participant count. The PHI question applies only on the group health plan path.</div>
+
+    <div class="section-divider">Participant Count &amp; Filing Status</div>
+    <div class="field-group">
+      <div class="field">
+        <label>Participant count at the beginning of the plan year <span class="req">*</span>
+          <span class="tooltip-wrap">
+            <span class="tooltip-icon">?</span>
+            <span class="tooltip-text">Count all employees who are eligible to participate, whether enrolled or waiving coverage. Do not count dependents separately. If you are wrapping multiple benefits under one plan, use the combined count across all wrapped benefits.</span>
+          </span>
+        </label>
+        <input type="number" id="participantCount" placeholder="e.g. 45 or 150" min="1" onchange="updateConditionalUI(); checkCobraCrossCheck();"/>
+      </div>
+      <div class="field">
+        <label>Does the employer currently file a Form 5500 for any wrapped benefit? <span class="req">*</span></label>
+        <div class="radio-group">
+          <label class="radio-option"><input type="radio" name="currentlyFiles5500" value="yes"/><div><div class="opt-label">Yes</div></div></label>
+          <label class="radio-option"><input type="radio" name="currentlyFiles5500" value="no"/><div><div class="opt-label">No</div></div></label>
+          <label class="radio-option"><input type="radio" name="currentlyFiles5500" value="unsure"/><div><div class="opt-label">Not sure</div></div></label>
+        </div>
+      </div>
+    </div>
+
+    <div id="smallPlanBlock" class="conditional">
+      <div class="section-divider">Small-Plan Exemption Confirmation
+        <span class="tooltip-wrap">
+          <span class="tooltip-icon">?</span>
+          <span class="tooltip-text">The small-plan exemption from Form 5500 filing requires the plan to be unfunded, fully insured, or a combination of the two, with fewer than 100 participants at the beginning of the plan year. Trust-funded arrangements do not qualify for this simplified statement.</span>
+        </span>
+      </div>
+      <div class="field-group">
+        <div class="field">
+          <label>The small-plan filing exemption conditions are satisfied for this plan <span class="req">*</span></label>
+          <div class="radio-group inline">
+            <label class="radio-option"><input type="radio" name="exemptionConditionsConfirmed" value="yes"/><div><div class="opt-label">Yes, confirmed</div></div></label>
+            <label class="radio-option"><input type="radio" name="exemptionConditionsConfirmed" value="no"/><div><div class="opt-label">No</div></div></label>
+          </div>
+        </div>
+        <div class="field">
+          <label>Is the plan funded through a trust or separately maintained fund? <span class="req">*</span></label>
+          <div class="radio-group inline">
+            <label class="radio-option"><input type="radio" name="fundedThroughTrust" value="yes"/><div><div class="opt-label">Yes</div></div></label>
+            <label class="radio-option"><input type="radio" name="fundedThroughTrust" value="no"/><div><div class="opt-label">No</div></div></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="largePlanNote" class="info-box conditional">
+      <strong>100+ participant path</strong>
+      Based on the reported participant count, this plan will be treated as subject to Form 5500 annual filing in this document.
+    </div>
+
+    <div id="phiBlock" class="conditional">
+      <div class="section-divider">HIPAA / Protected Health Information
+        <span class="tooltip-wrap">
+          <span class="tooltip-icon">?</span>
+          <span class="tooltip-text">HIPAA's group health plan rules govern when the plan sponsor (employer) may receive protected health information from the plan for plan-administration purposes. If the employer receives PHI beyond routine enrollment/disenrollment functions, the plan document must include specific restrictions and the employer must maintain required policies and certifications.</span>
+        </span>
+      </div>
+      <div class="field-group single">
+        <div class="field">
+          <label>Does the employer or plan sponsor receive protected health information (PHI) for plan administration purposes beyond routine enrollment and disenrollment functions? <span class="req">*</span></label>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="sponsorReceivesPHI" value="yes"/>
+              <div>
+                <div class="opt-label">Yes</div>
+                <div class="opt-desc">The document will include stronger HIPAA plan-sponsor PHI restriction language.</div>
+              </div>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="sponsorReceivesPHI" value="no"/>
+              <div>
+                <div class="opt-label">No</div>
+                <div class="opt-desc">The document will use narrower HIPAA language limited to enrollment and summary health information.</div>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="noPhiBlock" class="info-box conditional visible">
+      <strong>HIPAA / PHI question not applicable</strong>
+      The expanded PHI question is not applicable because the selected benefits do not include a group health plan benefit path.
+    </div>
+
+    <div id="err8" class="err-box"></div>
+    <div class="nav-row">
+      <button class="btn btn-back" onclick="goBack(8)">&larr; Back</button>
+      <button class="btn btn-next" onclick="goNext(8)">Next &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 9 ═══ -->
+  <div class="step" id="step9">
+    <div class="step-title"><span class="badge">Step 9</span> Formal Adoption</div>
+    <div class="step-subtitle">The adoption date must be on or before the plan effective date. An unsigned plan document does not satisfy ERISA.</div>
+
+    <div class="warn-box">
+      <strong>Adoption date rule</strong>
+      This version requires the adoption date to be on or before the plan effective date. If the plan was adopted after the effective date, this version will not generate. Do not backdate.
+    </div>
+
+    <div class="field-group">
+      <div class="field">
+        <label>Authorized Signer Name <span class="req">*</span></label>
+        <input type="text" id="signerName" placeholder="Jane Smith"/>
+      </div>
+      <div class="field">
+        <label>Authorized Signer Title <span class="req">*</span></label>
+        <input type="text" id="signerTitle" placeholder="President / HR Director / Owner"/>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field">
+        <label>Adoption Date <span class="req">*</span></label>
+        <input type="date" id="adoptionDate"/>
+      </div>
+      <div class="field">
+        <label>Governing Body That Adopted the Plan <span class="req">*</span></label>
+        <select id="governingBody">
+          <option value="">Select…</option>
+          <option>Board of Directors</option>
+          <option>LLC Members / Managing Member</option>
+          <option>Sole Proprietor</option>
+          <option>Partners</option>
+          <option>Corporate Officers</option>
+          <option>Non-Profit Board of Trustees</option>
+          <option>Authorized Officer</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="err9" class="err-box"></div>
+    <div class="nav-row">
+      <button class="btn btn-back" onclick="goBack(9)">&larr; Back</button>
+      <button class="btn btn-next" onclick="goNext(9)">Next &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 10 ═══ -->
+  <div class="step" id="step10">
+    <div class="step-title"><span class="badge">Step 10</span> Review &amp; Generate</div>
+    <div class="step-subtitle">The backend will independently validate the complete payload before generating.</div>
+
+    <div id="reviewContent"></div>
+
+    <div class="section-divider" style="margin-top:24px">Disclaimer &amp; Consent</div>
+    <div class="warn-box">
+      <strong>Before you generate</strong>
+      By clicking Generate, you confirm that all information entered is accurate, that the underlying carrier and administrator materials exist and will be distributed alongside this wrap document, and that you understand this tool does not replace legal advice. The employer remains solely responsible for plan adoption, ERISA compliance, required notices, filings, and the distribution of all incorporated materials to plan participants.
+    </div>
+
+    <div class="field-group single">
+      <label class="check-option">
+        <input type="checkbox" id="consentCheck"/>
+        <div><div class="opt-label">I confirm the above and agree to the terms</div></div>
+      </label>
+    </div>
+
+    <div id="err10" class="err-box"></div>
+
+    <div style="text-align:center; margin-top:24px">
+      <button class="btn btn-generate" id="generateBtn" onclick="handleGenerate()" disabled>
+        Generate Wrap Plan PDF
+      </button>
+<div id="downloadArea" style="margin-top:16px; display:none">
+  <a id="downloadLink" class="btn-download" href="#" target="_blank">
+    Download Wrap Plan PDF
+  </a>
+  <div id="section125Nudge" style="display:none; margin-top:20px; text-align:center; font-family:Arial,sans-serif; font-size:0.82rem; color:#2c3e55; line-height:1.6;">
+    If you also need a Section 125 Plan Document, you can build one for free using our Section 125 Plan Builder tool.<br/>
+    <a href="https://www.dkbenefits.net/section125plantool" target="_blank" style="color:#1a2e4a; font-weight:bold; text-decoration:underline;">
+      dkbenefits.net/section125plantool
+    </a>
+  </div>
+</div>
+      <div id="statusMsg"></div>
+      <div id="warningsArea" style="display:none"></div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-back" onclick="goBack(10)">&larr; Back</button>
+      <span></span>
+    </div>
+  </div>
+
+</div><!-- /card -->
+
+<script>
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
+let currentStep = 1;
+const TOTAL_STEPS = 10;
+
+/* ═══════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════ */
+function v(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+function radioVal(name) {
+  const el = document.querySelector(`input[name="${name}"]:checked`);
+  return el ? el.value : '';
+}
+function checkVals(name) {
+  return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(e => e.value);
+}
+function hasBenefit(needle) {
+  return checkVals('benefits').some(b => b.toLowerCase().includes(needle.toLowerCase()));
+}
+function show(id, on) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('visible', !!on);
+}
+function clearRadioGroup(name) {
+  document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+    r.checked = false;
+    r.closest('.radio-option')?.classList.remove('selected');
+  });
+}
+function clearField(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.value = '';
+}
+function validEmail(val) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+}
+function einDigits() { return v('employerEIN').replace(/\D/g,''); }
+function phoneDigits() { return v('employerPhone').replace(/\D/g,''); }
+function adoptionOk() {
+  const a = v('adoptionDate'), e = v('planEffectiveDate');
+  if (!a || !e) return true;
+  return new Date(a) <= new Date(e);
+}
+function originalOk() {
+  const o = v('originalEffectiveDate'), e = v('planEffectiveDate');
+  if (!o || !e) return true;
+  return new Date(o) <= new Date(e);
+}
+
+/* ═══════════════════════════════════════════════
+   GROUP HEALTH INFERENCE
+═══════════════════════════════════════════════ */
+function deriveGroupHealthState() {
+  const benefits = checkVals('benefits');
+const hasClearGHP =
+    hasBenefit('medical') ||
+    checkVals('benefits').some(b => b.toLowerCase() === 'dental') ||
+    hasBenefit('vision') ||
+    hasBenefit('health fsa') ||
+    hasBenefit('health reimbursement arrangement') ||
+    hasBenefit('hra');
+
+  const hasAmbiguousOnly =
+    !hasClearGHP && (
+      hasBenefit('employee assistance program') ||
+      hasBenefit('eap')
+    );
+
+  const hasClearNonGHP =
+    benefits.length > 0 && !hasClearGHP && !hasAmbiguousOnly;
+
+  return { hasClearGHP, hasAmbiguousOnly, hasClearNonGHP };
+}
+
+function resolvedGroupHealth() {
+  const { hasClearGHP, hasAmbiguousOnly } = deriveGroupHealthState();
+  if (hasClearGHP) return true;
+  if (hasAmbiguousOnly) return radioVal('groupHealthAmbiguous') === 'yes';
+  return false;
+}
+
+/* ═══════════════════════════════════════════════
+   COBRA CROSS-CHECK
+═══════════════════════════════════════════════ */
+function checkCobraCrossCheck() {
+  const threshold = radioVal('cobraThreshold');
+  const count = parseInt(v('participantCount'), 10) || 0;
+  const funding = radioVal('medicalFunding');
+  const hasMedicalForCheck = hasBenefit('medical / major medical');
+  // Flag as inconsistent only when fully insured or no medical - self-funded small employers
+  // can legitimately have 100+ participants.
+  const inconsistent = threshold === 'no' && count >= 100 && (funding === 'Fully Insured' || !hasMedicalForCheck);
+  show('cobraCrossCheckWarn', inconsistent);
+}
+
+/* ═══════════════════════════════════════════════
+   CONDITIONAL UI
+═══════════════════════════════════════════════ */
+function updateConditionalUI() {
+  // Step 1
+  show('fiscalYearField', radioVal('planYearType') === 'Fiscal Year');
+
+  // Step 2 - ERISA stop block
+  const erisa = radioVal('erisaApplicability');
+  show('erisaStopBlock', erisa && erisa !== 'private-employer');
+
+  // Step 2 - Agent
+  updateAgentUI();
+
+  // Step 3 - Group health inference
+  const { hasClearGHP, hasAmbiguousOnly, hasClearNonGHP } = deriveGroupHealthState();
+  show('groupHealthInferredBanner', hasClearGHP);
+  show('groupHealthAmbiguousBlock', hasAmbiguousOnly);
+  show('noGroupHealthNote', hasClearNonGHP);
+
+  // Step 4 - Medical funding
+  const hasMedical = hasBenefit('medical / major medical');
+  show('medicalFundingBlock', hasMedical);
+  show('noMedicalNote', !hasMedical);
+
+  const funding = radioVal('medicalFunding');
+  const isSelfFundedFamily = funding === 'Level Funded' || funding === 'Self Funded' || funding === 'Self Funded Captive';
+  const needsStopLoss = hasMedical && isSelfFundedFamily;
+  show('stopLossSection', needsStopLoss);
+
+  // Context-sensitive section title
+  const fundingContextLabel = document.getElementById('stopLossSectionLabel');
+  if (fundingContextLabel) {
+    if (funding === 'Self Funded Captive') {
+      fundingContextLabel.textContent = 'TPA, Captive & Stop-Loss';
+    } else if (funding === 'Level Funded') {
+      fundingContextLabel.textContent = 'TPA & Level-Funded Stop-Loss';
+    } else {
+      fundingContextLabel.textContent = 'TPA & Stop-Loss';
+    }
+  }
+
+  const stopLossCarrierLabel = document.getElementById('stopLossCarrierLabel');
+  if (stopLossCarrierLabel) {
+    if (funding === 'Self Funded Captive') {
+      stopLossCarrierLabel.innerHTML = 'Captive / Stop-Loss Carrier Name <span class="req">*</span>';
+    } else {
+      stopLossCarrierLabel.innerHTML = 'Stop-Loss Carrier Name <span class="req">*</span>';
+    }
+  }
+
+  // Has-stop-loss branching
+  const hasSL = radioVal('hasStopLoss');
+  show('hasStopLossBlock', needsStopLoss && hasSL === 'yes');
+  show('noStopLossBlock', needsStopLoss && hasSL === 'no');
+
+  // No-stop-loss sub-branching by funding type
+  show('noStopLossWarnSF', needsStopLoss && hasSL === 'no' && funding === 'Self Funded');
+  show('noStopLossAckBlockSF', needsStopLoss && hasSL === 'no' && funding === 'Self Funded');
+  show('noStopLossBlockLF', needsStopLoss && hasSL === 'no' && funding === 'Level Funded');
+  show('noStopLossBlockSFC', needsStopLoss && hasSL === 'no' && funding === 'Self Funded Captive');
+
+  // Stop-loss type branching
+  const slType = radioVal('stopLossType');
+  show('islDeductibleField', needsStopLoss && hasSL === 'yes' && (slType === 'isl-only' || slType === 'both'));
+  show('aggDescField', needsStopLoss && hasSL === 'yes' && (slType === 'agg-only' || slType === 'both'));
+
+  // Network structure / RBP - only for non-fully-insured medical
+  const needsNetworkStructure = hasMedical && isSelfFundedFamily;
+  show('networkStructureBlock', needsNetworkStructure);
+
+  const netStruct = radioVal('networkStructure');
+  const isRbpPath = netStruct === 'rbp' || netStruct === 'rbp-wraparound';
+  show('rbpDetailsBlock', needsNetworkStructure && isRbpPath);
+  show('rbpWraparoundField', needsNetworkStructure && netStruct === 'rbp-wraparound');
+  show('rbpAdvocacyVendorField', needsNetworkStructure && isRbpPath && radioVal('rbpBalanceBillingAdvocacy') === 'yes');
+
+  // If medical is no longer selected, clear stale medical values
+  if (!hasMedical) {
+    clearRadioGroup('medicalFunding');
+    clearField('medicalClaimsAdmin');
+    clearRadioGroup('hasStopLoss');
+    clearField('stopLossCarrier');
+    clearRadioGroup('stopLossType');
+    clearField('islDeductible');
+    clearField('aggDescription');
+    clearField('tpaName');
+    const ack = document.getElementById('noStopLossAcknowledged');
+    if (ack) ack.checked = false;
+    clearRadioGroup('networkStructure');
+    clearField('rbpVendorTpaName');
+    clearField('rbpBenchmark');
+    clearField('rbpWraparoundNetwork');
+    clearRadioGroup('rbpBalanceBillingAdvocacy');
+    clearField('rbpAdvocacyVendorName');
+  }
+
+  // If funding switched to Fully Insured, clear network structure values
+  if (funding === 'Fully Insured') {
+    clearRadioGroup('networkStructure');
+    clearField('rbpVendorTpaName');
+    clearField('rbpBenchmark');
+    clearField('rbpWraparoundNetwork');
+    clearRadioGroup('rbpBalanceBillingAdvocacy');
+    clearField('rbpAdvocacyVendorName');
+  }
+
+  // If network structure switched away from RBP variants, clear RBP fields
+  if (netStruct === 'traditional' || !netStruct) {
+    clearField('rbpVendorTpaName');
+    clearField('rbpBenchmark');
+    clearField('rbpWraparoundNetwork');
+    clearRadioGroup('rbpBalanceBillingAdvocacy');
+    clearField('rbpAdvocacyVendorName');
+  }
+
+  // If network structure is not wraparound, clear that specific field
+  if (netStruct !== 'rbp-wraparound') {
+    clearField('rbpWraparoundNetwork');
+  }
+
+  // Step 4 - Special benefit follow-up
+  const hasHFSA = hasBenefit('health fsa');
+  const hasDCFSA = hasBenefit('dependent care fsa');
+  const hasHRA = hasBenefit('health reimbursement arrangement') || hasBenefit('hra');
+  const hasEAP = hasBenefit('employee assistance program') || hasBenefit('eap');
+  const hasVol = hasBenefit('voluntary') || hasBenefit('accident insurance') ||
+                 hasBenefit('critical illness') || hasBenefit('hospital indemnity');
+
+  show('healthFsaBlock', hasHFSA);
+  show('dcfsaBlock', hasDCFSA);
+  show('hraBlock', hasHRA);
+  show('eapBlock', hasEAP);
+
+  const eapType = radioVal('eapType');
+  show('eapReferralStop', hasEAP && eapType === 'referral-only');
+  show('eapWrapConfirmBlock', hasEAP && eapType === 'substantive-medical-benefit');
+
+  show('voluntaryBlock', hasVol);
+
+ // Step 6 - Contribution logic
+  const empContribs = radioVal('employeeContribsExist');
+  show('deductionCycleQuestion', empContribs === 'yes');
+  show('deductionCycleDetail', empContribs === 'yes' && radioVal('deductionCycleMatches') === 'no');
+  show('preTaxBlock', empContribs === 'yes');
+  show('noContribNote', empContribs === 'no');
+
+  const preTax = radioVal('preTax');
+  show('section125Block', empContribs === 'yes' && preTax === 'yes');
+  show('afterTaxConfirmBlock', empContribs === 'yes' && preTax === 'no');
+
+  // Clear section125 fields if not on pre-tax path
+  if (!(empContribs === 'yes' && preTax === 'yes')) {
+    clearRadioGroup('section125Exists');
+    clearRadioGroup('section125Timely');
+  }
+
+  // Clear after-tax confirm if not on after-tax path
+  if (!(empContribs === 'yes' && preTax === 'no')) {
+    clearRadioGroup('afterTaxConfirm');
+  }
+
+  // Step 7 - COBRA and appeals
+  const ghp = resolvedGroupHealth();
+  show('cobraBlock', ghp);
+  show('noCobraBlock', !ghp);
+
+const cobraThreshold = radioVal('cobraThreshold');
+  const cobraAdminType = radioVal('cobraAdminType');
+  show('cobraAdminBlock', ghp && cobraThreshold === 'yes');
+  show('cobraAdminNameBlock', ghp && cobraThreshold === 'yes' && (cobraAdminType === 'third-party' || cobraAdminType === 'carrier'));
+
+  const appeals = radioVal('appealsFiduciary');
+  show('appealsEmployerWarn', ghp && appeals === 'employer');
+
+  // Step 8 - 5500 and PHI
+  const count = parseInt(v('participantCount'), 10) || 0;
+  show('smallPlanBlock', count > 0 && count < 100);
+  show('largePlanNote', count >= 100);
+  show('phiBlock', ghp);
+  show('noPhiBlock', !ghp);
+
+  // Re-run cross check
+  checkCobraCrossCheck();
+}
+
+function updateAgentUI() {
+  const choice = radioVal('agentChoice');
+  show('agentCustomBlock', choice === 'custom');
+  if (choice !== 'custom') {
+    clearField('agentName');
+    clearField('agentAddress');
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   RESOLVED AGENT VALUES
+═══════════════════════════════════════════════ */
+function resolvedAgentName() {
+  const choice = radioVal('agentChoice');
+  if (choice === 'same-as-employer') return v('employerName');
+  if (choice === 'same-as-admin') return v('planAdminName');
+  return v('agentName');
+}
+function resolvedAgentAddress() {
+  const choice = radioVal('agentChoice');
+  if (choice === 'custom') return v('agentAddress');
+  return '';
+}
+
+/* ═══════════════════════════════════════════════
+   PROGRESS
+═══════════════════════════════════════════════ */
+function updateProgress(n) {
+  const pct = Math.round((n / TOTAL_STEPS) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('stepCounter').textContent = `Step ${n} of ${TOTAL_STEPS}`;
+  document.querySelectorAll('.progress-labels span').forEach(s => {
+    const sn = parseInt(s.dataset.step, 10);
+    s.classList.remove('active','done');
+    if (sn === n) s.classList.add('active');
+    if (sn < n) s.classList.add('done');
+  });
+}
+
+function showStep(n) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step' + n).classList.add('active');
+  currentStep = n;
+  updateProgress(n);
+  updateConditionalUI();
+  window.parent.postMessage({ type: 'scrollToTop' }, '*');
+  window.scrollTo(0, 0);
+}
+
+function goBack(from) { showStep(from - 1); }
+
+function goNext(from) {
+  const errs = validateStep(from);
+  const errBox = document.getElementById('err' + from);
+  if (errs.length) {
+    errBox.textContent = errs.join('\n');
+    errBox.style.display = 'block';
+    return;
+  }
+  errBox.style.display = 'none';
+  if (from === 9) buildReview();
+  showStep(from + 1);
+}
+
+/* ═══════════════════════════════════════════════
+   VALIDATION
+═══════════════════════════════════════════════ */
+function validateStep(step) {
+  const errs = [];
+  const benefits = checkVals('benefits');
+  const ghp = resolvedGroupHealth();
+  const { hasClearGHP, hasAmbiguousOnly } = deriveGroupHealthState();
+  const hasMedical = hasBenefit('medical / major medical');
+
+  if (step === 1) {
+    if (!v('employerName')) errs.push('Legal Employer Name is required.');
+    if (einDigits().length !== 9) errs.push('Employer EIN must be 9 digits (XX-XXXXXXX).');
+    if (phoneDigits().length !== 10) errs.push('Employer Phone must be a complete 10-digit US phone number.');
+    if (!v('employerAddressStreet')) errs.push('Street Address is required.');
+    if (!v('employerAddressCity')) errs.push('City is required.');
+    if (!v('employerState')) errs.push('State is required.');
+    if (!v('employerZip') || !/^\d{5}$/.test(v('employerZip'))) errs.push('ZIP Code must be exactly 5 digits.');
+    if (!v('planAdminEmail') || !validEmail(v('planAdminEmail'))) errs.push('A valid Plan Admin Email is required.');
+    if (!v('planName')) errs.push('Plan Name is required.');
+    if (!v('planNumber')) errs.push('Plan Number is required.');
+    if (!v('planEffectiveDate')) errs.push('Plan Effective Date is required.');
+    if (radioVal('planYearType') === 'Fiscal Year' && !v('planYearEndMonth')) errs.push('Fiscal Year End Month is required.');
+    if (!originalOk()) errs.push('Original Effective Date cannot be later than the Plan Effective Date.');
+  }
+
+  if (step === 2) {
+    if (!radioVal('erisaApplicability')) errs.push('Plan type / ERISA status is required.');
+    if (radioVal('erisaApplicability') && radioVal('erisaApplicability') !== 'private-employer') {
+      errs.push('This tool only supports private-employer ERISA welfare plans. Generation is not available for this plan type.');
+    }
+    if (!v('planAdminName')) errs.push('Plan Administrator Name is required.');
+    if (!v('planAdminTitle')) errs.push('Plan Administrator Title is required.');
+    if (!v('namedFiduciary')) errs.push('Named Fiduciary is required.');
+    if (!radioVal('agentChoice')) errs.push('Agent for Service of Legal Process selection is required.');
+    if (radioVal('agentChoice') === 'custom' && !v('agentName')) errs.push('Agent Name is required when Custom is selected.');
+  }
+
+  if (step === 3) {
+    if (benefits.length === 0) errs.push('At least one wrapped benefit must be selected.');
+    if (hasAmbiguousOnly && !radioVal('groupHealthAmbiguous')) {
+      errs.push('Please confirm whether the selected benefits include medical care (group health plan classification needed).');
+    }
+    if (!radioVal('uniformEligibility')) errs.push('Uniform eligibility confirmation is required.');
+    if (radioVal('uniformEligibility') === 'no') errs.push('This version does not support mixed eligibility rules across wrapped benefits. Please use separate plan documents or a future version.');
+    if (!radioVal('uniformPreTax')) errs.push('Uniform tax treatment confirmation is required.');
+    if (radioVal('uniformPreTax') === 'no') errs.push('This version does not support mixed pre-tax and after-tax treatment across wrapped benefits.');
+  }
+
+  if (step === 4) {
+    if (hasMedical) {
+      if (!radioVal('medicalFunding')) errs.push('Medical Funding Type is required when Medical is a wrapped benefit.');
+      if (!v('medicalClaimsAdmin')) errs.push('Medical Claims / Network Administrator is required.');
+      const funding = radioVal('medicalFunding');
+      if (funding === 'Level Funded' || funding === 'Self Funded' || funding === 'Self Funded Captive') {
+        if (!v('tpaName')) errs.push('TPA Name is required.');
+        const hasSL = radioVal('hasStopLoss');
+        if (!hasSL) errs.push('Stop-loss presence (yes/no) is required.');
+
+        if (hasSL === 'no') {
+          if (funding === 'Level Funded') {
+            errs.push('Level-funded arrangements inherently include stop-loss. Select Self Funded if this is a pure self-funded design without stop-loss.');
+          }
+          if (funding === 'Self Funded Captive') {
+            errs.push('Self-funded captive arrangements by definition include a captive or stop-loss layer. A no-stop-loss design is not compatible with the captive path.');
+          }
+          if (funding === 'Self Funded') {
+            const ack = document.getElementById('noStopLossAcknowledged');
+            if (!ack || !ack.checked) {
+              errs.push('You must check the acknowledgment confirming the employer assumes full claims liability in the absence of stop-loss coverage.');
+            }
+          }
+        }
+
+        if (hasSL === 'yes') {
+          if (!v('stopLossCarrier')) errs.push('Stop-Loss Carrier Name is required.');
+          const slType = radioVal('stopLossType');
+          if (!slType) errs.push('Stop-Loss Coverage Type is required.');
+          if ((slType === 'isl-only' || slType === 'both') && !v('islDeductible')) {
+            errs.push('Specific (ISL) Stop-Loss Deductible is required.');
+          }
+          if ((slType === 'agg-only' || slType === 'both') && !v('aggDescription')) {
+            errs.push('Aggregate Stop-Loss Description is required.');
+          }
+        }
+
+        // Network structure validation
+        const netStruct = radioVal('networkStructure');
+        if (!netStruct) {
+          errs.push('Network Structure is required (Traditional, RBP, or RBP with Wraparound).');
+        }
+        if (netStruct === 'rbp' || netStruct === 'rbp-wraparound') {
+          if (!v('rbpVendorTpaName')) errs.push('RBP Vendor / TPA Name is required.');
+          if (!v('rbpBenchmark')) errs.push('RBP Pricing Benchmark is required.');
+          if (!radioVal('rbpBalanceBillingAdvocacy')) errs.push('Balance-billing advocacy yes/no is required for RBP and RBP with Wraparound.');
+        }
+        if (netStruct === 'rbp-wraparound') {
+          if (!v('rbpWraparoundNetwork')) errs.push('Wraparound Network Name is required.');
+        }
+      }
+    }
+    if (hasBenefit('health fsa')) {
+      if (!radioVal('healthFsaDoc')) errs.push('Health FSA separate documentation confirmation is required.');
+      if (radioVal('healthFsaDoc') !== 'yes') errs.push('Health FSA requires separate documentation to be confirmed as existing. Generation cannot proceed otherwise.');
+    }
+    if (hasBenefit('dependent care fsa')) {
+      if (!radioVal('dcfsaDoc')) errs.push('Dependent Care FSA separate documentation confirmation is required.');
+      if (radioVal('dcfsaDoc') !== 'yes') errs.push('Dependent Care FSA requires separate documentation to be confirmed as existing.');
+    }
+    if (hasBenefit('health reimbursement arrangement') || hasBenefit('hra')) {
+      if (!v('hraType')) errs.push('HRA Type is required.');
+      if (!radioVal('hraDoc')) errs.push('HRA separate documentation confirmation is required.');
+      if (radioVal('hraDoc') !== 'yes') errs.push('HRA requires separate documentation to be confirmed as existing.');
+    }
+    if (hasBenefit('employee assistance program') || hasBenefit('eap')) {
+      if (!radioVal('eapType')) errs.push('EAP Type is required.');
+      if (radioVal('eapType') === 'referral-only') errs.push('Referral-only EAPs are not supported in this wrap flow. Remove the EAP or confirm it provides substantive medical benefits.');
+      if (radioVal('eapType') === 'substantive-medical-benefit') {
+        if (!radioVal('eapWrapConfirmed')) errs.push('Substantive EAP wrap confirmation is required.');
+        if (radioVal('eapWrapConfirmed') !== 'yes') errs.push('Substantive EAP must be affirmatively confirmed for wrap inclusion.');
+      }
+    }
+    // Voluntary benefits: warning only, not a hard block.
+    // The backend treats unconfirmed voluntary benefits as a warning, not an error,
+    // so the HTML should not hard-block here either. The info box already explains
+    // the ERISA applicability considerations to the user.
+  }
+
+  if (step === 5) {
+    if (checkVals('eligClasses').length === 0) errs.push('At least one eligible employee class must be selected.');
+    if (!v('waitingPeriod')) errs.push('Waiting Period is required.');
+    if (v('hoursPerWeek')) {
+      const n = parseInt(v('hoursPerWeek'), 10);
+      if (Number.isNaN(n) || n < 1 || n > 60) errs.push('Minimum Hours Per Week must be a whole number between 1 and 60.');
+    }
+  }
+
+if (step === 6) {
+    if (!v('payrollFrequency')) errs.push('Payroll Frequency is required.');
+    if (!radioVal('employeeContribsExist')) errs.push('Employee contributions yes/no is required.');
+    const empContribs = radioVal('employeeContribsExist');
+    if (empContribs === 'yes') {
+      if (!radioVal('deductionCycleMatches')) errs.push('Deduction cycle confirmation is required.');
+      if (radioVal('deductionCycleMatches') === 'no' && !v('deductionCycleDescription')) {
+        errs.push('Deduction schedule description is required when deductions do not match payroll frequency.');
+      }
+    }
+    if (empContribs === 'yes') {
+      if (!radioVal('preTax')) errs.push('Pre-tax contributions yes/no is required.');
+      if (radioVal('preTax') === 'yes') {
+        if (!radioVal('section125Exists')) errs.push('Section 125 plan existence confirmation is required.');
+        if (radioVal('section125Exists') !== 'yes') errs.push('A separate Section 125 plan must exist to state pre-tax treatment in this document.');
+        if (!radioVal('section125Timely')) errs.push('Timely Section 125 adoption confirmation is required.');
+        if (radioVal('section125Timely') !== 'yes') errs.push('The Section 125 plan must have been timely adopted to state pre-tax treatment in this document.');
+      }
+      if (radioVal('preTax') === 'no') {
+        if (!radioVal('afterTaxConfirm')) errs.push('After-tax contribution confirmation is required.');
+      }
+    }
+    if (!radioVal('underlyingDocsConfirmed')) errs.push('Underlying documents confirmation is required.');
+    if (radioVal('underlyingDocsConfirmed') !== 'yes') errs.push('Underlying carrier and TPA documents must be confirmed as existing. This wrap document cannot function without them.');
+    if (!radioVal('willDistributeDocs')) errs.push('Distribution confirmation is required.');
+    if (radioVal('willDistributeDocs') !== 'yes') errs.push('Underlying documents must be confirmed as being distributed with or alongside this wrap.');
+  }
+
+  if (step === 7) {
+    if (ghp) {
+      if (!radioVal('cobraThreshold')) errs.push('COBRA prior-year threshold answer is required for group health plan paths.');
+      if (radioVal('cobraThreshold') === 'unsure') errs.push('This version requires a definitive COBRA threshold answer. Verify before proceeding.');
+if (radioVal('cobraThreshold') === 'yes' && !radioVal('cobraAdminType')) errs.push('COBRA administrator type is required.');
+      if (radioVal('cobraThreshold') === 'yes' && (radioVal('cobraAdminType') === 'third-party' || radioVal('cobraAdminType') === 'carrier') && !v('cobraAdminName')) {
+        errs.push('COBRA Administrator Name is required when a third-party or carrier administers COBRA.');
+      }
+    }
+    if (!radioVal('appealsFiduciary')) errs.push('Appeals Fiduciary is required.');
+    if (ghp && radioVal('appealsFiduciary') === 'employer') errs.push('Employer as appeals fiduciary is not supported for group health plan paths in this version.');
+    if (!radioVal('lawsuitYears')) errs.push('Lawsuit limitation period is required.');
+  }
+
+  if (step === 8) {
+    const count = parseInt(v('participantCount'), 10);
+    if (!v('participantCount') || Number.isNaN(count) || count < 1) errs.push('A valid participant count of at least 1 is required.');
+    if (!radioVal('currentlyFiles5500')) errs.push('Current Form 5500 filing status is required.');
+    if (!Number.isNaN(count) && count > 0 && count < 100) {
+      if (!radioVal('exemptionConditionsConfirmed')) errs.push('Small-plan exemption conditions confirmation is required.');
+      if (radioVal('exemptionConditionsConfirmed') !== 'yes') errs.push('The small-plan filing statement requires the exemption conditions to be confirmed as satisfied.');
+      if (!radioVal('fundedThroughTrust')) errs.push('Trust / separate fund answer is required.');
+      if (radioVal('fundedThroughTrust') === 'yes') errs.push('This version does not support simplified small-plan exemption language for trust-funded arrangements.');
+    }
+    if (ghp && !radioVal('sponsorReceivesPHI')) errs.push('PHI handling confirmation is required for group health plan paths.');
+    const cobraThreshold = radioVal('cobraThreshold');
+    const fundingAtStep8 = radioVal('medicalFunding');
+    const hasMedicalAtStep8 = hasBenefit('medical / major medical');
+    if (!Number.isNaN(count) && count >= 100 && cobraThreshold === 'no') {
+      // Only hard-block when fully insured or no medical. Allow self-funded/level/captive with the backend warning.
+      if (fundingAtStep8 === 'Fully Insured' || !hasMedicalAtStep8) {
+        errs.push('The combination of fewer than 20 employees for COBRA and 100+ plan participants is too inconsistent for this tool. Please verify both answers.');
+      }
+    }
+  }
+
+  if (step === 9) {
+    if (!v('signerName')) errs.push('Authorized Signer Name is required.');
+    if (!v('signerTitle')) errs.push('Authorized Signer Title is required.');
+    if (!v('adoptionDate')) errs.push('Adoption Date is required.');
+    if (!v('governingBody')) errs.push('Governing Body is required.');
+    if (!adoptionOk()) errs.push('Adoption Date cannot be later than the Plan Effective Date in this version.');
+  }
+
+  if (step === 10) {
+    if (!document.getElementById('consentCheck').checked) errs.push('You must confirm the terms before generating.');
+  }
+
+  return errs;
+}
+
+function validateAllSteps() {
+  const all = [];
+  for (let i = 1; i <= 10; i++) {
+    const errs = validateStep(i);
+    if (errs.length) all.push(`Step ${i}: ${errs.join(' | ')}`);
+  }
+  return all;
+}
+
+/* ═══════════════════════════════════════════════
+   REVIEW
+═══════════════════════════════════════════════ */
+function buildReview() {
+  const ghp = resolvedGroupHealth();
+  const count = parseInt(v('participantCount'), 10) || 0;
+
+  const sections = [
+    {
+      title: 'Employer & Plan',
+      rows: [
+        ['Employer', v('employerName')],
+        ['EIN', v('employerEIN')],
+        ['Phone', v('employerPhone')],
+        ['Address', [v('employerAddressStreet'), v('employerAddressCity'), v('employerState'), v('employerZip')].filter(Boolean).join(', ')],
+        ['Plan Name', v('planName')],
+        ['Plan Number', v('planNumber')],
+        ['Effective Date', v('planEffectiveDate')],
+        ['Plan Year', radioVal('planYearType') === 'Fiscal Year' ? `Fiscal Year ending ${v('planYearEndMonth')}` : 'Calendar Year'],
+      ]
+    },
+    {
+      title: 'ERISA Status & Fiduciaries',
+      rows: [
+        ['ERISA Status', radioVal('erisaApplicability')],
+        ['Plan Administrator', `${v('planAdminName')}${v('planAdminTitle') ? ', ' + v('planAdminTitle') : ''}`],
+        ['Named Fiduciary', v('namedFiduciary')],
+        ['Agent for Legal Process', resolvedAgentName() || '—'],
+        ['Discretionary Authority', radioVal('discretionaryAuth') === 'yes' ? 'Included' : 'Omitted'],
+      ]
+    },
+    {
+      title: 'Benefits & Structure',
+      rows: [
+        ['Benefits Wrapped', checkVals('benefits').join('; ') || '—'],
+        ['Group Health Plan Path', ghp ? 'Yes' : 'No'],
+        ['Uniform Eligibility', radioVal('uniformEligibility')],
+        ['Uniform Tax Treatment', radioVal('uniformPreTax')],
+      ]
+    },
+    {
+      title: 'Funding & Benefit Detail',
+      rows: [
+        ['Medical Funding', radioVal('medicalFunding') || 'N/A'],
+        ['Medical Claims Admin', v('medicalClaimsAdmin') || 'N/A'],
+        ['TPA', v('tpaName') || '—'],
+        ['Stop-Loss Present', radioVal('hasStopLoss') || 'N/A'],
+        ['Stop-Loss Carrier', v('stopLossCarrier') || '—'],
+        ['Stop-Loss Type', radioVal('stopLossType') || '—'],
+        ['ISL Deductible', v('islDeductible') || '—'],
+        ['Aggregate Description', v('aggDescription') || '—'],
+        ['Network Structure', radioVal('networkStructure') || 'N/A'],
+        ['RBP Vendor / TPA', v('rbpVendorTpaName') || '—'],
+        ['Pricing Benchmark', v('rbpBenchmark') || '—'],
+        ['Wraparound Network', v('rbpWraparoundNetwork') || '—'],
+        ['Balance-Billing Advocacy', radioVal('rbpBalanceBillingAdvocacy') || 'N/A'],
+        ['Advocacy Vendor', v('rbpAdvocacyVendorName') || '—'],
+        ['Other Notes', v('otherCarrierDesc') || '—'],
+      ]
+    },
+    {
+      title: 'Eligibility / Tax / Docs',
+      rows: [
+        ['Eligible Classes', checkVals('eligClasses').join('; ') || '—'],
+        ['Waiting Period', v('waitingPeriod')],
+        ['Dependents', checkVals('dependents').join('; ') || 'None selected'],
+        ['Payroll Frequency', v('payrollFrequency')],
+        ['Employee Contributions', radioVal('employeeContribsExist')],
+        ['Pre-Tax', radioVal('preTax') || 'N/A'],
+        ['Underlying Docs Confirmed', radioVal('underlyingDocsConfirmed')],
+        ['Will Distribute Docs', radioVal('willDistributeDocs')],
+      ]
+    },
+    {
+      title: 'COBRA / Claims / 5500 / HIPAA',
+      rows: [
+        ['COBRA Threshold', radioVal('cobraThreshold') || 'N/A'],
+        ['COBRA Admin', radioVal('cobraAdminType') || 'N/A'],
+        ['Appeals Fiduciary', radioVal('appealsFiduciary')],
+        ['Lawsuit Limitation', radioVal('lawsuitYears') + ' year(s)'],
+        ['Participant Count', count > 0 ? String(count) : '—'],
+        ['Currently Files 5500', radioVal('currentlyFiles5500')],
+        ['Sponsor Receives PHI', radioVal('sponsorReceivesPHI') || 'N/A'],
+      ]
+    },
+    {
+      title: 'Adoption',
+      rows: [
+        ['Signer', `${v('signerName')}${v('signerTitle') ? ', ' + v('signerTitle') : ''}`],
+        ['Adoption Date', v('adoptionDate')],
+        ['Governing Body', v('governingBody')],
+      ]
+    },
+  ];
+
+  let html = '';
+  sections.forEach(s => {
+    html += `<div class="review-section"><h4>${s.title}</h4>`;
+    s.rows.forEach(([l, r]) => {
+      html += `<div class="review-row"><span class="rl">${l}</span><span class="rv">${r || '—'}</span></div>`;
+    });
+    html += '</div>';
+  });
+
+  document.getElementById('reviewContent').innerHTML = html;
+}
+
+/* ═══════════════════════════════════════════════
+   PAYLOAD
+═══════════════════════════════════════════════ */
+function buildPayload() {
+  const state = v('employerState');
+  const zip   = v('employerZip');
+  const ghp   = resolvedGroupHealth();
+  const hasMedical = hasBenefit('medical / major medical');
+  const empContribs = radioVal('employeeContribsExist') === 'yes';
+  const preTax = empContribs && radioVal('preTax') === 'yes';
+  const funding = radioVal('medicalFunding');
+  const needsStopLoss = hasMedical && (funding === 'Level Funded' || funding === 'Self Funded' || funding === 'Self Funded Captive');
+  const hasSL = radioVal('hasStopLoss');
+  const ackEl = document.getElementById('noStopLossAcknowledged');
+  const noStopLossAck = !!(ackEl && ackEl.checked);
+
+  return {
+    tool: 'wrap-plan-generator',
+    createdAtISO: new Date().toISOString(),
+
+    employer: {
+      name:              v('employerName'),
+      ein:               v('employerEIN'),
+      phone:             v('employerPhone'),
+      addressStreet:     v('employerAddressStreet'),
+      addressCity:       v('employerAddressCity'),
+      addressStateZip:   `${state} ${zip}`.trim(),
+      governingState:    state,
+      planAdminEmail:    v('planAdminEmail'),
+    },
+
+    erisa: {
+      applicability: radioVal('erisaApplicability'),
+    },
+
+    plan: {
+      planName:                       v('planName'),
+      planNumber:                     v('planNumber'),
+      planEffectiveDate:              v('planEffectiveDate'),
+      originalEffectiveDate:          v('originalEffectiveDate'),
+      planYearType:                   radioVal('planYearType'),
+      planYearEndMonth:               v('planYearEndMonth'),
+      benefitsIncluded:               checkVals('benefits'),
+      medicalFundingType:             hasMedical ? funding : '',
+      groupHealthPlanPresent:         ghp,
+      underlyingDocsConfirmed:        radioVal('underlyingDocsConfirmed') === 'yes',
+      willDistributeUnderlyingDocs:   radioVal('willDistributeDocs') === 'yes',
+      uniformEligibilityAcrossBenefits: radioVal('uniformEligibility') === 'yes',
+      uniformPreTaxAcrossBenefits:    radioVal('uniformPreTax') === 'yes',
+      medicalClaimsAdministrator:     hasMedical ? v('medicalClaimsAdmin') : '',
+      otherCarrierDescription:        v('otherCarrierDesc'),
+      networkStructure:               (hasMedical && funding !== 'Fully Insured') ? radioVal('networkStructure') : '',
+      rbpVendorTpaName:               (hasMedical && funding !== 'Fully Insured') ? v('rbpVendorTpaName') : '',
+      rbpBenchmark:                   (hasMedical && funding !== 'Fully Insured') ? v('rbpBenchmark') : '',
+      rbpWraparoundNetwork:           (hasMedical && funding !== 'Fully Insured' && radioVal('networkStructure') === 'rbp-wraparound') ? v('rbpWraparoundNetwork') : '',
+      rbpBalanceBillingAdvocacy:      (hasMedical && funding !== 'Fully Insured' && (radioVal('networkStructure') === 'rbp' || radioVal('networkStructure') === 'rbp-wraparound')) ? (radioVal('rbpBalanceBillingAdvocacy') === 'yes') : null,
+      rbpAdvocacyVendorName:          (hasMedical && funding !== 'Fully Insured' && radioVal('rbpBalanceBillingAdvocacy') === 'yes') ? v('rbpAdvocacyVendorName') : '',
+    },
+
+    fiduciary: {
+      planAdminName:        v('planAdminName'),
+      planAdminTitle:       v('planAdminTitle'),
+      planAdminAddress:     v('planAdminAddress'),
+      namedFiduciary:       v('namedFiduciary'),
+      agentName:            resolvedAgentName(),
+      agentAddress:         resolvedAgentAddress(),
+      discretionaryAuthority: radioVal('discretionaryAuth') === 'yes',
+      governingBody:        v('governingBody'),
+    },
+
+    contributions: {
+      payrollFrequency:         v('payrollFrequency'),
+      employeeContributionsExist: empContribs,
+      preTaxContributions:      preTax,
+      section125PlanExists:     preTax ? radioVal('section125Exists') === 'yes' : null,
+      section125TimelyAdopted:  preTax ? radioVal('section125Timely') === 'yes' : null,
+      employerRemitsPremiums:   true,
+deductionCycleMatchesPayroll: radioVal('deductionCycleMatches') === 'yes',
+deductionCycleDescription:    radioVal('deductionCycleMatches') === 'no' ? v('deductionCycleDescription') : '',
+    },
+
+    eligibility: {
+      eligibleClasses: checkVals('eligClasses'),
+      waitingPeriod:   v('waitingPeriod'),
+      hoursPerWeek:    v('hoursPerWeek'),
+      dependents:      checkVals('dependents'),
+    },
+
+    benefitDetail: {
+      healthFsaSeparateDocConfirmed:        radioVal('healthFsaDoc') === 'yes',
+      dependentCareFsaSeparateDocConfirmed: radioVal('dcfsaDoc') === 'yes',
+      hraType:                              v('hraType'),
+      hraSeparateDocConfirmed:              radioVal('hraDoc') === 'yes',
+      eapType:                              radioVal('eapType'),
+      eapWrapConfirmed:                     radioVal('eapWrapConfirmed') === 'yes',
+      voluntaryBenefitsErisaConfirmed:      radioVal('voluntaryErisaConfirmed') === 'yes',
+    },
+
+    cobra: {
+      priorYearTwentyEmployeeThreshold: radioVal('cobraThreshold'),
+      cobraAdministratorType:           radioVal('cobraAdminType'),
+      cobraAdministratorName:           v('cobraAdminName'),
+    },
+
+    claims: {
+      appealsFiduciary:      radioVal('appealsFiduciary'),
+      appealsFiduciaryLabel: v('appealsFiduciaryLabel'),
+      lawsuitLimitationYears: radioVal('lawsuitYears'),
+    },
+
+    privacy: {
+      sponsorReceivesPHIForPlanAdministration: radioVal('sponsorReceivesPHI') === 'yes',
+    },
+
+    stopLoss: needsStopLoss ? {
+      hasStopLoss:            hasSL === 'yes',
+      stopLossCarrierName:    hasSL === 'yes' ? v('stopLossCarrier') : '',
+      stopLossType:           hasSL === 'yes' ? radioVal('stopLossType') : '',
+      islDeductible:          hasSL === 'yes' ? v('islDeductible') : '',
+      aggDescription:         hasSL === 'yes' ? v('aggDescription') : '',
+      tpaName:                v('tpaName'),
+      noStopLossAcknowledged: hasSL === 'no' && funding === 'Self Funded' ? noStopLossAck : false,
+    } : null,
+
+    form5500: {
+      participantCount:              parseInt(v('participantCount'), 10) || 0,
+      currentlyFiles5500:            radioVal('currentlyFiles5500'),
+      exemptionConditionsConfirmed:  radioVal('exemptionConditionsConfirmed') === 'yes',
+      fundedThroughTrust:            radioVal('fundedThroughTrust') === 'yes',
+    },
+
+    signer: {
+      name:           v('signerName'),
+      title:          v('signerTitle'),
+      signatureDate:  v('adoptionDate'),
+    },
+  };
+}
+
+/* ═══════════════════════════════════════════════
+   GENERATE
+═══════════════════════════════════════════════ */
+async function handleGenerate() {
+  const statusEl   = document.getElementById('statusMsg');
+  const errBox     = document.getElementById('err10');
+  const btn        = document.getElementById('generateBtn');
+  const downloadArea = document.getElementById('downloadArea');
+  const warningsArea = document.getElementById('warningsArea');
+
+  const allErrors = validateAllSteps();
+  if (allErrors.length) {
+    errBox.textContent = 'Please correct the following before generating:\n\n' + allErrors.join('\n');
+    errBox.style.display = 'block';
+    statusEl.className = 'err-msg';
+    statusEl.textContent = 'Generation blocked. Scroll up to review errors.';
+    return;
+  }
+
+  errBox.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
+  statusEl.className = '';
+  statusEl.textContent = 'Building your Wrap Plan Document…';
+  downloadArea.style.display = 'none';
+  warningsArea.style.display = 'none';
+
+  try {
+    const payload = buildPayload();
+
+    window.parent.postMessage({ type: 'generateWrapPlan', payload }, '*');
+
+    const result = await waitForMessage('wrapPlanResult', 60000);
+
+    if (!result.ok) throw new Error(result.error || 'PDF generation failed.');
+
+    const link = document.getElementById('downloadLink');
+    link.href = result.downloadUrl;
+    downloadArea.style.display = 'block';
+document.getElementById('section125Nudge').style.display = 'block';
+
+    statusEl.className = 'ok-msg';
+    statusEl.textContent = 'Your Wrap Plan Document is ready. Download it below and retain it with the underlying plan materials.';
+
+    if (result.warnings && result.warnings.length) {
+      warningsArea.innerHTML = `<div class="warnings-list"><strong>Notes from backend validation:</strong><ul>${result.warnings.map(w => `<li>${w}</li>`).join('')}</ul></div>`;
+      warningsArea.style.display = 'block';
+    }
+
+  } catch (err) {
+    statusEl.className = 'err-msg';
+    statusEl.textContent = err.message || 'Something went wrong. Please try again.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generate Wrap Plan PDF';
+    document.getElementById('consentCheck').checked = false;
+    document.getElementById('generateBtn').disabled = true;
+  }
+}
+
+function waitForMessage(type, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      window.removeEventListener('message', handler);
+      reject(new Error('Request timed out. Please try again.'));
+    }, timeoutMs);
+    function handler(event) {
+      if (event.data && event.data.type === type) {
+        clearTimeout(timer);
+        window.removeEventListener('message', handler);
+        resolve(event.data);
+      }
+    }
+    window.addEventListener('message', handler);
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   LIVE INPUT FORMATTING
+═══════════════════════════════════════════════ */
+document.getElementById('employerName').addEventListener('blur', function () {
+  const pn = document.getElementById('planName');
+  if (!pn.value && this.value) pn.value = this.value + ' Group Welfare Benefit Plan';
+  const nf = document.getElementById('namedFiduciary');
+  if (!nf.value) nf.value = 'Plan Administrator';
+});
+
+document.getElementById('employerEIN').addEventListener('input', function () {
+  let d = this.value.replace(/\D/g,'').slice(0,9);
+  this.value = d.length > 2 ? d.slice(0,2) + '-' + d.slice(2) : d;
+});
+
+document.getElementById('employerPhone').addEventListener('input', function () {
+  let d = this.value.replace(/\D/g,'').slice(0,10);
+  if (d.length >= 7)      this.value = `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+  else if (d.length >= 4) this.value = `(${d.slice(0,3)}) ${d.slice(3)}`;
+  else if (d.length > 0)  this.value = `(${d}`;
+  else                    this.value = '';
+});
+
+document.getElementById('employerZip').addEventListener('input', function () {
+  this.value = this.value.replace(/\D/g,'').slice(0,5);
+});
+
+document.getElementById('consentCheck').addEventListener('change', function () {
+  document.getElementById('generateBtn').disabled = !this.checked;
+});
+
+/* Attach change handlers to all radio/checkbox options for visual state + conditional UI */
+document.querySelectorAll('.radio-option input, .check-option input').forEach(inp => {
+  inp.addEventListener('change', function () {
+    if (this.type === 'radio') {
+      document.querySelectorAll(`input[name="${this.name}"]`).forEach(r => {
+        r.closest('.radio-option')?.classList.remove('selected');
+      });
+      this.closest('.radio-option')?.classList.add('selected');
+    } else {
+      this.closest('.check-option')?.classList.toggle('selected', this.checked);
+    }
+    updateConditionalUI();
+  });
+});
+
+/* Init */
+updateProgress(1);
+updateConditionalUI();
+</script>
+</body>
+</html>
