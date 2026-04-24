@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DK Benefits Group Benefits Quote Tool (Demo)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="hero__content container">
+      <p class="eyebrow">DK Benefits LLC · Florida & Georgia</p>
+      <h1>Group Benefits Starting Rates, Without the Usual Friction</h1>
+      <p class="hero__text">Most broker sites ask for a full census before showing anything. This demo gives you practical starting points first, explains what the numbers mean, and helps you decide next steps.</p>
+      <div class="hero__contact">
+        <strong>Daniel Kirves</strong>
+        <a href="tel:+14074765076">Call/Text: 407-476-5076</a>
+        <a href="mailto:dan@dkbenefits.net">dan@dkbenefits.net</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card" id="wizardCard">
+      <div class="progress-wrap">
+        <div class="progress-bar"><div id="progressFill"></div></div>
+        <p id="progressText">Step 1 of 6</p>
+      </div>
+
+      <form id="quoteForm">
+        <div class="step active" data-step="1">
+          <h2>Where is your business located?</h2>
+          <label for="state">State</label>
+          <select id="state" required>
+            <option value="">Select a state</option>
+            <option value="FL">Florida</option>
+            <option value="GA">Georgia</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+
+        <div class="step" data-step="2">
+          <h2>How many full-time employees are benefits-eligible?</h2>
+          <input type="number" id="eligible" min="1" required />
+        </div>
+
+        <div class="step" data-step="3">
+          <h2>How many are likely to enroll?</h2>
+          <input type="number" id="enrolling" min="0" required />
+        </div>
+
+        <div class="step" data-step="4">
+          <h2>Optional tier mix (if known)</h2>
+          <p class="muted">If skipped, we'll estimate all enrollees as employee-only.</p>
+          <div class="grid2">
+            <label>Employee only <input type="number" id="tierEmployee" min="0" value="0" /></label>
+            <label>Employee + spouse <input type="number" id="tierSpouse" min="0" value="0" /></label>
+            <label>Employee + child(ren) <input type="number" id="tierChildren" min="0" value="0" /></label>
+            <label>Family <input type="number" id="tierFamily" min="0" value="0" /></label>
+          </div>
+        </div>
+
+        <div class="step" data-step="5">
+          <h2>What matters most right now?</h2>
+          <div class="choice-grid" id="priorityChoices"></div>
+        </div>
+
+        <div class="step" data-step="6">
+          <h2>Do you currently offer group health coverage?</h2>
+          <div class="choice-grid" id="coverageChoices"></div>
+        </div>
+
+        <div class="wizard-actions">
+          <button type="button" class="btn btn--secondary" id="prevBtn">Back</button>
+          <button type="button" class="btn btn--primary" id="nextBtn">Continue</button>
+          <button type="submit" class="btn btn--primary hidden" id="submitBtn">Show Starting Options</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="results hidden" id="resultsSection">
+      <div class="summary-strip">Based on your answers, your company appears to have several starting options.</div>
+      <div id="resultsCards" class="results-grid"></div>
+
+      <section class="card education">
+        <h3>Why these are starting rates, not final rates</h3>
+        <p>These examples are designed to help you compare directions quickly. Final rates can shift based on participation, census details, underwriting, eligibility, and plan setup timing.</p>
+
+        <h3>Networks are not insurers</h3>
+        <p>Network labels like PHCS or Cigna describe provider access. A plan can utilize a network while being offered through a different carrier/program structure.</p>
+
+        <h3>Major medical vs. limited benefit vs. MEC</h3>
+        <p>Major medical options generally provide broader coverage. Limited benefit and MEC options may help in specific budgets or participation situations, but have important limits and caps.</p>
+
+        <h3>Broader market review</h3>
+        <p>Beyond these starting lanes, a full review can compare fully insured, level-funded, self-funded, and other strategy options based on your goals and workforce profile.</p>
+
+        <h3>Benefits support beyond rates</h3>
+        <p>Support can include enrollment platforms, new hire and life event support, employee communication, ACA guidance, and general compliance best practices. Employers remain responsible for their own plan compliance, but experienced guidance can make the process much easier.</p>
+      </section>
+
+      <section class="card cta">
+        <h3>Prefer to talk with a real person?</h3>
+        <p>Call or text Daniel directly at <a href="tel:+14074765076">407-476-5076</a>.<br/>Sometimes a 5-minute conversation saves more time than filling out forms.</p>
+        <div class="cta-grid">
+          <a class="btn btn--primary" href="tel:+14074765076">Call/Text Daniel</a>
+          <a class="btn btn--secondary" href="mailto:dan@dkbenefits.net">Email Daniel</a>
+          <button class="btn btn--secondary" type="button">Compare Full Market Options</button>
+          <button class="btn btn--secondary" type="button">Upload Census When Ready</button>
+          <a class="btn btn--secondary" href="mailto:dan@dkbenefits.net?subject=DK%20Benefits%20Quote%20Results">Email My Results</a>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="app.js" defer></script>
+</body>
+</html>

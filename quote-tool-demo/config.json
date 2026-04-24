@@ -1,0 +1,16 @@
+{
+  "toolName": "DK Benefits Group Benefits Quote Tool",
+  "version": "1.0-demo",
+  "contact": {
+    "name": "Daniel Kirves",
+    "phone": "407-476-5076",
+    "email": "dan@dkbenefits.net"
+  },
+  "primaryMarkets": ["FL", "GA"],
+  "eligibilityRules": {
+    "minEligibleEmployees": 5,
+    "minEnrollingEmployees": 3,
+    "minParticipationPercent": 50,
+    "smallestAcceptedGroup": "3 enrolling out of 5 eligible"
+  }
+}
