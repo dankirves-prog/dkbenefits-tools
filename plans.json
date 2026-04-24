@@ -1,0 +1,98 @@
+[
+  {
+    "publicPlanName": "PHCS PPO Value Option",
+    "internalProgramName": "XGB_PPO_5000",
+    "networkLabel": "Utilizes the PHCS provider network",
+    "planTypeTag": "Major Medical",
+    "rates": {
+      "employeeOnly": 468,
+      "employeeSpouse": 919,
+      "employeeChildren": 828,
+      "family": 1264
+    },
+    "highlights": ["Predictable copay structure", "Broad primary and specialist access"],
+    "tradeoffs": ["Higher monthly premium than leaner designs", "Deductible applies for several services"],
+    "eligibility": { "minEligible": 5, "minEnrolling": 3, "minParticipationPercent": 50 },
+    "ratesValidUntil": "2026-12-31"
+  },
+  {
+    "publicPlanName": "Cigna Network EPO Option",
+    "internalProgramName": "XGB_EPO_4000",
+    "networkLabel": "Built around Cigna network access",
+    "planTypeTag": "Major Medical",
+    "rates": {
+      "employeeOnly": 451,
+      "employeeSpouse": 887,
+      "employeeChildren": 799,
+      "family": 1218
+    },
+    "highlights": ["Strong virtual care ecosystem", "Competitive specialist pricing"],
+    "tradeoffs": ["Out-of-network care is limited", "Referral strategy may matter by market"],
+    "eligibility": { "minEligible": 5, "minEnrolling": 3, "minParticipationPercent": 50 },
+    "ratesValidUntil": "2026-11-30"
+  },
+  {
+    "publicPlanName": "Broad Network HSA Option",
+    "internalProgramName": "XGB_HSA_3200",
+    "networkLabel": "Accesses a broad multi-market provider network",
+    "planTypeTag": "HSA",
+    "rates": {
+      "employeeOnly": 429,
+      "employeeSpouse": 844,
+      "employeeChildren": 759,
+      "family": 1172
+    },
+    "highlights": ["HSA-compatible design", "Lower premium relative to copay-rich plans"],
+    "tradeoffs": ["Higher upfront deductible", "Best fit when employees can fund HSAs"],
+    "eligibility": { "minEligible": 5, "minEnrolling": 3, "minParticipationPercent": 50 },
+    "ratesValidUntil": "2026-10-31"
+  },
+  {
+    "publicPlanName": "PHCS Copay Choice Option",
+    "internalProgramName": "MBA_COPAY_45",
+    "networkLabel": "Utilizes PHCS network access",
+    "planTypeTag": "Major-Medical-Style",
+    "rates": {
+      "employeeOnly": 398,
+      "employeeSpouse": 782,
+      "employeeChildren": 706,
+      "family": 1089
+    },
+    "highlights": ["Simple office-visit copays", "Lower payroll impact vs richer PPO tiers"],
+    "tradeoffs": ["Not as comprehensive as richer major medical designs", "Some services have tighter limits"],
+    "eligibility": { "minEligible": 5, "minEnrolling": 3, "minParticipationPercent": 50 },
+    "ratesValidUntil": "2026-09-30"
+  },
+  {
+    "publicPlanName": "Lower Cost Essential Coverage Option",
+    "internalProgramName": "MBA_MEC_CORE",
+    "networkLabel": "Built around a value-focused provider access model",
+    "planTypeTag": "MEC",
+    "rates": {
+      "employeeOnly": 182,
+      "employeeSpouse": 356,
+      "employeeChildren": 322,
+      "family": 489
+    },
+    "highlights": ["Very low monthly cost", "Can support participation strategy in some groups"],
+    "tradeoffs": ["Not comprehensive major medical", "Benefit maximums and exclusions apply"],
+    "eligibility": { "minEligible": 5, "minEnrolling": 3, "minParticipationPercent": 50 },
+    "ratesValidUntil": "2026-08-31"
+  },
+  {
+    "publicPlanName": "Starter Limited Benefit Option",
+    "internalProgramName": "MBA_LIMITED_PLUS",
+    "networkLabel": "Accesses selected national provider channels",
+    "planTypeTag": "Limited Benefit",
+    "rates": {
+      "employeeOnly": 149,
+      "employeeSpouse": 291,
+      "employeeChildren": 267,
+      "family": 419
+    },
+    "highlights": ["Lowest demo premium range", "Useful as a stepping-stone conversation"],
+    "tradeoffs": ["Not a substitute for broad major medical", "Tighter caps by service category"],
+    "eligibility": { "minEligible": 5, "minEnrolling": 3, "minParticipationPercent": 50 },
+    "ratesValidUntil": "2025-01-31"
+  }
+]
