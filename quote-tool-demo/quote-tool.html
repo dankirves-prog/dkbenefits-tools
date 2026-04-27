@@ -107,15 +107,23 @@
         </div>
       </div>
 
-      <div class="cost-summary" id="costSummary">
-        <div class="summary-card">
-          <p>Estimated Employer Monthly Cost</p>
-          <h3 id="employerMonthlyTotal">$0</h3>
+      <div class="card tier-mix-card">
+        <h3>Estimated enrollment mix</h3>
+        <div class="mix-grid">
+          <label>Employee only
+            <input type="number" id="mixEe" min="0" />
+          </label>
+          <label>Employee + spouse
+            <input type="number" id="mixEs" min="0" />
+          </label>
+          <label>Employee + child
+            <input type="number" id="mixEc" min="0" />
+          </label>
+          <label>Family
+            <input type="number" id="mixFam" min="0" />
+          </label>
         </div>
-        <div class="summary-card">
-          <p>Estimated Employee Payroll Share</p>
-          <h3 id="employeeMonthlyTotal">$0</h3>
-        </div>
+        <p id="mixNote" class="mix-note"></p>
       </div>
 
       <div class="results-actions">

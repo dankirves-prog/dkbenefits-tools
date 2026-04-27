@@ -16,8 +16,11 @@ const percentControl = document.getElementById('percentControl');
 const flatControl = document.getElementById('flatControl');
 const contribModelWrap = document.getElementById('contribModelWrap');
 
-const employerMonthlyTotal = document.getElementById('employerMonthlyTotal');
-const employeeMonthlyTotal = document.getElementById('employeeMonthlyTotal');
+const mixEe = document.getElementById('mixEe');
+const mixEs = document.getElementById('mixEs');
+const mixEc = document.getElementById('mixEc');
+const mixFam = document.getElementById('mixFam');
+const mixNote = document.getElementById('mixNote');
 
 const topPlansGrid = document.getElementById('topPlansGrid');
 const lowCostPlansGrid = document.getElementById('lowCostPlansGrid');
@@ -118,10 +121,7 @@ const plans = [
       urgentCare: 'Limited fixed benefits',
       rx: 'Limited Rx schedule'
     },
-    limitedNotes: [
-      'This is limited coverage, not traditional major medical.',
-      'May not cover hospital care.'
-    ]
+    limitedNotes: ['This is limited coverage, not traditional major medical.', 'May not cover hospital care.']
   },
   {
     id: 'ep-care',
@@ -139,10 +139,7 @@ const plans = [
       urgentCare: 'Includes select outpatient support',
       rx: 'Restricted Rx categories'
     },
-    limitedNotes: [
-      'This is limited coverage, not traditional major medical.',
-      'May limit doctor/specialist visits and outpatient services.'
-    ]
+    limitedNotes: ['This is limited coverage, not traditional major medical.', 'May limit doctor/specialist visits and outpatient services.']
   },
   {
     id: 'xgb-vl-1000',
@@ -160,10 +157,7 @@ const plans = [
       urgentCare: 'Limited visit plan',
       rx: 'Select generic support'
     },
-    limitedNotes: [
-      'This is limited coverage, not traditional major medical.',
-      'May limit imaging, ER, ambulance, or surgery benefits.'
-    ]
+    limitedNotes: ['This is limited coverage, not traditional major medical.', 'May limit imaging, ER, ambulance, or surgery benefits.']
   },
   {
     id: 'xgb-vl-1750-hsa',
@@ -181,10 +175,7 @@ const plans = [
       urgentCare: 'Limited visit HSA style',
       rx: 'Restricted Rx support'
     },
-    limitedNotes: [
-      'This is limited coverage, not traditional major medical.',
-      'May not cover brand-name drugs depending on the plan.'
-    ]
+    limitedNotes: ['This is limited coverage, not traditional major medical.', 'May not cover brand-name drugs depending on the plan.']
   },
   {
     id: 'ep-classic-mec',
@@ -202,65 +193,17 @@ const plans = [
       urgentCare: 'Limited/non-core',
       rx: 'Preventive/Rx limitations apply'
     },
-    limitedNotes: [
-      'This is limited coverage, not traditional major medical.',
-      'Preventive only and no hospital coverage.'
-    ]
+    limitedNotes: ['This is limited coverage, not traditional major medical.', 'Preventive only and no hospital coverage.']
   }
 ];
 
 const questions = [
-  {
-    key: 'state',
-    title: 'Where is your business located?',
-    kind: 'select',
-    options: [
-      { label: 'Florida', value: 'Florida' },
-      { label: 'Georgia', value: 'Georgia' }
-    ]
-  },
-  {
-    key: 'employees',
-    title: 'How many full-time employees are benefits eligible?',
-    kind: 'number',
-    placeholder: 'Example: 12'
-  },
-  {
-    key: 'enrolling',
-    title: 'How many do you expect to enroll?',
-    kind: 'number',
-    placeholder: 'Example: 8'
-  },
-  {
-    key: 'priority',
-    title: 'What matters most right now?',
-    kind: 'choice',
-    options: [
-      { label: 'Lower monthly cost', value: 'cost' },
-      { label: 'Balanced value', value: 'balanced' },
-      { label: 'Broad network access', value: 'network' },
-      { label: 'HSA-friendly option', value: 'hsa' }
-    ]
-  },
-  {
-    key: 'coverage',
-    title: 'Do you currently offer a group health plan?',
-    kind: 'choice',
-    options: [
-      { label: 'Yes', value: 'yes' },
-      { label: 'No', value: 'no' }
-    ]
-  },
-  {
-    key: 'timeline',
-    title: 'When are you hoping to start?',
-    kind: 'choice',
-    options: [
-      { label: 'Next 30 days', value: '30' },
-      { label: '1-3 months', value: '90' },
-      { label: '3+ months', value: 'later' }
-    ]
-  }
+  { key: 'state', title: 'Where is your business located?', kind: 'select', options: [{ label: 'Florida', value: 'Florida' }, { label: 'Georgia', value: 'Georgia' }] },
+  { key: 'employees', title: 'How many full-time employees are benefits eligible?', kind: 'number', placeholder: 'Example: 12' },
+  { key: 'enrolling', title: 'How many do you expect to enroll?', kind: 'number', placeholder: 'Example: 8' },
+  { key: 'priority', title: 'What matters most right now?', kind: 'choice', options: [{ label: 'Lower monthly cost', value: 'cost' }, { label: 'Balanced value', value: 'balanced' }, { label: 'Broad network access', value: 'network' }, { label: 'HSA-friendly option', value: 'hsa' }] },
+  { key: 'coverage', title: 'Do you currently offer a group health plan?', kind: 'choice', options: [{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }] },
+  { key: 'timeline', title: 'When are you hoping to start?', kind: 'choice', options: [{ label: 'Next 30 days', value: '30' }, { label: '1-3 months', value: '90' }, { label: '3+ months', value: 'later' }] }
 ];
 
 let current = 0;
@@ -271,13 +214,12 @@ function money(n) {
   return `$${Math.round(n).toLocaleString()}`;
 }
 
-function estimateMix(enrolling) {
-  return {
-    ee: Math.max(1, Math.round(enrolling * 0.55)),
-    es: Math.round(enrolling * 0.15),
-    ec: Math.round(enrolling * 0.2),
-    fam: Math.max(0, enrolling - Math.round(enrolling * 0.55) - Math.round(enrolling * 0.15) - Math.round(enrolling * 0.2))
-  };
+function estimateSmartMix(enrolling) {
+  const ee = Math.max(1, Math.round(enrolling * 0.55));
+  const es = Math.round(enrolling * 0.15);
+  const ec = Math.round(enrolling * 0.2);
+  const fam = Math.max(0, enrolling - ee - es - ec);
+  return { ee, es, ec, fam };
 }
 
 function calcTotal(rates, mix) {
@@ -285,10 +227,40 @@ function calcTotal(rates, mix) {
 }
 
 function getFlatAmount() {
-  if (flatContributionSelect.value === 'custom') {
-    return Number(flatContributionCustom.value || 0);
+  return flatContributionSelect.value === 'custom' ? Number(flatContributionCustom.value || 0) : Number(flatContributionSelect.value || 0);
+}
+
+function getTierMix(enrolling) {
+  const values = {
+    ee: Number(mixEe.value || 0),
+    es: Number(mixEs.value || 0),
+    ec: Number(mixEc.value || 0),
+    fam: Number(mixFam.value || 0)
+  };
+
+  const totalEntered = values.ee + values.es + values.ec + values.fam;
+  if (totalEntered === 0) {
+    const smart = estimateSmartMix(enrolling);
+    mixNote.textContent = `Using smart estimated mix because no tier mix was entered (${smart.ee}/${smart.es}/${smart.ec}/${smart.fam}).`;
+    return smart;
   }
-  return Number(flatContributionSelect.value || 0);
+
+  if (totalEntered !== enrolling) {
+    mixNote.textContent = `Tier mix totals ${totalEntered}. Expected enrolling is ${enrolling}; estimates use your entered mix.`;
+  } else {
+    mixNote.textContent = 'Based on estimated enrollment mix entered above.';
+  }
+
+  return values;
+}
+
+function setInitialMix(enrolling) {
+  const smart = estimateSmartMix(enrolling);
+  mixEe.value = smart.ee;
+  mixEs.value = smart.es;
+  mixEc.value = smart.ec;
+  mixFam.value = smart.fam;
+  mixNote.textContent = 'Based on estimated enrollment mix entered above.';
 }
 
 function updateModelUI() {
@@ -341,82 +313,71 @@ function validateCurrent() {
   return true;
 }
 
-function calculateContribution(plan, enrolling, total) {
+function calculateContribution(plan, enrolling, grossPremium) {
   const percentAmount = plan.rates.ee * (Number(employerContribution.value) / 100) * enrolling;
   const flatAmount = getFlatAmount() * enrolling;
   const modeled = contributionModel === 'percent' ? percentAmount : flatAmount;
-  return Math.min(modeled, total);
+  return Math.min(modeled, grossPremium);
 }
 
 function renderPlanCard(plan, enrolling, mix) {
-  const total = calcTotal(plan.rates, mix);
-  const employer = calculateContribution(plan, enrolling, total);
-  const employee = total - employer;
+  const grossPremium = calcTotal(plan.rates, mix);
+  const employer = calculateContribution(plan, enrolling, grossPremium);
+  const employee = grossPremium - employer;
 
   const limitHtml = plan.limitedNotes
     ? `<div class="limit-note">${plan.limitedNotes.map((n) => `<div>${n}</div>`).join('')}</div>`
     : '';
 
-  return {
-    html: `
-      <article class="plan-card">
-        <div class="plan-head">
-          <div>
-            <h3>${plan.name}</h3>
-            <p class="plan-meta">${plan.network}</p>
-          </div>
-          <span class="badge">${plan.typeBadge}</span>
+  return `
+    <article class="plan-card">
+      <div class="plan-head">
+        <div>
+          <h3>${plan.name}</h3>
+          <p class="plan-meta">${plan.network}</p>
         </div>
+        <span class="badge">${plan.typeBadge}</span>
+      </div>
 
-        <div class="key-metric"><strong>Monthly Employee Rate:</strong> ${plan.details.employeeRate}</div>
-        <div class="key-metric"><strong>Estimated Employer Monthly Cost:</strong> ${money(employer)}</div>
-        <div class="key-metric"><strong>Estimated Employee Payroll Share:</strong> ${money(employee)}</div>
+      <div class="metric-row employer">
+        <strong>Estimated Employer Cost</strong>
+        <div class="big-number">${money(employer)}</div>
+      </div>
+      <div class="metric-row"><strong>Gross Monthly Premium:</strong> ${money(grossPremium)}</div>
+      <div class="metric-row"><strong>Estimated Employee Payroll Share:</strong> ${money(employee)}</div>
 
-        <ul class="benefit-list">
-          <li><span>Deductible</span><strong>${plan.details.deductible}</strong></li>
-          <li><span>Out of Pocket Max</span><strong>${plan.details.oopMax}</strong></li>
-          <li><span>PCP Copay</span><strong>${plan.details.pcp}</strong></li>
-          <li><span>Specialist Copay</span><strong>${plan.details.specialist}</strong></li>
-          <li><span>Urgent Care</span><strong>${plan.details.urgentCare}</strong></li>
-          <li><span>RX Summary</span><strong>${plan.details.rx}</strong></li>
-        </ul>
+      <ul class="benefit-list">
+        <li><span>Monthly Employee Rate</span><strong>${plan.details.employeeRate}</strong></li>
+        <li><span>Deductible</span><strong>${plan.details.deductible}</strong></li>
+        <li><span>Out of Pocket Max</span><strong>${plan.details.oopMax}</strong></li>
+        <li><span>PCP Copay</span><strong>${plan.details.pcp}</strong></li>
+        <li><span>Specialist Copay</span><strong>${plan.details.specialist}</strong></li>
+        <li><span>Urgent Care</span><strong>${plan.details.urgentCare}</strong></li>
+        <li><span>RX Summary</span><strong>${plan.details.rx}</strong></li>
+      </ul>
 
-        ${limitHtml}
-      </article>
-    `,
-    employer,
-    employee
-  };
+      <p class="card-note">Based on estimated enrollment mix entered above.</p>
+      ${limitHtml}
+    </article>
+  `;
 }
 
 function renderResults() {
   const enrolling = Number(answers.enrolling || 1);
   const employees = Number(answers.employees || enrolling);
-  const mix = estimateMix(enrolling);
+  const mix = getTierMix(enrolling);
 
   contributionLabel.textContent = `${employerContribution.value}%`;
   flatLabel.textContent = money(getFlatAmount());
-
   resultsSummary.textContent = `${answers.state || 'Your state'} · ${employees} eligible employees · about ${enrolling} enrolling. These are real current starting rates based on the information provided.`;
 
   const topPlans = plans.filter((p) => p.group === 'top');
   const lowPlans = plans.filter((p) => p.group === 'low');
   const mecPlans = plans.filter((p) => p.group === 'mec');
 
-  const topRendered = topPlans.map((plan) => renderPlanCard(plan, enrolling, mix));
-  const lowRendered = lowPlans.map((plan) => renderPlanCard(plan, enrolling, mix));
-  const mecRendered = mecPlans.map((plan) => renderPlanCard(plan, enrolling, mix));
-
-  topPlansGrid.innerHTML = topRendered.map((r) => r.html).join('');
-  lowCostPlansGrid.innerHTML = lowRendered.map((r) => r.html).join('');
-  mecPlansGrid.innerHTML = mecRendered.map((r) => r.html).join('');
-
-  const allRendered = [...topRendered, ...lowRendered];
-  const employerTotal = allRendered.reduce((sum, card) => sum + card.employer, 0);
-  const employeeTotal = allRendered.reduce((sum, card) => sum + card.employee, 0);
-
-  employerMonthlyTotal.textContent = money(employerTotal);
-  employeeMonthlyTotal.textContent = money(employeeTotal);
+  topPlansGrid.innerHTML = topPlans.map((plan) => renderPlanCard(plan, enrolling, mix)).join('');
+  lowCostPlansGrid.innerHTML = lowPlans.map((plan) => renderPlanCard(plan, enrolling, mix)).join('');
+  mecPlansGrid.innerHTML = mecPlans.map((plan) => renderPlanCard(plan, enrolling, mix)).join('');
 }
 
 function resetLeadForm() {
@@ -438,6 +399,11 @@ function startOver() {
   flatContributionSelect.value = '300';
   flatContributionCustom.value = '';
   flatContributionCustom.classList.add('hidden');
+  mixEe.value = '';
+  mixEs.value = '';
+  mixEc.value = '';
+  mixFam.value = '';
+  mixNote.textContent = '';
   updateModelUI();
 
   mecPlansWrap.classList.add('hidden');
@@ -458,6 +424,8 @@ nextBtn.addEventListener('click', () => {
   }
 
   if (current === questions.length - 1) {
+    const enrolling = Number(answers.enrolling || 1);
+    setInitialMix(enrolling);
     funnelSection.classList.add('hidden');
     resultsSection.classList.remove('hidden');
     renderResults();
@@ -491,6 +459,7 @@ flatContributionSelect.addEventListener('change', () => {
   renderResults();
 });
 flatContributionCustom.addEventListener('input', renderResults);
+[mixEe, mixEs, mixEc, mixFam].forEach((input) => input.addEventListener('input', renderResults));
 
 editAnswersBtn.addEventListener('click', () => {
   resultsSection.classList.add('hidden');

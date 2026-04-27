@@ -4,9 +4,9 @@ This folder contains a static, employer-facing guided quote funnel for DK Benefi
 
 ## Files
 
-- `quote-tool.html` — one-question-at-a-time guided intake + dynamic results + lead capture + CTA
+- `quote-tool.html` — one-question-at-a-time guided intake + tier mix inputs + dynamic results + lead capture + CTA
 - `quote-tool.css` — premium visual style (desktop-first, mobile-compatible)
-- `quote-tool.js` — front-end flow logic, contribution modes, plan card rendering
+- `quote-tool.js` — front-end flow logic, contribution modes, tier mix estimate math, plan card rendering
 
 ## Scope
 
@@ -19,12 +19,13 @@ This folder contains a static, employer-facing guided quote funnel for DK Benefi
 
 - Back button on every intake step
 - Edit answers returns to first question with saved answers
-- Start over resets all answers, contribution mode/values, and lead form state
+- Start over resets all answers, contribution mode/values, tier mix inputs, and lead form state
 - Contribution Mode A: % of employee-only premium (50% to 100%)
 - Contribution Mode B: flat dollar per enrolled employee ($200/$300/$400/custom)
+- Tier mix inputs (EE / EE+Spouse / EE+Child / Family) drive per-plan premium math
+- If mix is missing, smart estimated mix is used and disclosed
+- Plan cards show Gross Monthly Premium, Estimated Employer Cost, Estimated Employee Payroll Share
 - Top Display Group, Lower Cost Section, and hidden MEC section
-- Plan cards include network, rate, deductible, OOP max, PCP/specialist/urgent care, and Rx summary
-- Brief limited-coverage explanation for budget/limited/MEC plan types
 
 ## Preview locally
 
