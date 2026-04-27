@@ -43,16 +43,8 @@ const plans = [
     name: 'XGB Cigna EPO 1000',
     network: 'Cigna EPO',
     typeBadge: 'Major Medical',
-    rates: { ee: 459, es: 905, ec: 815, fam: 1250 },
-    details: {
-      employeeRate: '$459',
-      deductible: '$1,000',
-      oopMax: '$8,500',
-      pcp: '$50 after deductible',
-      specialist: '$50 after deductible',
-      urgentCare: '$50',
-      rx: 'Generic $0'
-    }
+    rates: { employeeOnly: 459, employeeSpouse: 779, employeeChildren: 769, family: 1079 },
+    details: { deductible: '$1,000', oopMax: '$8,500', pcp: '$50 after deductible', specialist: '$50 after deductible', urgentCare: '$50', rx: 'Generic $0' }
   },
   {
     id: 'xgb-cigna-1750-hsa',
@@ -60,16 +52,35 @@ const plans = [
     name: 'XGB Cigna EPO 1750 HSA',
     network: 'Cigna EPO',
     typeBadge: 'HSA',
-    rates: { ee: 414, es: 830, ec: 745, fam: 1150 },
-    details: {
-      employeeRate: '$414',
-      deductible: '$1,750',
-      oopMax: '$8,500',
-      pcp: 'Deductible then plan share',
-      specialist: 'Deductible then plan share',
-      urgentCare: 'Deductible then plan share',
-      rx: 'HSA-compatible structure'
-    }
+    rates: { employeeOnly: 414, employeeSpouse: 739, employeeChildren: 729, family: 1009 },
+    details: { deductible: '$1,750', oopMax: '$8,500', pcp: 'Deductible then plan share', specialist: 'Deductible then plan share', urgentCare: 'Deductible then plan share', rx: 'HSA-compatible structure' }
+  },
+  {
+    id: 'xgb-phcs-8300-hsa',
+    group: 'top',
+    name: 'XGB PHCS 8300 HSA',
+    network: 'PHCS PPO',
+    typeBadge: 'HSA',
+    rates: { employeeOnly: 499.01, employeeSpouse: 859.47, employeeChildren: 969.62, family: 1214.63 },
+    details: { deductible: '$8,300', oopMax: '$9,100', pcp: 'Deductible then coinsurance', specialist: 'Deductible then coinsurance', urgentCare: 'Deductible then coinsurance', rx: 'Integrated with deductible' }
+  },
+  {
+    id: 'xgb-phcs-4500',
+    group: 'top',
+    name: 'XGB PHCS 4500 Copay',
+    network: 'PHCS PPO',
+    typeBadge: 'Major Medical',
+    rates: { employeeOnly: 649.8, employeeSpouse: 1339.23, employeeChildren: 1213.73, family: 1796.94 },
+    details: { deductible: '$4,500', oopMax: '$9,100', pcp: '$40', specialist: '$75', urgentCare: '$90', rx: 'Tiered copay Rx' }
+  },
+  {
+    id: 'xgb-phcs-3500',
+    group: 'top',
+    name: 'XGB PHCS 3500 Copay',
+    network: 'PHCS PPO',
+    typeBadge: 'Major Medical',
+    rates: { employeeOnly: 749.9, employeeSpouse: 1415.49, employeeChildren: 1379.88, family: 2071.67 },
+    details: { deductible: '$3,500', oopMax: '$8,700', pcp: '$40', specialist: '$75', urgentCare: '$90', rx: 'Tiered copay Rx' }
   },
   {
     id: 'ep-4500-copay',
@@ -77,16 +88,8 @@ const plans = [
     name: 'EnrollPrime 4500 Copay',
     network: 'EnrollPrime PPO',
     typeBadge: 'Major Medical',
-    rates: { ee: 697.12, es: 1320, ec: 1215, fam: 1850 },
-    details: {
-      employeeRate: '$697.12',
-      deductible: '$4,500',
-      oopMax: '$9,100',
-      pcp: '$40',
-      specialist: '$75',
-      urgentCare: '$90',
-      rx: '$20 / $65 / $95'
-    }
+    rates: { employeeOnly: 697.12, employeeSpouse: 1364.23, employeeChildren: 1247.86, family: 1816.47 },
+    details: { deductible: '$4,500', oopMax: '$9,100', pcp: '$40', specialist: '$75', urgentCare: '$90', rx: '$20 / $65 / $95' }
   },
   {
     id: 'ep-3500-copay',
@@ -94,16 +97,8 @@ const plans = [
     name: 'EnrollPrime 3500 Copay',
     network: 'EnrollPrime PPO',
     typeBadge: 'Major Medical',
-    rates: { ee: 789.94, es: 1475, ec: 1360, fam: 2085 },
-    details: {
-      employeeRate: '$789.94',
-      deductible: '$3,500',
-      oopMax: '$8,700',
-      pcp: '$40',
-      specialist: '$75',
-      urgentCare: '$90',
-      rx: 'Tiered Rx with copays'
-    }
+    rates: { employeeOnly: 789.94, employeeSpouse: 1434.95, employeeChildren: 1401.93, family: 2071.22 },
+    details: { deductible: '$3,500', oopMax: '$8,700', pcp: '$40', specialist: '$75', urgentCare: '$90', rx: 'Tiered copay Rx' }
   },
   {
     id: 'ep-choice',
@@ -111,16 +106,8 @@ const plans = [
     name: 'EnrollPrime Choice',
     network: 'EnrollPrime Value',
     typeBadge: 'Budget Option',
-    rates: { ee: 198.9, es: 376, ec: 334, fam: 505 },
-    details: {
-      employeeRate: '$198.90',
-      deductible: 'Limited schedule',
-      oopMax: 'Not equivalent to major medical OOP',
-      pcp: '$35',
-      specialist: 'Limited visits',
-      urgentCare: 'Limited fixed benefits',
-      rx: 'Limited Rx schedule'
-    },
+    rates: { employeeOnly: 198.9, employeeSpouse: 290.7, employeeChildren: 290.7, family: 402.9 },
+    details: { deductible: 'Limited schedule', oopMax: 'Not equivalent to major medical OOP', pcp: '$35', specialist: 'Limited visits', urgentCare: 'Limited fixed benefits', rx: 'Limited Rx schedule' },
     limitedNotes: ['This is limited coverage, not traditional major medical.', 'May not cover hospital care.']
   },
   {
@@ -129,16 +116,8 @@ const plans = [
     name: 'EnrollPrime Care',
     network: 'EnrollPrime Care Network',
     typeBadge: 'Limited Coverage',
-    rates: { ee: 292.7, es: 555, ec: 500, fam: 760 },
-    details: {
-      employeeRate: '$292.70',
-      deductible: 'Limited schedule',
-      oopMax: 'Not equivalent to major medical OOP',
-      pcp: '$25',
-      specialist: 'Limited visit structure',
-      urgentCare: 'Includes select outpatient support',
-      rx: 'Restricted Rx categories'
-    },
+    rates: { employeeOnly: 292.7, employeeSpouse: 417.5, employeeChildren: 386.09, family: 510.89 },
+    details: { deductible: 'Limited schedule', oopMax: 'Not equivalent to major medical OOP', pcp: '$25', specialist: 'Limited visit structure', urgentCare: 'Includes select outpatient support', rx: 'Restricted Rx categories' },
     limitedNotes: ['This is limited coverage, not traditional major medical.', 'May limit doctor/specialist visits and outpatient services.']
   },
   {
@@ -147,16 +126,8 @@ const plans = [
     name: 'XGB VL 1000',
     network: 'XGB Value Lane',
     typeBadge: 'Budget Option',
-    rates: { ee: 374, es: 700, ec: 630, fam: 955 },
-    details: {
-      employeeRate: '$374',
-      deductible: '$1,000 equivalent schedule',
-      oopMax: 'Limited by plan schedule',
-      pcp: 'Limited visit plan',
-      specialist: 'Limited visit plan',
-      urgentCare: 'Limited visit plan',
-      rx: 'Select generic support'
-    },
+    rates: { employeeOnly: 374, employeeSpouse: 679, employeeChildren: 669, family: 959 },
+    details: { deductible: '$1,000 equivalent schedule', oopMax: 'Limited by plan schedule', pcp: 'Limited visit plan', specialist: 'Limited visit plan', urgentCare: 'Limited visit plan', rx: 'Select generic support' },
     limitedNotes: ['This is limited coverage, not traditional major medical.', 'May limit imaging, ER, ambulance, or surgery benefits.']
   },
   {
@@ -165,16 +136,8 @@ const plans = [
     name: 'XGB VL 1750 HSA',
     network: 'XGB Value Lane',
     typeBadge: 'Limited Coverage',
-    rates: { ee: 334, es: 625, ec: 565, fam: 860 },
-    details: {
-      employeeRate: '$334',
-      deductible: '$1,750 equivalent schedule',
-      oopMax: 'Limited by plan schedule',
-      pcp: 'Limited visit HSA style',
-      specialist: 'Limited visit HSA style',
-      urgentCare: 'Limited visit HSA style',
-      rx: 'Restricted Rx support'
-    },
+    rates: { employeeOnly: 334, employeeSpouse: 639, employeeChildren: 629, family: 889 },
+    details: { deductible: '$1,750 equivalent schedule', oopMax: 'Limited by plan schedule', pcp: 'Limited visit HSA style', specialist: 'Limited visit HSA style', urgentCare: 'Limited visit HSA style', rx: 'Restricted Rx support' },
     limitedNotes: ['This is limited coverage, not traditional major medical.', 'May not cover brand-name drugs depending on the plan.']
   },
   {
@@ -183,16 +146,8 @@ const plans = [
     name: 'EnrollPrime Classic MEC',
     network: 'EnrollPrime MEC',
     typeBadge: 'MEC',
-    rates: { ee: 127.5, es: 245, ec: 220, fam: 335 },
-    details: {
-      employeeRate: '$127.50',
-      deductible: 'Preventive-focused schedule',
-      oopMax: 'Not traditional major medical OOP structure',
-      pcp: 'Preventive-focused',
-      specialist: 'Limited/non-core',
-      urgentCare: 'Limited/non-core',
-      rx: 'Preventive/Rx limitations apply'
-    },
+    rates: { employeeOnly: 127.5, employeeSpouse: 193.8, employeeChildren: 193.8, family: 260.1 },
+    details: { deductible: 'Preventive-focused schedule', oopMax: 'Not traditional major medical OOP structure', pcp: 'Preventive-focused', specialist: 'Limited/non-core', urgentCare: 'Limited/non-core', rx: 'Preventive/Rx limitations apply' },
     limitedNotes: ['This is limited coverage, not traditional major medical.', 'Preventive only and no hospital coverage.']
   }
 ];
@@ -215,15 +170,20 @@ function money(n) {
 }
 
 function estimateSmartMix(enrolling) {
-  const ee = Math.max(1, Math.round(enrolling * 0.55));
-  const es = Math.round(enrolling * 0.15);
-  const ec = Math.round(enrolling * 0.2);
-  const fam = Math.max(0, enrolling - ee - es - ec);
-  return { ee, es, ec, fam };
+  const employeeOnly = Math.max(1, Math.round(enrolling * 0.55));
+  const employeeSpouse = Math.round(enrolling * 0.15);
+  const employeeChildren = Math.round(enrolling * 0.2);
+  const family = Math.max(0, enrolling - employeeOnly - employeeSpouse - employeeChildren);
+  return { employeeOnly, employeeSpouse, employeeChildren, family };
 }
 
-function calcTotal(rates, mix) {
-  return rates.ee * mix.ee + rates.es * mix.es + rates.ec * mix.ec + rates.fam * mix.fam;
+function calcGrossPremium(rates, mix) {
+  return (
+    mix.employeeOnly * rates.employeeOnly +
+    mix.employeeSpouse * rates.employeeSpouse +
+    mix.employeeChildren * rates.employeeChildren +
+    mix.family * rates.family
+  );
 }
 
 function getFlatAmount() {
@@ -231,17 +191,17 @@ function getFlatAmount() {
 }
 
 function getTierMix(enrolling) {
-  const values = {
-    ee: Number(mixEe.value || 0),
-    es: Number(mixEs.value || 0),
-    ec: Number(mixEc.value || 0),
-    fam: Number(mixFam.value || 0)
+  const mix = {
+    employeeOnly: Number(mixEe.value || 0),
+    employeeSpouse: Number(mixEs.value || 0),
+    employeeChildren: Number(mixEc.value || 0),
+    family: Number(mixFam.value || 0)
   };
 
-  const totalEntered = values.ee + values.es + values.ec + values.fam;
+  const totalEntered = mix.employeeOnly + mix.employeeSpouse + mix.employeeChildren + mix.family;
   if (totalEntered === 0) {
     const smart = estimateSmartMix(enrolling);
-    mixNote.textContent = `Using smart estimated mix because no tier mix was entered (${smart.ee}/${smart.es}/${smart.ec}/${smart.fam}).`;
+    mixNote.textContent = `Using smart estimated mix because no tier mix was entered (${smart.employeeOnly}/${smart.employeeSpouse}/${smart.employeeChildren}/${smart.family}).`;
     return smart;
   }
 
@@ -251,15 +211,15 @@ function getTierMix(enrolling) {
     mixNote.textContent = 'Based on estimated enrollment mix entered above.';
   }
 
-  return values;
+  return mix;
 }
 
 function setInitialMix(enrolling) {
   const smart = estimateSmartMix(enrolling);
-  mixEe.value = smart.ee;
-  mixEs.value = smart.es;
-  mixEc.value = smart.ec;
-  mixFam.value = smart.fam;
+  mixEe.value = smart.employeeOnly;
+  mixEs.value = smart.employeeSpouse;
+  mixEc.value = smart.employeeChildren;
+  mixFam.value = smart.family;
   mixNote.textContent = 'Based on estimated enrollment mix entered above.';
 }
 
@@ -313,16 +273,32 @@ function validateCurrent() {
   return true;
 }
 
-function calculateContribution(plan, enrolling, grossPremium) {
-  const percentAmount = plan.rates.ee * (Number(employerContribution.value) / 100) * enrolling;
-  const flatAmount = getFlatAmount() * enrolling;
-  const modeled = contributionModel === 'percent' ? percentAmount : flatAmount;
-  return Math.min(modeled, grossPremium);
+function calculateEmployerCost(plan, mix, grossPremium) {
+  const totalEnrolling = mix.employeeOnly + mix.employeeSpouse + mix.employeeChildren + mix.family;
+
+  if (contributionModel === 'percent') {
+    const basePerEmployee = plan.rates.employeeOnly * (Number(employerContribution.value) / 100);
+    const employer =
+      mix.employeeOnly * Math.min(basePerEmployee, plan.rates.employeeOnly) +
+      mix.employeeSpouse * Math.min(basePerEmployee, plan.rates.employeeSpouse) +
+      mix.employeeChildren * Math.min(basePerEmployee, plan.rates.employeeChildren) +
+      mix.family * Math.min(basePerEmployee, plan.rates.family);
+    return Math.min(employer, grossPremium, basePerEmployee * totalEnrolling);
+  }
+
+  const flatPerEmployee = getFlatAmount();
+  const employer =
+    mix.employeeOnly * Math.min(flatPerEmployee, plan.rates.employeeOnly) +
+    mix.employeeSpouse * Math.min(flatPerEmployee, plan.rates.employeeSpouse) +
+    mix.employeeChildren * Math.min(flatPerEmployee, plan.rates.employeeChildren) +
+    mix.family * Math.min(flatPerEmployee, plan.rates.family);
+
+  return Math.min(employer, grossPremium, flatPerEmployee * totalEnrolling);
 }
 
-function renderPlanCard(plan, enrolling, mix) {
-  const grossPremium = calcTotal(plan.rates, mix);
-  const employer = calculateContribution(plan, enrolling, grossPremium);
+function renderPlanCard(plan, mix) {
+  const grossPremium = calcGrossPremium(plan.rates, mix);
+  const employer = calculateEmployerCost(plan, mix, grossPremium);
   const employee = grossPremium - employer;
 
   const limitHtml = plan.limitedNotes
@@ -340,14 +316,17 @@ function renderPlanCard(plan, enrolling, mix) {
       </div>
 
       <div class="metric-row employer">
-        <strong>Estimated Employer Cost</strong>
+        <strong>Estimated Employer Monthly Cost</strong>
         <div class="big-number">${money(employer)}</div>
       </div>
       <div class="metric-row"><strong>Gross Monthly Premium:</strong> ${money(grossPremium)}</div>
-      <div class="metric-row"><strong>Estimated Employee Payroll Share:</strong> ${money(employee)}</div>
+      <div class="metric-row"><strong>Estimated Employee Monthly Share:</strong> ${money(employee)}</div>
 
       <ul class="benefit-list">
-        <li><span>Monthly Employee Rate</span><strong>${plan.details.employeeRate}</strong></li>
+        <li><span>Employee Only</span><strong>${money(plan.rates.employeeOnly)}</strong></li>
+        <li><span>Employee + Spouse</span><strong>${money(plan.rates.employeeSpouse)}</strong></li>
+        <li><span>Employee + Child(ren)</span><strong>${money(plan.rates.employeeChildren)}</strong></li>
+        <li><span>Family</span><strong>${money(plan.rates.family)}</strong></li>
         <li><span>Deductible</span><strong>${plan.details.deductible}</strong></li>
         <li><span>Out of Pocket Max</span><strong>${plan.details.oopMax}</strong></li>
         <li><span>PCP Copay</span><strong>${plan.details.pcp}</strong></li>
@@ -375,9 +354,9 @@ function renderResults() {
   const lowPlans = plans.filter((p) => p.group === 'low');
   const mecPlans = plans.filter((p) => p.group === 'mec');
 
-  topPlansGrid.innerHTML = topPlans.map((plan) => renderPlanCard(plan, enrolling, mix)).join('');
-  lowCostPlansGrid.innerHTML = lowPlans.map((plan) => renderPlanCard(plan, enrolling, mix)).join('');
-  mecPlansGrid.innerHTML = mecPlans.map((plan) => renderPlanCard(plan, enrolling, mix)).join('');
+  topPlansGrid.innerHTML = topPlans.map((plan) => renderPlanCard(plan, mix)).join('');
+  lowCostPlansGrid.innerHTML = lowPlans.map((plan) => renderPlanCard(plan, mix)).join('');
+  mecPlansGrid.innerHTML = mecPlans.map((plan) => renderPlanCard(plan, mix)).join('');
 }
 
 function resetLeadForm() {
