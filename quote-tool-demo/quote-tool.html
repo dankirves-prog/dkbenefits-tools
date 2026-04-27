@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DK Benefits | Employer Group Benefits Estimate</title>
+  <meta name="description" content="Employer-facing guided quote funnel for group benefits estimates." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="quote-tool.css" />
+</head>
+<body>
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <div class="brand-block">
+        <span class="brand-mark">DK</span>
+        <div>
+          <p class="brand-name">DK Benefits LLC</p>
+          <p class="brand-role">Daniel Kirves · Benefits Broker</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="tel:4074765076">Call/Text: 407-476-5076</a>
+        <a href="mailto:dan@dkbenefits.net">dan@dkbenefits.net</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero card-glass">
+      <div>
+        <p class="eyebrow">Employer quote funnel · front-end only preview</p>
+        <h1>See real group benefits rates in minutes.</h1>
+        <p>These are real current starting rates based on the information provided.</p>
+        <p>Many groups use these rates as a planning benchmark. Additional carriers and customized quotes may also be available.</p>
+        <p><strong>Need exact pricing?</strong> We can review the broader market for you.</p>
+      </div>
+      <aside class="hero-aside">
+        <p class="muted-label">What you’ll get</p>
+        <ul>
+          <li>One question at a time intake</li>
+          <li>Contribution tools by percent or flat dollar</li>
+          <li>Compact plan details in premium card view</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section class="card funnel" id="funnelSection">
+      <div class="progress-wrap">
+        <div class="progress-shell">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <p id="progressText">Question 1 of 6</p>
+      </div>
+
+      <div id="questionHost" class="question-host"></div>
+
+      <div class="funnel-actions">
+        <button class="btn btn-neutral" id="backBtn" type="button">Back</button>
+        <button class="btn btn-primary" id="nextBtn" type="button">Continue</button>
+      </div>
+    </section>
+
+    <section class="results-shell hidden" id="resultsSection">
+      <div class="section-head">
+        <p class="eyebrow">Your planning benchmark</p>
+        <h2>Real current starting rates for the options shown</h2>
+        <p id="resultsSummary"></p>
+      </div>
+
+      <div class="card contribution">
+        <div>
+          <h3>Contribution tools</h3>
+          <p>Model employer contribution as a percentage of employee-only premium, or a flat monthly dollar amount per enrolled employee.</p>
+        </div>
+        <div class="contribution-controls">
+          <div class="contrib-model" id="contribModelWrap">
+            <button type="button" class="model-btn active" data-model="percent">% of Employee Only</button>
+            <button type="button" class="model-btn" data-model="flat">Flat Dollar / Enrolled Employee</button>
+          </div>
+
+          <div id="percentControl">
+            <label for="employerContribution">Employer contribution: % of Employee Only premium</label>
+            <input type="range" id="employerContribution" min="50" max="100" value="50" />
+            <p><strong id="contributionLabel">50%</strong> of employee-only premium</p>
+          </div>
+
+          <div id="flatControl" class="hidden">
+            <label for="flatContributionSelect">Flat monthly amount per enrolled employee</label>
+            <div class="flat-row">
+              <select id="flatContributionSelect">
+                <option value="200">$200</option>
+                <option value="300" selected>$300</option>
+                <option value="400">$400</option>
+                <option value="custom">Custom</option>
+              </select>
+              <input type="number" id="flatContributionCustom" class="hidden" min="0" step="10" placeholder="Custom amount" />
+            </div>
+            <p><strong id="flatLabel">$300</strong> per enrolled employee</p>
+          </div>
+
+          <p class="contrib-note">Some programs have separate minimum contribution rules. Certain major medical programs may require at least 50% of employee-only premium for the lowest eligible major medical plan.</p>
+        </div>
+      </div>
+
+      <div class="card tier-mix-card">
+        <h3>Estimated enrollment mix</h3>
+        <div class="mix-grid">
+          <label>Employee only
+            <input type="number" id="mixEe" min="0" />
+          </label>
+          <label>Employee + spouse
+            <input type="number" id="mixEs" min="0" />
+          </label>
+          <label>Employee + child
+            <input type="number" id="mixEc" min="0" />
+          </label>
+          <label>Family
+            <input type="number" id="mixFam" min="0" />
+          </label>
+        </div>
+        <p id="mixNote" class="mix-note"></p>
+      </div>
+
+      <div class="results-actions">
+        <button type="button" class="btn btn-neutral" id="editAnswersBtn">Edit answers</button>
+        <button type="button" class="btn btn-neutral" id="startOverBtn">Start over</button>
+      </div>
+
+      <h3 class="section-title">Top Display Group</h3>
+      <div class="plans-grid" id="topPlansGrid"></div>
+
+      <h3 class="section-title">Lower Cost Section</h3>
+      <div class="plans-grid" id="lowCostPlansGrid"></div>
+
+      <section class="mec-section">
+        <button type="button" id="toggleMecBtn" class="btn btn-neutral">Show MEC Section</button>
+        <div id="mecPlansWrap" class="hidden">
+          <h3 class="section-title">MEC Section</h3>
+          <div class="plans-grid" id="mecPlansGrid"></div>
+        </div>
+      </section>
+
+      <p class="disclosure">Estimated from real published starting rates. Final pricing depends on eligibility, participation, current coverage, underwriting, and census verification.</p>
+
+      <div class="card lead-capture" id="leadCapture">
+        <h3>Need exact pricing? We can review the broader market for you.</h3>
+        <p>Share your info and Daniel can compare additional carrier options and customized plan structures.</p>
+        <form id="leadForm" class="lead-form">
+          <label>First name
+            <input type="text" id="firstName" required placeholder="First name" />
+          </label>
+          <label>Work email
+            <input type="email" id="email" required placeholder="you@company.com" />
+          </label>
+          <label>Best phone (optional)
+            <input type="tel" id="phone" placeholder="407-555-0123" />
+          </label>
+          <button class="btn btn-primary" type="submit">Send to Daniel</button>
+        </form>
+        <p class="success hidden" id="leadSuccess">Thanks — Daniel will follow up shortly.</p>
+      </div>
+
+      <div class="card cta-daniel">
+        <h3>Need help now?</h3>
+        <p><strong>Daniel Kirves</strong></p>
+        <p>Call or Text <a href="tel:4074765076">407-476-5076</a></p>
+        <p><a href="mailto:dan@dkbenefits.net">dan@dkbenefits.net</a></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="quote-tool.js"></script>
+</body>
+</html>
