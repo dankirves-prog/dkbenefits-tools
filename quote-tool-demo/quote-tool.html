@@ -33,16 +33,16 @@
   <main class="container">
     <section class="hero card-glass">
       <div>
-        <p class="eyebrow">For employers · no backend connected in this version</p>
-        <h1>See realistic group benefits starting costs in under a minute.</h1>
-        <p>Answer a few quick questions and we’ll estimate monthly employer cost and employee payroll deductions.</p>
+        <p class="eyebrow">For employers · front-end preview</p>
+        <h1>See real group benefits rates in minutes.</h1>
+        <p>These are real published starting rates for the options shown. Final pricing may still depend on eligibility, participation, current coverage, underwriting, and census verification.</p>
       </div>
       <aside class="hero-aside">
         <p class="muted-label">What you’ll get</p>
         <ul>
           <li>Easy one-question-at-a-time flow</li>
-          <li>Estimated plan options with tradeoffs</li>
-          <li>Simple next step with Daniel if you want help</li>
+          <li>Benefits-at-a-glance summaries</li>
+          <li>Clear next step with Daniel for broader market comparisons</li>
         </ul>
       </aside>
     </section>
@@ -66,28 +66,57 @@
     <section class="results-shell hidden" id="resultsSection">
       <div class="section-head">
         <p class="eyebrow">Your starting estimate preview</p>
-        <h2>Here are sample options for your team profile</h2>
+        <h2>Here are options for your team profile</h2>
         <p id="resultsSummary"></p>
       </div>
 
       <div class="card contribution">
         <div>
           <h3>Contribution estimate</h3>
-          <p>Default starts at the minimum floor: 50% of employee-only major medical rate.</p>
+          <p>Model contribution as a percentage or a flat monthly amount per enrolling employee.</p>
         </div>
-        <div class="slider-wrap">
-          <label for="employerContribution">Employer contribution %</label>
-          <input type="range" id="employerContribution" min="50" max="90" value="50" />
-          <p><strong id="contributionLabel">50%</strong> employer share</p>
+        <div class="contribution-controls">
+          <div class="contrib-model" id="contribModelWrap">
+            <button type="button" class="model-btn active" data-model="percent">% of employee-only rate</button>
+            <button type="button" class="model-btn" data-model="flat">Flat $ per enrolling employee</button>
+          </div>
+
+          <div id="percentControl">
+            <label for="employerContribution">Employer contribution: % of employee-only rate</label>
+            <input type="range" id="employerContribution" min="50" max="100" value="50" />
+            <p><strong id="contributionLabel">50%</strong> of employee-only rate</p>
+          </div>
+
+          <div id="flatControl" class="hidden">
+            <label for="flatContributionSelect">Flat monthly amount per enrolling employee</label>
+            <div class="flat-row">
+              <select id="flatContributionSelect">
+                <option value="250">$250</option>
+                <option value="300" selected>$300</option>
+                <option value="400">$400</option>
+                <option value="500">$500</option>
+                <option value="custom">Custom</option>
+              </select>
+              <input type="number" id="flatContributionCustom" class="hidden" min="0" step="10" placeholder="Custom amount" />
+            </div>
+            <p><strong id="flatLabel">$300</strong> per enrolling employee</p>
+          </div>
+
+          <p class="contrib-note">Some programs have separate minimum contribution rules. For example, certain major medical programs may require the employer to contribute at least 50% of the employee-only premium for the lowest eligible major medical plan.</p>
         </div>
+      </div>
+
+      <div class="results-actions">
+        <button type="button" class="btn btn-neutral" id="editAnswersBtn">Edit answers</button>
+        <button type="button" class="btn btn-neutral" id="startOverBtn">Start over</button>
       </div>
 
       <div class="plans-grid" id="plansGrid"></div>
       <p class="disclosure">Estimated from real published starting rates. Final pricing depends on eligibility, participation, current coverage, underwriting, and census verification.</p>
 
       <div class="card lead-capture" id="leadCapture">
-        <h3>Want a tailored version for your actual employee census?</h3>
-        <p>Share your contact details and Daniel will send next-step options. No pressure.</p>
+        <h3>Want to compare the broader market for your group?</h3>
+        <p>Share your contact details and Daniel can review additional options beyond the plans shown here.</p>
         <form id="leadForm" class="lead-form">
           <label>First name
             <input type="text" id="firstName" required placeholder="First name" />

@@ -6,7 +6,7 @@ This folder contains a static, employer-facing guided quote funnel for DK Benefi
 
 - `quote-tool.html` — one-question-at-a-time guided intake + dynamic results + lead capture
 - `quote-tool.css` — premium visual style (desktop-first, mobile-compatible)
-- `quote-tool.js` — front-end flow logic and estimate rendering
+- `quote-tool.js` — front-end flow logic, contribution model toggles, plan card rendering
 
 ## Scope
 
@@ -14,6 +14,17 @@ This folder contains a static, employer-facing guided quote funnel for DK Benefi
 - No Wix backend integration
 - No CRM integration
 - No production underwriting logic
+
+## Features in this version
+
+- Employer-facing start-page copy using real published starting-rate positioning
+- Current-coverage question with only Yes/No paths
+- Contribution modeling:
+  - percentage of employee-only rate
+  - flat monthly dollar amount per enrolling employee
+- Benefits-at-a-glance expandable plan highlights
+- Clear MEC/limited coverage explanation and major limitations
+- Back on intake, plus Edit answers and Start over on results
 
 ## Preview locally
 

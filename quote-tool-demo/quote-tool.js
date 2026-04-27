@@ -8,33 +8,80 @@ const resultsSummary = document.getElementById('resultsSummary');
 const plansGrid = document.getElementById('plansGrid');
 const employerContribution = document.getElementById('employerContribution');
 const contributionLabel = document.getElementById('contributionLabel');
+const flatContributionSelect = document.getElementById('flatContributionSelect');
+const flatContributionCustom = document.getElementById('flatContributionCustom');
+const flatLabel = document.getElementById('flatLabel');
+const percentControl = document.getElementById('percentControl');
+const flatControl = document.getElementById('flatControl');
+const contribModelWrap = document.getElementById('contribModelWrap');
 const leadForm = document.getElementById('leadForm');
 const leadSuccess = document.getElementById('leadSuccess');
+const editAnswersBtn = document.getElementById('editAnswersBtn');
+const startOverBtn = document.getElementById('startOverBtn');
+const funnelSection = document.getElementById('funnelSection');
 
 const samplePlans = [
-  {
-    name: 'Lower Cost Essential Coverage Option',
-    type: 'MEC',
-    rates: { ee: 182, es: 356, ec: 322, fam: 489 },
-    tradeoff: 'Lowest monthly cost, but not comprehensive major medical.'
-  },
   {
     name: 'Cigna Network EPO Option',
     type: 'Major Medical',
     rates: { ee: 451, es: 887, ec: 799, fam: 1218 },
-    tradeoff: 'Good network access and value, limited out-of-network coverage.'
+    tradeoff: 'Solid value and broad access, but limited out-of-network coverage.',
+    benefits: {
+      deductible: '$4,000 individual / $8,000 family',
+      oop: '$8,550 individual / $17,100 family',
+      pcp: '$35 copay after eligibility',
+      specialist: '$75 copay',
+      urgent: '$95 copay',
+      rx: 'Generic/preferred tiers with copay and deductible interactions'
+    }
   },
   {
     name: 'PHCS PPO Value Option',
     type: 'Major Medical',
     rates: { ee: 468, es: 919, ec: 828, fam: 1264 },
-    tradeoff: 'Familiar PPO structure, slightly higher premium than EPO.'
+    tradeoff: 'Familiar PPO access with slightly higher monthly cost.',
+    benefits: {
+      deductible: '$5,000 individual / $10,000 family',
+      oop: '$9,100 individual / $18,200 family',
+      pcp: '$40 copay with deductible for some services',
+      specialist: '$85 copay',
+      urgent: '$110 copay',
+      rx: 'Tiered Rx with deductible on selected drugs'
+    }
   },
   {
     name: 'Broad Network HSA Option',
     type: 'HSA',
     rates: { ee: 429, es: 844, ec: 759, fam: 1172 },
-    tradeoff: 'Lower premium potential with deductible-first plan design.'
+    tradeoff: 'Lower premiums and HSA compatibility, but more deductible-first cost sharing.',
+    benefits: {
+      deductible: '$3,200 individual / $6,400 family',
+      oop: '$7,500 individual / $15,000 family',
+      pcp: 'Subject to deductible, then coinsurance',
+      specialist: 'Subject to deductible, then coinsurance',
+      urgent: 'Subject to deductible, then coinsurance',
+      rx: 'Integrated with deductible; HSA-friendly structure'
+    }
+  },
+  {
+    name: 'Lower Cost Essential Coverage Option',
+    type: 'MEC',
+    rates: { ee: 182, es: 356, ec: 322, fam: 489 },
+    tradeoff: 'Very low monthly cost but narrower protection than major medical.',
+    limitations: [
+      'may not cover hospital care',
+      'may limit doctor and specialist visits',
+      'may limit imaging, ER, ambulance, or surgery benefits',
+      'may not cover brand-name drugs, depending on the plan'
+    ],
+    benefits: {
+      deductible: 'Varies by option and service schedule',
+      oop: 'Not structured like traditional major medical OOP limits',
+      pcp: 'Preventive/basic visit allowances may apply',
+      specialist: 'Limited visit structure may apply',
+      urgent: 'Limited fixed-benefit treatment',
+      rx: 'Formulary and class limitations may apply'
+    }
   }
 ];
 
@@ -76,9 +123,8 @@ const questions = [
     title: 'Do you currently offer a group health plan?',
     kind: 'choice',
     options: [
-      { label: 'Yes', value: 'yes' },
-      { label: 'No', value: 'no' },
-      { label: 'Not sure', value: 'unsure' }
+      { label: 'Yes, we currently offer group health benefits', value: 'yes' },
+      { label: 'No, this would be our first group health plan', value: 'no' }
     ]
   },
   {
@@ -94,6 +140,7 @@ const questions = [
 ];
 
 let current = 0;
+let contributionModel = 'percent';
 const answers = {};
 
 function renderQuestion() {
@@ -152,7 +199,22 @@ function estimateMix(enrolling) {
 }
 
 function money(n) {
-  return `$${n.toLocaleString()}`;
+  return `$${Math.round(n).toLocaleString()}`;
+}
+
+function getFlatAmount() {
+  if (flatContributionSelect.value === 'custom') {
+    return Number(flatContributionCustom.value || 0);
+  }
+  return Number(flatContributionSelect.value || 0);
+}
+
+function updateModelUI() {
+  contribModelWrap.querySelectorAll('.model-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.model === contributionModel);
+  });
+  percentControl.classList.toggle('hidden', contributionModel !== 'percent');
+  flatControl.classList.toggle('hidden', contributionModel !== 'flat');
 }
 
 function renderResults() {
@@ -160,36 +222,83 @@ function renderResults() {
   const employees = Number(answers.employees || enrolling);
   const mix = estimateMix(enrolling);
   const pct = Number(employerContribution.value) / 100;
+  const flatAmount = getFlatAmount();
 
   contributionLabel.textContent = `${employerContribution.value}%`;
+  flatLabel.textContent = money(flatAmount);
   resultsSummary.textContent = `${answers.state || 'Your state'} · ${employees} eligible employees · about ${enrolling} enrolling. Sorted by lowest estimated monthly total for your team mix.`;
 
   const plans = samplePlans.map((plan) => {
     const total = calcTotal(plan.rates, mix);
-    const employer = Math.round(total * pct);
-    return { ...plan, total, employer, employee: total - employer };
+    const employerByPercent = plan.rates.ee * pct * enrolling;
+    const employerByFlat = flatAmount * enrolling;
+    const employer = contributionModel === 'percent' ? employerByPercent : employerByFlat;
+    const cappedEmployer = Math.min(total, employer);
+    return { ...plan, total, employer: cappedEmployer, employee: total - cappedEmployer };
   }).sort((a, b) => a.total - b.total);
 
-  plansGrid.innerHTML = plans.map((plan) => `
-    <article class="plan-card">
-      <div class="plan-head">
-        <div>
-          <h3>${plan.name}</h3>
-          <p>${plan.type}</p>
+  plansGrid.innerHTML = plans.map((plan) => {
+    const limitedCoverage = plan.type === 'MEC' || plan.type === 'Limited Benefit';
+    const benefitList = `
+      <ul class="glance-list">
+        <li><strong>Deductible:</strong> ${plan.benefits.deductible}</li>
+        <li><strong>Out-of-pocket max:</strong> ${plan.benefits.oop}</li>
+        <li><strong>PCP/office visit:</strong> ${plan.benefits.pcp}</li>
+        <li><strong>Specialist:</strong> ${plan.benefits.specialist}</li>
+        <li><strong>Urgent care:</strong> ${plan.benefits.urgent}</li>
+        <li><strong>Rx summary:</strong> ${plan.benefits.rx}</li>
+      </ul>`;
+
+    const limitationBlock = limitedCoverage
+      ? `<p class="limit-note"><strong>This is limited coverage, not traditional major medical.</strong></p>
+         <ul class="glance-list">${plan.limitations.map((item) => `<li>${item}</li>`).join('')}</ul>`
+      : '';
+
+    return `
+      <article class="plan-card">
+        <div class="plan-head">
+          <div>
+            <h3>${plan.name}</h3>
+            <p>${plan.type}</p>
+          </div>
+          <span class="badge">Likely Eligible</span>
         </div>
-        <span class="badge">Likely Eligible</span>
-      </div>
-      <ul class="rate-list">
-        <li><span>Employee only</span><strong>${money(plan.rates.ee)}</strong></li>
-        <li><span>EE + Spouse</span><strong>${money(plan.rates.es)}</strong></li>
-        <li><span>EE + Child(ren)</span><strong>${money(plan.rates.ec)}</strong></li>
-        <li><span>Family</span><strong>${money(plan.rates.fam)}</strong></li>
-      </ul>
-      <div class="metric"><strong>Estimated monthly employer cost:</strong> ${money(plan.employer)}</div>
-      <div class="metric"><strong>Estimated employee deduction:</strong> ${money(plan.employee)}</div>
-      <p class="tradeoff"><strong>Tradeoff:</strong> ${plan.tradeoff}</p>
-    </article>
-  `).join('');
+        <ul class="rate-list">
+          <li><span>Employee only</span><strong>${money(plan.rates.ee)}</strong></li>
+          <li><span>EE + Spouse</span><strong>${money(plan.rates.es)}</strong></li>
+          <li><span>EE + Child(ren)</span><strong>${money(plan.rates.ec)}</strong></li>
+          <li><span>Family</span><strong>${money(plan.rates.fam)}</strong></li>
+        </ul>
+        <div class="metric"><strong>Estimated monthly employer cost:</strong> ${money(plan.employer)}</div>
+        <div class="metric"><strong>Estimated employee deduction:</strong> ${money(plan.employee)}</div>
+        <p class="tradeoff"><strong>Major tradeoff:</strong> ${plan.tradeoff}</p>
+
+        <details class="benefit-details">
+          <summary>See benefit highlights</summary>
+          ${benefitList}
+          ${limitationBlock}
+        </details>
+      </article>
+    `;
+  }).join('');
+}
+
+function startOver() {
+  Object.keys(answers).forEach((key) => delete answers[key]);
+  answers[questions[0].key] = questions[0].options[0].value;
+  current = 0;
+  contributionModel = 'percent';
+  employerContribution.value = 50;
+  flatContributionSelect.value = '300';
+  flatContributionCustom.value = '';
+  flatContributionCustom.classList.add('hidden');
+  updateModelUI();
+
+  resultsSection.classList.add('hidden');
+  funnelSection.classList.remove('hidden');
+  leadForm.classList.remove('hidden');
+  leadSuccess.classList.add('hidden');
+  renderQuestion();
 }
 
 nextBtn.addEventListener('click', () => {
@@ -200,7 +309,7 @@ nextBtn.addEventListener('click', () => {
   }
 
   if (current === questions.length - 1) {
-    document.getElementById('funnelSection').classList.add('hidden');
+    funnelSection.classList.add('hidden');
     resultsSection.classList.remove('hidden');
     renderResults();
     resultsSection.scrollIntoView({ behavior: 'smooth' });
@@ -219,7 +328,20 @@ backBtn.addEventListener('click', () => {
   }
 });
 
+contribModelWrap.addEventListener('click', (event) => {
+  const btn = event.target.closest('.model-btn');
+  if (!btn) return;
+  contributionModel = btn.dataset.model;
+  updateModelUI();
+  renderResults();
+});
+
 employerContribution.addEventListener('input', renderResults);
+flatContributionSelect.addEventListener('change', () => {
+  flatContributionCustom.classList.toggle('hidden', flatContributionSelect.value !== 'custom');
+  renderResults();
+});
+flatContributionCustom.addEventListener('input', renderResults);
 
 leadForm.addEventListener('submit', (event) => {
   event.preventDefault();
@@ -231,5 +353,16 @@ leadForm.addEventListener('submit', (event) => {
   leadForm.classList.add('hidden');
 });
 
+editAnswersBtn.addEventListener('click', () => {
+  resultsSection.classList.add('hidden');
+  funnelSection.classList.remove('hidden');
+  current = 0;
+  renderQuestion();
+  funnelSection.scrollIntoView({ behavior: 'smooth' });
+});
+
+startOverBtn.addEventListener('click', startOver);
+
 answers[questions[0].key] = questions[0].options[0].value;
+updateModelUI();
 renderQuestion();
