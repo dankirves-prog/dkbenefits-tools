@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DK Benefits | Employer Group Benefits Estimate</title>
+  <meta name="description" content="Employer-facing guided quote funnel for group benefits estimates." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="quote-tool.css" />
+</head>
+<body>
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <div class="brand-block">
+        <span class="brand-mark">DK</span>
+        <div>
+          <p class="brand-name">DK Benefits LLC</p>
+          <p class="brand-role">Daniel Kirves · Benefits Broker</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="tel:4074765076">Call/Text: 407-476-5076</a>
+        <a href="mailto:dan@dkbenefits.net">dan@dkbenefits.net</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero card-glass">
+      <div>
+        <p class="eyebrow">For employers · no backend connected in this version</p>
+        <h1>See realistic group benefits starting costs in under a minute.</h1>
+        <p>Answer a few quick questions and we’ll estimate monthly employer cost and employee payroll deductions.</p>
+      </div>
+      <aside class="hero-aside">
+        <p class="muted-label">What you’ll get</p>
+        <ul>
+          <li>Easy one-question-at-a-time flow</li>
+          <li>Estimated plan options with tradeoffs</li>
+          <li>Simple next step with Daniel if you want help</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section class="card funnel" id="funnelSection">
+      <div class="progress-wrap">
+        <div class="progress-shell">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <p id="progressText">Question 1 of 6</p>
+      </div>
+
+      <div id="questionHost" class="question-host"></div>
+
+      <div class="funnel-actions">
+        <button class="btn btn-neutral" id="backBtn" type="button">Back</button>
+        <button class="btn btn-primary" id="nextBtn" type="button">Continue</button>
+      </div>
+    </section>
+
+    <section class="results-shell hidden" id="resultsSection">
+      <div class="section-head">
+        <p class="eyebrow">Your starting estimate preview</p>
+        <h2>Here are sample options for your team profile</h2>
+        <p id="resultsSummary"></p>
+      </div>
+
+      <div class="card contribution">
+        <div>
+          <h3>Contribution estimate</h3>
+          <p>Default starts at the minimum floor: 50% of employee-only major medical rate.</p>
+        </div>
+        <div class="slider-wrap">
+          <label for="employerContribution">Employer contribution %</label>
+          <input type="range" id="employerContribution" min="50" max="90" value="50" />
+          <p><strong id="contributionLabel">50%</strong> employer share</p>
+        </div>
+      </div>
+
+      <div class="plans-grid" id="plansGrid"></div>
+      <p class="disclosure">Estimated from real published starting rates. Final pricing depends on eligibility, participation, current coverage, underwriting, and census verification.</p>
+
+      <div class="card lead-capture" id="leadCapture">
+        <h3>Want a tailored version for your actual employee census?</h3>
+        <p>Share your contact details and Daniel will send next-step options. No pressure.</p>
+        <form id="leadForm" class="lead-form">
+          <label>First name
+            <input type="text" id="firstName" required placeholder="First name" />
+          </label>
+          <label>Work email
+            <input type="email" id="email" required placeholder="you@company.com" />
+          </label>
+          <label>Best phone (optional)
+            <input type="tel" id="phone" placeholder="407-555-0123" />
+          </label>
+          <button class="btn btn-primary" type="submit">Send to Daniel</button>
+        </form>
+        <p class="success hidden" id="leadSuccess">Thanks — Daniel will follow up shortly.</p>
+      </div>
+
+      <div class="card cta-daniel">
+        <h3>Prefer to talk with Daniel?</h3>
+        <p>Call or text <strong>407-476-5076</strong>. Sometimes a quick 5-minute conversation saves a lot of back-and-forth.</p>
+        <div class="inline-actions">
+          <a class="btn btn-primary" href="tel:4074765076">Call/Text Daniel</a>
+          <a class="btn btn-neutral" href="mailto:dan@dkbenefits.net">Email Daniel</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="quote-tool.js"></script>
+</body>
+</html>
