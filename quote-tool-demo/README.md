@@ -4,9 +4,9 @@ This folder contains a static, employer-facing guided quote funnel for DK Benefi
 
 ## Files
 
-- `quote-tool.html` — one-question-at-a-time guided intake + dynamic results + lead capture
+- `quote-tool.html` — one-question-at-a-time guided intake + dynamic results + lead capture + CTA
 - `quote-tool.css` — premium visual style (desktop-first, mobile-compatible)
-- `quote-tool.js` — front-end flow logic, contribution model toggles, plan card rendering
+- `quote-tool.js` — front-end flow logic, contribution modes, plan card rendering
 
 ## Scope
 
@@ -15,16 +15,16 @@ This folder contains a static, employer-facing guided quote funnel for DK Benefi
 - No CRM integration
 - No production underwriting logic
 
-## Features in this version
+## Functional highlights
 
-- Employer-facing start-page copy using real published starting-rate positioning
-- Current-coverage question with only Yes/No paths
-- Contribution modeling:
-  - percentage of employee-only rate
-  - flat monthly dollar amount per enrolling employee
-- Benefits-at-a-glance expandable plan highlights
-- Clear MEC/limited coverage explanation and major limitations
-- Back on intake, plus Edit answers and Start over on results
+- Back button on every intake step
+- Edit answers returns to first question with saved answers
+- Start over resets all answers, contribution mode/values, and lead form state
+- Contribution Mode A: % of employee-only premium (50% to 100%)
+- Contribution Mode B: flat dollar per enrolled employee ($200/$300/$400/custom)
+- Top Display Group, Lower Cost Section, and hidden MEC section
+- Plan cards include network, rate, deductible, OOP max, PCP/specialist/urgent care, and Rx summary
+- Brief limited-coverage explanation for budget/limited/MEC plan types
 
 ## Preview locally
 

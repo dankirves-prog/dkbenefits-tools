@@ -33,16 +33,18 @@
   <main class="container">
     <section class="hero card-glass">
       <div>
-        <p class="eyebrow">For employers · front-end preview</p>
+        <p class="eyebrow">Employer quote funnel · front-end only preview</p>
         <h1>See real group benefits rates in minutes.</h1>
-        <p>These are real published starting rates for the options shown. Final pricing may still depend on eligibility, participation, current coverage, underwriting, and census verification.</p>
+        <p>These are real current starting rates based on the information provided.</p>
+        <p>Many groups use these rates as a planning benchmark. Additional carriers and customized quotes may also be available.</p>
+        <p><strong>Need exact pricing?</strong> We can review the broader market for you.</p>
       </div>
       <aside class="hero-aside">
         <p class="muted-label">What you’ll get</p>
         <ul>
-          <li>Easy one-question-at-a-time flow</li>
-          <li>Benefits-at-a-glance summaries</li>
-          <li>Clear next step with Daniel for broader market comparisons</li>
+          <li>One question at a time intake</li>
+          <li>Contribution tools by percent or flat dollar</li>
+          <li>Compact plan details in premium card view</li>
         </ul>
       </aside>
     </section>
@@ -65,44 +67,54 @@
 
     <section class="results-shell hidden" id="resultsSection">
       <div class="section-head">
-        <p class="eyebrow">Your starting estimate preview</p>
-        <h2>Here are options for your team profile</h2>
+        <p class="eyebrow">Your planning benchmark</p>
+        <h2>Real current starting rates for the options shown</h2>
         <p id="resultsSummary"></p>
       </div>
 
       <div class="card contribution">
         <div>
-          <h3>Contribution estimate</h3>
-          <p>Model contribution as a percentage or a flat monthly amount per enrolling employee.</p>
+          <h3>Contribution tools</h3>
+          <p>Model employer contribution as a percentage of employee-only premium, or a flat monthly dollar amount per enrolled employee.</p>
         </div>
         <div class="contribution-controls">
           <div class="contrib-model" id="contribModelWrap">
-            <button type="button" class="model-btn active" data-model="percent">% of employee-only rate</button>
-            <button type="button" class="model-btn" data-model="flat">Flat $ per enrolling employee</button>
+            <button type="button" class="model-btn active" data-model="percent">% of Employee Only</button>
+            <button type="button" class="model-btn" data-model="flat">Flat Dollar / Enrolled Employee</button>
           </div>
 
           <div id="percentControl">
-            <label for="employerContribution">Employer contribution: % of employee-only rate</label>
+            <label for="employerContribution">Employer contribution: % of Employee Only premium</label>
             <input type="range" id="employerContribution" min="50" max="100" value="50" />
-            <p><strong id="contributionLabel">50%</strong> of employee-only rate</p>
+            <p><strong id="contributionLabel">50%</strong> of employee-only premium</p>
           </div>
 
           <div id="flatControl" class="hidden">
-            <label for="flatContributionSelect">Flat monthly amount per enrolling employee</label>
+            <label for="flatContributionSelect">Flat monthly amount per enrolled employee</label>
             <div class="flat-row">
               <select id="flatContributionSelect">
-                <option value="250">$250</option>
+                <option value="200">$200</option>
                 <option value="300" selected>$300</option>
                 <option value="400">$400</option>
-                <option value="500">$500</option>
                 <option value="custom">Custom</option>
               </select>
               <input type="number" id="flatContributionCustom" class="hidden" min="0" step="10" placeholder="Custom amount" />
             </div>
-            <p><strong id="flatLabel">$300</strong> per enrolling employee</p>
+            <p><strong id="flatLabel">$300</strong> per enrolled employee</p>
           </div>
 
-          <p class="contrib-note">Some programs have separate minimum contribution rules. For example, certain major medical programs may require the employer to contribute at least 50% of the employee-only premium for the lowest eligible major medical plan.</p>
+          <p class="contrib-note">Some programs have separate minimum contribution rules. Certain major medical programs may require at least 50% of employee-only premium for the lowest eligible major medical plan.</p>
+        </div>
+      </div>
+
+      <div class="cost-summary" id="costSummary">
+        <div class="summary-card">
+          <p>Estimated Employer Monthly Cost</p>
+          <h3 id="employerMonthlyTotal">$0</h3>
+        </div>
+        <div class="summary-card">
+          <p>Estimated Employee Payroll Share</p>
+          <h3 id="employeeMonthlyTotal">$0</h3>
         </div>
       </div>
 
@@ -111,12 +123,25 @@
         <button type="button" class="btn btn-neutral" id="startOverBtn">Start over</button>
       </div>
 
-      <div class="plans-grid" id="plansGrid"></div>
+      <h3 class="section-title">Top Display Group</h3>
+      <div class="plans-grid" id="topPlansGrid"></div>
+
+      <h3 class="section-title">Lower Cost Section</h3>
+      <div class="plans-grid" id="lowCostPlansGrid"></div>
+
+      <section class="mec-section">
+        <button type="button" id="toggleMecBtn" class="btn btn-neutral">Show MEC Section</button>
+        <div id="mecPlansWrap" class="hidden">
+          <h3 class="section-title">MEC Section</h3>
+          <div class="plans-grid" id="mecPlansGrid"></div>
+        </div>
+      </section>
+
       <p class="disclosure">Estimated from real published starting rates. Final pricing depends on eligibility, participation, current coverage, underwriting, and census verification.</p>
 
       <div class="card lead-capture" id="leadCapture">
-        <h3>Want to compare the broader market for your group?</h3>
-        <p>Share your contact details and Daniel can review additional options beyond the plans shown here.</p>
+        <h3>Need exact pricing? We can review the broader market for you.</h3>
+        <p>Share your info and Daniel can compare additional carrier options and customized plan structures.</p>
         <form id="leadForm" class="lead-form">
           <label>First name
             <input type="text" id="firstName" required placeholder="First name" />
@@ -133,12 +158,10 @@
       </div>
 
       <div class="card cta-daniel">
-        <h3>Prefer to talk with Daniel?</h3>
-        <p>Call or text <strong>407-476-5076</strong>. Sometimes a quick 5-minute conversation saves a lot of back-and-forth.</p>
-        <div class="inline-actions">
-          <a class="btn btn-primary" href="tel:4074765076">Call/Text Daniel</a>
-          <a class="btn btn-neutral" href="mailto:dan@dkbenefits.net">Email Daniel</a>
-        </div>
+        <h3>Need help now?</h3>
+        <p><strong>Daniel Kirves</strong></p>
+        <p>Call or Text <a href="tel:4074765076">407-476-5076</a></p>
+        <p><a href="mailto:dan@dkbenefits.net">dan@dkbenefits.net</a></p>
       </div>
     </section>
   </main>

@@ -3,9 +3,10 @@ const progressBar = document.getElementById('progressBar');
 const progressText = document.getElementById('progressText');
 const backBtn = document.getElementById('backBtn');
 const nextBtn = document.getElementById('nextBtn');
+const funnelSection = document.getElementById('funnelSection');
 const resultsSection = document.getElementById('resultsSection');
 const resultsSummary = document.getElementById('resultsSummary');
-const plansGrid = document.getElementById('plansGrid');
+
 const employerContribution = document.getElementById('employerContribution');
 const contributionLabel = document.getElementById('contributionLabel');
 const flatContributionSelect = document.getElementById('flatContributionSelect');
@@ -14,74 +15,197 @@ const flatLabel = document.getElementById('flatLabel');
 const percentControl = document.getElementById('percentControl');
 const flatControl = document.getElementById('flatControl');
 const contribModelWrap = document.getElementById('contribModelWrap');
-const leadForm = document.getElementById('leadForm');
-const leadSuccess = document.getElementById('leadSuccess');
+
+const employerMonthlyTotal = document.getElementById('employerMonthlyTotal');
+const employeeMonthlyTotal = document.getElementById('employeeMonthlyTotal');
+
+const topPlansGrid = document.getElementById('topPlansGrid');
+const lowCostPlansGrid = document.getElementById('lowCostPlansGrid');
+const mecPlansGrid = document.getElementById('mecPlansGrid');
+const mecPlansWrap = document.getElementById('mecPlansWrap');
+const toggleMecBtn = document.getElementById('toggleMecBtn');
+
 const editAnswersBtn = document.getElementById('editAnswersBtn');
 const startOverBtn = document.getElementById('startOverBtn');
-const funnelSection = document.getElementById('funnelSection');
+const leadForm = document.getElementById('leadForm');
+const leadSuccess = document.getElementById('leadSuccess');
+const firstName = document.getElementById('firstName');
+const email = document.getElementById('email');
+const phone = document.getElementById('phone');
 
-const samplePlans = [
+const plans = [
   {
-    name: 'Cigna Network EPO Option',
-    type: 'Major Medical',
-    rates: { ee: 451, es: 887, ec: 799, fam: 1218 },
-    tradeoff: 'Solid value and broad access, but limited out-of-network coverage.',
-    benefits: {
-      deductible: '$4,000 individual / $8,000 family',
-      oop: '$8,550 individual / $17,100 family',
-      pcp: '$35 copay after eligibility',
-      specialist: '$75 copay',
-      urgent: '$95 copay',
-      rx: 'Generic/preferred tiers with copay and deductible interactions'
+    id: 'xgb-cigna-1000',
+    group: 'top',
+    name: 'XGB Cigna EPO 1000',
+    network: 'Cigna EPO',
+    typeBadge: 'Major Medical',
+    rates: { ee: 459, es: 905, ec: 815, fam: 1250 },
+    details: {
+      employeeRate: '$459',
+      deductible: '$1,000',
+      oopMax: '$8,500',
+      pcp: '$50 after deductible',
+      specialist: '$50 after deductible',
+      urgentCare: '$50',
+      rx: 'Generic $0'
     }
   },
   {
-    name: 'PHCS PPO Value Option',
-    type: 'Major Medical',
-    rates: { ee: 468, es: 919, ec: 828, fam: 1264 },
-    tradeoff: 'Familiar PPO access with slightly higher monthly cost.',
-    benefits: {
-      deductible: '$5,000 individual / $10,000 family',
-      oop: '$9,100 individual / $18,200 family',
-      pcp: '$40 copay with deductible for some services',
-      specialist: '$85 copay',
-      urgent: '$110 copay',
-      rx: 'Tiered Rx with deductible on selected drugs'
+    id: 'xgb-cigna-1750-hsa',
+    group: 'top',
+    name: 'XGB Cigna EPO 1750 HSA',
+    network: 'Cigna EPO',
+    typeBadge: 'HSA',
+    rates: { ee: 414, es: 830, ec: 745, fam: 1150 },
+    details: {
+      employeeRate: '$414',
+      deductible: '$1,750',
+      oopMax: '$8,500',
+      pcp: 'Deductible then plan share',
+      specialist: 'Deductible then plan share',
+      urgentCare: 'Deductible then plan share',
+      rx: 'HSA-compatible structure'
     }
   },
   {
-    name: 'Broad Network HSA Option',
-    type: 'HSA',
-    rates: { ee: 429, es: 844, ec: 759, fam: 1172 },
-    tradeoff: 'Lower premiums and HSA compatibility, but more deductible-first cost sharing.',
-    benefits: {
-      deductible: '$3,200 individual / $6,400 family',
-      oop: '$7,500 individual / $15,000 family',
-      pcp: 'Subject to deductible, then coinsurance',
-      specialist: 'Subject to deductible, then coinsurance',
-      urgent: 'Subject to deductible, then coinsurance',
-      rx: 'Integrated with deductible; HSA-friendly structure'
+    id: 'ep-4500-copay',
+    group: 'top',
+    name: 'EnrollPrime 4500 Copay',
+    network: 'EnrollPrime PPO',
+    typeBadge: 'Major Medical',
+    rates: { ee: 697.12, es: 1320, ec: 1215, fam: 1850 },
+    details: {
+      employeeRate: '$697.12',
+      deductible: '$4,500',
+      oopMax: '$9,100',
+      pcp: '$40',
+      specialist: '$75',
+      urgentCare: '$90',
+      rx: '$20 / $65 / $95'
     }
   },
   {
-    name: 'Lower Cost Essential Coverage Option',
-    type: 'MEC',
-    rates: { ee: 182, es: 356, ec: 322, fam: 489 },
-    tradeoff: 'Very low monthly cost but narrower protection than major medical.',
-    limitations: [
-      'may not cover hospital care',
-      'may limit doctor and specialist visits',
-      'may limit imaging, ER, ambulance, or surgery benefits',
-      'may not cover brand-name drugs, depending on the plan'
-    ],
-    benefits: {
-      deductible: 'Varies by option and service schedule',
-      oop: 'Not structured like traditional major medical OOP limits',
-      pcp: 'Preventive/basic visit allowances may apply',
-      specialist: 'Limited visit structure may apply',
-      urgent: 'Limited fixed-benefit treatment',
-      rx: 'Formulary and class limitations may apply'
+    id: 'ep-3500-copay',
+    group: 'top',
+    name: 'EnrollPrime 3500 Copay',
+    network: 'EnrollPrime PPO',
+    typeBadge: 'Major Medical',
+    rates: { ee: 789.94, es: 1475, ec: 1360, fam: 2085 },
+    details: {
+      employeeRate: '$789.94',
+      deductible: '$3,500',
+      oopMax: '$8,700',
+      pcp: '$40',
+      specialist: '$75',
+      urgentCare: '$90',
+      rx: 'Tiered Rx with copays'
     }
+  },
+  {
+    id: 'ep-choice',
+    group: 'low',
+    name: 'EnrollPrime Choice',
+    network: 'EnrollPrime Value',
+    typeBadge: 'Budget Option',
+    rates: { ee: 198.9, es: 376, ec: 334, fam: 505 },
+    details: {
+      employeeRate: '$198.90',
+      deductible: 'Limited schedule',
+      oopMax: 'Not equivalent to major medical OOP',
+      pcp: '$35',
+      specialist: 'Limited visits',
+      urgentCare: 'Limited fixed benefits',
+      rx: 'Limited Rx schedule'
+    },
+    limitedNotes: [
+      'This is limited coverage, not traditional major medical.',
+      'May not cover hospital care.'
+    ]
+  },
+  {
+    id: 'ep-care',
+    group: 'low',
+    name: 'EnrollPrime Care',
+    network: 'EnrollPrime Care Network',
+    typeBadge: 'Limited Coverage',
+    rates: { ee: 292.7, es: 555, ec: 500, fam: 760 },
+    details: {
+      employeeRate: '$292.70',
+      deductible: 'Limited schedule',
+      oopMax: 'Not equivalent to major medical OOP',
+      pcp: '$25',
+      specialist: 'Limited visit structure',
+      urgentCare: 'Includes select outpatient support',
+      rx: 'Restricted Rx categories'
+    },
+    limitedNotes: [
+      'This is limited coverage, not traditional major medical.',
+      'May limit doctor/specialist visits and outpatient services.'
+    ]
+  },
+  {
+    id: 'xgb-vl-1000',
+    group: 'low',
+    name: 'XGB VL 1000',
+    network: 'XGB Value Lane',
+    typeBadge: 'Budget Option',
+    rates: { ee: 374, es: 700, ec: 630, fam: 955 },
+    details: {
+      employeeRate: '$374',
+      deductible: '$1,000 equivalent schedule',
+      oopMax: 'Limited by plan schedule',
+      pcp: 'Limited visit plan',
+      specialist: 'Limited visit plan',
+      urgentCare: 'Limited visit plan',
+      rx: 'Select generic support'
+    },
+    limitedNotes: [
+      'This is limited coverage, not traditional major medical.',
+      'May limit imaging, ER, ambulance, or surgery benefits.'
+    ]
+  },
+  {
+    id: 'xgb-vl-1750-hsa',
+    group: 'low',
+    name: 'XGB VL 1750 HSA',
+    network: 'XGB Value Lane',
+    typeBadge: 'Limited Coverage',
+    rates: { ee: 334, es: 625, ec: 565, fam: 860 },
+    details: {
+      employeeRate: '$334',
+      deductible: '$1,750 equivalent schedule',
+      oopMax: 'Limited by plan schedule',
+      pcp: 'Limited visit HSA style',
+      specialist: 'Limited visit HSA style',
+      urgentCare: 'Limited visit HSA style',
+      rx: 'Restricted Rx support'
+    },
+    limitedNotes: [
+      'This is limited coverage, not traditional major medical.',
+      'May not cover brand-name drugs depending on the plan.'
+    ]
+  },
+  {
+    id: 'ep-classic-mec',
+    group: 'mec',
+    name: 'EnrollPrime Classic MEC',
+    network: 'EnrollPrime MEC',
+    typeBadge: 'MEC',
+    rates: { ee: 127.5, es: 245, ec: 220, fam: 335 },
+    details: {
+      employeeRate: '$127.50',
+      deductible: 'Preventive-focused schedule',
+      oopMax: 'Not traditional major medical OOP structure',
+      pcp: 'Preventive-focused',
+      specialist: 'Limited/non-core',
+      urgentCare: 'Limited/non-core',
+      rx: 'Preventive/Rx limitations apply'
+    },
+    limitedNotes: [
+      'This is limited coverage, not traditional major medical.',
+      'Preventive only and no hospital coverage.'
+    ]
   }
 ];
 
@@ -123,8 +247,8 @@ const questions = [
     title: 'Do you currently offer a group health plan?',
     kind: 'choice',
     options: [
-      { label: 'Yes, we currently offer group health benefits', value: 'yes' },
-      { label: 'No, this would be our first group health plan', value: 'no' }
+      { label: 'Yes', value: 'yes' },
+      { label: 'No', value: 'no' }
     ]
   },
   {
@@ -142,6 +266,38 @@ const questions = [
 let current = 0;
 let contributionModel = 'percent';
 const answers = {};
+
+function money(n) {
+  return `$${Math.round(n).toLocaleString()}`;
+}
+
+function estimateMix(enrolling) {
+  return {
+    ee: Math.max(1, Math.round(enrolling * 0.55)),
+    es: Math.round(enrolling * 0.15),
+    ec: Math.round(enrolling * 0.2),
+    fam: Math.max(0, enrolling - Math.round(enrolling * 0.55) - Math.round(enrolling * 0.15) - Math.round(enrolling * 0.2))
+  };
+}
+
+function calcTotal(rates, mix) {
+  return rates.ee * mix.ee + rates.es * mix.es + rates.ec * mix.ec + rates.fam * mix.fam;
+}
+
+function getFlatAmount() {
+  if (flatContributionSelect.value === 'custom') {
+    return Number(flatContributionCustom.value || 0);
+  }
+  return Number(flatContributionSelect.value || 0);
+}
+
+function updateModelUI() {
+  contribModelWrap.querySelectorAll('.model-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.model === contributionModel);
+  });
+  percentControl.classList.toggle('hidden', contributionModel !== 'percent');
+  flatControl.classList.toggle('hidden', contributionModel !== 'flat');
+}
 
 function renderQuestion() {
   const q = questions[current];
@@ -185,108 +341,98 @@ function validateCurrent() {
   return true;
 }
 
-function calcTotal(rates, mix) {
-  return rates.ee * mix.ee + rates.es * mix.es + rates.ec * mix.ec + rates.fam * mix.fam;
+function calculateContribution(plan, enrolling, total) {
+  const percentAmount = plan.rates.ee * (Number(employerContribution.value) / 100) * enrolling;
+  const flatAmount = getFlatAmount() * enrolling;
+  const modeled = contributionModel === 'percent' ? percentAmount : flatAmount;
+  return Math.min(modeled, total);
 }
 
-function estimateMix(enrolling) {
+function renderPlanCard(plan, enrolling, mix) {
+  const total = calcTotal(plan.rates, mix);
+  const employer = calculateContribution(plan, enrolling, total);
+  const employee = total - employer;
+
+  const limitHtml = plan.limitedNotes
+    ? `<div class="limit-note">${plan.limitedNotes.map((n) => `<div>${n}</div>`).join('')}</div>`
+    : '';
+
   return {
-    ee: Math.max(1, Math.round(enrolling * 0.55)),
-    es: Math.round(enrolling * 0.15),
-    ec: Math.round(enrolling * 0.2),
-    fam: Math.max(0, enrolling - Math.round(enrolling * 0.55) - Math.round(enrolling * 0.15) - Math.round(enrolling * 0.2))
+    html: `
+      <article class="plan-card">
+        <div class="plan-head">
+          <div>
+            <h3>${plan.name}</h3>
+            <p class="plan-meta">${plan.network}</p>
+          </div>
+          <span class="badge">${plan.typeBadge}</span>
+        </div>
+
+        <div class="key-metric"><strong>Monthly Employee Rate:</strong> ${plan.details.employeeRate}</div>
+        <div class="key-metric"><strong>Estimated Employer Monthly Cost:</strong> ${money(employer)}</div>
+        <div class="key-metric"><strong>Estimated Employee Payroll Share:</strong> ${money(employee)}</div>
+
+        <ul class="benefit-list">
+          <li><span>Deductible</span><strong>${plan.details.deductible}</strong></li>
+          <li><span>Out of Pocket Max</span><strong>${plan.details.oopMax}</strong></li>
+          <li><span>PCP Copay</span><strong>${plan.details.pcp}</strong></li>
+          <li><span>Specialist Copay</span><strong>${plan.details.specialist}</strong></li>
+          <li><span>Urgent Care</span><strong>${plan.details.urgentCare}</strong></li>
+          <li><span>RX Summary</span><strong>${plan.details.rx}</strong></li>
+        </ul>
+
+        ${limitHtml}
+      </article>
+    `,
+    employer,
+    employee
   };
-}
-
-function money(n) {
-  return `$${Math.round(n).toLocaleString()}`;
-}
-
-function getFlatAmount() {
-  if (flatContributionSelect.value === 'custom') {
-    return Number(flatContributionCustom.value || 0);
-  }
-  return Number(flatContributionSelect.value || 0);
-}
-
-function updateModelUI() {
-  contribModelWrap.querySelectorAll('.model-btn').forEach((btn) => {
-    btn.classList.toggle('active', btn.dataset.model === contributionModel);
-  });
-  percentControl.classList.toggle('hidden', contributionModel !== 'percent');
-  flatControl.classList.toggle('hidden', contributionModel !== 'flat');
 }
 
 function renderResults() {
   const enrolling = Number(answers.enrolling || 1);
   const employees = Number(answers.employees || enrolling);
   const mix = estimateMix(enrolling);
-  const pct = Number(employerContribution.value) / 100;
-  const flatAmount = getFlatAmount();
 
   contributionLabel.textContent = `${employerContribution.value}%`;
-  flatLabel.textContent = money(flatAmount);
-  resultsSummary.textContent = `${answers.state || 'Your state'} · ${employees} eligible employees · about ${enrolling} enrolling. Sorted by lowest estimated monthly total for your team mix.`;
+  flatLabel.textContent = money(getFlatAmount());
 
-  const plans = samplePlans.map((plan) => {
-    const total = calcTotal(plan.rates, mix);
-    const employerByPercent = plan.rates.ee * pct * enrolling;
-    const employerByFlat = flatAmount * enrolling;
-    const employer = contributionModel === 'percent' ? employerByPercent : employerByFlat;
-    const cappedEmployer = Math.min(total, employer);
-    return { ...plan, total, employer: cappedEmployer, employee: total - cappedEmployer };
-  }).sort((a, b) => a.total - b.total);
+  resultsSummary.textContent = `${answers.state || 'Your state'} · ${employees} eligible employees · about ${enrolling} enrolling. These are real current starting rates based on the information provided.`;
 
-  plansGrid.innerHTML = plans.map((plan) => {
-    const limitedCoverage = plan.type === 'MEC' || plan.type === 'Limited Benefit';
-    const benefitList = `
-      <ul class="glance-list">
-        <li><strong>Deductible:</strong> ${plan.benefits.deductible}</li>
-        <li><strong>Out-of-pocket max:</strong> ${plan.benefits.oop}</li>
-        <li><strong>PCP/office visit:</strong> ${plan.benefits.pcp}</li>
-        <li><strong>Specialist:</strong> ${plan.benefits.specialist}</li>
-        <li><strong>Urgent care:</strong> ${plan.benefits.urgent}</li>
-        <li><strong>Rx summary:</strong> ${plan.benefits.rx}</li>
-      </ul>`;
+  const topPlans = plans.filter((p) => p.group === 'top');
+  const lowPlans = plans.filter((p) => p.group === 'low');
+  const mecPlans = plans.filter((p) => p.group === 'mec');
 
-    const limitationBlock = limitedCoverage
-      ? `<p class="limit-note"><strong>This is limited coverage, not traditional major medical.</strong></p>
-         <ul class="glance-list">${plan.limitations.map((item) => `<li>${item}</li>`).join('')}</ul>`
-      : '';
+  const topRendered = topPlans.map((plan) => renderPlanCard(plan, enrolling, mix));
+  const lowRendered = lowPlans.map((plan) => renderPlanCard(plan, enrolling, mix));
+  const mecRendered = mecPlans.map((plan) => renderPlanCard(plan, enrolling, mix));
 
-    return `
-      <article class="plan-card">
-        <div class="plan-head">
-          <div>
-            <h3>${plan.name}</h3>
-            <p>${plan.type}</p>
-          </div>
-          <span class="badge">Likely Eligible</span>
-        </div>
-        <ul class="rate-list">
-          <li><span>Employee only</span><strong>${money(plan.rates.ee)}</strong></li>
-          <li><span>EE + Spouse</span><strong>${money(plan.rates.es)}</strong></li>
-          <li><span>EE + Child(ren)</span><strong>${money(plan.rates.ec)}</strong></li>
-          <li><span>Family</span><strong>${money(plan.rates.fam)}</strong></li>
-        </ul>
-        <div class="metric"><strong>Estimated monthly employer cost:</strong> ${money(plan.employer)}</div>
-        <div class="metric"><strong>Estimated employee deduction:</strong> ${money(plan.employee)}</div>
-        <p class="tradeoff"><strong>Major tradeoff:</strong> ${plan.tradeoff}</p>
+  topPlansGrid.innerHTML = topRendered.map((r) => r.html).join('');
+  lowCostPlansGrid.innerHTML = lowRendered.map((r) => r.html).join('');
+  mecPlansGrid.innerHTML = mecRendered.map((r) => r.html).join('');
 
-        <details class="benefit-details">
-          <summary>See benefit highlights</summary>
-          ${benefitList}
-          ${limitationBlock}
-        </details>
-      </article>
-    `;
-  }).join('');
+  const allRendered = [...topRendered, ...lowRendered];
+  const employerTotal = allRendered.reduce((sum, card) => sum + card.employer, 0);
+  const employeeTotal = allRendered.reduce((sum, card) => sum + card.employee, 0);
+
+  employerMonthlyTotal.textContent = money(employerTotal);
+  employeeMonthlyTotal.textContent = money(employeeTotal);
+}
+
+function resetLeadForm() {
+  leadForm.reset();
+  firstName.value = '';
+  email.value = '';
+  phone.value = '';
+  leadForm.classList.remove('hidden');
+  leadSuccess.classList.add('hidden');
 }
 
 function startOver() {
   Object.keys(answers).forEach((key) => delete answers[key]);
   answers[questions[0].key] = questions[0].options[0].value;
   current = 0;
+
   contributionModel = 'percent';
   employerContribution.value = 50;
   flatContributionSelect.value = '300';
@@ -294,10 +440,13 @@ function startOver() {
   flatContributionCustom.classList.add('hidden');
   updateModelUI();
 
+  mecPlansWrap.classList.add('hidden');
+  toggleMecBtn.textContent = 'Show MEC Section';
+
+  resetLeadForm();
+
   resultsSection.classList.add('hidden');
   funnelSection.classList.remove('hidden');
-  leadForm.classList.remove('hidden');
-  leadSuccess.classList.add('hidden');
   renderQuestion();
 }
 
@@ -343,16 +492,6 @@ flatContributionSelect.addEventListener('change', () => {
 });
 flatContributionCustom.addEventListener('input', renderResults);
 
-leadForm.addEventListener('submit', (event) => {
-  event.preventDefault();
-  if (!document.getElementById('firstName').value.trim() || !document.getElementById('email').value.trim()) {
-    alert('Please add your first name and work email.');
-    return;
-  }
-  leadSuccess.classList.remove('hidden');
-  leadForm.classList.add('hidden');
-});
-
 editAnswersBtn.addEventListener('click', () => {
   resultsSection.classList.add('hidden');
   funnelSection.classList.remove('hidden');
@@ -362,6 +501,21 @@ editAnswersBtn.addEventListener('click', () => {
 });
 
 startOverBtn.addEventListener('click', startOver);
+
+toggleMecBtn.addEventListener('click', () => {
+  mecPlansWrap.classList.toggle('hidden');
+  toggleMecBtn.textContent = mecPlansWrap.classList.contains('hidden') ? 'Show MEC Section' : 'Hide MEC Section';
+});
+
+leadForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  if (!firstName.value.trim() || !email.value.trim()) {
+    alert('Please add your first name and work email.');
+    return;
+  }
+  leadSuccess.classList.remove('hidden');
+  leadForm.classList.add('hidden');
+});
 
 answers[questions[0].key] = questions[0].options[0].value;
 updateModelUI();
