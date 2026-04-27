@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DK Benefits | Group Benefits Cost Estimator Demo</title>
-  <meta name="description" content="Premium static front-end demo for DK Benefits group benefits cost estimator." />
+  <title>DK Benefits | Employer Group Benefits Estimate</title>
+  <meta name="description" content="Employer-facing guided quote funnel for group benefits estimates." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -30,162 +30,85 @@
     </div>
   </header>
 
-  <main>
-    <section class="hero container card-glass">
-      <div class="hero-copy">
-        <p class="eyebrow">Group Benefits Cost Estimator · Visual Demo</p>
-        <h1>Real starting rates, presented like a premium guided experience.</h1>
-        <p>Built to feel transparent and human — so employers can explore options quickly before a full underwriting process.</p>
-        <div class="hero-chips">
-          <span>Desktop-first</span>
-          <span>Mobile-compatible</span>
-          <span>No CRM required in this demo</span>
-        </div>
+  <main class="container">
+    <section class="hero card-glass">
+      <div>
+        <p class="eyebrow">For employers · no backend connected in this version</p>
+        <h1>See realistic group benefits starting costs in under a minute.</h1>
+        <p>Answer a few quick questions and we’ll estimate monthly employer cost and employee payroll deductions.</p>
       </div>
-      <div class="hero-panel">
-        <p class="muted-label">Estimated timeline</p>
-        <h3>About 60 seconds</h3>
-        <div class="progress-shell" aria-label="Estimator progress">
-          <div class="progress-bar" id="mainProgress"></div>
+      <aside class="hero-aside">
+        <p class="muted-label">What you’ll get</p>
+        <ul>
+          <li>Easy one-question-at-a-time flow</li>
+          <li>Estimated plan options with tradeoffs</li>
+          <li>Simple next step with Daniel if you want help</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section class="card funnel" id="funnelSection">
+      <div class="progress-wrap">
+        <div class="progress-shell">
+          <div class="progress-bar" id="progressBar"></div>
         </div>
-        <p class="fine-print">You’ll see sample plan cards with estimated employer/employee split.</p>
+        <p id="progressText">Question 1 of 6</p>
+      </div>
+
+      <div id="questionHost" class="question-host"></div>
+
+      <div class="funnel-actions">
+        <button class="btn btn-neutral" id="backBtn" type="button">Back</button>
+        <button class="btn btn-primary" id="nextBtn" type="button">Continue</button>
       </div>
     </section>
 
-    <section class="container section-gap">
-      <div class="human-cta card">
-        <div>
-          <p class="eyebrow">Prefer to talk with a real person?</p>
-          <h2>Call or text Daniel directly at 407-476-5076.</h2>
-          <p>Sometimes a 5-minute conversation saves more time than filling out forms.</p>
-        </div>
-        <div class="human-actions">
-          <a class="btn btn-primary" href="tel:4074765076">Call or Text</a>
-          <a class="btn btn-secondary" href="mailto:dan@dkbenefits.net">Email Daniel</a>
-        </div>
-      </div>
-    </section>
-
-    <section class="container section-gap">
+    <section class="results-shell hidden" id="resultsSection">
       <div class="section-head">
-        <p class="eyebrow">Guided intake flow mockup</p>
-        <h2>Clean, step-by-step intake (no clutter)</h2>
+        <p class="eyebrow">Your starting estimate preview</p>
+        <h2>Here are sample options for your team profile</h2>
+        <p id="resultsSummary"></p>
       </div>
 
-      <div class="wizard card">
-        <div class="wizard-steps" role="tablist" aria-label="Demo flow steps">
-          <button class="step-btn is-active" data-step="0">Company</button>
-          <button class="step-btn" data-step="1">Team Size</button>
-          <button class="step-btn" data-step="2">Priority</button>
-          <button class="step-btn" data-step="3">Review</button>
-        </div>
-
-        <div class="wizard-body">
-          <article class="step-pane is-active" data-pane="0">
-            <h3>Where are you located?</h3>
-            <div class="field-grid two">
-              <label>State
-                <select>
-                  <option>Florida</option>
-                  <option>Georgia</option>
-                </select>
-              </label>
-              <label>ZIP code
-                <input type="text" placeholder="e.g. 32801" />
-              </label>
-            </div>
-          </article>
-
-          <article class="step-pane" data-pane="1">
-            <h3>Team snapshot</h3>
-            <div class="field-grid two">
-              <label>Eligible employees
-                <input type="number" value="12" />
-              </label>
-              <label>Expected enrollments
-                <input type="number" value="8" />
-              </label>
-            </div>
-            <p class="helper">Optional tier mix can be added later for tighter estimate accuracy.</p>
-          </article>
-
-          <article class="step-pane" data-pane="2">
-            <h3>What matters most?</h3>
-            <div class="priority-grid">
-              <button class="pill is-selected">Lower monthly cost</button>
-              <button class="pill">Balanced value</button>
-              <button class="pill">Broad network access</button>
-              <button class="pill">HSA-friendly design</button>
-            </div>
-          </article>
-
-          <article class="step-pane" data-pane="3">
-            <h3>Ready to view estimate preview</h3>
-            <p>This demo intentionally keeps logic lightweight and focuses on visual quality and trust-building UX.</p>
-            <button class="btn btn-primary" id="jumpToResults">View Sample Results</button>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="container section-gap" id="resultsMockup">
-      <div class="section-head">
-        <p class="eyebrow">Results page mockup</p>
-        <h2>Starting options sorted by estimated total monthly premium</h2>
-      </div>
-
-      <div class="contribution card">
+      <div class="card contribution">
         <div>
-          <h3>Contribution estimate section</h3>
-          <p>Default shown: <strong>minimum contribution floor</strong> (50% of lowest employee-only major medical rate).</p>
+          <h3>Contribution estimate</h3>
+          <p>Default starts at the minimum floor: 50% of employee-only major medical rate.</p>
         </div>
         <div class="slider-wrap">
-          <label for="employerPct">Employer contribution (%)</label>
-          <input type="range" id="employerPct" min="50" max="90" value="50" />
-          <p><span id="pctValue">50%</span> employer contribution (editable)</p>
+          <label for="employerContribution">Employer contribution %</label>
+          <input type="range" id="employerContribution" min="50" max="90" value="50" />
+          <p><strong id="contributionLabel">50%</strong> employer share</p>
         </div>
       </div>
 
       <div class="plans-grid" id="plansGrid"></div>
       <p class="disclosure">Estimated from real published starting rates. Final pricing depends on eligibility, participation, current coverage, underwriting, and census verification.</p>
-    </section>
 
-    <section class="container section-gap">
-      <div class="section-head">
-        <p class="eyebrow">Education</p>
-        <h2>Clear context that builds trust</h2>
+      <div class="card lead-capture" id="leadCapture">
+        <h3>Want a tailored version for your actual employee census?</h3>
+        <p>Share your contact details and Daniel will send next-step options. No pressure.</p>
+        <form id="leadForm" class="lead-form">
+          <label>First name
+            <input type="text" id="firstName" required placeholder="First name" />
+          </label>
+          <label>Work email
+            <input type="email" id="email" required placeholder="you@company.com" />
+          </label>
+          <label>Best phone (optional)
+            <input type="tel" id="phone" placeholder="407-555-0123" />
+          </label>
+          <button class="btn btn-primary" type="submit">Send to Daniel</button>
+        </form>
+        <p class="success hidden" id="leadSuccess">Thanks — Daniel will follow up shortly.</p>
       </div>
-      <div class="edu-grid">
-        <article class="card edu-card">
-          <h3>Why these are starting rates</h3>
-          <p>These numbers are decision-support estimates, not final binding quotes.</p>
-        </article>
-        <article class="card edu-card">
-          <h3>Networks are not insurers</h3>
-          <p>Network names explain provider access. Funding/carrier mechanics can differ.</p>
-        </article>
-        <article class="card edu-card">
-          <h3>Major medical vs. limited benefit vs. MEC</h3>
-          <p>Each serves different budget/risk goals. Tradeoffs should be explicit before enrolling.</p>
-        </article>
-        <article class="card edu-card">
-          <h3>Broader market review</h3>
-          <p>A full broker review may uncover additional options beyond these preview lanes.</p>
-        </article>
-        <article class="card edu-card">
-          <h3>Benefits support beyond rates</h3>
-          <p>Enrollment support, employee education, and renewals matter as much as premium lines.</p>
-        </article>
-      </div>
-    </section>
 
-    <section class="container section-gap">
-      <div class="card cta-final">
-        <h2>Want your group’s tailored next-step version?</h2>
-        <p>Daniel Kirves can walk through plan fit, contribution strategy, and broader market options.</p>
-        <div class="human-actions">
-          <a class="btn btn-primary" href="tel:4074765076">Call/Text: 407-476-5076</a>
-          <a class="btn btn-secondary" href="mailto:dan@dkbenefits.net">Email: dan@dkbenefits.net</a>
+      <div class="card cta-daniel">
+        <h3>Prefer to talk with Daniel?</h3>
+        <p>Call or text <strong>407-476-5076</strong>. Sometimes a quick 5-minute conversation saves a lot of back-and-forth.</p>
+        <div class="inline-actions">
+          <a class="btn btn-primary" href="tel:4074765076">Call/Text Daniel</a>
+          <a class="btn btn-neutral" href="mailto:dan@dkbenefits.net">Email Daniel</a>
         </div>
       </div>
     </section>
