@@ -3,9 +3,11 @@ const progressBar = document.getElementById('progressBar');
 const progressText = document.getElementById('progressText');
 const backBtn = document.getElementById('backBtn');
 const nextBtn = document.getElementById('nextBtn');
+const heroStartBtn = document.getElementById('heroStartBtn');
 const funnelSection = document.getElementById('funnelSection');
 const resultsSection = document.getElementById('resultsSection');
 const resultsSummary = document.getElementById('resultsSummary');
+const participationNote = document.getElementById('participationNote');
 
 const employerContribution = document.getElementById('employerContribution');
 const contributionLabel = document.getElementById('contributionLabel');
@@ -38,117 +40,129 @@ const phone = document.getElementById('phone');
 
 const plans = [
   {
-    id: 'xgb-cigna-1000',
+    id: 'cigna-epo-1000',
     group: 'top',
-    name: 'XGB Cigna EPO 1000',
-    network: 'Cigna EPO',
-    typeBadge: 'Major Medical',
+    name: 'Cigna EPO 1000',
+    network: 'Utilizes Cigna network',
+    typeBadge: 'Strong Network',
     rates: { employeeOnly: 459, employeeSpouse: 779, employeeChildren: 769, family: 1079 },
-    details: { deductible: '$1,000', oopMax: '$8,500', pcp: '$50 after deductible', specialist: '$50 after deductible', urgentCare: '$50', rx: 'Generic $0' }
+    details: { deductible: '$1,000', oopMax: '$8,500', pcp: '$50 after deductible', specialist: '$50 after deductible', urgentCare: '$50', rx: 'Generic $0' },
+    notes: ['Richer first-dollar structure with deductible-aware office visit treatment.']
   },
   {
-    id: 'xgb-cigna-1750-hsa',
+    id: 'cigna-epo-1750-hsa',
     group: 'top',
-    name: 'XGB Cigna EPO 1750 HSA',
-    network: 'Cigna EPO',
-    typeBadge: 'HSA',
+    name: 'Cigna EPO 1750 HSA',
+    network: 'Utilizes Cigna network',
+    typeBadge: 'HSA Friendly',
     rates: { employeeOnly: 414, employeeSpouse: 739, employeeChildren: 729, family: 1009 },
-    details: { deductible: '$1,750', oopMax: '$8,500', pcp: 'Deductible then plan share', specialist: 'Deductible then plan share', urgentCare: 'Deductible then plan share', rx: 'HSA-compatible structure' }
+    details: { deductible: '$1,750', oopMax: '$8,500', pcp: 'Deductible then plan share', specialist: 'Deductible then plan share', urgentCare: 'Deductible then plan share', rx: 'HSA-compatible structure' },
+    notes: ['Lower monthly rate profile with deductible-first plan behavior.']
   },
   {
-    id: 'xgb-phcs-8300-hsa',
+    id: 'phcs-ppo-8300-hsa',
     group: 'top',
-    name: 'XGB PHCS 8300 HSA',
-    network: 'PHCS PPO',
-    typeBadge: 'HSA',
+    name: 'PHCS PPO 8300 HSA',
+    network: 'Utilizes PHCS PPO network',
+    typeBadge: 'HSA Friendly',
     rates: { employeeOnly: 499.01, employeeSpouse: 859.47, employeeChildren: 969.62, family: 1214.63 },
-    details: { deductible: '$8,300', oopMax: '$9,100', pcp: 'Deductible then coinsurance', specialist: 'Deductible then coinsurance', urgentCare: 'Deductible then coinsurance', rx: 'Integrated with deductible' }
+    details: { deductible: '$8,300', oopMax: '$9,100', pcp: 'Deductible then coinsurance', specialist: 'Deductible then coinsurance', urgentCare: 'Deductible then coinsurance', rx: 'Integrated with deductible' },
+    notes: ['Best fit for groups prioritizing lower fixed premiums and high-deductible design.']
   },
   {
-    id: 'xgb-phcs-4500',
+    id: 'phcs-ppo-4500',
     group: 'top',
-    name: 'XGB PHCS 4500 Copay',
-    network: 'PHCS PPO',
-    typeBadge: 'Major Medical',
+    name: 'PHCS PPO 4500 Copay',
+    network: 'Utilizes PHCS PPO network',
+    typeBadge: 'Richer Benefits',
     rates: { employeeOnly: 649.8, employeeSpouse: 1339.23, employeeChildren: 1213.73, family: 1796.94 },
-    details: { deductible: '$4,500', oopMax: '$9,100', pcp: '$40', specialist: '$75', urgentCare: '$90', rx: 'Tiered copay Rx' }
+    details: { deductible: '$4,500', oopMax: '$9,100', pcp: '$40', specialist: '$75', urgentCare: '$90', rx: 'Tiered copay Rx' },
+    notes: ['Balanced PPO option with stronger copay predictability.']
   },
   {
-    id: 'xgb-phcs-3500',
+    id: 'phcs-ppo-3500',
     group: 'top',
-    name: 'XGB PHCS 3500 Copay',
-    network: 'PHCS PPO',
-    typeBadge: 'Major Medical',
+    name: 'PHCS PPO 3500 Copay',
+    network: 'Utilizes PHCS PPO network',
+    typeBadge: 'Richer Benefits',
     rates: { employeeOnly: 749.9, employeeSpouse: 1415.49, employeeChildren: 1379.88, family: 2071.67 },
-    details: { deductible: '$3,500', oopMax: '$8,700', pcp: '$40', specialist: '$75', urgentCare: '$90', rx: 'Tiered copay Rx' }
+    details: { deductible: '$3,500', oopMax: '$8,700', pcp: '$40', specialist: '$75', urgentCare: '$90', rx: 'Tiered copay Rx' },
+    notes: ['Higher premium in exchange for richer deductible and benefit posture.']
   },
   {
-    id: 'ep-4500-copay',
+    id: 'phcs-ppo-4500-option',
     group: 'top',
-    name: 'EnrollPrime 4500 Copay',
-    network: 'EnrollPrime PPO',
-    typeBadge: 'Major Medical',
+    name: 'PHCS PPO 4500 Copay Option',
+    network: 'Utilizes PHCS PPO network',
+    typeBadge: 'Strong Network',
     rates: { employeeOnly: 697.12, employeeSpouse: 1364.23, employeeChildren: 1247.86, family: 1816.47 },
-    details: { deductible: '$4,500', oopMax: '$9,100', pcp: '$40', specialist: '$75', urgentCare: '$90', rx: '$20 / $65 / $95' }
+    details: { deductible: '$4,500', oopMax: '$9,100', pcp: '$40', specialist: '$75', urgentCare: '$90', rx: '$20 / $65 / $95' },
+    notes: ['Alternative 4500-lane option for comparison within PHCS PPO structures.']
   },
   {
-    id: 'ep-3500-copay',
+    id: 'phcs-ppo-3500-option',
     group: 'top',
-    name: 'EnrollPrime 3500 Copay',
-    network: 'EnrollPrime PPO',
-    typeBadge: 'Major Medical',
+    name: 'PHCS PPO 3500 Copay Option',
+    network: 'Utilizes PHCS PPO network',
+    typeBadge: 'Strong Network',
     rates: { employeeOnly: 789.94, employeeSpouse: 1434.95, employeeChildren: 1401.93, family: 2071.22 },
-    details: { deductible: '$3,500', oopMax: '$8,700', pcp: '$40', specialist: '$75', urgentCare: '$90', rx: 'Tiered copay Rx' }
+    details: { deductible: '$3,500', oopMax: '$8,700', pcp: '$40', specialist: '$75', urgentCare: '$90', rx: 'Tiered copay Rx' },
+    notes: ['Alternative richer-design PPO option for side-by-side planning.']
   },
   {
-    id: 'ep-choice',
+    id: 'phcs-lower-cost-choice',
     group: 'low',
-    name: 'EnrollPrime Choice',
-    network: 'EnrollPrime Value',
-    typeBadge: 'Budget Option',
+    name: 'PHCS Lower Cost Choice',
+    network: 'Utilizes PHCS network',
+    typeBadge: 'Lower Cost',
     rates: { employeeOnly: 198.9, employeeSpouse: 290.7, employeeChildren: 290.7, family: 402.9 },
     details: { deductible: 'Limited schedule', oopMax: 'Not equivalent to major medical OOP', pcp: '$35', specialist: 'Limited visits', urgentCare: 'Limited fixed benefits', rx: 'Limited Rx schedule' },
-    limitedNotes: ['This is limited coverage, not traditional major medical.', 'May not cover hospital care.']
+    notes: ['This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited.'],
+    limitedNotes: ['may not cover hospital care', 'may limit doctor/specialist visits', 'may limit imaging, ER, ambulance, or surgery benefits', 'may not cover brand-name drugs depending on the plan']
   },
   {
-    id: 'ep-care',
+    id: 'phcs-lower-cost-care',
     group: 'low',
-    name: 'EnrollPrime Care',
-    network: 'EnrollPrime Care Network',
-    typeBadge: 'Limited Coverage',
+    name: 'PHCS Lower Cost Care',
+    network: 'Utilizes PHCS network',
+    typeBadge: 'Participation Helper',
     rates: { employeeOnly: 292.7, employeeSpouse: 417.5, employeeChildren: 386.09, family: 510.89 },
     details: { deductible: 'Limited schedule', oopMax: 'Not equivalent to major medical OOP', pcp: '$25', specialist: 'Limited visit structure', urgentCare: 'Includes select outpatient support', rx: 'Restricted Rx categories' },
-    limitedNotes: ['This is limited coverage, not traditional major medical.', 'May limit doctor/specialist visits and outpatient services.']
+    notes: ['This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited.'],
+    limitedNotes: ['may not cover hospital care', 'may limit doctor/specialist visits', 'may limit imaging, ER, ambulance, or surgery benefits', 'may not cover brand-name drugs depending on the plan']
   },
   {
-    id: 'xgb-vl-1000',
+    id: 'phcs-visit-limit-1000',
     group: 'low',
-    name: 'XGB VL 1000',
-    network: 'XGB Value Lane',
-    typeBadge: 'Budget Option',
+    name: 'PHCS Visit Limit 1000',
+    network: 'Utilizes PHCS network',
+    typeBadge: 'Lower Cost',
     rates: { employeeOnly: 374, employeeSpouse: 679, employeeChildren: 669, family: 959 },
     details: { deductible: '$1,000 equivalent schedule', oopMax: 'Limited by plan schedule', pcp: 'Limited visit plan', specialist: 'Limited visit plan', urgentCare: 'Limited visit plan', rx: 'Select generic support' },
-    limitedNotes: ['This is limited coverage, not traditional major medical.', 'May limit imaging, ER, ambulance, or surgery benefits.']
+    notes: ['This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited.'],
+    limitedNotes: ['may not cover hospital care', 'may limit doctor/specialist visits', 'may limit imaging, ER, ambulance, or surgery benefits', 'may not cover brand-name drugs depending on the plan']
   },
   {
-    id: 'xgb-vl-1750-hsa',
+    id: 'phcs-visit-limit-1750-hsa',
     group: 'low',
-    name: 'XGB VL 1750 HSA',
-    network: 'XGB Value Lane',
-    typeBadge: 'Limited Coverage',
+    name: 'PHCS Visit Limit 1750 HSA',
+    network: 'Utilizes PHCS network',
+    typeBadge: 'HSA Friendly',
     rates: { employeeOnly: 334, employeeSpouse: 639, employeeChildren: 629, family: 889 },
     details: { deductible: '$1,750 equivalent schedule', oopMax: 'Limited by plan schedule', pcp: 'Limited visit HSA style', specialist: 'Limited visit HSA style', urgentCare: 'Limited visit HSA style', rx: 'Restricted Rx support' },
-    limitedNotes: ['This is limited coverage, not traditional major medical.', 'May not cover brand-name drugs depending on the plan.']
+    notes: ['This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited.'],
+    limitedNotes: ['may not cover hospital care', 'may limit doctor/specialist visits', 'may limit imaging, ER, ambulance, or surgery benefits', 'may not cover brand-name drugs depending on the plan']
   },
   {
-    id: 'ep-classic-mec',
+    id: 'minimum-essential-coverage',
     group: 'mec',
-    name: 'EnrollPrime Classic MEC',
-    network: 'EnrollPrime MEC',
-    typeBadge: 'MEC',
+    name: 'Minimum Essential Coverage',
+    network: 'Utilizes PHCS network',
+    typeBadge: 'Preventive Focused',
     rates: { employeeOnly: 127.5, employeeSpouse: 193.8, employeeChildren: 193.8, family: 260.1 },
     details: { deductible: 'Preventive-focused schedule', oopMax: 'Not traditional major medical OOP structure', pcp: 'Preventive-focused', specialist: 'Limited/non-core', urgentCare: 'Limited/non-core', rx: 'Preventive/Rx limitations apply' },
-    limitedNotes: ['This is limited coverage, not traditional major medical.', 'Preventive only and no hospital coverage.']
+    notes: ['This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited.'],
+    limitedNotes: ['may not cover hospital care', 'may limit doctor/specialist visits', 'may limit imaging, ER, ambulance, or surgery benefits', 'may not cover brand-name drugs depending on the plan']
   }
 ];
 
@@ -301,9 +315,11 @@ function renderPlanCard(plan, mix) {
   const employer = calculateEmployerCost(plan, mix, grossPremium);
   const employee = grossPremium - employer;
 
-  const limitHtml = plan.limitedNotes
+  const limitationsHtml = plan.limitedNotes
     ? `<div class="limit-note">${plan.limitedNotes.map((n) => `<div>${n}</div>`).join('')}</div>`
-    : '';
+    : '<div class="limit-note">Coverage and access tradeoffs vary by option and should be reviewed against your goals.</div>';
+
+  const notesHtml = `${plan.notes.map((n) => `<div>${n}</div>`).join('')}<div>${plan.network}</div>`;
 
   return `
     <article class="plan-card">
@@ -315,30 +331,63 @@ function renderPlanCard(plan, mix) {
         <span class="badge">${plan.typeBadge}</span>
       </div>
 
-      <div class="metric-row employer">
-        <strong>Estimated Employer Monthly Cost</strong>
-        <div class="big-number">${money(employer)}</div>
-      </div>
-      <div class="metric-row"><strong>Gross Monthly Premium:</strong> ${money(grossPremium)}</div>
-      <div class="metric-row"><strong>Estimated Employee Monthly Share:</strong> ${money(employee)}</div>
+      <div class="card-section">
+        <h4>Rates</h4>
+        <div class="metric-row employer">
+          <strong>Estimated Employer Monthly Cost</strong>
+          <div class="big-number">${money(employer)}</div>
+        </div>
+        <div class="metric-row"><strong>Gross Monthly Premium:</strong> ${money(grossPremium)}</div>
+        <div class="metric-row"><strong>Estimated Employee Monthly Share:</strong> ${money(employee)}</div>
 
-      <ul class="benefit-list">
-        <li><span>Employee Only</span><strong>${money(plan.rates.employeeOnly)}</strong></li>
-        <li><span>Employee + Spouse</span><strong>${money(plan.rates.employeeSpouse)}</strong></li>
-        <li><span>Employee + Child(ren)</span><strong>${money(plan.rates.employeeChildren)}</strong></li>
-        <li><span>Family</span><strong>${money(plan.rates.family)}</strong></li>
-        <li><span>Deductible</span><strong>${plan.details.deductible}</strong></li>
-        <li><span>Out of Pocket Max</span><strong>${plan.details.oopMax}</strong></li>
-        <li><span>PCP Copay</span><strong>${plan.details.pcp}</strong></li>
-        <li><span>Specialist Copay</span><strong>${plan.details.specialist}</strong></li>
-        <li><span>Urgent Care</span><strong>${plan.details.urgentCare}</strong></li>
-        <li><span>RX Summary</span><strong>${plan.details.rx}</strong></li>
-      </ul>
+        <ul class="benefit-list">
+          <li><span>Employee Only</span><strong>${money(plan.rates.employeeOnly)}</strong></li>
+          <li><span>Employee + Spouse</span><strong>${money(plan.rates.employeeSpouse)}</strong></li>
+          <li><span>Employee + Child(ren)</span><strong>${money(plan.rates.employeeChildren)}</strong></li>
+          <li><span>Family</span><strong>${money(plan.rates.family)}</strong></li>
+        </ul>
+      </div>
+
+      <div class="card-section">
+        <h4>Benefits</h4>
+        <ul class="benefit-list">
+          <li><span>Deductible</span><strong>${plan.details.deductible}</strong></li>
+          <li><span>Out-of-Pocket Max</span><strong>${plan.details.oopMax}</strong></li>
+          <li><span>PCP</span><strong>${plan.details.pcp}</strong></li>
+          <li><span>Specialist</span><strong>${plan.details.specialist}</strong></li>
+          <li><span>Urgent Care</span><strong>${plan.details.urgentCare}</strong></li>
+          <li><span>RX Summary</span><strong>${plan.details.rx}</strong></li>
+        </ul>
+      </div>
+
+      <div class="card-section">
+        <h4>Important Notes</h4>
+        <div class="limit-note">${notesHtml}</div>
+        ${limitationsHtml}
+      </div>
 
       <p class="card-note">Based on estimated enrollment mix entered above.</p>
-      ${limitHtml}
     </article>
   `;
+}
+
+function updateParticipationNote() {
+  const eligible = Number(answers.employees || 0);
+  const enrolling = Number(answers.enrolling || 0);
+  const minParticipation = Math.max(3, Math.ceil(eligible * 0.5));
+
+  if (!eligible || !enrolling) {
+    participationNote.classList.add('hidden');
+    return;
+  }
+
+  if (enrolling <= minParticipation) {
+    participationNote.textContent = 'Based on your entries, some options may need additional review or additional enrollment to qualify. We’ll still show useful starting points and can help you identify the best path.';
+    participationNote.classList.remove('hidden');
+    return;
+  }
+
+  participationNote.classList.add('hidden');
 }
 
 function renderResults() {
@@ -349,6 +398,8 @@ function renderResults() {
   contributionLabel.textContent = `${employerContribution.value}%`;
   flatLabel.textContent = money(getFlatAmount());
   resultsSummary.textContent = `${answers.state || 'Your state'} · ${employees} eligible employees · about ${enrolling} enrolling. These are real current starting rates based on the information provided.`;
+
+  updateParticipationNote();
 
   const topPlans = plans.filter((p) => p.group === 'top');
   const lowPlans = plans.filter((p) => p.group === 'low');
@@ -383,6 +434,7 @@ function startOver() {
   mixEc.value = '';
   mixFam.value = '';
   mixNote.textContent = '';
+  participationNote.classList.add('hidden');
   updateModelUI();
 
   mecPlansWrap.classList.add('hidden');
@@ -422,6 +474,10 @@ backBtn.addEventListener('click', () => {
     current -= 1;
     renderQuestion();
   }
+});
+
+heroStartBtn.addEventListener('click', () => {
+  funnelSection.scrollIntoView({ behavior: 'smooth' });
 });
 
 contribModelWrap.addEventListener('click', (event) => {

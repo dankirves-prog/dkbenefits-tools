@@ -33,18 +33,29 @@
   <main class="container">
     <section class="hero card-glass">
       <div>
-        <p class="eyebrow">Employer quote funnel · front-end only preview</p>
-        <h1>See real group benefits rates in minutes.</h1>
-        <p>These are real current starting rates based on the information provided.</p>
-        <p>Many groups use these rates as a planning benchmark. Additional carriers and customized quotes may also be available.</p>
-        <p><strong>Need exact pricing?</strong> We can review the broader market for you.</p>
+        <p class="eyebrow">Florida &amp; Georgia employer benefits pricing</p>
+        <h1>See real group health rates before you share your info.</h1>
+        <p>We use real published starting rates tied to real provider networks and actual plan structures. Final approval and pricing depend on eligibility and underwriting, but these numbers are real planning benchmarks many groups qualify for.</p>
+        <p>No employee names, dates of birth, or SSNs are needed to start. Use the tool privately, then call, text, or email Daniel only if and when you’re ready.</p>
+        <p class="trust-line">No spam. We do not sell your information. Period.</p>
+
+        <div class="hero-cta">
+          <button type="button" class="btn btn-primary" id="heroStartBtn">Start with no employee details</button>
+          <div class="hero-cta-links">
+            <a href="tel:4074765076">Prefer a real person? Call or text Daniel: 407-476-5076</a>
+            <a href="mailto:dan@dkbenefits.net">dan@dkbenefits.net</a>
+          </div>
+        </div>
       </div>
+
       <aside class="hero-aside">
-        <p class="muted-label">What you’ll get</p>
+        <p class="muted-label">What you’ll walk away with</p>
         <ul>
-          <li>One question at a time intake</li>
-          <li>Contribution tools by percent or flat dollar</li>
-          <li>Compact plan details in premium card view</li>
+          <li>Real current starting rates, not placeholders</li>
+          <li>Employer cost modeling</li>
+          <li>Employee payroll share estimates</li>
+          <li>Network and benefit comparisons</li>
+          <li>A real broker to contact when ready</li>
         </ul>
       </aside>
     </section>
@@ -57,6 +68,7 @@
         <p id="progressText">Question 1 of 6</p>
       </div>
 
+      <p class="concierge-line">Let’s narrow down real options for your company.</p>
       <div id="questionHost" class="question-host"></div>
 
       <div class="funnel-actions">
@@ -70,6 +82,7 @@
         <p class="eyebrow">Your planning benchmark</p>
         <h2>Real current starting rates for the options shown</h2>
         <p id="resultsSummary"></p>
+        <p id="participationNote" class="participation-note hidden"></p>
       </div>
 
       <div class="card contribution">
@@ -145,11 +158,12 @@
         </div>
       </section>
 
-      <p class="disclosure">Estimated from real published starting rates. Final pricing depends on eligibility, participation, current coverage, underwriting, and census verification.</p>
+      <p class="disclosure">Rates shown are based on current published pricing and the answers provided. Final eligibility, participation, underwriting, plan availability, effective dates, and carrier/program approval may change pricing or options. Benefits are governed by official plan documents.</p>
+      <p class="disclosure">Use of this tool does not create a broker-client relationship or guarantee coverage.</p>
 
       <div class="card lead-capture" id="leadCapture">
         <h3>Need exact pricing? We can review the broader market for you.</h3>
-        <p>Share your info and Daniel can compare additional carrier options and customized plan structures.</p>
+        <p>Ready for a full market review? Daniel can tell you what census details are needed and make it simple.</p>
         <form id="leadForm" class="lead-form">
           <label>First name
             <input type="text" id="firstName" required placeholder="First name" />
@@ -166,13 +180,21 @@
       </div>
 
       <div class="card cta-daniel">
-        <h3>Need help now?</h3>
+        <h3>Call Daniel now</h3>
+        <p>Florida &amp; Georgia focused. Decades of employee benefits experience.</p>
         <p><strong>Daniel Kirves</strong></p>
-        <p>Call or Text <a href="tel:4074765076">407-476-5076</a></p>
-        <p><a href="mailto:dan@dkbenefits.net">dan@dkbenefits.net</a></p>
+        <p>Call/Text: <a href="tel:4074765076">407-476-5076</a></p>
+        <p>Email: <a href="mailto:dan@dkbenefits.net">dan@dkbenefits.net</a></p>
       </div>
     </section>
   </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>Rates shown are based on current published pricing and the answers provided. Final eligibility, participation, underwriting, plan availability, effective dates, and carrier/program approval may change pricing or options. Benefits are governed by official plan documents.</p>
+      <p>Use of this tool does not create a broker-client relationship or guarantee coverage.</p>
+    </div>
+  </footer>
 
   <script src="quote-tool.js"></script>
 </body>

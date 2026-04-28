@@ -79,6 +79,17 @@ body {
   background: linear-gradient(180deg, #f5f9ff 0%, #fff 100%);
 }
 .hero-aside ul { margin: .6rem 0 0; padding-left: 1rem; color: #334968; line-height: 1.6; }
+.trust-line {
+  margin-top: .7rem;
+  padding: .5rem .6rem;
+  border-radius: 10px;
+  background: #eef5ff;
+  color: #1f3d7a;
+  font-weight: 600;
+}
+.hero-cta { margin-top: .9rem; }
+.hero-cta-links { display: grid; gap: .25rem; margin-top: .45rem; }
+.hero-cta-links a { color: var(--blue-700); text-decoration: none; font-weight: 600; }
 
 .eyebrow {
   text-transform: uppercase;
@@ -98,6 +109,7 @@ p { color: #27364d; line-height: 1.55; }
 .progress-shell { height: 10px; border-radius: 999px; background: #dbe7ff; overflow: hidden; }
 .progress-bar { height: 100%; width: 16%; background: linear-gradient(90deg, var(--blue-600), #63a5ff); transition: width .3s ease; }
 #progressText { color: var(--muted); font-size: .9rem; margin: .45rem 0 0; }
+.concierge-line { margin: .1rem 0 .55rem; color: #1c3f83; font-weight: 600; }
 
 .question-host {
   min-height: 190px;
@@ -146,6 +158,13 @@ input, select {
 .hidden { display: none !important; }
 .results-shell { margin-top: 1.4rem; }
 .section-head { margin-bottom: .8rem; }
+.participation-note {
+  border-left: 3px solid #9ab8f2;
+  background: #eef4ff;
+  padding: .5rem .65rem;
+  border-radius: 8px;
+  font-size: .9rem;
+}
 
 .contribution {
   padding: 1rem;
@@ -220,8 +239,20 @@ input, select {
   color: var(--blue-700);
   line-height: 1.2;
 }
+.card-section {
+  margin-top: .65rem;
+  border-top: 1px solid #e8efff;
+  padding-top: .55rem;
+}
+.card-section h4 {
+  margin: 0 0 .4rem;
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #60779c;
+}
 .benefit-list {
-  margin: .6rem 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -234,7 +265,7 @@ input, select {
   font-size: .84rem;
 }
 .limit-note {
-  margin-top: .6rem;
+  margin-top: .35rem;
   border-left: 3px solid #9bb9f6;
   background: #f5f9ff;
   padding: .45rem .55rem;
@@ -248,10 +279,16 @@ input, select {
 
 .mec-section { margin-top: .9rem; }
 
-.disclosure { font-size: .84rem; color: var(--muted); margin-top: .85rem; }
+.disclosure { font-size: .84rem; color: var(--muted); margin-top: .65rem; }
 .lead-capture, .cta-daniel { padding: 1.1rem; margin-top: .95rem; }
 .lead-form { display: grid; gap: .6rem; }
 .success { color: #0f766e; font-weight: 600; }
+.site-footer {
+  border-top: 1px solid #d9e5ff;
+  background: #f9fbff;
+  padding: 1rem 0;
+}
+.footer-inner { margin-bottom: 0; }
 
 @keyframes fade { from { opacity: .2; transform: translateY(4px);} to { opacity: 1; transform: none;} }
 
