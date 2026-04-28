@@ -8,7 +8,6 @@ const funnelSection = document.getElementById('funnelSection');
 const resultsSection = document.getElementById('resultsSection');
 const resultsSummary = document.getElementById('resultsSummary');
 const participationNote = document.getElementById('participationNote');
-const stateGuidance = document.getElementById('stateGuidance');
 
 const employerContribution = document.getElementById('employerContribution');
 const contributionLabel = document.getElementById('contributionLabel');
@@ -168,7 +167,7 @@ const plans = [
 ];
 
 const questions = [
-  { key: 'state', title: 'What state is your business located in?', kind: 'select', options: [{ label: 'Florida', value: 'Florida' }, { label: 'Georgia', value: 'Georgia' }, { label: 'Other', value: 'Other' }] },
+  { key: 'state', title: 'What state is your business located in?', kind: 'select', options: [{ label: 'Florida', value: 'Florida' }, { label: 'Georgia', value: 'Georgia' }] },
   { key: 'employees', title: 'How many full-time employees are benefits eligible?', kind: 'number', placeholder: 'Example: 12' },
   { key: 'enrolling', title: 'How many do you expect to enroll?', kind: 'number', placeholder: 'Example: 8' },
   { key: 'priority', title: 'What matters most right now?', kind: 'choice', options: [{ label: 'Lower monthly cost', value: 'cost' }, { label: 'Balanced value', value: 'balanced' }, { label: 'Broad network access', value: 'network' }, { label: 'HSA-friendly option', value: 'hsa' }] },
@@ -250,13 +249,8 @@ function renderQuestion() {
   const q = questions[current];
   const value = answers[q.key] || '';
 
-  const selectControl = `<select id="qInput">${q.options.map((opt) => `<option value="${opt.value}" ${value === opt.value ? 'selected' : ''}>${opt.label}</option>`).join('')}</select>`;
-  const otherStateControl = q.key === 'state' && value === 'Other'
-    ? `<label class="other-state-wrap">Which state? <input id="otherStateInput" type="text" value="${answers.otherState || ''}" placeholder="Optional" /></label>`
-    : '';
-
   const control = q.kind === 'select'
-    ? `${selectControl}${otherStateControl}`
+    ? `<select id="qInput">${q.options.map((opt) => `<option value="${opt.value}" ${value === opt.value ? 'selected' : ''}>${opt.label}</option>`).join('')}</select>`
     : q.kind === 'number'
       ? `<input id="qInput" type="number" min="1" value="${value}" placeholder="${q.placeholder || ''}" />`
       : `<div class="option-grid">${q.options.map((opt) => `<button type="button" class="option-pill ${value === opt.value ? 'selected' : ''}" data-choice="${opt.value}">${opt.label}</button>`).join('')}</div>`;
@@ -275,13 +269,9 @@ function renderQuestion() {
     const select = document.getElementById('qInput');
     select.addEventListener('change', () => {
       answers[q.key] = select.value;
-      if (q.key === 'state' && select.value !== 'Other') {
-        answers.otherState = '';
-      }
       renderQuestion();
     });
   }
-  stateGuidance.classList.toggle('hidden', !(q.key === 'state' && value === 'Other'));
 
   progressBar.style.width = `${((current + 1) / questions.length) * 100}%`;
   progressText.textContent = `Question ${current + 1} of ${questions.length}`;
@@ -294,10 +284,6 @@ function readAnswer() {
   if (q.kind === 'choice') return;
   const input = document.getElementById('qInput');
   answers[q.key] = input ? input.value.trim() : '';
-  if (q.key === 'state') {
-    const otherInput = document.getElementById('otherStateInput');
-    answers.otherState = otherInput ? otherInput.value.trim() : '';
-  }
 }
 
 function validateCurrent() {
@@ -415,11 +401,10 @@ function renderResults() {
   const enrolling = Number(answers.enrolling || 1);
   const employees = Number(answers.employees || enrolling);
   const mix = getTierMix(enrolling);
-  const stateLabel = answers.state === 'Other' ? (answers.otherState || 'Other') : (answers.state || 'Your state');
 
   contributionLabel.textContent = `${employerContribution.value}%`;
   flatLabel.textContent = money(getFlatAmount());
-  resultsSummary.textContent = `${stateLabel} · ${employees} eligible employees · about ${enrolling} enrolling. These are real current starting rates based on the information provided.`;
+  resultsSummary.textContent = `${answers.state || 'Your state'} · ${employees} eligible employees · about ${enrolling} enrolling. These are real current starting rates based on the information provided.`;
 
   updateParticipationNote();
 
@@ -444,7 +429,6 @@ function resetLeadForm() {
 function startOver() {
   Object.keys(answers).forEach((key) => delete answers[key]);
   answers[questions[0].key] = questions[0].options[0].value;
-  answers.otherState = '';
   current = 0;
 
   contributionModel = 'percent';
@@ -545,6 +529,5 @@ leadForm.addEventListener('submit', (event) => {
 });
 
 answers[questions[0].key] = questions[0].options[0].value;
-answers.otherState = '';
 updateModelUI();
 renderQuestion();
