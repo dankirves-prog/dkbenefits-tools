@@ -110,6 +110,15 @@ p { color: #27364d; line-height: 1.55; }
 .progress-bar { height: 100%; width: 16%; background: linear-gradient(90deg, var(--blue-600), #63a5ff); transition: width .3s ease; }
 #progressText { color: var(--muted); font-size: .9rem; margin: .45rem 0 0; }
 .concierge-line { margin: .1rem 0 .55rem; color: #1c3f83; font-weight: 600; }
+.state-guidance {
+  margin: 0 0 .65rem;
+  font-size: .86rem;
+  color: #35527f;
+  background: #eef5ff;
+  border: 1px solid #d7e4ff;
+  border-radius: 10px;
+  padding: .55rem .65rem;
+}
 
 .question-host {
   min-height: 190px;
@@ -131,6 +140,7 @@ input, select {
   font: inherit;
   width: 100%;
 }
+.other-state-wrap { display: block; margin-top: .6rem; font-weight: 600; color: #233a60; }
 .option-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .6rem; }
 .option-pill {
   border: 1px solid var(--line);
@@ -283,6 +293,9 @@ input, select {
 .lead-capture, .cta-daniel { padding: 1.1rem; margin-top: .95rem; }
 .lead-form { display: grid; gap: .6rem; }
 .success { color: #0f766e; font-weight: 600; }
+.ownership-license { font-size: .8rem; color: #5c6f8f; margin-top: .4rem; }
+.footer-contact { font-size: .88rem; color: #243754; }
+.footer-contact a { color: var(--blue-700); text-decoration: none; }
 .site-footer {
   border-top: 1px solid #d9e5ff;
   background: #f9fbff;
