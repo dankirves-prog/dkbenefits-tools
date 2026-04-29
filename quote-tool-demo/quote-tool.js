@@ -8,6 +8,9 @@ const funnelSection = document.getElementById('funnelSection');
 const resultsSection = document.getElementById('resultsSection');
 const resultsSummary = document.getElementById('resultsSummary');
 const participationNote = document.getElementById('participationNote');
+const heroAsideTitle = document.getElementById('heroAsideTitle');
+const heroAsideList = document.getElementById('heroAsideList');
+const heroAsideLinks = document.getElementById('heroAsideLinks');
 
 const employerContribution = document.getElementById('employerContribution');
 const contributionLabel = document.getElementById('contributionLabel');
@@ -29,6 +32,7 @@ const lowCostPlansGrid = document.getElementById('lowCostPlansGrid');
 const mecPlansGrid = document.getElementById('mecPlansGrid');
 const mecPlansWrap = document.getElementById('mecPlansWrap');
 const toggleMecBtn = document.getElementById('toggleMecBtn');
+const sortOptions = document.getElementById('sortOptions');
 
 const editAnswersBtn = document.getElementById('editAnswersBtn');
 const startOverBtn = document.getElementById('startOverBtn');
@@ -177,7 +181,80 @@ const questions = [
 
 let current = 0;
 let contributionModel = 'percent';
+let sortMode = 'recommended';
 const answers = {};
+
+const heroAsideContent = {
+  default: {
+    title: 'What you’ll walk away with',
+    bullets: [
+      'Real current starting rates, not placeholders',
+      'Employer contribution modeling',
+      'Employee payroll share estimates',
+      'Network and benefit comparisons',
+      'A real broker to contact when ready'
+    ],
+    showLinks: false
+  },
+  state: {
+    title: 'Why we ask this',
+    bullets: [
+      'State helps narrow plan availability.',
+      'This version is focused on Florida and Georgia employers.'
+    ],
+    showLinks: false
+  },
+  employees: {
+    title: 'Why we ask this',
+    bullets: [
+      'Group size helps determine which options may be available.',
+      'No company name or employee details are needed.'
+    ],
+    showLinks: false
+  },
+  enrolling: {
+    title: 'Why we ask this',
+    bullets: [
+      'Expected enrollment helps estimate participation and monthly cost.',
+      'If you are close to qualifying, we can help review the best path.'
+    ],
+    showLinks: false
+  },
+  priority: {
+    title: 'Why we ask this',
+    bullets: [
+      'Your priority helps organize the options.',
+      'It does not lock you into one plan or strategy.'
+    ],
+    showLinks: false
+  },
+  coverage: {
+    title: 'Why we ask this',
+    bullets: [
+      'Current coverage helps determine whether published rates may apply right away or need review.',
+      'These are still real planning rates, not fake placeholders.'
+    ],
+    showLinks: false
+  },
+  timeline: {
+    title: 'Why we ask this',
+    bullets: [
+      'Timing helps determine how quickly rates and effective dates need to be verified.',
+      'You can call or text Daniel when you are ready.'
+    ],
+    showLinks: false
+  },
+  results: {
+    title: 'Ready for the next step?',
+    bullets: [
+      'Many groups qualify for rates like these',
+      'Daniel can help verify eligibility',
+      'Additional market options may be available',
+      'Call, text, or email when ready'
+    ],
+    showLinks: true
+  }
+};
 
 function money(n) {
   return `$${Math.round(n).toLocaleString()}`;
@@ -245,6 +322,43 @@ function updateModelUI() {
   flatControl.classList.toggle('hidden', contributionModel !== 'flat');
 }
 
+function updateHeroAside(mode) {
+  const config = heroAsideContent[mode] || heroAsideContent.default;
+  heroAsideTitle.textContent = config.title;
+  heroAsideList.innerHTML = config.bullets.map((item) => `<li>${item}</li>`).join('');
+  heroAsideLinks.classList.toggle('hidden', !config.showLinks);
+}
+
+function parseFirstDollar(value) {
+  if (!value) return Number.POSITIVE_INFINITY;
+  const match = String(value).match(/\$?\s*([\d,]+(?:\.\d+)?)/);
+  if (!match) return Number.POSITIVE_INFINITY;
+  return Number(match[1].replace(/,/g, ''));
+}
+
+function sortPlansByMode(planList, mix) {
+  const list = [...planList];
+  if (sortMode === 'recommended') return list;
+
+  const direction = sortMode === 'highestEmployer' ? -1 : 1;
+  return list.sort((a, b) => {
+    const grossA = calcGrossPremium(a.rates, mix);
+    const grossB = calcGrossPremium(b.rates, mix);
+    const employerA = calculateEmployerCost(a, mix, grossA);
+    const employerB = calculateEmployerCost(b, mix, grossB);
+    const deductibleA = parseFirstDollar(a.details.deductible);
+    const deductibleB = parseFirstDollar(b.details.deductible);
+    const oopA = parseFirstDollar(a.details.oopMax);
+    const oopB = parseFirstDollar(b.details.oopMax);
+
+    if (sortMode === 'lowestEmployer' || sortMode === 'highestEmployer') return direction * (employerA - employerB);
+    if (sortMode === 'lowestGross') return grossA - grossB;
+    if (sortMode === 'lowestDeductible') return deductibleA - deductibleB;
+    if (sortMode === 'lowestOop') return oopA - oopB;
+    return 0;
+  });
+}
+
 function renderQuestion() {
   const q = questions[current];
   const value = answers[q.key] || '';
@@ -276,7 +390,8 @@ function renderQuestion() {
   progressBar.style.width = `${((current + 1) / questions.length) * 100}%`;
   progressText.textContent = `Question ${current + 1} of ${questions.length}`;
   backBtn.disabled = current === 0;
-  nextBtn.textContent = current === questions.length - 1 ? 'Show Estimates' : 'Continue';
+  nextBtn.textContent = current === questions.length - 1 ? 'See Real Rates Now' : 'Continue';
+  updateHeroAside(q.key);
 }
 
 function readAnswer() {
@@ -408,13 +523,14 @@ function renderResults() {
 
   updateParticipationNote();
 
-  const topPlans = plans.filter((p) => p.group === 'top');
-  const lowPlans = plans.filter((p) => p.group === 'low');
-  const mecPlans = plans.filter((p) => p.group === 'mec');
+  const topPlans = sortPlansByMode(plans.filter((p) => p.group === 'top'), mix);
+  const lowPlans = sortPlansByMode(plans.filter((p) => p.group === 'low'), mix);
+  const mecPlans = sortPlansByMode(plans.filter((p) => p.group === 'mec'), mix);
 
   topPlansGrid.innerHTML = topPlans.map((plan) => renderPlanCard(plan, mix)).join('');
   lowCostPlansGrid.innerHTML = lowPlans.map((plan) => renderPlanCard(plan, mix)).join('');
   mecPlansGrid.innerHTML = mecPlans.map((plan) => renderPlanCard(plan, mix)).join('');
+  updateHeroAside('results');
 }
 
 function resetLeadForm() {
@@ -432,6 +548,8 @@ function startOver() {
   current = 0;
 
   contributionModel = 'percent';
+  sortMode = 'recommended';
+  sortOptions.value = 'recommended';
   employerContribution.value = 50;
   flatContributionSelect.value = '300';
   flatContributionCustom.value = '';
@@ -512,6 +630,13 @@ editAnswersBtn.addEventListener('click', () => {
 });
 
 startOverBtn.addEventListener('click', startOver);
+
+sortOptions.addEventListener('change', () => {
+  sortMode = sortOptions.value;
+  if (!resultsSection.classList.contains('hidden')) {
+    renderResults();
+  }
+});
 
 toggleMecBtn.addEventListener('click', () => {
   mecPlansWrap.classList.toggle('hidden');

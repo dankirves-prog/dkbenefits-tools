@@ -34,13 +34,13 @@
     <section class="hero card-glass">
       <div>
         <p class="eyebrow">Florida &amp; Georgia focused. Additional states may be available.</p>
-        <h1>See real group health rates before you share your info.</h1>
-        <p>We use real published starting rates tied to real provider networks and actual plan structures. Final approval and pricing depend on eligibility and underwriting, but these numbers are real planning benchmarks many groups qualify for.</p>
-        <p>No employee names, dates of birth, or SSNs are needed to start. Use the tool privately, then call, text, or email Daniel only if and when you’re ready.</p>
+        <h1>Instant Group Rates. No Company Info Needed.</h1>
+        <p>Answer a few basic questions and see real current starting rates instantly on screen. No identifying information about your company or employees is needed to begin.</p>
+        <p>Adjust employer contributions instantly and explore options that fit your budget.</p>
         <p class="trust-line">No spam. We do not sell your information. Period.</p>
 
         <div class="hero-cta">
-          <button type="button" class="btn btn-primary" id="heroStartBtn">Start with no employee details</button>
+          <button type="button" class="btn btn-primary" id="heroStartBtn">Start Private Rate Check</button>
           <div class="hero-cta-links">
             <a href="tel:4074765076">Prefer a real person? Call or text Daniel: 407-476-5076</a>
             <a href="mailto:dan@dkbenefits.net">dan@dkbenefits.net</a>
@@ -48,15 +48,19 @@
         </div>
       </div>
 
-      <aside class="hero-aside">
-        <p class="muted-label">What you’ll walk away with</p>
-        <ul>
+      <aside class="hero-aside" id="heroAside">
+        <p class="muted-label" id="heroAsideTitle">What you’ll walk away with</p>
+        <ul id="heroAsideList">
           <li>Real current starting rates, not placeholders</li>
-          <li>Employer cost modeling</li>
+          <li>Employer contribution modeling</li>
           <li>Employee payroll share estimates</li>
           <li>Network and benefit comparisons</li>
           <li>A real broker to contact when ready</li>
         </ul>
+        <div id="heroAsideLinks" class="hero-aside-links hidden">
+          <a href="tel:4074765076">Call/Text: 407-476-5076</a>
+          <a href="mailto:dan@dkbenefits.net">Email: dan@dkbenefits.net</a>
+        </div>
       </aside>
     </section>
 
@@ -82,6 +86,7 @@
         <p class="eyebrow">Your planning benchmark</p>
         <h2>Real current starting rates for the options shown</h2>
         <p id="resultsSummary"></p>
+        <p class="results-confidence">Many groups qualify for rates like these. We can help identify the best fit for your company.</p>
         <p id="participationNote" class="participation-note hidden"></p>
       </div>
 
@@ -144,16 +149,28 @@
         <button type="button" class="btn btn-neutral" id="startOverBtn">Start over</button>
       </div>
 
-      <h3 class="section-title">Top Display Group</h3>
+      <div class="sort-wrap">
+        <label for="sortOptions">Sort Options</label>
+        <select id="sortOptions">
+          <option value="recommended">Recommended</option>
+          <option value="lowestEmployer">Lowest Employer Cost</option>
+          <option value="lowestGross">Lowest Gross Premium</option>
+          <option value="lowestDeductible">Lowest Deductible</option>
+          <option value="lowestOop">Lowest Out-of-Pocket Max</option>
+          <option value="highestEmployer">Highest Employer Cost</option>
+        </select>
+      </div>
+
+      <h3 class="section-title">Featured Plan Options</h3>
       <div class="plans-grid" id="topPlansGrid"></div>
 
-      <h3 class="section-title">Lower Cost Section</h3>
+      <h3 class="section-title">Lower Cost Options</h3>
       <div class="plans-grid" id="lowCostPlansGrid"></div>
 
       <section class="mec-section">
         <button type="button" id="toggleMecBtn" class="btn btn-neutral">Show MEC Section</button>
         <div id="mecPlansWrap" class="hidden">
-          <h3 class="section-title">MEC Section</h3>
+          <h3 class="section-title">Minimum Essential Coverage Option</h3>
           <div class="plans-grid" id="mecPlansGrid"></div>
         </div>
       </section>

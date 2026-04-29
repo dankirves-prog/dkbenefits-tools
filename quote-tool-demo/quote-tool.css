@@ -79,6 +79,8 @@ body {
   background: linear-gradient(180deg, #f5f9ff 0%, #fff 100%);
 }
 .hero-aside ul { margin: .6rem 0 0; padding-left: 1rem; color: #334968; line-height: 1.6; }
+.hero-aside-links { display: grid; gap: .35rem; margin-top: .7rem; }
+.hero-aside-links a { color: var(--blue-700); text-decoration: none; font-weight: 600; font-size: .9rem; }
 .trust-line {
   margin-top: .7rem;
   padding: .5rem .6rem;
@@ -158,6 +160,11 @@ input, select {
 .hidden { display: none !important; }
 .results-shell { margin-top: 1.4rem; }
 .section-head { margin-bottom: .8rem; }
+.results-confidence {
+  margin: .2rem 0 .45rem;
+  color: #1e3f7d;
+  font-weight: 600;
+}
 .participation-note {
   border-left: 3px solid #9ab8f2;
   background: #eef4ff;
@@ -194,6 +201,14 @@ input, select {
 
 .results-actions { display: flex; gap: .6rem; margin-top: .8rem; }
 .section-title { margin: 1.1rem 0 .5rem; }
+.sort-wrap {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin-top: .9rem;
+}
+.sort-wrap label { font-weight: 600; color: #1f3d7a; }
+.sort-wrap select { max-width: 280px; }
 
 .plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: .8rem; }
 .plan-card {
