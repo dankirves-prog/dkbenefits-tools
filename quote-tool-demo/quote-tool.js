@@ -183,6 +183,7 @@ let current = 0;
 let contributionModel = 'percent';
 let sortMode = 'recommended';
 const answers = {};
+const selectedPlans = new Map();
 
 const heroAsideContent = {
   default: {
@@ -359,6 +360,26 @@ function sortPlansByMode(planList, mix) {
   });
 }
 
+function getCurrentTierMix() {
+  const enrolling = Number(answers.enrolling || 1);
+  return getTierMix(enrolling);
+}
+
+function getVisiblePlans() {
+  const enrolling = Number(answers.enrolling || 1);
+  const mix = getCurrentTierMix(enrolling);
+  const topPlans = sortPlansByMode(plans.filter((p) => p.group === 'top'), mix);
+  const lowPlans = sortPlansByMode(plans.filter((p) => p.group === 'low'), mix);
+  const mecPlans = sortPlansByMode(plans.filter((p) => p.group === 'mec'), mix);
+  const mecVisible = mecPlansWrap.classList.contains('hidden') ? [] : mecPlans;
+  return [...topPlans, ...lowPlans, ...mecVisible].map((plan) => ({
+    id: plan.id,
+    name: plan.name,
+    network: plan.network,
+    typeBadge: plan.typeBadge
+  }));
+}
+
 function renderQuestion() {
   const q = questions[current];
   const value = answers[q.key] || '';
@@ -488,6 +509,11 @@ function renderPlanCard(plan, mix) {
         ${limitationsHtml}
       </div>
 
+      <label class="interest-toggle">
+        <input type="checkbox" class="plan-interest" data-plan-id="${plan.id}" ${selectedPlans.has(plan.id) ? 'checked' : ''} />
+        <span>I’m interested in this option</span>
+      </label>
+
       <p class="card-note">Based on estimated enrollment mix entered above.</p>
     </article>
   `;
@@ -530,6 +556,26 @@ function renderResults() {
   topPlansGrid.innerHTML = topPlans.map((plan) => renderPlanCard(plan, mix)).join('');
   lowCostPlansGrid.innerHTML = lowPlans.map((plan) => renderPlanCard(plan, mix)).join('');
   mecPlansGrid.innerHTML = mecPlans.map((plan) => renderPlanCard(plan, mix)).join('');
+
+  document.querySelectorAll('.plan-interest').forEach((input) => {
+    input.addEventListener('change', () => {
+      const planId = input.dataset.planId;
+      const plan = plans.find((p) => p.id === planId);
+      if (!plan) return;
+      if (input.checked) {
+        selectedPlans.set(plan.id, {
+          id: plan.id,
+          name: plan.name,
+          network: plan.network,
+          typeBadge: plan.typeBadge,
+          rates: plan.rates
+        });
+      } else {
+        selectedPlans.delete(plan.id);
+      }
+    });
+  });
+
   updateHeroAside('results');
 }
 
@@ -544,6 +590,7 @@ function resetLeadForm() {
 
 function startOver() {
   Object.keys(answers).forEach((key) => delete answers[key]);
+  selectedPlans.clear();
   answers[questions[0].key] = questions[0].options[0].value;
   current = 0;
 
@@ -649,6 +696,25 @@ leadForm.addEventListener('submit', (event) => {
     alert('Please add your first name and work email.');
     return;
   }
+  const tierMix = getCurrentTierMix();
+  const leadPayload = {
+    firstName: firstName.value.trim(),
+    email: email.value.trim(),
+    phone: phone.value.trim(),
+    answers: { ...answers },
+    tierMix,
+    contribution: {
+      model: contributionModel,
+      percent: contributionModel === 'percent' ? Number(employerContribution.value) : null,
+      flatDollar: contributionModel === 'flat' ? getFlatAmount() : null
+    },
+    selectedPlans: Array.from(selectedPlans.values()),
+    visiblePlans: getVisiblePlans(),
+    submittedAt: new Date().toISOString(),
+    pageUrl: window.location.href
+  };
+  // Phase 2: replace console.log with fetch() to Wix HTTP Function endpoint.
+  console.log('DK Benefits lead payload:', leadPayload);
   leadSuccess.classList.remove('hidden');
   leadForm.classList.add('hidden');
 });

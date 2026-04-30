@@ -291,6 +291,23 @@ input, select {
   font-size: .78rem;
   color: var(--muted);
 }
+.interest-toggle {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-top: .65rem;
+  padding: .55rem .6rem;
+  border: 1px solid #dce8ff;
+  border-radius: 10px;
+  background: #f7fbff;
+  font-size: .86rem;
+  color: #1f3d7a;
+  font-weight: 600;
+}
+.interest-toggle input {
+  width: auto;
+  margin: 0;
+}
 
 .mec-section { margin-top: .9rem; }
 
