@@ -475,7 +475,7 @@ function renderPlanCard(plan, mix) {
           <span class="badge">${plan.typeBadge}</span>
           <label class="interest-toggle top">
             <input type="checkbox" class="plan-interest" data-plan-id="${plan.id}" ${selectedPlans.has(plan.id) ? 'checked' : ''} />
-            <span>I’m interested in this option</span>
+            <span>Interested</span>
           </label>
         </div>
       </div>

@@ -311,8 +311,12 @@ input, select {
 }
 .interest-toggle.top {
   margin-top: 0;
-  padding: .38rem .45rem;
-  font-size: .77rem;
+  min-width: 130px;
+  min-height: 30px;
+  justify-content: center;
+  padding: .34rem .5rem;
+  font-size: .76rem;
+  white-space: nowrap;
 }
 .interest-toggle input {
   width: auto;
