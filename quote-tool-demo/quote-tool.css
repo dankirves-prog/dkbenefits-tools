@@ -219,6 +219,11 @@ input, select {
   padding: 1rem;
 }
 .plan-head { display: flex; justify-content: space-between; gap: .5rem; align-items: flex-start; }
+.plan-head-side {
+  display: grid;
+  justify-items: end;
+  gap: .4rem;
+}
 .plan-meta { color: var(--muted); font-size: .85rem; margin-top: .1rem; }
 .badge {
   font-size: .72rem;
@@ -304,9 +309,15 @@ input, select {
   color: #1f3d7a;
   font-weight: 600;
 }
+.interest-toggle.top {
+  margin-top: 0;
+  padding: .38rem .45rem;
+  font-size: .77rem;
+}
 .interest-toggle input {
   width: auto;
   margin: 0;
+  accent-color: #1d4ed8;
 }
 
 .mec-section { margin-top: .9rem; }

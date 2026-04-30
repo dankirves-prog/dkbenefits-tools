@@ -471,7 +471,13 @@ function renderPlanCard(plan, mix) {
           <h3>${plan.name}</h3>
           <p class="plan-meta">${plan.network}</p>
         </div>
-        <span class="badge">${plan.typeBadge}</span>
+        <div class="plan-head-side">
+          <span class="badge">${plan.typeBadge}</span>
+          <label class="interest-toggle top">
+            <input type="checkbox" class="plan-interest" data-plan-id="${plan.id}" ${selectedPlans.has(plan.id) ? 'checked' : ''} />
+            <span>I’m interested in this option</span>
+          </label>
+        </div>
       </div>
 
       <div class="card-section">
@@ -508,11 +514,6 @@ function renderPlanCard(plan, mix) {
         <div class="limit-note">${notesHtml}</div>
         ${limitationsHtml}
       </div>
-
-      <label class="interest-toggle">
-        <input type="checkbox" class="plan-interest" data-plan-id="${plan.id}" ${selectedPlans.has(plan.id) ? 'checked' : ''} />
-        <span>I’m interested in this option</span>
-      </label>
 
       <p class="card-note">Based on estimated enrollment mix entered above.</p>
     </article>
