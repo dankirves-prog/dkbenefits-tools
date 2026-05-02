@@ -474,11 +474,11 @@ function renderPlanCard(plan, mix) {
           <p class="plan-meta">${plan.network}</p>
         </div>
         <div class="plan-head-side">
-          <span class="badge">${plan.typeBadge}</span>
           <label class="interest-toggle top">
             <input type="checkbox" class="plan-interest" data-plan-id="${plan.id}" ${selectedPlans.has(plan.id) ? 'checked' : ''} />
             <span>Interested</span>
           </label>
+          <span class="badge">${plan.typeBadge}</span>
         </div>
       </div>
 
