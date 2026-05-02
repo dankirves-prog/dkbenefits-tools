@@ -330,6 +330,7 @@ input, select {
 .lead-capture, .cta-daniel { padding: 1.1rem; margin-top: .95rem; }
 .lead-form { display: grid; gap: .6rem; }
 .success { color: #0f766e; font-weight: 600; }
+.error { color: #b91c1c; font-weight: 600; }
 .ownership-license { font-size: .8rem; color: #5c6f8f; margin-top: .4rem; }
 .footer-contact { font-size: .88rem; color: #243754; }
 .footer-contact a { color: var(--blue-700); text-decoration: none; }

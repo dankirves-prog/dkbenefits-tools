@@ -38,9 +38,11 @@ const editAnswersBtn = document.getElementById('editAnswersBtn');
 const startOverBtn = document.getElementById('startOverBtn');
 const leadForm = document.getElementById('leadForm');
 const leadSuccess = document.getElementById('leadSuccess');
+const leadError = document.getElementById('leadError');
 const firstName = document.getElementById('firstName');
 const email = document.getElementById('email');
 const phone = document.getElementById('phone');
+const leadWebhookUrl = 'https://script.google.com/macros/s/AKfycby4-ZxTQfsAgIBO0JYSngccVoj5HRKtNshy6N2XlJhbxaEk2oW7b_xIRBGlcSq0CZ0z/exec';
 
 const plans = [
   {
@@ -587,6 +589,7 @@ function resetLeadForm() {
   phone.value = '';
   leadForm.classList.remove('hidden');
   leadSuccess.classList.add('hidden');
+  leadError.classList.add('hidden');
 }
 
 function startOver() {
@@ -691,7 +694,7 @@ toggleMecBtn.addEventListener('click', () => {
   toggleMecBtn.textContent = mecPlansWrap.classList.contains('hidden') ? 'Show MEC Section' : 'Hide MEC Section';
 });
 
-leadForm.addEventListener('submit', (event) => {
+leadForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!firstName.value.trim() || !email.value.trim()) {
     alert('Please add your first name and work email.');
@@ -714,10 +717,28 @@ leadForm.addEventListener('submit', (event) => {
     submittedAt: new Date().toISOString(),
     pageUrl: window.location.href
   };
-  // Phase 2: replace console.log with fetch() to Wix HTTP Function endpoint.
   console.log('DK Benefits lead payload:', leadPayload);
-  leadSuccess.classList.remove('hidden');
-  leadForm.classList.add('hidden');
+  leadError.classList.add('hidden');
+
+  try {
+    const response = await fetch(leadWebhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(leadPayload)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Webhook failed with status ${response.status}`);
+    }
+
+    leadSuccess.classList.remove('hidden');
+    leadForm.classList.add('hidden');
+  } catch (error) {
+    console.error('Lead webhook error:', error);
+    leadError.classList.remove('hidden');
+  }
 });
 
 answers[questions[0].key] = questions[0].options[0].value;
