@@ -723,14 +723,12 @@ leadForm.addEventListener('submit', async (event) => {
   try {
     const response = await fetch(leadWebhookUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
       body: JSON.stringify(leadPayload)
     });
 
+    const responseText = await response.text();
     if (!response.ok) {
-      throw new Error(`Webhook failed with status ${response.status}`);
+      throw new Error(`Webhook failed with status ${response.status}: ${responseText}`);
     }
 
     leadSuccess.classList.remove('hidden');
