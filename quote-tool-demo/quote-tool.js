@@ -350,7 +350,6 @@ function sortPlansByMode(planList, mix) {
   const list = [...planList];
   if (sortMode === 'recommended') return list;
 
-  const direction = sortMode === 'highestEmployer' ? -1 : 1;
   return list.sort((a, b) => {
     const grossA = calcGrossPremium(a.rates, mix);
     const grossB = calcGrossPremium(b.rates, mix);
@@ -361,10 +360,12 @@ function sortPlansByMode(planList, mix) {
     const oopA = parseFirstDollar(a.details.oopMax);
     const oopB = parseFirstDollar(b.details.oopMax);
 
-    if (sortMode === 'lowestEmployer' || sortMode === 'highestEmployer') return direction * (employerA - employerB);
-    if (sortMode === 'lowestGross') return grossA - grossB;
-    if (sortMode === 'lowestDeductible') return deductibleA - deductibleB;
-    if (sortMode === 'lowestOop') return oopA - oopB;
+    if (sortMode === 'lowestCost') return employerA - employerB;
+    if (sortMode === 'strongestCoverage') {
+      const coverageA = deductibleA + oopA;
+      const coverageB = deductibleB + oopB;
+      return coverageA - coverageB;
+    }
     return 0;
   });
 }
@@ -485,8 +486,8 @@ function renderPlanCard(plan, mix) {
         </div>
         <div class="plan-head-side">
           <label class="interest-toggle top">
-            <input type="checkbox" class="plan-interest" data-plan-id="${plan.id}" ${selectedPlans.has(plan.id) ? 'checked' : ''} />
             <span>Interested</span>
+            <input type="checkbox" class="plan-interest" data-plan-id="${plan.id}" ${selectedPlans.has(plan.id) ? 'checked' : ''} />
           </label>
           <span class="badge">${plan.typeBadge}</span>
         </div>
