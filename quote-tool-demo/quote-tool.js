@@ -4,6 +4,7 @@ const progressText = document.getElementById('progressText');
 const backBtn = document.getElementById('backBtn');
 const nextBtn = document.getElementById('nextBtn');
 const heroStartBtn = document.getElementById('heroStartBtn');
+const heroSection = document.getElementById('heroSection');
 const funnelSection = document.getElementById('funnelSection');
 const resultsSection = document.getElementById('resultsSection');
 const resultsSummary = document.getElementById('resultsSummary');
@@ -186,6 +187,7 @@ let contributionModel = 'percent';
 let sortMode = 'recommended';
 const answers = {};
 const selectedPlans = new Map();
+let heroCompactActive = false;
 
 const heroAsideContent = {
   default: {
@@ -325,6 +327,11 @@ function updateModelUI() {
   flatControl.classList.toggle('hidden', contributionModel !== 'flat');
 }
 
+function setHeroCompact(compact) {
+  heroCompactActive = compact;
+  heroSection.classList.toggle('hero-compact', compact);
+}
+
 function updateHeroAside(mode) {
   const config = heroAsideContent[mode] || heroAsideContent.default;
   heroAsideTitle.textContent = config.title;
@@ -415,6 +422,9 @@ function renderQuestion() {
   backBtn.disabled = current === 0;
   nextBtn.textContent = current === questions.length - 1 ? 'See Real Rates Now' : 'Continue';
   updateHeroAside(q.key);
+  if (current > 0 || heroCompactActive) {
+    setHeroCompact(true);
+  }
 }
 
 function readAnswer() {
@@ -620,6 +630,7 @@ function startOver() {
 
   resultsSection.classList.add('hidden');
   funnelSection.classList.remove('hidden');
+  setHeroCompact(false);
   renderQuestion();
 }
 
@@ -653,6 +664,7 @@ backBtn.addEventListener('click', () => {
 });
 
 heroStartBtn.addEventListener('click', () => {
+  setHeroCompact(true);
   funnelSection.scrollIntoView({ behavior: 'smooth' });
 });
 
