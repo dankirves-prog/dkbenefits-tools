@@ -18,6 +18,15 @@ const downloadBtn = document.getElementById('downloadBtn');
 let plans = [];
 let selectedIndex = -1;
 
+function ensureSelection() {
+  if (plans.length === 0) {
+    selectedIndex = -1;
+    return false;
+  }
+  if (selectedIndex < 0 || selectedIndex >= plans.length) selectedIndex = 0;
+  return true;
+}
+
 function toLines(value) {
   if (!Array.isArray(value)) return '';
   return value.join('\n');
@@ -141,13 +150,16 @@ function blankPlan() {
 
 
 function moveSelected(direction) {
-  if (selectedIndex < 0) return;
+  if (!ensureSelection()) return;
   const target = selectedIndex + direction;
   if (target < 0 || target >= plans.length) return;
+
+  const currentPlanId = plans[selectedIndex]?.id;
   const [item] = plans.splice(selectedIndex, 1);
   plans.splice(target, 0, item);
-  selectedIndex = target;
-  renderList();
+
+  selectedIndex = plans.findIndex((p) => p.id === currentPlanId);
+  if (selectedIndex < 0) selectedIndex = target;
   selectPlan(selectedIndex);
 }
 
@@ -212,9 +224,9 @@ async function loadFromFetch() {
   const data = await response.json();
   if (!Array.isArray(data)) throw new Error('plans.json must be an array.');
   plans = data;
-  selectedIndex = Math.max(0, plans.length ? 0 : -1);
+  selectedIndex = 0;
   renderList();
-  if (selectedIndex >= 0) selectPlan(selectedIndex);
+  selectPlan(selectedIndex);
 }
 
 fileInput.addEventListener('change', async (e) => {
