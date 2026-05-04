@@ -1,0 +1,39 @@
+:root {
+  --dk-blue: #0a4ea1;
+  --dk-blue-dark: #073872;
+  --dk-bg: #f4f8ff;
+  --dk-border: #d9e4f5;
+  --text: #11213a;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Arial, sans-serif; color: var(--text); background: var(--dk-bg); }
+.topbar { background: #fff; border-bottom: 1px solid var(--dk-border); padding: 16px 20px; }
+h1 { margin: 0 0 10px; color: var(--dk-blue-dark); }
+.warning { margin: 0 0 12px; padding: 10px; background: #fff8e6; border: 1px solid #ffd892; border-radius: 8px; }
+.actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+button, .upload-label { border: 1px solid var(--dk-border); background: #fff; color: var(--text); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+button.primary { background: var(--dk-blue); color: #fff; border-color: var(--dk-blue); }
+button.danger { background: #fff1f1; border-color: #f3b4b4; color: #9d1919; }
+#fileInput { display: none; }
+.layout { display: grid; grid-template-columns: 1.2fr 1.4fr 1fr; gap: 16px; padding: 16px; align-items: start; }
+.panel { background: #fff; border: 1px solid var(--dk-border); border-radius: 10px; padding: 14px; }
+.panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.row-actions { display: flex; gap: 8px; }
+.table-wrap { max-height: 72vh; overflow: auto; border: 1px solid var(--dk-border); border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { border-bottom: 1px solid var(--dk-border); padding: 8px; text-align: left; vertical-align: top; }
+tr.active { background: #eaf2ff; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+input, select, textarea { border: 1px solid var(--dk-border); border-radius: 6px; padding: 8px; font-size: 14px; }
+textarea { resize: vertical; }
+h2, h3 { margin: 0 0 10px; color: var(--dk-blue-dark); }
+h3 { margin-top: 14px; }
+.preview-card { border: 1px solid var(--dk-border); border-radius: 8px; padding: 12px; background: #fcfdff; min-height: 280px; }
+.preview-card .badge { display: inline-block; background: #e7f0ff; border: 1px solid #bdd5ff; color: #073872; border-radius: 999px; padding: 2px 8px; font-size: 12px; margin-bottom: 8px; }
+.validation ul, #validationList { margin: 10px 0 0; padding-left: 18px; }
+.validation li.error { color: #9d1919; }
+.validation li.ok { color: #166534; }
+@media (max-width: 1300px) {
+  .layout { grid-template-columns: 1fr; }
+}
