@@ -42,7 +42,9 @@
     ],
     "ratesValidUntil": "2026-12-31",
     "status": "active",
-    "limitedNotes": []
+    "limitedNotes": [
+      "PAP available for Brand Rx."
+    ]
   },
   {
     "publicPlanName": "Cigna Network EPO Option",
@@ -74,7 +76,9 @@
     ],
     "status": "active",
     "ratesValidUntil": "2026-12-31",
-    "limitedNotes": []
+    "limitedNotes": [
+      "PAP available for Brand Rx."
+    ]
   },
   {
     "id": "phcs-ppo-8300-hsa",
@@ -442,10 +446,10 @@
     "network": "Utilizes PHCS network",
     "typeBadge": "MEC",
     "rates": {
-      "employeeOnly": 127.5,
-      "employeeSpouse": 193.8,
-      "employeeChildren": 193.8,
-      "family": 260.1
+      "employeeOnly": 292.7,
+      "employeeSpouse": 417.5,
+      "employeeChildren": 386.09,
+      "family": 510.89
     },
     "details": {
       "deductible": "$0",
@@ -461,7 +465,7 @@
       "Outpatient Surgery $400 copay"
     ],
     "limitedNotes": [
-      "Does not cover hospital care",
+      "Does not cover inpatient hospital care",
       "Does not cover brand-name drugs",
       "Imaging is limited to 1x per year at $350 copay"
     ],
