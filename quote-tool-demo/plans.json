@@ -1,13 +1,41 @@
 [
   {
+    "publicPlanName": "PHCS PPO Value Option",
+    "internalProgramName": "XGB_PPO_5000",
+    "networkLabel": "Utilizes the PHCS provider network",
+    "planTypeTag": "Major Medical",
     "id": "cigna-epo-1000",
     "group": "top",
     "name": "Cigna EPO 1000",
     "network": "Utilizes Cigna network",
     "typeBadge": "Strong Network",
-    "rates": { "employeeOnly": 459, "employeeSpouse": 779, "employeeChildren": 769, "family": 1079 },
-    "details": { "deductible": "$1,000", "oopMax": "$8,500", "pcp": "$50 after deductible", "specialist": "$50 after deductible", "urgentCare": "$50", "emergencyRoom": "$1,000 copay after deductible", "rx": "Generic $0" },
-    "notes": ["Richer first-dollar structure with deductible-aware office visit treatment."]
+    "rates": {
+      "employeeOnly": 468,
+      "employeeSpouse": 919,
+      "employeeChildren": 828,
+      "family": 1264
+    },
+    "highlights": ["Predictable copay structure", "Broad primary and specialist access"],
+    "tradeoffs": ["Higher monthly premium than leaner designs", "Deductible applies for several services"],
+    "eligibility": { "minEligible": 5, "minEnrolling": 3, "minParticipationPercent": 50 },
+    "ratesValidUntil": "2026-12-31"
+      "employeeOnly": 459,
+      "employeeSpouse": 779,
+      "employeeChildren": 769,
+      "family": 1079
+    },
+    "details": {
+      "deductible": "$1,000",
+      "oopMax": "$8,500",
+      "pcp": "$50 copay after deductible",
+      "specialist": "$50 copay after deductible",
+      "urgentCare": "$50 copay after deductible",
+      "emergencyRoom": "$1,000 copay after deductible",
+      "rx": "Generic $0"
+    },
+    "notes": [
+      "Richer first-dollar structure with deductible-aware office visit treatment."
+    ]
   },
   {
     "id": "cigna-epo-1750-hsa",
@@ -15,9 +43,24 @@
     "name": "Cigna EPO 1750 HSA",
     "network": "Utilizes Cigna network",
     "typeBadge": "HSA Friendly",
-    "rates": { "employeeOnly": 414, "employeeSpouse": 739, "employeeChildren": 729, "family": 1009 },
-    "details": { "deductible": "$1,750", "oopMax": "$8,500", "pcp": "Deductible then plan share", "specialist": "Deductible then plan share", "urgentCare": "Deductible then plan share", "emergencyRoom": "$1,000 copay after deductible", "rx": "HSA-compatible structure" },
-    "notes": ["Lower monthly rate profile with deductible-first plan behavior."]
+    "rates": {
+      "employeeOnly": 414,
+      "employeeSpouse": 739,
+      "employeeChildren": 729,
+      "family": 1009
+    },
+    "details": {
+      "deductible": "$1,750",
+      "oopMax": "$8,500",
+      "pcp": "$50 copay after deductible",
+      "specialist": "$50 copay after deductible",
+      "urgentCare": "$50 copay after deductible",
+      "emergencyRoom": "$1,000 copay after deductible",
+      "rx": "HSA-compatible structure"
+    },
+    "notes": [
+      "Lower monthly rate profile with deductible-first plan behavior."
+    ]
   },
   {
     "id": "phcs-ppo-8300-hsa",
@@ -25,9 +68,24 @@
     "name": "PHCS PPO 8300 HSA",
     "network": "Utilizes PHCS PPO network",
     "typeBadge": "HSA Friendly",
-    "rates": { "employeeOnly": 499.01, "employeeSpouse": 859.47, "employeeChildren": 969.62, "family": 1214.63 },
-    "details": { "deductible": "$8,300", "oopMax": "$9,100", "pcp": "Deductible then coinsurance", "specialist": "Deductible then coinsurance", "urgentCare": "Deductible then coinsurance", "emergencyRoom": "Deductible + 0%", "rx": "Integrated with deductible" },
-    "notes": ["Best fit for groups prioritizing lower fixed premiums and high-deductible design."]
+    "rates": {
+      "employeeOnly": 499.01,
+      "employeeSpouse": 859.47,
+      "employeeChildren": 969.62,
+      "family": 1214.63
+    },
+    "details": {
+      "deductible": "$8,300",
+      "oopMax": "$9,100",
+      "pcp": "After deductible, plan pays 100%",
+      "specialist": "After deductible, plan pays 100%",
+      "urgentCare": "After deductible, plan pays 100%",
+      "emergencyRoom": "After deductible, plan pays 100%",
+      "rx": "After deductible, plan pays 100%; eligible preventive generics may be $0"
+    },
+    "notes": [
+      "Best fit for groups prioritizing lower fixed premiums and high-deductible design."
+    ]
   },
   {
     "id": "phcs-ppo-4500",
@@ -35,9 +93,24 @@
     "name": "PHCS PPO 4500 Copay",
     "network": "Utilizes PHCS PPO network",
     "typeBadge": "Richer Benefits",
-    "rates": { "employeeOnly": 649.8, "employeeSpouse": 1339.23, "employeeChildren": 1213.73, "family": 1796.94 },
-    "details": { "deductible": "$4,500", "oopMax": "$9,100", "pcp": "$40", "specialist": "$75", "urgentCare": "$90", "emergencyRoom": "Deductible + 30%", "rx": "Tiered copay Rx" },
-    "notes": ["Balanced PPO option with stronger copay predictability."]
+    "rates": {
+      "employeeOnly": 649.8,
+      "employeeSpouse": 1339.23,
+      "employeeChildren": 1213.73,
+      "family": 1796.94
+    },
+    "details": {
+      "deductible": "$4,500",
+      "oopMax": "$9,100",
+      "pcp": "$40",
+      "specialist": "$75",
+      "urgentCare": "$90",
+      "emergencyRoom": "After deductible, member pays 30%",
+      "rx": "Tiered copay Rx"
+    },
+    "notes": [
+      "Balanced PPO option with stronger copay predictability."
+    ]
   },
   {
     "id": "phcs-ppo-3500",
@@ -45,62 +118,230 @@
     "name": "PHCS PPO 3500 Copay",
     "network": "Utilizes PHCS PPO network",
     "typeBadge": "Richer Benefits",
-    "rates": { "employeeOnly": 749.9, "employeeSpouse": 1415.49, "employeeChildren": 1379.88, "family": 2071.67 },
-    "details": { "deductible": "$3,500", "oopMax": "$8,700", "pcp": "$40", "specialist": "$75", "urgentCare": "$90", "emergencyRoom": "Deductible + 20%", "rx": "Tiered copay Rx" },
-    "notes": ["Higher premium in exchange for richer deductible and benefit posture."]
+    "rates": {
+      "employeeOnly": 749.9,
+      "employeeSpouse": 1415.49,
+      "employeeChildren": 1379.88,
+      "family": 2071.67
+    },
+    "details": {
+      "deductible": "$3,500",
+      "oopMax": "$8,700",
+      "pcp": "$40",
+      "specialist": "$75",
+      "urgentCare": "$90",
+      "emergencyRoom": "After deductible, member pays 20%",
+      "rx": "Tiered copay Rx"
+    },
+    "notes": [
+      "Higher premium in exchange for richer deductible and benefit posture."
+    ]
   },
   {
+    "publicPlanName": "Cigna Network EPO Option",
+    "internalProgramName": "XGB_EPO_4000",
+    "networkLabel": "Built around Cigna network access",
+    "planTypeTag": "Major Medical",
     "id": "phcs-ppo-4500-option",
     "group": "top",
     "name": "PHCS PPO 4500 Copay Option",
     "network": "Utilizes PHCS PPO network",
     "typeBadge": "Strong Network",
-    "rates": { "employeeOnly": 697.12, "employeeSpouse": 1364.23, "employeeChildren": 1247.86, "family": 1816.47 },
-    "details": { "deductible": "$4,500", "oopMax": "$9,100", "pcp": "$40", "specialist": "$75", "urgentCare": "$90", "emergencyRoom": "Deductible + 30%", "rx": "$20 / $65 / $95" },
-    "notes": ["Alternative 4500-lane option for comparison within PHCS PPO structures."]
+    "rates": {
+      "employeeOnly": 451,
+      "employeeSpouse": 887,
+      "employeeChildren": 799,
+      "family": 1218
+    },
+    "highlights": ["Strong virtual care ecosystem", "Competitive specialist pricing"],
+    "tradeoffs": ["Out-of-network care is limited", "Referral strategy may matter by market"],
+    "eligibility": { "minEligible": 5, "minEnrolling": 3, "minParticipationPercent": 50 },
+    "ratesValidUntil": "2026-11-30"
+      "employeeOnly": 697.12,
+      "employeeSpouse": 1364.23,
+      "employeeChildren": 1247.86,
+      "family": 1816.47
+    },
+    "details": {
+      "deductible": "$4,500",
+      "oopMax": "$9,100",
+      "pcp": "$40",
+      "specialist": "$75",
+      "urgentCare": "$90",
+      "emergencyRoom": "After deductible, member pays 30%",
+      "rx": "$20 / $65 / $95"
+    },
+    "notes": [
+      "Alternative 4500-lane option for comparison within PHCS PPO structures."
+    ]
   },
   {
+    "publicPlanName": "Broad Network HSA Option",
+    "internalProgramName": "XGB_HSA_3200",
+    "networkLabel": "Accesses a broad multi-market provider network",
+    "planTypeTag": "HSA",
     "id": "phcs-ppo-3500-option",
     "group": "top",
     "name": "PHCS PPO 3500 Copay Option",
     "network": "Utilizes PHCS PPO network",
     "typeBadge": "Strong Network",
-    "rates": { "employeeOnly": 789.94, "employeeSpouse": 1434.95, "employeeChildren": 1401.93, "family": 2071.22 },
-    "details": { "deductible": "$3,500", "oopMax": "$8,700", "pcp": "$40", "specialist": "$75", "urgentCare": "$90", "emergencyRoom": "Deductible + 20%", "rx": "Tiered copay Rx" },
-    "notes": ["Alternative richer-design PPO option for side-by-side planning."]
+    "rates": {
+      "employeeOnly": 429,
+      "employeeSpouse": 844,
+      "employeeChildren": 759,
+      "family": 1172
+    },
+    "highlights": ["HSA-compatible design", "Lower premium relative to copay-rich plans"],
+    "tradeoffs": ["Higher upfront deductible", "Best fit when employees can fund HSAs"],
+    "eligibility": { "minEligible": 5, "minEnrolling": 3, "minParticipationPercent": 50 },
+    "ratesValidUntil": "2026-10-31"
+      "employeeOnly": 789.94,
+      "employeeSpouse": 1434.95,
+      "employeeChildren": 1401.93,
+      "family": 2071.22
+    },
+    "details": {
+      "deductible": "$3,500",
+      "oopMax": "$8,700",
+      "pcp": "$40",
+      "specialist": "$75",
+      "urgentCare": "$90",
+      "emergencyRoom": "After deductible, member pays 20%",
+      "rx": "Tiered copay Rx"
+    },
+    "notes": [
+      "Alternative richer-design PPO option for side-by-side planning."
+    ]
   },
   {
+    "publicPlanName": "PHCS Copay Choice Option",
+    "internalProgramName": "MBA_COPAY_45",
+    "networkLabel": "Utilizes PHCS network access",
+    "planTypeTag": "Major-Medical-Style",
     "id": "phcs-lower-cost-choice",
     "group": "low",
     "name": "PHCS Lower Cost Choice",
     "network": "Utilizes PHCS network",
     "typeBadge": "Lower Cost",
-    "rates": { "employeeOnly": 198.9, "employeeSpouse": 290.7, "employeeChildren": 290.7, "family": 402.9 },
-    "details": { "deductible": "Limited schedule", "oopMax": "Not equivalent to major medical OOP", "pcp": "$35", "specialist": "Limited visits", "urgentCare": "Limited fixed benefits", "rx": "Limited Rx schedule" },
-    "notes": ["This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited."],
-    "limitedNotes": ["may not cover hospital care", "may limit doctor/specialist visits", "may limit imaging, ER, ambulance, or surgery benefits", "may not cover brand-name drugs depending on the plan"]
+    "rates": {
+      "employeeOnly": 398,
+      "employeeSpouse": 782,
+      "employeeChildren": 706,
+      "family": 1089
+    },
+    "highlights": ["Simple office-visit copays", "Lower payroll impact vs richer PPO tiers"],
+    "tradeoffs": ["Not as comprehensive as richer major medical designs", "Some services have tighter limits"],
+    "eligibility": { "minEligible": 5, "minEnrolling": 3, "minParticipationPercent": 50 },
+    "ratesValidUntil": "2026-09-30"
+      "employeeOnly": 198.9,
+      "employeeSpouse": 290.7,
+      "employeeChildren": 290.7,
+      "family": 402.9
+    },
+    "details": {
+      "deductible": "Limited schedule",
+      "oopMax": "Not equivalent to major medical OOP",
+      "pcp": "$35",
+      "specialist": "Limited visits",
+      "urgentCare": "Limited fixed benefits",
+      "rx": "Limited Rx schedule"
+    },
+    "notes": [
+      "This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited."
+    ],
+    "limitedNotes": [
+      "may not cover hospital care",
+      "may limit doctor/specialist visits",
+      "may limit imaging, ER, ambulance, or surgery benefits",
+      "may not cover brand-name drugs depending on the plan"
+    ]
   },
   {
+    "publicPlanName": "Lower Cost Essential Coverage Option",
+    "internalProgramName": "MBA_MEC_CORE",
+    "networkLabel": "Built around a value-focused provider access model",
+    "planTypeTag": "MEC",
     "id": "phcs-lower-cost-care",
     "group": "low",
     "name": "PHCS Lower Cost Care",
     "network": "Utilizes PHCS network",
     "typeBadge": "Participation Helper",
-    "rates": { "employeeOnly": 292.7, "employeeSpouse": 417.5, "employeeChildren": 386.09, "family": 510.89 },
-    "details": { "deductible": "Limited schedule", "oopMax": "Not equivalent to major medical OOP", "pcp": "$25", "specialist": "Limited visit structure", "urgentCare": "Includes select outpatient support", "rx": "Restricted Rx categories" },
-    "notes": ["This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited."],
-    "limitedNotes": ["may not cover hospital care", "may limit doctor/specialist visits", "may limit imaging, ER, ambulance, or surgery benefits", "may not cover brand-name drugs depending on the plan"]
+    "rates": {
+      "employeeOnly": 182,
+      "employeeSpouse": 356,
+      "employeeChildren": 322,
+      "family": 489
+    },
+    "highlights": ["Very low monthly cost", "Can support participation strategy in some groups"],
+    "tradeoffs": ["Not comprehensive major medical", "Benefit maximums and exclusions apply"],
+    "eligibility": { "minEligible": 5, "minEnrolling": 3, "minParticipationPercent": 50 },
+    "ratesValidUntil": "2026-08-31"
+      "employeeOnly": 292.7,
+      "employeeSpouse": 417.5,
+      "employeeChildren": 386.09,
+      "family": 510.89
+    },
+    "details": {
+      "deductible": "Limited schedule",
+      "oopMax": "Not equivalent to major medical OOP",
+      "pcp": "$25",
+      "specialist": "Limited visit structure",
+      "urgentCare": "Includes select outpatient support",
+      "rx": "Restricted Rx categories"
+    },
+    "notes": [
+      "This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited."
+    ],
+    "limitedNotes": [
+      "may not cover hospital care",
+      "may limit doctor/specialist visits",
+      "may limit imaging, ER, ambulance, or surgery benefits",
+      "may not cover brand-name drugs depending on the plan"
+    ]
   },
   {
+    "publicPlanName": "Starter Limited Benefit Option",
+    "internalProgramName": "MBA_LIMITED_PLUS",
+    "networkLabel": "Accesses selected national provider channels",
+    "planTypeTag": "Limited Benefit",
     "id": "phcs-visit-limit-1000",
     "group": "low",
     "name": "PHCS Visit Limit 1000",
     "network": "Utilizes PHCS network",
     "typeBadge": "Lower Cost",
-    "rates": { "employeeOnly": 374, "employeeSpouse": 679, "employeeChildren": 669, "family": 959 },
-    "details": { "deductible": "$1,000 equivalent schedule", "oopMax": "Limited by plan schedule", "pcp": "Limited visit plan", "specialist": "Limited visit plan", "urgentCare": "Limited visit plan", "emergencyRoom": "$250 copay after deductible; limited to 2 accident-related ER visits and 2 sickness-related ER visits per year", "rx": "Select generic support" },
-    "notes": ["This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited."],
-    "limitedNotes": ["may not cover hospital care", "may limit doctor/specialist visits", "may limit imaging, ER, ambulance, or surgery benefits", "may not cover brand-name drugs depending on the plan"]
+    "rates": {
+      "employeeOnly": 149,
+      "employeeSpouse": 291,
+      "employeeChildren": 267,
+      "family": 419
+    },
+    "highlights": ["Lowest demo premium range", "Useful as a stepping-stone conversation"],
+    "tradeoffs": ["Not a substitute for broad major medical", "Tighter caps by service category"],
+    "eligibility": { "minEligible": 5, "minEnrolling": 3, "minParticipationPercent": 50 },
+    "ratesValidUntil": "2025-01-31"
+      "employeeOnly": 374,
+      "employeeSpouse": 679,
+      "employeeChildren": 669,
+      "family": 959
+    },
+    "details": {
+      "deductible": "$1,000 equivalent schedule",
+      "oopMax": "Limited by plan schedule",
+      "pcp": "Limited visit plan",
+      "specialist": "Limited visit plan",
+      "urgentCare": "Limited visit plan",
+      "emergencyRoom": "$250 copay after deductible; limited to 2 accident-related and 2 sickness-related ER visits per year",
+      "rx": "Select generic support"
+    },
+    "notes": [
+      "This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited."
+    ],
+    "limitedNotes": [
+      "may not cover hospital care",
+      "may limit doctor/specialist visits",
+      "may limit imaging, ER, ambulance, or surgery benefits",
+      "may not cover brand-name drugs depending on the plan"
+    ]
   },
   {
     "id": "phcs-visit-limit-1750-hsa",
@@ -108,10 +349,30 @@
     "name": "PHCS Visit Limit 1750 HSA",
     "network": "Utilizes PHCS network",
     "typeBadge": "HSA Friendly",
-    "rates": { "employeeOnly": 334, "employeeSpouse": 639, "employeeChildren": 629, "family": 889 },
-    "details": { "deductible": "$1,750 equivalent schedule", "oopMax": "Limited by plan schedule", "pcp": "Limited visit HSA style", "specialist": "Limited visit HSA style", "urgentCare": "Limited visit HSA style", "emergencyRoom": "$250 copay after deductible; limited to 2 accident-related ER visits and 2 sickness-related ER visits per year", "rx": "Restricted Rx support" },
-    "notes": ["This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited."],
-    "limitedNotes": ["may not cover hospital care", "may limit doctor/specialist visits", "may limit imaging, ER, ambulance, or surgery benefits", "may not cover brand-name drugs depending on the plan"]
+    "rates": {
+      "employeeOnly": 334,
+      "employeeSpouse": 639,
+      "employeeChildren": 629,
+      "family": 889
+    },
+    "details": {
+      "deductible": "$1,750 equivalent schedule",
+      "oopMax": "Limited by plan schedule",
+      "pcp": "Limited visit HSA style",
+      "specialist": "Limited visit HSA style",
+      "urgentCare": "Limited visit HSA style",
+      "emergencyRoom": "$250 copay after deductible; limited to 2 accident-related and 2 sickness-related ER visits per year",
+      "rx": "Restricted Rx support"
+    },
+    "notes": [
+      "This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited."
+    ],
+    "limitedNotes": [
+      "may not cover hospital care",
+      "may limit doctor/specialist visits",
+      "may limit imaging, ER, ambulance, or surgery benefits",
+      "may not cover brand-name drugs depending on the plan"
+    ]
   },
   {
     "id": "minimum-essential-coverage",
@@ -119,9 +380,28 @@
     "name": "Minimum Essential Coverage",
     "network": "Utilizes PHCS network",
     "typeBadge": "Preventive Focused",
-    "rates": { "employeeOnly": 127.5, "employeeSpouse": 193.8, "employeeChildren": 193.8, "family": 260.1 },
-    "details": { "deductible": "Preventive-focused schedule", "oopMax": "Not traditional major medical OOP structure", "pcp": "Preventive-focused", "specialist": "Limited/non-core", "urgentCare": "Limited/non-core", "rx": "Preventive/Rx limitations apply" },
-    "notes": ["This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited."],
-    "limitedNotes": ["may not cover hospital care", "may limit doctor/specialist visits", "may limit imaging, ER, ambulance, or surgery benefits", "may not cover brand-name drugs depending on the plan"]
+    "rates": {
+      "employeeOnly": 127.5,
+      "employeeSpouse": 193.8,
+      "employeeChildren": 193.8,
+      "family": 260.1
+    },
+    "details": {
+      "deductible": "Preventive-focused schedule",
+      "oopMax": "Not traditional major medical OOP structure",
+      "pcp": "Preventive-focused",
+      "specialist": "Limited/non-core",
+      "urgentCare": "Limited/non-core",
+      "rx": "Preventive/Rx limitations apply"
+    },
+    "notes": [
+      "This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited."
+    ],
+    "limitedNotes": [
+      "may not cover hospital care",
+      "may limit doctor/specialist visits",
+      "may limit imaging, ER, ambulance, or surgery benefits",
+      "may not cover brand-name drugs depending on the plan"
+    ]
   }
 ]
