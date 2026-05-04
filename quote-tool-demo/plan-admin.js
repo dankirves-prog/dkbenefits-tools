@@ -7,6 +7,8 @@ const fileInput = document.getElementById('fileInput');
 const reloadBtn = document.getElementById('reloadBtn');
 const addPlanBtn = document.getElementById('addPlanBtn');
 const duplicatePlanBtn = document.getElementById('duplicatePlanBtn');
+const moveUpBtn = document.getElementById('moveUpBtn');
+const moveDownBtn = document.getElementById('moveDownBtn');
 const hidePlanBtn = document.getElementById('hidePlanBtn');
 const archivePlanBtn = document.getElementById('archivePlanBtn');
 const deletePlanBtn = document.getElementById('deletePlanBtn');
@@ -137,6 +139,18 @@ function blankPlan() {
   };
 }
 
+
+function moveSelected(direction) {
+  if (selectedIndex < 0) return;
+  const target = selectedIndex + direction;
+  if (target < 0 || target >= plans.length) return;
+  const [item] = plans.splice(selectedIndex, 1);
+  plans.splice(target, 0, item);
+  selectedIndex = target;
+  renderList();
+  selectPlan(selectedIndex);
+}
+
 function validatePlans() {
   const errors = [];
   const ids = new Set();
@@ -235,6 +249,8 @@ duplicatePlanBtn.addEventListener('click', () => {
   plans.splice(selectedIndex + 1, 0, copy);
   selectPlan(selectedIndex + 1);
 });
+moveUpBtn.addEventListener('click', () => moveSelected(-1));
+moveDownBtn.addEventListener('click', () => moveSelected(1));
 hidePlanBtn.addEventListener('click', () => { if (plans[selectedIndex]) { plans[selectedIndex].status = 'hidden'; selectPlan(selectedIndex); } });
 archivePlanBtn.addEventListener('click', () => { if (plans[selectedIndex]) { plans[selectedIndex].status = 'archived'; selectPlan(selectedIndex); } });
 deletePlanBtn.addEventListener('click', () => {

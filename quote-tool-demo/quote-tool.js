@@ -250,17 +250,8 @@ function sortPlansByMode(planList, mix) {
     const grossB = calcGrossPremium(b.rates, mix);
     const employerA = calculateEmployerCost(a, mix, grossA);
     const employerB = calculateEmployerCost(b, mix, grossB);
-    const deductibleA = parseFirstDollar(a.details.deductible);
-    const deductibleB = parseFirstDollar(b.details.deductible);
-    const oopA = parseFirstDollar(a.details.oopMax);
-    const oopB = parseFirstDollar(b.details.oopMax);
-
     if (sortMode === 'lowestCost') return employerA - employerB;
-    if (sortMode === 'strongestCoverage') {
-      const coverageA = deductibleA + oopA;
-      const coverageB = deductibleB + oopB;
-      return coverageA - coverageB;
-    }
+    if (sortMode === 'strongestCoverage') return grossB - grossA;
     return 0;
   });
 }
