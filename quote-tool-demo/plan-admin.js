@@ -218,26 +218,30 @@ function toProgramCode(value) {
 function normalizePlanForExport(plan) {
   const clone = JSON.parse(JSON.stringify(plan));
 
-  clone.publicPlanName = clone.name || clone.publicPlanName || '';
-  clone.networkLabel = clone.network || clone.networkLabel || '';
-  clone.planTypeTag = clone.typeBadge || clone.planTypeTag || '';
-  clone.internalProgramName = clone.internalProgramName || toProgramCode(clone.id || clone.name);
+  const normalized = {
+    id: clone.id || '',
+    group: clone.group || '',
+    name: clone.name || '',
+    network: clone.network || '',
+    typeBadge: clone.typeBadge || '',
+    rates: clone.rates && typeof clone.rates === 'object' ? clone.rates : {},
+    details: clone.details && typeof clone.details === 'object' ? clone.details : {},
+    notes: Array.isArray(clone.notes) ? clone.notes : []
+  };
 
-  if (!Array.isArray(clone.notes)) clone.notes = [];
-  if (clone.limitedNotes !== undefined && !Array.isArray(clone.limitedNotes)) clone.limitedNotes = [];
-
-  if (!clone.rates || typeof clone.rates !== 'object') clone.rates = {};
   ['employeeOnly', 'employeeSpouse', 'employeeChildren', 'family'].forEach((k) => {
-    const v = clone.rates[k];
-    if (v !== undefined && v !== null && v !== '') clone.rates[k] = Number(v);
+    const v = normalized.rates[k];
+    if (v !== undefined && v !== null && v !== '') normalized.rates[k] = Number(v);
   });
 
-  Object.keys(clone).forEach((key) => {
-    if (clone[key] === undefined) delete clone[key];
-  });
+  if (Array.isArray(clone.limitedNotes) && clone.limitedNotes.length) normalized.limitedNotes = clone.limitedNotes;
+  if (clone.status) normalized.status = clone.status;
+  if (clone.ratesValidUntil) normalized.ratesValidUntil = clone.ratesValidUntil;
+  if (Array.isArray(clone.allowedStates) && clone.allowedStates.length) normalized.allowedStates = clone.allowedStates;
 
-  return clone;
+  return normalized;
 }
+
 
 function downloadJSON() {
   if (!showValidation()) return;

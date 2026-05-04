@@ -357,11 +357,12 @@ function renderPlanCard(plan, mix) {
   const employer = calculateEmployerCost(plan, mix, grossPremium);
   const employee = grossPremium - employer;
 
-  const limitationsHtml = plan.limitedNotes
+  const hasLimitedNotes = Array.isArray(plan.limitedNotes) && plan.limitedNotes.length > 0;
+  const limitationsHtml = hasLimitedNotes
     ? `<div class="limit-note">${plan.limitedNotes.map((n) => `<div>${n}</div>`).join('')}</div>`
-    : '<div class="limit-note">Coverage and access tradeoffs vary by option and should be reviewed against your goals.</div>';
+    : '';
 
-  const notesHtml = `${plan.notes.map((n) => `<div>${n}</div>`).join('')}<div>${plan.network}</div>`;
+  const notesHtml = `${plan.notes.map((n) => `<div>${n}</div>`).join('')}`;
 
   return `
     <article class="plan-card">
@@ -412,8 +413,9 @@ function renderPlanCard(plan, mix) {
       <div class="card-section">
         <h4>Important Notes</h4>
         <div class="limit-note">${notesHtml}</div>
-        ${limitationsHtml}
       </div>
+
+      ${hasLimitedNotes ? `<div class="card-section"><h4>Limitations</h4>${limitationsHtml}</div>` : ''}
 
       <p class="card-note">Based on estimated enrollment mix entered above.</p>
     </article>
