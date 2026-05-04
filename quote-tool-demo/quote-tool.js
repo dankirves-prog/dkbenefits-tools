@@ -140,10 +140,19 @@ async function loadPlans() {
   if (!response.ok) {
     throw new Error(`Failed to load plans.json (${response.status})`);
   }
-  const data = await response.json();
+
+  const raw = await response.text();
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch (error) {
+    throw new Error(`plans.json is not valid JSON. ${error.message}`);
+  }
+
   if (!Array.isArray(data)) {
     throw new Error('plans.json did not return an array');
   }
+
   plans = data;
 }
 
@@ -648,6 +657,6 @@ updateModelUI();
     renderQuestion();
   } catch (error) {
     console.error('Plan load error:', error);
-    questionHost.innerHTML = "<article class=\"question active\"><h3>We're having trouble loading plan options right now.</h3><p>Please refresh and try again, or call/text Daniel at 407-476-5076.</p></article>";
+    questionHost.innerHTML = `<article class="question active"><h3>We're having trouble loading plan options right now.</h3><p>Please refresh and try again, or call/text Daniel at 407-476-5076.</p><p class="subtle">Technical detail: ${error.message}</p></article>`;
   }
 })();
