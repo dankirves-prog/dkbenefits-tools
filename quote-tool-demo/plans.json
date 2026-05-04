@@ -38,7 +38,7 @@
       "rx": "Generic $0"
     },
     "notes": [
-      "Deductible must be met before copays except preventive $0 and telemedicine $0. PAP available for Brand Rx."
+      "Deductible must be met before copays except preventive $0 and telemedicine $0."
     ],
     "ratesValidUntil": "2026-12-31",
     "status": "active",
@@ -69,10 +69,10 @@
       "specialist": "$50 copay after deductible",
       "urgentCare": "$50 copay after deductible",
       "emergencyRoom": "$1,000 copay after deductible",
-      "rx": "HSA-compatible structure"
+      "rx": "Generic $0 after deductible"
     },
     "notes": [
-      "HSA compatible HDHP Health Plan. Deductible must be met before copays except preventive $0 and telemedicine $0. PAP available for Brand Rx."
+      "HSA compatible HDHP Health Plan. Deductible must be met before copays except preventive $0 and telemedicine $0."
     ],
     "status": "active",
     "ratesValidUntil": "2026-12-31",
