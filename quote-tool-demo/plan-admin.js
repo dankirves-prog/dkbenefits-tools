@@ -206,9 +206,43 @@ function showValidation() {
   return false;
 }
 
+
+function toProgramCode(value) {
+  return String(value || '')
+    .trim()
+    .replace(/[^a-zA-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .toUpperCase();
+}
+
+function normalizePlanForExport(plan) {
+  const clone = JSON.parse(JSON.stringify(plan));
+
+  clone.publicPlanName = clone.name || clone.publicPlanName || '';
+  clone.networkLabel = clone.network || clone.networkLabel || '';
+  clone.planTypeTag = clone.typeBadge || clone.planTypeTag || '';
+  clone.internalProgramName = clone.internalProgramName || toProgramCode(clone.id || clone.name);
+
+  if (!Array.isArray(clone.notes)) clone.notes = [];
+  if (clone.limitedNotes !== undefined && !Array.isArray(clone.limitedNotes)) clone.limitedNotes = [];
+
+  if (!clone.rates || typeof clone.rates !== 'object') clone.rates = {};
+  ['employeeOnly', 'employeeSpouse', 'employeeChildren', 'family'].forEach((k) => {
+    const v = clone.rates[k];
+    if (v !== undefined && v !== null && v !== '') clone.rates[k] = Number(v);
+  });
+
+  Object.keys(clone).forEach((key) => {
+    if (clone[key] === undefined) delete clone[key];
+  });
+
+  return clone;
+}
+
 function downloadJSON() {
   if (!showValidation()) return;
-  const cleaned = JSON.stringify(plans, null, 2);
+  const normalized = plans.map((plan) => normalizePlanForExport(plan));
+  const cleaned = JSON.stringify(normalized, null, 2);
   const blob = new Blob([cleaned], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
