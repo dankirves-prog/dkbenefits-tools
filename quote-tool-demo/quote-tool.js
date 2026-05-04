@@ -45,133 +45,7 @@ const email = document.getElementById('email');
 const phone = document.getElementById('phone');
 const leadWebhookUrl = 'https://script.google.com/macros/s/AKfycby4-ZxTQfsAgIBO0JYSngccVoj5HRKtNshy6N2XlJhbxaEk2oW7b_xIRBGlcSq0CZ0z/exec';
 
-const plans = [
-  {
-    id: 'cigna-epo-1000',
-    group: 'top',
-    name: 'Cigna EPO 1000',
-    network: 'Utilizes Cigna network',
-    typeBadge: 'Strong Network',
-    rates: { employeeOnly: 459, employeeSpouse: 779, employeeChildren: 769, family: 1079 },
-    details: { deductible: '$1,000', oopMax: '$8,500', pcp: '$50 after deductible', specialist: '$50 after deductible', urgentCare: '$50', rx: 'Generic $0' },
-    notes: ['Richer first-dollar structure with deductible-aware office visit treatment.']
-  },
-  {
-    id: 'cigna-epo-1750-hsa',
-    group: 'top',
-    name: 'Cigna EPO 1750 HSA',
-    network: 'Utilizes Cigna network',
-    typeBadge: 'HSA Friendly',
-    rates: { employeeOnly: 414, employeeSpouse: 739, employeeChildren: 729, family: 1009 },
-    details: { deductible: '$1,750', oopMax: '$8,500', pcp: 'Deductible then plan share', specialist: 'Deductible then plan share', urgentCare: 'Deductible then plan share', rx: 'HSA-compatible structure' },
-    notes: ['Lower monthly rate profile with deductible-first plan behavior.']
-  },
-  {
-    id: 'phcs-ppo-8300-hsa',
-    group: 'top',
-    name: 'PHCS PPO 8300 HSA',
-    network: 'Utilizes PHCS PPO network',
-    typeBadge: 'HSA Friendly',
-    rates: { employeeOnly: 499.01, employeeSpouse: 859.47, employeeChildren: 969.62, family: 1214.63 },
-    details: { deductible: '$8,300', oopMax: '$9,100', pcp: 'Deductible then coinsurance', specialist: 'Deductible then coinsurance', urgentCare: 'Deductible then coinsurance', rx: 'Integrated with deductible' },
-    notes: ['Best fit for groups prioritizing lower fixed premiums and high-deductible design.']
-  },
-  {
-    id: 'phcs-ppo-4500',
-    group: 'top',
-    name: 'PHCS PPO 4500 Copay',
-    network: 'Utilizes PHCS PPO network',
-    typeBadge: 'Richer Benefits',
-    rates: { employeeOnly: 649.8, employeeSpouse: 1339.23, employeeChildren: 1213.73, family: 1796.94 },
-    details: { deductible: '$4,500', oopMax: '$9,100', pcp: '$40', specialist: '$75', urgentCare: '$90', rx: 'Tiered copay Rx' },
-    notes: ['Balanced PPO option with stronger copay predictability.']
-  },
-  {
-    id: 'phcs-ppo-3500',
-    group: 'top',
-    name: 'PHCS PPO 3500 Copay',
-    network: 'Utilizes PHCS PPO network',
-    typeBadge: 'Richer Benefits',
-    rates: { employeeOnly: 749.9, employeeSpouse: 1415.49, employeeChildren: 1379.88, family: 2071.67 },
-    details: { deductible: '$3,500', oopMax: '$8,700', pcp: '$40', specialist: '$75', urgentCare: '$90', rx: 'Tiered copay Rx' },
-    notes: ['Higher premium in exchange for richer deductible and benefit posture.']
-  },
-  {
-    id: 'phcs-ppo-4500-option',
-    group: 'top',
-    name: 'PHCS PPO 4500 Copay Option',
-    network: 'Utilizes PHCS PPO network',
-    typeBadge: 'Strong Network',
-    rates: { employeeOnly: 697.12, employeeSpouse: 1364.23, employeeChildren: 1247.86, family: 1816.47 },
-    details: { deductible: '$4,500', oopMax: '$9,100', pcp: '$40', specialist: '$75', urgentCare: '$90', rx: '$20 / $65 / $95' },
-    notes: ['Alternative 4500-lane option for comparison within PHCS PPO structures.']
-  },
-  {
-    id: 'phcs-ppo-3500-option',
-    group: 'top',
-    name: 'PHCS PPO 3500 Copay Option',
-    network: 'Utilizes PHCS PPO network',
-    typeBadge: 'Strong Network',
-    rates: { employeeOnly: 789.94, employeeSpouse: 1434.95, employeeChildren: 1401.93, family: 2071.22 },
-    details: { deductible: '$3,500', oopMax: '$8,700', pcp: '$40', specialist: '$75', urgentCare: '$90', rx: 'Tiered copay Rx' },
-    notes: ['Alternative richer-design PPO option for side-by-side planning.']
-  },
-  {
-    id: 'phcs-lower-cost-choice',
-    group: 'low',
-    name: 'PHCS Lower Cost Choice',
-    network: 'Utilizes PHCS network',
-    typeBadge: 'Lower Cost',
-    rates: { employeeOnly: 198.9, employeeSpouse: 290.7, employeeChildren: 290.7, family: 402.9 },
-    details: { deductible: 'Limited schedule', oopMax: 'Not equivalent to major medical OOP', pcp: '$35', specialist: 'Limited visits', urgentCare: 'Limited fixed benefits', rx: 'Limited Rx schedule' },
-    notes: ['This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited.'],
-    limitedNotes: ['may not cover hospital care', 'may limit doctor/specialist visits', 'may limit imaging, ER, ambulance, or surgery benefits', 'may not cover brand-name drugs depending on the plan']
-  },
-  {
-    id: 'phcs-lower-cost-care',
-    group: 'low',
-    name: 'PHCS Lower Cost Care',
-    network: 'Utilizes PHCS network',
-    typeBadge: 'Participation Helper',
-    rates: { employeeOnly: 292.7, employeeSpouse: 417.5, employeeChildren: 386.09, family: 510.89 },
-    details: { deductible: 'Limited schedule', oopMax: 'Not equivalent to major medical OOP', pcp: '$25', specialist: 'Limited visit structure', urgentCare: 'Includes select outpatient support', rx: 'Restricted Rx categories' },
-    notes: ['This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited.'],
-    limitedNotes: ['may not cover hospital care', 'may limit doctor/specialist visits', 'may limit imaging, ER, ambulance, or surgery benefits', 'may not cover brand-name drugs depending on the plan']
-  },
-  {
-    id: 'phcs-visit-limit-1000',
-    group: 'low',
-    name: 'PHCS Visit Limit 1000',
-    network: 'Utilizes PHCS network',
-    typeBadge: 'Lower Cost',
-    rates: { employeeOnly: 374, employeeSpouse: 679, employeeChildren: 669, family: 959 },
-    details: { deductible: '$1,000 equivalent schedule', oopMax: 'Limited by plan schedule', pcp: 'Limited visit plan', specialist: 'Limited visit plan', urgentCare: 'Limited visit plan', rx: 'Select generic support' },
-    notes: ['This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited.'],
-    limitedNotes: ['may not cover hospital care', 'may limit doctor/specialist visits', 'may limit imaging, ER, ambulance, or surgery benefits', 'may not cover brand-name drugs depending on the plan']
-  },
-  {
-    id: 'phcs-visit-limit-1750-hsa',
-    group: 'low',
-    name: 'PHCS Visit Limit 1750 HSA',
-    network: 'Utilizes PHCS network',
-    typeBadge: 'HSA Friendly',
-    rates: { employeeOnly: 334, employeeSpouse: 639, employeeChildren: 629, family: 889 },
-    details: { deductible: '$1,750 equivalent schedule', oopMax: 'Limited by plan schedule', pcp: 'Limited visit HSA style', specialist: 'Limited visit HSA style', urgentCare: 'Limited visit HSA style', rx: 'Restricted Rx support' },
-    notes: ['This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited.'],
-    limitedNotes: ['may not cover hospital care', 'may limit doctor/specialist visits', 'may limit imaging, ER, ambulance, or surgery benefits', 'may not cover brand-name drugs depending on the plan']
-  },
-  {
-    id: 'minimum-essential-coverage',
-    group: 'mec',
-    name: 'Minimum Essential Coverage',
-    network: 'Utilizes PHCS network',
-    typeBadge: 'Preventive Focused',
-    rates: { employeeOnly: 127.5, employeeSpouse: 193.8, employeeChildren: 193.8, family: 260.1 },
-    details: { deductible: 'Preventive-focused schedule', oopMax: 'Not traditional major medical OOP structure', pcp: 'Preventive-focused', specialist: 'Limited/non-core', urgentCare: 'Limited/non-core', rx: 'Preventive/Rx limitations apply' },
-    notes: ['This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited.'],
-    limitedNotes: ['may not cover hospital care', 'may limit doctor/specialist visits', 'may limit imaging, ER, ambulance, or surgery benefits', 'may not cover brand-name drugs depending on the plan']
-  }
-];
+let plans = [];
 
 const questions = [
   { key: 'state', title: 'What state is your business located in?', kind: 'select', options: [{ label: 'Florida', value: 'Florida' }, { label: 'Georgia', value: 'Georgia' }] },
@@ -260,6 +134,18 @@ const heroAsideContent = {
     showLinks: true
   }
 };
+
+async function loadPlans() {
+  const response = await fetch('plans.json', { cache: 'no-store' });
+  if (!response.ok) {
+    throw new Error(`Failed to load plans.json (${response.status})`);
+  }
+  const data = await response.json();
+  if (!Array.isArray(data)) {
+    throw new Error('plans.json did not return an array');
+  }
+  plans = data;
+}
 
 function money(n) {
   return `$${Math.round(n).toLocaleString()}`;
@@ -518,6 +404,7 @@ function renderPlanCard(plan, mix) {
           <li><span>PCP</span><strong>${plan.details.pcp}</strong></li>
           <li><span>Specialist</span><strong>${plan.details.specialist}</strong></li>
           <li><span>Urgent Care</span><strong>${plan.details.urgentCare}</strong></li>
+          ${plan.details.emergencyRoom ? `<li><span>Emergency Room</span><strong>${plan.details.emergencyRoom}</strong></li>` : ''}
           <li><span>RX Summary</span><strong>${plan.details.rx}</strong></li>
         </ul>
       </div>
@@ -754,4 +641,13 @@ leadForm.addEventListener('submit', async (event) => {
 
 answers[questions[0].key] = questions[0].options[0].value;
 updateModelUI();
-renderQuestion();
+
+(async () => {
+  try {
+    await loadPlans();
+    renderQuestion();
+  } catch (error) {
+    console.error('Plan load error:', error);
+    questionHost.innerHTML = "<article class=\"question active\"><h3>We're having trouble loading plan options right now.</h3><p>Please refresh and try again, or call/text Daniel at 407-476-5076.</p></article>";
+  }
+})();

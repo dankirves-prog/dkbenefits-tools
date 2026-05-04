@@ -7,6 +7,7 @@ This folder contains a static, employer-facing guided quote funnel for DK Benefi
 - `quote-tool.html` — one-question-at-a-time guided intake + tier mix inputs + dynamic results + lead capture + trust-forward CTA
 - `quote-tool.css` — premium visual style (desktop-first, mobile-compatible)
 - `quote-tool.js` — front-end flow logic, contribution modes, tier mix estimate math, plan card rendering and disclosures
+- `plans.json` — editable plan dataset loaded by the front-end at runtime
 
 ## Scope
 
