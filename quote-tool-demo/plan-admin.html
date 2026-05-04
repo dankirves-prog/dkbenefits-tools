@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DK Benefits Plan Admin</title>
+    <link rel="stylesheet" href="plan-admin.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>DK Benefits Plan Admin</h1>
+      <p class="warning">
+        This editor does not save directly to the live website. After downloading the updated plans.json, replace the file in GitHub and test the quote tool.
+      </p>
+      <div class="actions">
+        <button id="reloadBtn" type="button">Reload from plans.json</button>
+        <label class="upload-label" for="fileInput">Import plans.json</label>
+        <input id="fileInput" type="file" accept="application/json,.json" />
+        <button id="downloadBtn" type="button" class="primary">Download updated plans.json</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel list-panel">
+        <div class="panel-head">
+          <h2>Plans</h2>
+          <div class="row-actions">
+            <button id="addPlanBtn" type="button">Add Plan</button>
+            <button id="duplicatePlanBtn" type="button">Duplicate Plan</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th><th>ID</th><th>Group</th><th>Network</th><th>Badge</th><th>EE Rate</th><th>Status</th><th>Rates Valid Until</th>
+              </tr>
+            </thead>
+            <tbody id="planRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel form-panel">
+        <div class="panel-head">
+          <h2>Edit Plan</h2>
+          <div class="row-actions">
+            <button id="hidePlanBtn" type="button">Hide</button>
+            <button id="archivePlanBtn" type="button">Archive</button>
+            <button id="deletePlanBtn" type="button" class="danger">Delete</button>
+          </div>
+        </div>
+        <form id="planForm">
+          <div class="grid">
+            <label>ID<input name="id" /></label>
+            <label>Group
+              <select name="group">
+                <option value="top">top</option>
+                <option value="low">low</option>
+                <option value="mec">mec</option>
+              </select>
+            </label>
+            <label>Name<input name="name" /></label>
+            <label>Network<input name="network" /></label>
+            <label>Type Badge<input name="typeBadge" /></label>
+            <label>Status
+              <select name="status">
+                <option value="active">active</option>
+                <option value="hidden">hidden</option>
+                <option value="archived">archived</option>
+              </select>
+            </label>
+            <label>Rates Valid Until<input name="ratesValidUntil" placeholder="YYYY-MM-DD" /></label>
+            <label>Allowed States (comma-separated)<input name="allowedStates" placeholder="FL, GA" /></label>
+          </div>
+
+          <h3>Rates</h3>
+          <div class="grid rates-grid">
+            <label>Employee Only<input name="rates.employeeOnly" type="number" step="0.01" /></label>
+            <label>Employee + Spouse<input name="rates.employeeSpouse" type="number" step="0.01" /></label>
+            <label>Employee + Children<input name="rates.employeeChildren" type="number" step="0.01" /></label>
+            <label>Family<input name="rates.family" type="number" step="0.01" /></label>
+          </div>
+
+          <h3>Details</h3>
+          <div class="grid">
+            <label>Deductible<input name="details.deductible" /></label>
+            <label>OOP Max<input name="details.oopMax" /></label>
+            <label>PCP<input name="details.pcp" /></label>
+            <label>Specialist<input name="details.specialist" /></label>
+            <label>Urgent Care<input name="details.urgentCare" /></label>
+            <label>Emergency Room<input name="details.emergencyRoom" /></label>
+            <label>Rx<input name="details.rx" /></label>
+          </div>
+
+          <h3>Notes</h3>
+          <label>Notes (one per line)<textarea name="notes" rows="4"></textarea></label>
+          <label>Limited Notes (one per line)<textarea name="limitedNotes" rows="4"></textarea></label>
+        </form>
+      </section>
+
+      <section class="panel preview-panel">
+        <h2>Preview</h2>
+        <article id="previewCard" class="preview-card"></article>
+        <section class="validation">
+          <h3>Validation</h3>
+          <button id="validateBtn" type="button">Run Validation</button>
+          <ul id="validationList"></ul>
+        </section>
+      </section>
+    </main>
+
+    <script src="plan-admin.js"></script>
+  </body>
+</html>
