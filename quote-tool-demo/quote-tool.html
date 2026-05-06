@@ -95,21 +95,35 @@
       <div class="card contribution">
         <div>
           <h3>Contribution tools</h3>
-          <p>Model employer contribution as a percentage of employee-only premium, or a flat monthly dollar amount per enrolled employee.</p>
+          <div class="contrib-instructions">
+            <h4>Employer Contribution Instructions</h4>
+            <ol>
+              <li>Choose a contribution method.</li>
+              <li>Percentage: choose how much the employer pays toward the employee-only portion (50% to 100%) and dependent costs (0% to 100%).</li>
+              <li>Flat dollar: enter one monthly amount per enrolled employee. This applies toward the full monthly premium, not just the employee-only portion.</li>
+              <li>Choose the employee deduction cycle, usually the same as payroll.</li>
+              <li>Review the estimated enrollment mix and adjust it if needed.</li>
+              <li>Scroll down to see costs based on your entries.</li>
+            </ol>
+          </div>
         </div>
         <div class="contribution-controls">
           <div class="contrib-model" id="contribModelWrap">
-            <button type="button" class="model-btn active" data-model="percent">% of Employee Only</button>
-            <button type="button" class="model-btn" data-model="flat">Flat Dollar / Enrolled Employee</button>
+            <button type="button" class="model-btn active" data-model="percent">% Employer Contribution</button>
+            <button type="button" class="model-btn" data-model="flat">$ Flat Dollar Contribution</button>
           </div>
 
           <div id="percentControl">
-            <label for="employerContribution">Employer contribution toward employee-only cost</label>
-            <input type="range" id="employerContribution" min="50" max="100" value="50" />
-            <p><strong id="contributionLabel">50%</strong> of employee-only portion</p>
-            <label for="dependentContribution">Employer contribution toward dependent cost</label>
-            <input type="range" id="dependentContribution" min="0" max="100" value="0" />
-            <p><strong id="dependentContributionLabel">0%</strong> of dependent portion</p>
+            <div class="slider-group">
+              <label for="employerContribution">Employee-Only Contribution</label>
+              <input type="range" id="employerContribution" min="50" max="100" value="50" />
+              <p>Employer pays: <strong id="contributionLabel">50%</strong></p>
+            </div>
+            <div class="slider-group">
+              <label for="dependentContribution">Dependent Contribution</label>
+              <input type="range" id="dependentContribution" min="0" max="100" value="0" />
+              <p>Employer pays: <strong id="dependentContributionLabel">0%</strong></p>
+            </div>
           </div>
 
           <div id="flatControl" class="hidden">

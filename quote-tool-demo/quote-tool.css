@@ -182,6 +182,26 @@ input, select {
   gap: 1rem;
 }
 .contribution-controls { min-width: 360px; max-width: 520px; }
+.contrib-instructions {
+  background: #f6f9ff;
+  border: 1px solid #d9e6ff;
+  border-radius: 12px;
+  padding: .75rem .9rem;
+  margin-top: .5rem;
+}
+.contrib-instructions h4 {
+  margin: 0 0 .45rem;
+  color: var(--blue-700);
+  font-size: .95rem;
+}
+.contrib-instructions ol {
+  margin: 0;
+  padding-left: 1rem;
+  display: grid;
+  gap: .25rem;
+  font-size: .84rem;
+  color: #274777;
+}
 .contrib-model { display: flex; gap: .4rem; margin-bottom: .65rem; }
 .model-btn {
   border: 1px solid var(--line);
@@ -195,6 +215,22 @@ input, select {
 .model-btn.active { background: #e7f0ff; border-color: #b8cdf7; }
 .flat-row { display: grid; grid-template-columns: .9fr 1.1fr; gap: .5rem; }
 .contrib-note { margin-top: .65rem; font-size: .82rem; color: var(--muted); }
+.slider-group {
+  border: 1px solid #d8e3fb;
+  border-radius: 10px;
+  background: #fbfdff;
+  padding: .6rem .7rem;
+  margin-bottom: .55rem;
+}
+.slider-group p {
+  margin: .4rem 0 0;
+  font-size: .82rem;
+  color: #2d4f84;
+}
+#percentControl input[type="range"] {
+  width: 100%;
+  accent-color: #2e66c8;
+}
 
 .tier-mix-card { padding: 1rem; margin-top: .8rem; }
 .mix-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .6rem; }
