@@ -15,9 +15,13 @@ const heroAsideLinks = document.getElementById('heroAsideLinks');
 
 const employerContribution = document.getElementById('employerContribution');
 const contributionLabel = document.getElementById('contributionLabel');
+const dependentContribution = document.getElementById('dependentContribution');
+const dependentContributionLabel = document.getElementById('dependentContributionLabel');
 const flatContributionSelect = document.getElementById('flatContributionSelect');
 const flatContributionCustom = document.getElementById('flatContributionCustom');
 const flatLabel = document.getElementById('flatLabel');
+const payrollSchedule = document.getElementById('payrollSchedule');
+const flatModeNote = document.getElementById('flatModeNote');
 const percentControl = document.getElementById('percentControl');
 const flatControl = document.getElementById('flatControl');
 const contribModelWrap = document.getElementById('contribModelWrap');
@@ -220,6 +224,7 @@ function updateModelUI() {
   });
   percentControl.classList.toggle('hidden', contributionModel !== 'percent');
   flatControl.classList.toggle('hidden', contributionModel !== 'flat');
+  flatModeNote.classList.toggle('hidden', contributionModel !== 'flat');
 }
 
 function setHeroCompact(compact) {
@@ -329,33 +334,44 @@ function validateCurrent() {
   return true;
 }
 
-function calculateEmployerCost(plan, mix, grossPremium) {
-  const totalEnrolling = mix.employeeOnly + mix.employeeSpouse + mix.employeeChildren + mix.family;
-
-  if (contributionModel === 'percent') {
-    const basePerEmployee = plan.rates.employeeOnly * (Number(employerContribution.value) / 100);
-    const employer =
-      mix.employeeOnly * Math.min(basePerEmployee, plan.rates.employeeOnly) +
-      mix.employeeSpouse * Math.min(basePerEmployee, plan.rates.employeeSpouse) +
-      mix.employeeChildren * Math.min(basePerEmployee, plan.rates.employeeChildren) +
-      mix.family * Math.min(basePerEmployee, plan.rates.family);
-    return Math.min(employer, grossPremium, basePerEmployee * totalEnrolling);
+function calculateEmployerContributionForTier(plan, tierKey) {
+  const tierRate = Number(plan.rates[tierKey] || 0);
+  if (contributionModel === 'flat') {
+    return Math.min(getFlatAmount(), tierRate);
   }
 
-  const flatPerEmployee = getFlatAmount();
-  const employer =
-    mix.employeeOnly * Math.min(flatPerEmployee, plan.rates.employeeOnly) +
-    mix.employeeSpouse * Math.min(flatPerEmployee, plan.rates.employeeSpouse) +
-    mix.employeeChildren * Math.min(flatPerEmployee, plan.rates.employeeChildren) +
-    mix.family * Math.min(flatPerEmployee, plan.rates.family);
+  const employeeOnlyRate = Number(plan.rates.employeeOnly || 0);
+  const dependentPortion = Math.max(tierRate - employeeOnlyRate, 0);
+  const employeePct = Number(employerContribution.value || 0) / 100;
+  const dependentPct = Number(dependentContribution.value || 0) / 100;
+  const employerTierContribution = employeeOnlyRate * employeePct + dependentPortion * dependentPct;
+  return Math.min(employerTierContribution, tierRate);
+}
 
-  return Math.min(employer, grossPremium, flatPerEmployee * totalEnrolling);
+function calculateEmployerCost(plan, mix, grossPremium) {
+  const eeContribution = calculateEmployerContributionForTier(plan, 'employeeOnly');
+  const esContribution = calculateEmployerContributionForTier(plan, 'employeeSpouse');
+  const ecContribution = calculateEmployerContributionForTier(plan, 'employeeChildren');
+  const famContribution = calculateEmployerContributionForTier(plan, 'family');
+  const employer =
+    mix.employeeOnly * eeContribution +
+    mix.employeeSpouse * esContribution +
+    mix.employeeChildren * ecContribution +
+    mix.family * famContribution;
+  return Math.min(employer, grossPremium);
 }
 
 function renderPlanCard(plan, mix) {
   const grossPremium = calcGrossPremium(plan.rates, mix);
   const employer = calculateEmployerCost(plan, mix, grossPremium);
-  const employee = grossPremium - employer;
+  const annualGross = grossPremium * 12;
+  const payPeriods = Number(payrollSchedule.value || 26);
+  const perTierDeduction = {
+    employeeOnly: Math.max(0, (plan.rates.employeeOnly - calculateEmployerContributionForTier(plan, 'employeeOnly')) * 12 / payPeriods),
+    employeeSpouse: Math.max(0, (plan.rates.employeeSpouse - calculateEmployerContributionForTier(plan, 'employeeSpouse')) * 12 / payPeriods),
+    employeeChildren: Math.max(0, (plan.rates.employeeChildren - calculateEmployerContributionForTier(plan, 'employeeChildren')) * 12 / payPeriods),
+    family: Math.max(0, (plan.rates.family - calculateEmployerContributionForTier(plan, 'family')) * 12 / payPeriods)
+  };
 
   const hasLimitedNotes = Array.isArray(plan.limitedNotes) && plan.limitedNotes.length > 0;
   const limitationsHtml = hasLimitedNotes
@@ -387,13 +403,21 @@ function renderPlanCard(plan, mix) {
           <div class="big-number">${money(employer)}</div>
         </div>
         <div class="metric-row"><strong>Gross Monthly Premium:</strong> ${money(grossPremium)}</div>
-        <div class="metric-row"><strong>Estimated Employee Monthly Share:</strong> ${money(employee)}</div>
+        <div class="metric-row"><strong>Total Gross Annual Premium:</strong> ${money(annualGross)}</div>
 
         <ul class="benefit-list">
           <li><span>Employee Only</span><strong>${money(plan.rates.employeeOnly)}</strong></li>
           <li><span>Employee + Spouse</span><strong>${money(plan.rates.employeeSpouse)}</strong></li>
           <li><span>Employee + Child(ren)</span><strong>${money(plan.rates.employeeChildren)}</strong></li>
           <li><span>Family</span><strong>${money(plan.rates.family)}</strong></li>
+        </ul>
+        <div class="metric-row"><strong>Employee Cost Per Pay Period</strong></div>
+        <div class="card-note">Estimated employee cost per pay period after employer contribution.</div>
+        <ul class="benefit-list">
+          <li><span>Employee Only</span><strong>${money(perTierDeduction.employeeOnly)}</strong></li>
+          <li><span>Employee + Spouse</span><strong>${money(perTierDeduction.employeeSpouse)}</strong></li>
+          <li><span>Employee + Child(ren)</span><strong>${money(perTierDeduction.employeeChildren)}</strong></li>
+          <li><span>Family</span><strong>${money(perTierDeduction.family)}</strong></li>
         </ul>
       </div>
 
@@ -447,6 +471,7 @@ function renderResults() {
   const mix = getTierMix(enrolling);
 
   contributionLabel.textContent = `${employerContribution.value}%`;
+  dependentContributionLabel.textContent = `${dependentContribution.value}%`;
   flatLabel.textContent = money(getFlatAmount());
   resultsSummary.textContent = `${answers.state || 'Your state'} · ${employees} eligible employees · about ${enrolling} enrolling. These are real current starting rates based on the information provided.`;
 
@@ -502,6 +527,8 @@ function startOver() {
   sortMode = 'recommended';
   sortOptions.value = 'recommended';
   employerContribution.value = 50;
+  dependentContribution.value = 0;
+  payrollSchedule.value = '26';
   flatContributionSelect.value = '300';
   flatContributionCustom.value = '';
   flatContributionCustom.classList.add('hidden');
@@ -567,6 +594,8 @@ contribModelWrap.addEventListener('click', (event) => {
 });
 
 employerContribution.addEventListener('input', renderResults);
+dependentContribution.addEventListener('input', renderResults);
+payrollSchedule.addEventListener('change', renderResults);
 flatContributionSelect.addEventListener('change', () => {
   flatContributionCustom.classList.toggle('hidden', flatContributionSelect.value !== 'custom');
   renderResults();

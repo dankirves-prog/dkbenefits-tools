@@ -104,9 +104,12 @@
           </div>
 
           <div id="percentControl">
-            <label for="employerContribution">Employer contribution: % of Employee Only premium</label>
+            <label for="employerContribution">Employer contribution toward employee-only cost</label>
             <input type="range" id="employerContribution" min="50" max="100" value="50" />
-            <p><strong id="contributionLabel">50%</strong> of employee-only premium</p>
+            <p><strong id="contributionLabel">50%</strong> of employee-only portion</p>
+            <label for="dependentContribution">Employer contribution toward dependent cost</label>
+            <input type="range" id="dependentContribution" min="0" max="100" value="0" />
+            <p><strong id="dependentContributionLabel">0%</strong> of dependent portion</p>
           </div>
 
           <div id="flatControl" class="hidden">
@@ -123,7 +126,16 @@
             <p><strong id="flatLabel">$300</strong> per enrolled employee</p>
           </div>
 
-          <p class="contrib-note">Some programs have separate minimum contribution rules. Certain major medical programs may require at least 50% of employee-only premium for the lowest eligible major medical plan.</p>
+          <label for="payrollSchedule">Employee payroll deduction schedule</label>
+          <select id="payrollSchedule">
+            <option value="26" selected>Bi-weekly</option>
+            <option value="52">Weekly</option>
+            <option value="24">Semi-monthly</option>
+            <option value="12">Monthly</option>
+          </select>
+
+          <p class="contrib-note">Model how much the employer pays toward the employee-only portion and dependent portion. Payroll deductions below are estimated by tier.</p>
+          <p class="contrib-note flat-note hidden" id="flatModeNote">Flat dollar contributions apply per enrolled employee and are capped at the plan’s monthly premium.</p>
         </div>
       </div>
 
