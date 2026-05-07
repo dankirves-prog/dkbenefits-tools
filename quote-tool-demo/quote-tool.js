@@ -590,7 +590,7 @@ nextBtn.addEventListener('click', () => {
     funnelSection.classList.add('hidden');
     resultsSection.classList.remove('hidden');
     renderResults();
-    scrollToElement(resultsSection);
+    scrollToElement(document.querySelector('.contribution'));
     return;
   }
 
@@ -617,9 +617,7 @@ contribModelWrap.addEventListener('click', (event) => {
   contributionModel = btn.dataset.model;
   updateModelUI();
   renderResults();
-  if (window.matchMedia('(max-width: 768px)').matches) {
-    scrollToElement(document.querySelector('.contribution'), { mobileOnly: true });
-  }
+  scrollToElement(contribModelWrap, { mobileOnly: true });
 });
 
 employerContribution.addEventListener('input', renderResults);
