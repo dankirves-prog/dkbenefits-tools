@@ -249,7 +249,8 @@ function scrollActiveQuestionIntoView() {
   const progressWrap = document.querySelector('.progress-wrap');
   if (!progressWrap) return;
   setTimeout(() => {
-    progressWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const y = window.scrollY + progressWrap.getBoundingClientRect().top - 8;
+    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
   }, 80);
 }
 
