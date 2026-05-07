@@ -246,10 +246,9 @@ function getPayrollScheduleLabel() {
 
 function scrollActiveQuestionIntoView() {
   if (!window.matchMedia('(max-width: 768px)').matches) return;
-  const progressWrap = document.querySelector('.progress-wrap');
-  if (!progressWrap) return;
+  if (funnelSection.classList.contains('hidden')) return;
   setTimeout(() => {
-    const y = window.scrollY + progressWrap.getBoundingClientRect().top - 8;
+    const y = window.scrollY + funnelSection.getBoundingClientRect().top - 8;
     window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
   }, 80);
 }
