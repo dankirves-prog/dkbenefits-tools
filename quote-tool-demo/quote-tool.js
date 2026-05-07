@@ -250,9 +250,7 @@ function scrollActiveQuestionIntoView() {
   setTimeout(() => {
     const navRow = document.querySelector('.nav-row');
     if (!navRow) return;
-    const navBottom = window.scrollY + navRow.getBoundingClientRect().bottom;
-    const y = navBottom - window.innerHeight + 14;
-    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    navRow.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, 80);
 }
 
