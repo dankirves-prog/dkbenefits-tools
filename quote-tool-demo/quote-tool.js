@@ -246,10 +246,10 @@ function getPayrollScheduleLabel() {
 
 function scrollActiveQuestionIntoView() {
   if (!window.matchMedia('(max-width: 768px)').matches) return;
-  const activeCard = questionHost.querySelector('.question.active');
-  if (!activeCard) return;
+  const progressWrap = document.querySelector('.progress-wrap');
+  if (!progressWrap) return;
   setTimeout(() => {
-    activeCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    progressWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 80);
 }
 
