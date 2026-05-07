@@ -4,7 +4,7 @@
     "group": "top",
     "name": "Cigna EPO 1000",
     "network": "Utilizes Cigna network",
-    "typeBadge": "Strong Network",
+    "typeBadge": "Excellent Value",
     "rates": {
       "employeeOnly": 459,
       "employeeSpouse": 779,
@@ -18,7 +18,7 @@
       "specialist": "$50 copay after deductible",
       "urgentCare": "$50 copay after deductible",
       "emergencyRoom": "$1,000 copay after deductible",
-      "rx": "Generic $0"
+      "rx": "Generic $0 after deductible"
     },
     "notes": [
       "Deductible must be met before copays except preventive $0 and telemedicine $0."
@@ -83,6 +83,9 @@
     "notes": [
       "Balanced PPO option with stronger copay predictability. Facility services are covered at 30% coinsurance after deductible."
     ],
+    "limitedNotes": [
+      "Major Medical plan; utilizes the Cigna PPO network and balanced value with most services covered as first dollar benefits."
+    ],
     "status": "active",
     "ratesValidUntil": "2026-12-31"
   },
@@ -91,7 +94,7 @@
     "group": "top",
     "name": "PHCS PPO 4500 Copay",
     "network": "Utilizes PHCS PPO network",
-    "typeBadge": "Richer Benefits",
+    "typeBadge": "Rich Benefits",
     "rates": {
       "employeeOnly": 649.8,
       "employeeSpouse": 1339.23,
@@ -109,6 +112,9 @@
     },
     "notes": [
       "Balanced PPO option with stronger copay predictability. Facility services are covered at 30% coinsurance after deductible."
+    ],
+    "limitedNotes": [
+      "Major Medical plan; utilizes the PHCS PPO network and balanced value with most services covered as first dollar benefits."
     ],
     "status": "active",
     "ratesValidUntil": "2026-12-31"
@@ -137,6 +143,9 @@
     "notes": [
       "Balanced PPO option with stronger copay predictability. Facility services are covered at 20% coinsurance after deductible."
     ],
+    "limitedNotes": [
+      "Major Medical plan; utilizes the Cigna PPO network and balanced value with most services covered as first dollar benefits."
+    ],
     "status": "active",
     "ratesValidUntil": "2026-12-31"
   },
@@ -163,6 +172,9 @@
     },
     "notes": [
       "Balanced PPO option with stronger copay predictability. Facility services are covered at 20% coinsurance after deductible."
+    ],
+    "limitedNotes": [
+      "Major Medical plan; utilizes the PHCS PPO network and balanced value with most services covered as first dollar benefits."
     ],
     "status": "active",
     "ratesValidUntil": "2026-12-31"
@@ -191,6 +203,9 @@
     "notes": [
       "HSA Compatible HDHP Health Plan. Plan pays 70% after deductible, only preventive services have first dollar coverage."
     ],
+    "limitedNotes": [
+      "HSA Medical plan; Only preventive services are covered at cost before meeting the deductible."
+    ],
     "status": "active",
     "ratesValidUntil": "2026-12-31"
   },
@@ -217,6 +232,9 @@
     },
     "notes": [
       "HSA Compatible HDHP Health Plan. Plan pays 70% after deductible, only preventive services have first dollar coverage."
+    ],
+    "limitedNotes": [
+      "HSA Medical plan; Only preventive services are covered at cost before meeting the deductible."
     ],
     "status": "active",
     "ratesValidUntil": "2026-12-31"
@@ -245,6 +263,9 @@
     "notes": [
       "HSA Compatible HDHP Health Plan. Best fit for groups prioritizing lower fixed premiums and HSA design. Plan pays 100% after deductible, only preventive services have first dollar coverage. $25/mo HSA Card included."
     ],
+    "limitedNotes": [
+      "HSA Medical plan; Only preventive services are covered at cost before meeting the deductible."
+    ],
     "status": "active",
     "ratesValidUntil": "2026-12-31"
   },
@@ -271,6 +292,9 @@
     },
     "notes": [
       "HSA Compatible HDHP Health Plan. Best fit for groups prioritizing lower fixed premiums and HSA design. Plan pays 100% after deductible, only preventive services have first dollar coverage. $25/mo HSA card included."
+    ],
+    "limitedNotes": [
+      "HSA Medical plan; Only preventive services are covered at cost before meeting the deductible."
     ],
     "status": "active",
     "ratesValidUntil": "2026-12-31"
@@ -300,6 +324,7 @@
       "This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited."
     ],
     "limitedNotes": [
+      "This is a Visit Limit Plan. Deductible and Out of Pocket Max applies only toward covered services. These plans are good for those who are tolerant to some risk and would like to save money on their health plan.",
       "VL* $50 Copay for PCP, Specialist and Urgent Care is limited to a combined total of 10 visits per year.",
       "ERVL* *2 visits per year accident-related & 2 visits per year sickness-related",
       "Rx is limited to Generic only, PAP available for Brand.",
@@ -334,6 +359,8 @@
       "This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited."
     ],
     "limitedNotes": [
+      "This is a Visit Limit Plan. Deductible and Out of Pocket Max applies only toward covered services. These plans are good for those who are tolerant to some risk and would like to save money on their health plan.",
+      "This is an HDHP High Deductible Health Plan compatible with an HSA. As such all services are subject to the deductible except preventive services.",
       "VL* $50 Copay for PCP, Specialist and Urgent Care is limited to a combined total of 10 visits per year.",
       "ERVL* *2 visits per year accident-related & 2 visits per year sickness-related",
       "Rx is limited to Generic only, PAP available for Brand.",
