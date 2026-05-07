@@ -244,14 +244,24 @@ function getPayrollScheduleLabel() {
   return payrollSchedule.options[payrollSchedule.selectedIndex]?.text?.toLowerCase() || 'bi-weekly';
 }
 
+function getStickyHeaderOffset() {
+  const header = document.querySelector('.site-header');
+  return header ? header.getBoundingClientRect().height + 8 : 0;
+}
+
+function scrollToElement(el, { mobileOnly = false } = {}) {
+  if (!el) return;
+  if (mobileOnly && !window.matchMedia('(max-width: 768px)').matches) return;
+  requestAnimationFrame(() => {
+    const offset = getStickyHeaderOffset();
+    const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
+    window.scrollTo({ top, behavior: 'smooth' });
+  });
+}
+
 function scrollActiveQuestionIntoView() {
-  if (!window.matchMedia('(max-width: 768px)').matches) return;
   if (funnelSection.classList.contains('hidden')) return;
-  setTimeout(() => {
-    const navRow = document.querySelector('.nav-row');
-    if (!navRow) return;
-    navRow.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, 80);
+  scrollToElement(funnelSection, { mobileOnly: true });
 }
 
 function parseFirstDollar(value) {
@@ -580,7 +590,7 @@ nextBtn.addEventListener('click', () => {
     funnelSection.classList.add('hidden');
     resultsSection.classList.remove('hidden');
     renderResults();
-    resultsSection.scrollIntoView({ behavior: 'smooth' });
+    scrollToElement(resultsSection);
     return;
   }
 
@@ -598,7 +608,7 @@ backBtn.addEventListener('click', () => {
 
 heroStartBtn.addEventListener('click', () => {
   setHeroCompact(true);
-  funnelSection.scrollIntoView({ behavior: 'smooth' });
+  scrollToElement(funnelSection);
 });
 
 contribModelWrap.addEventListener('click', (event) => {
@@ -608,8 +618,7 @@ contribModelWrap.addEventListener('click', (event) => {
   updateModelUI();
   renderResults();
   if (window.matchMedia('(max-width: 768px)').matches) {
-    const target = contributionModel === 'percent' ? percentControl : flatControl;
-    setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+    scrollToElement(document.querySelector('.contribution'), { mobileOnly: true });
   }
 });
 
@@ -628,7 +637,7 @@ editAnswersBtn.addEventListener('click', () => {
   funnelSection.classList.remove('hidden');
   current = 0;
   renderQuestion();
-  funnelSection.scrollIntoView({ behavior: 'smooth' });
+  scrollToElement(funnelSection);
 });
 
 startOverBtn.addEventListener('click', startOver);
