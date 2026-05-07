@@ -248,7 +248,10 @@ function scrollActiveQuestionIntoView() {
   if (!window.matchMedia('(max-width: 768px)').matches) return;
   if (funnelSection.classList.contains('hidden')) return;
   setTimeout(() => {
-    const y = window.scrollY + funnelSection.getBoundingClientRect().top - 8;
+    const navRow = document.querySelector('.nav-row');
+    if (!navRow) return;
+    const navBottom = window.scrollY + navRow.getBoundingClientRect().bottom;
+    const y = navBottom - window.innerHeight + 14;
     window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
   }, 80);
 }
