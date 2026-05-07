@@ -239,6 +239,20 @@ function updateHeroAside(mode) {
   heroAsideLinks.classList.toggle('hidden', !config.showLinks);
 }
 
+
+function getPayrollScheduleLabel() {
+  return payrollSchedule.options[payrollSchedule.selectedIndex]?.text?.toLowerCase() || 'bi-weekly';
+}
+
+function scrollActiveQuestionIntoView() {
+  if (!window.matchMedia('(max-width: 768px)').matches) return;
+  const activeCard = questionHost.querySelector('.question.active');
+  if (!activeCard) return;
+  setTimeout(() => {
+    activeCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 80);
+}
+
 function parseFirstDollar(value) {
   if (!value) return Number.POSITIVE_INFINITY;
   const match = String(value).match(/\$?\s*([\d,]+(?:\.\d+)?)/);
@@ -317,6 +331,7 @@ function renderQuestion() {
   if (current > 0 || heroCompactActive) {
     setHeroCompact(true);
   }
+  scrollActiveQuestionIntoView();
 }
 
 function readAnswer() {
@@ -411,7 +426,7 @@ function renderPlanCard(plan, mix) {
           <li><span>Employee + Child(ren)</span><strong>${money(plan.rates.employeeChildren)}</strong></li>
           <li><span>Family</span><strong>${money(plan.rates.family)}</strong></li>
         </ul>
-        <div class="metric-row"><strong>Employee Cost Per Pay Period</strong></div>
+        <div class="metric-row"><strong>Employee Cost Per Pay Period (${getPayrollScheduleLabel()})</strong></div>
         <div class="card-note">Estimated employee cost per pay period after employer contribution.</div>
         <ul class="benefit-list">
           <li><span>Employee Only</span><strong>${money(perTierDeduction.employeeOnly)}</strong></li>
@@ -591,6 +606,10 @@ contribModelWrap.addEventListener('click', (event) => {
   contributionModel = btn.dataset.model;
   updateModelUI();
   renderResults();
+  if (window.matchMedia('(max-width: 768px)').matches) {
+    const target = contributionModel === 'percent' ? percentControl : flatControl;
+    setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  }
 });
 
 employerContribution.addEventListener('input', renderResults);
