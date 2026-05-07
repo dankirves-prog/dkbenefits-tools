@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DK Benefits | Employer Group Benefits Estimate</title>
+  <meta name="description" content="Employer-facing guided quote funnel for group benefits estimates." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="quote-tool.css" />
+</head>
+<body>
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <div class="brand-block">
+        <span class="brand-mark">DK</span>
+        <div>
+          <p class="brand-name">DK Benefits LLC</p>
+          <p class="brand-role">Daniel Kirves · Benefits Broker</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="tel:4074765076">Call/Text: 407-476-5076</a>
+        <a href="mailto:dan@dkbenefits.net">dan@dkbenefits.net</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero card-glass" id="heroSection">
+      <div>
+        <p class="eyebrow">Florida &amp; Georgia focused. Additional states may be available.</p>
+        <h1>Instant Group Rates. No Company Info Needed.</h1>
+        <p class="hero-detail">Answer a few basic questions and see real current starting rates instantly on screen. No identifying information about your company or employees is needed to begin.</p>
+        <p class="hero-detail">Adjust employer contributions instantly and explore options that fit your budget.</p>
+        <p class="hero-compact-line">Answer a few quick questions and see real rates instantly.</p>
+        <p class="hero-compact-trust">No employee details required • No spam • Real current rates</p>
+        <p class="trust-line">No spam. We do not sell your information. Period.</p>
+
+        <div class="hero-cta">
+          <button type="button" class="btn btn-primary" id="heroStartBtn">See Real Rates Now</button>
+          <div class="hero-cta-links">
+            <a href="tel:4074765076">Prefer a real person? Call or text Daniel: 407-476-5076</a>
+            <a href="mailto:dan@dkbenefits.net">dan@dkbenefits.net</a>
+          </div>
+        </div>
+      </div>
+
+      <aside class="hero-aside" id="heroAside">
+        <p class="muted-label" id="heroAsideTitle">What you’ll walk away with</p>
+        <ul id="heroAsideList">
+          <li>Real current starting rates, not placeholders</li>
+          <li>Employer contribution modeling</li>
+          <li>Employee payroll share estimates</li>
+          <li>Network and benefit comparisons</li>
+          <li>A real broker to contact when ready</li>
+        </ul>
+        <div id="heroAsideLinks" class="hero-aside-links hidden">
+          <a href="tel:4074765076">Call/Text: 407-476-5076</a>
+          <a href="mailto:dan@dkbenefits.net">Email: dan@dkbenefits.net</a>
+        </div>
+      </aside>
+    </section>
+
+    <section class="card funnel" id="funnelSection">
+      <div class="progress-wrap">
+        <div class="progress-shell">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <p id="progressText">Question 1 of 6</p>
+      </div>
+
+      <p class="concierge-line">Let’s narrow down real options for your company.</p>
+      <div id="questionHost" class="question-host"></div>
+
+      <div class="funnel-actions">
+        <button class="btn btn-neutral" id="backBtn" type="button">Back</button>
+        <button class="btn btn-primary" id="nextBtn" type="button">Continue</button>
+      </div>
+    </section>
+
+    <section class="results-shell hidden" id="resultsSection">
+      <div class="section-head">
+        <p class="eyebrow">Your planning benchmark</p>
+        <h2>Real current starting rates for the options shown</h2>
+        <p id="resultsSummary"></p>
+        <p class="results-confidence">Many groups qualify for rates like these. We can help identify the best fit for your company.</p>
+        <p id="participationNote" class="participation-note hidden"></p>
+      </div>
+
+      <div class="card contribution">
+        <div>
+          <h3>Contribution tools</h3>
+          <div class="contrib-instructions">
+            <h4>Employer Contribution Instructions</h4>
+            <ol>
+              <li>
+                Choose a contribution method.
+                <ul>
+                  <li><strong>Percentage:</strong> choose how much the employer pays toward the employee-only portion (50% to 100%) and dependent costs (0% to 100%).</li>
+                  <li><strong>Flat dollar:</strong> enter one monthly amount per enrolled employee. This applies toward the full monthly premium, not just the employee-only portion.</li>
+                </ul>
+              </li>
+              <li>Choose the employee deduction cycle, usually the same as payroll.</li>
+              <li>Review the estimated enrollment mix and adjust it if needed.</li>
+              <li>Scroll down to see costs based on your entries.</li>
+            </ol>
+          </div>
+        </div>
+        <div class="contribution-controls">
+          <div class="contrib-model" id="contribModelWrap">
+            <button type="button" class="model-btn active" data-model="percent">% Employer Contribution</button>
+            <button type="button" class="model-btn" data-model="flat">$ Flat Dollar Contribution</button>
+          </div>
+
+          <div id="percentControl">
+            <div class="slider-group">
+              <label for="employerContribution">Employee-Only Contribution</label>
+              <input type="range" id="employerContribution" min="50" max="100" value="50" />
+              <p>Employer pays: <strong id="contributionLabel">50%</strong></p>
+            </div>
+            <div class="slider-group">
+              <label for="dependentContribution">Dependent Contribution</label>
+              <input type="range" id="dependentContribution" min="0" max="100" value="0" />
+              <p>Employer pays: <strong id="dependentContributionLabel">0%</strong></p>
+            </div>
+          </div>
+
+          <div id="flatControl" class="hidden">
+            <label for="flatContributionSelect">Flat monthly amount per enrolled employee</label>
+            <div class="flat-row">
+              <select id="flatContributionSelect">
+                <option value="200">$200</option>
+                <option value="300" selected>$300</option>
+                <option value="400">$400</option>
+                <option value="custom">Custom</option>
+              </select>
+              <input type="number" id="flatContributionCustom" class="hidden" min="0" step="10" placeholder="Custom amount" />
+            </div>
+            <p><strong id="flatLabel">$300</strong> per enrolled employee</p>
+          </div>
+
+          <label for="payrollSchedule">Employee payroll deduction schedule</label>
+          <select id="payrollSchedule">
+            <option value="26" selected>Bi-weekly</option>
+            <option value="52">Weekly</option>
+            <option value="24">Semi-monthly</option>
+            <option value="12">Monthly</option>
+          </select>
+
+          <p class="contrib-note">Model how much the employer pays toward the employee-only portion and dependent portion. Payroll deductions below are estimated by tier.</p>
+          <p class="contrib-note flat-note hidden" id="flatModeNote">Flat dollar contributions apply per enrolled employee and are capped at the plan’s monthly premium.</p>
+        </div>
+      </div>
+
+      <div class="card tier-mix-card">
+        <h3>Estimated enrollment mix</h3>
+        <div class="mix-grid">
+          <label>Employee only
+            <input type="number" id="mixEe" min="0" />
+          </label>
+          <label>Employee + spouse
+            <input type="number" id="mixEs" min="0" />
+          </label>
+          <label>Employee + child
+            <input type="number" id="mixEc" min="0" />
+          </label>
+          <label>Family
+            <input type="number" id="mixFam" min="0" />
+          </label>
+        </div>
+        <p id="mixNote" class="mix-note"></p>
+      </div>
+
+      <div class="results-actions">
+        <button type="button" class="btn btn-neutral" id="editAnswersBtn">Edit answers</button>
+        <button type="button" class="btn btn-neutral" id="startOverBtn">Start over</button>
+      </div>
+
+      <div class="sort-wrap">
+        <label for="sortOptions">Sort Options</label>
+        <select id="sortOptions">
+          <option value="recommended">Recommended</option>
+          <option value="lowestCost">Lowest Cost</option>
+          <option value="strongestCoverage">Strongest Coverage</option>
+        </select>
+      </div>
+
+      <h3 class="section-title">Featured Plan Options</h3>
+      <div class="plans-grid" id="topPlansGrid"></div>
+
+      <h3 class="section-title">Lower Cost Options</h3>
+      <div class="plans-grid" id="lowCostPlansGrid"></div>
+
+      <section class="mec-section">
+        <button type="button" id="toggleMecBtn" class="btn btn-neutral">Show MEC Section</button>
+        <div id="mecPlansWrap" class="hidden">
+          <h3 class="section-title">Minimum Essential Coverage Option</h3>
+          <div class="plans-grid" id="mecPlansGrid"></div>
+        </div>
+      </section>
+
+      <p class="disclosure">Rates shown are based on current published pricing and the answers provided. Final eligibility, participation, underwriting, plan availability, effective dates, and carrier/program approval may change pricing or options. Benefits are governed by official plan documents.</p>
+      <p class="disclosure">Plan availability may vary by state. If your business is outside Florida or Georgia, Daniel can let you know whether DK Benefits can assist directly or connect you with an appropriate resource.</p>
+      <p class="disclosure">Use of this tool does not create a broker-client relationship or guarantee coverage.</p>
+
+      <div class="card lead-capture" id="leadCapture">
+        <h3>Get more details about these plans and many more options on the open market.</h3>
+        <p>Share your contact info for a quick, no-pressure conversation with Daniel about the best next steps for your company.</p>
+        <form id="leadForm" class="lead-form">
+          <label>First name
+            <input type="text" id="firstName" required placeholder="First name" />
+          </label>
+          <label>Work email
+            <input type="email" id="email" required placeholder="you@company.com" />
+          </label>
+          <label>Best phone (optional)
+            <input type="tel" id="phone" placeholder="407-555-0123" />
+          </label>
+          <button class="btn btn-primary" type="submit">Send to Daniel</button>
+        </form>
+        <p class="success hidden" id="leadSuccess">Thanks — Daniel will follow up shortly.</p>
+        <p class="error hidden" id="leadError">Something went wrong sending your request. Please call or text Daniel directly at 407-476-5076.</p>
+      </div>
+
+      <div class="card cta-daniel">
+        <h3>Call Daniel now</h3>
+        <p>Florida &amp; Georgia focused. Additional states may be available.</p>
+        <p><strong>Daniel Kirves</strong></p>
+        <p>Call/Text: <a href="tel:4074765076">407-476-5076</a></p>
+        <p>Email: <a href="mailto:dan@dkbenefits.net">dan@dkbenefits.net</a></p>
+        <p class="ownership-license">DK Benefits LLC owns and operates this tool.</p>
+        <p class="ownership-license">DK Benefits LLC Florida Agency License #L109331. Daniel Kirves Florida Resident Agent License #W588866. Georgia Agent License #3366904.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>Rates shown are based on current published pricing and the answers provided. Final eligibility, participation, underwriting, plan availability, effective dates, and carrier/program approval may change pricing or options. Benefits are governed by official plan documents.</p>
+      <p>Plan availability may vary by state. If your business is outside Florida or Georgia, Daniel can let you know whether DK Benefits can assist directly or connect you with an appropriate resource.</p>
+      <p>Use of this tool does not create a broker-client relationship or guarantee coverage.</p>
+      <p class="ownership-license">DK Benefits LLC owns and operates this tool.</p>
+      <p class="ownership-license">DK Benefits LLC Florida Agency License #L109331. Daniel Kirves Florida Resident Agent License #W588866. Georgia Agent License #3366904.</p>
+      <p class="footer-contact">Daniel Kirves<br />DK Benefits LLC<br />Call/Text: <a href="tel:4074765076">407-476-5076</a><br />Email: <a href="mailto:dan@dkbenefits.net">dan@dkbenefits.net</a></p>
+    </div>
+  </footer>
+
+  <script src="quote-tool.js"></script>
+</body>
+</html>
