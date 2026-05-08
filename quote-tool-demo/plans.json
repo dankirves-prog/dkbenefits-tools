@@ -24,7 +24,7 @@
       "Deductible must be met before copays except preventive $0 and telemedicine $0."
     ],
     "limitedNotes": [
-      "PAP available for Brand Rx."
+      "Patient Assistance Programs available for Brand Rx."
     ],
     "status": "active",
     "ratesValidUntil": "2026-12-31"
@@ -51,10 +51,10 @@
       "rx": "Generic $0 after deductible"
     },
     "notes": [
-      "HSA compatible HDHP Health Plan. Deductible must be met before copays except preventive $0 and telemedicine $0."
+      "HSA compatible HDHP Health Plan. Deductible must be met before copays except preventive $0 and telemedicine $0. $25/mo HSA Card included."
     ],
     "limitedNotes": [
-      "PAP available for Brand Rx."
+      "Patient Assistance Programs available for Brand Rx."
     ],
     "status": "active",
     "ratesValidUntil": "2026-12-31"
@@ -81,7 +81,7 @@
       "rx": "$20 / $65 / $95"
     },
     "notes": [
-      "Balanced PPO option with stronger copay predictability. Facility services are covered at 30% coinsurance after deductible."
+      "Balanced PPO option with stronger copay predictability. Facility services are covered at 30% coinsurance after deductible. $0 Telemedicine."
     ],
     "limitedNotes": [
       "Major Medical plan; utilizes the Cigna PPO network and balanced value with most services covered as first dollar benefits."
@@ -111,7 +111,7 @@
       "rx": "$20 / $65 / $95"
     },
     "notes": [
-      "Balanced PPO option with stronger copay predictability. Facility services are covered at 30% coinsurance after deductible."
+      "Balanced PPO option with stronger copay predictability. Facility services are covered at 30% coinsurance after deductible. $0 Telemedicine."
     ],
     "limitedNotes": [
       "Major Medical plan; utilizes the PHCS PPO network and balanced value with most services covered as first dollar benefits."
@@ -141,7 +141,7 @@
       "rx": "$20 / $65 / $95"
     },
     "notes": [
-      "Balanced PPO option with stronger copay predictability. Facility services are covered at 20% coinsurance after deductible."
+      "Balanced PPO option with stronger copay predictability. Facility services are covered at 20% coinsurance after deductible. $0 Telemedicine."
     ],
     "limitedNotes": [
       "Major Medical plan; utilizes the Cigna PPO network and balanced value with most services covered as first dollar benefits."
@@ -171,7 +171,7 @@
       "rx": "$20 / $65 / $95"
     },
     "notes": [
-      "Balanced PPO option with stronger copay predictability. Facility services are covered at 20% coinsurance after deductible."
+      "Balanced PPO option with stronger copay predictability. Facility services are covered at 20% coinsurance after deductible. $0 Telemedicine."
     ],
     "limitedNotes": [
       "Major Medical plan; utilizes the PHCS PPO network and balanced value with most services covered as first dollar benefits."
@@ -201,7 +201,7 @@
       "rx": "After deductible, plan pays 70%; eligible preventive generics may be $0"
     },
     "notes": [
-      "HSA Compatible HDHP Health Plan. Plan pays 70% after deductible, only preventive services have first dollar coverage."
+      "HSA Compatible HDHP Health Plan. Plan pays 70% after deductible, only preventive services have first dollar coverage. $0 Telemedicine."
     ],
     "limitedNotes": [
       "HSA Medical plan; Only preventive services are covered at cost before meeting the deductible."
@@ -231,7 +231,7 @@
       "rx": "After deductible, plan pays 70%; eligible preventive generics may be $0"
     },
     "notes": [
-      "HSA Compatible HDHP Health Plan. Plan pays 70% after deductible, only preventive services have first dollar coverage."
+      "HSA Compatible HDHP Health Plan. Plan pays 70% after deductible, only preventive services have first dollar coverage. $0 Telemedicine."
     ],
     "limitedNotes": [
       "HSA Medical plan; Only preventive services are covered at cost before meeting the deductible."
@@ -261,7 +261,7 @@
       "rx": "After deductible, plan pays 100%; eligible preventive generics may be $0"
     },
     "notes": [
-      "HSA Compatible HDHP Health Plan. Best fit for groups prioritizing lower fixed premiums and HSA design. Plan pays 100% after deductible, only preventive services have first dollar coverage. $25/mo HSA Card included."
+      "HSA Compatible HDHP Health Plan. Best fit for groups prioritizing lower fixed premiums and HSA design. Plan pays 100% after deductible, only preventive services have first dollar coverage. $25/mo HSA Card included. $0 Telemedicine."
     ],
     "limitedNotes": [
       "HSA Medical plan; Only preventive services are covered at cost before meeting the deductible."
@@ -291,7 +291,7 @@
       "rx": "After deductible, plan pays 100%; eligible preventive generics may be $0"
     },
     "notes": [
-      "HSA Compatible HDHP Health Plan. Best fit for groups prioritizing lower fixed premiums and HSA design. Plan pays 100% after deductible, only preventive services have first dollar coverage. $25/mo HSA card included."
+      "HSA Compatible HDHP Health Plan. Best fit for groups prioritizing lower fixed premiums and HSA design. Plan pays 100% after deductible, only preventive services have first dollar coverage. $25/mo HSA card included. $0 Telemedicine."
     ],
     "limitedNotes": [
       "HSA Medical plan; Only preventive services are covered at cost before meeting the deductible."
@@ -321,7 +321,7 @@
       "rx": "$0 Generic"
     },
     "notes": [
-      "This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited."
+      "This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited. $0 Telemedicine. Patient Assistance Program available for Brand Rx."
     ],
     "limitedNotes": [
       "This is a Visit Limit Plan. Deductible and Out of Pocket Max applies only toward covered services. These plans are good for those who are tolerant to some risk and would like to save money on their health plan.",
@@ -356,7 +356,7 @@
       "rx": "$0 Generic"
     },
     "notes": [
-      "This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited."
+      "This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited. $0 Telemedicine. Patient Assistance Program available for Brand Rx."
     ],
     "limitedNotes": [
       "This is a Visit Limit Plan. Deductible and Out of Pocket Max applies only toward covered services. These plans are good for those who are tolerant to some risk and would like to save money on their health plan.",
