@@ -130,7 +130,7 @@ const heroAsideContent = {
   results: {
     title: 'Ready for the next step?',
     bullets: [
-      'Many groups qualify for rates like these',
+      'Most groups qualify for these rates',
       'Daniel can help verify eligibility',
       'Additional market options may be available',
       'Call, text, or email when ready'
