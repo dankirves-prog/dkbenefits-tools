@@ -9,9 +9,9 @@ const funnelSection = document.getElementById('funnelSection');
 const resultsSection = document.getElementById('resultsSection');
 const resultsSummary = document.getElementById('resultsSummary');
 const participationNote = document.getElementById('participationNote');
-const heroAsideTitle = document.getElementById('heroAsideTitle');
-const heroAsideList = document.getElementById('heroAsideList');
-const heroAsideLinks = document.getElementById('heroAsideLinks');
+const heroAsideTitle = document.getElementById('heroAsideTitle') || { textContent: '' };
+const heroAsideList = document.getElementById('heroAsideList') || { innerHTML: '' };
+const heroAsideLinks = document.getElementById('heroAsideLinks') || { classList: { toggle: () => {} } };
 
 const employerContribution = document.getElementById('employerContribution');
 const contributionLabel = document.getElementById('contributionLabel');
@@ -233,7 +233,6 @@ function setHeroCompact(compact) {
 }
 
 function updateHeroAside(mode) {
-  if (!heroAsideTitle || !heroAsideList || !heroAsideLinks) return;
   const config = heroAsideContent[mode] || heroAsideContent.default;
   heroAsideTitle.textContent = config.title;
   heroAsideList.innerHTML = config.bullets.map((item) => `<li>${item}</li>`).join('');
