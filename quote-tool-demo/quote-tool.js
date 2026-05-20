@@ -233,6 +233,7 @@ function setHeroCompact(compact) {
 }
 
 function updateHeroAside(mode) {
+  if (!heroAsideTitle || !heroAsideList || !heroAsideLinks) return;
   const config = heroAsideContent[mode] || heroAsideContent.default;
   heroAsideTitle.textContent = config.title;
   heroAsideList.innerHTML = config.bullets.map((item) => `<li>${item}</li>`).join('');
