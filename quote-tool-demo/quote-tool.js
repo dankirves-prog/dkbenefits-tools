@@ -499,7 +499,7 @@ function renderResults() {
   contributionLabel.textContent = `${employerContribution.value}%`;
   dependentContributionLabel.textContent = `${dependentContribution.value}%`;
   flatLabel.textContent = money(getFlatAmount());
-  resultsSummary.textContent = `${answers.state || 'Your state'} · ${employees} eligible employees · about ${enrolling} enrolling. These are real current starting rates based on the information provided.`;
+  resultsSummary.textContent = `${answers.state || 'Your state'} · ${employees} eligible employees · about ${enrolling} enrolling. These are real current rates based on the information provided.`;
 
   updateParticipationNote();
 
@@ -573,6 +573,8 @@ function startOver() {
 
   resultsSection.classList.add('hidden');
   funnelSection.classList.remove('hidden');
+  heroSection.classList.remove('hidden');
+  heroSection.classList.remove('hidden');
   setHeroCompact(false);
   renderQuestion();
 }
@@ -589,6 +591,7 @@ nextBtn.addEventListener('click', () => {
     setInitialMix(enrolling);
     funnelSection.classList.add('hidden');
     resultsSection.classList.remove('hidden');
+    heroSection.classList.add('hidden');
     renderResults();
     scrollToElement(document.querySelector('.contribution'));
     return;
@@ -633,6 +636,7 @@ flatContributionCustom.addEventListener('input', renderResults);
 editAnswersBtn.addEventListener('click', () => {
   resultsSection.classList.add('hidden');
   funnelSection.classList.remove('hidden');
+  heroSection.classList.remove('hidden');
   current = 0;
   renderQuestion();
   scrollToElement(funnelSection);
