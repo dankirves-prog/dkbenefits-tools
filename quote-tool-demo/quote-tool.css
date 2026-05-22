@@ -453,6 +453,11 @@ input, select {
     page-break-after: avoid;
   }
 
+  .section-title:first-of-type {
+    break-before: page;
+    page-break-before: always;
+  }
+
   .plan-card,
   .card-section {
     break-inside: avoid;
