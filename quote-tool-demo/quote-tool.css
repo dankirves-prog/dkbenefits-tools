@@ -415,10 +415,13 @@ input, select {
 @media print {
   @page {
     size: portrait;
-    margin: 0.5in;
+    margin: 0.4in;
   }
 
-  body { background: #fff !important; }
+  body {
+    background: #fff !important;
+  }
+
   .bg-orb,
   .results-actions,
   .sort-wrap,
@@ -427,13 +430,16 @@ input, select {
   .cta-daniel,
   .site-footer,
   .funnel,
-  .hero {
+  .hero,
+  .site-header,
+  .interest-toggle {
     display: none !important;
   }
 
   .container {
     width: 100% !important;
     margin: 0 !important;
+    padding: 0 !important;
   }
 
   .card,
@@ -441,26 +447,92 @@ input, select {
     box-shadow: none !important;
   }
 
+  /* 2-up layout with flexbox (NOT grid - grid doesn't paginate well) */
   .plans-grid {
-    display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 0.22in !important;
-    align-items: start !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.2in !important;
+    align-items: flex-start !important;
+  }
+
+  .plan-card {
+    flex: 0 0 calc((100% - 0.2in) / 2) !important;
+    max-width: calc((100% - 0.2in) / 2) !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    box-shadow: none !important;
+    border: 1px solid #d7e4ff !important;
+    padding: 0.15in !important;
+    font-size: 9pt !important;
+  }
+
+  /* THE KEY: force a page break after every 2nd card */
+  .plan-card:nth-child(2n) {
+    break-after: page !important;
+    page-break-after: always !important;
+  }
+
+  /* Shrink everything inside the card to fit vertically */
+  .plan-card h3 {
+    font-size: 11pt !important;
+    margin: 0 0 0.05in !important;
+  }
+
+  .plan-card .plan-meta {
+    font-size: 8pt !important;
+    margin: 0 !important;
+  }
+
+  .plan-card .metric-row {
+    padding: 0.05in 0.08in !important;
+    margin-top: 0.05in !important;
+    font-size: 8.5pt !important;
+  }
+
+  .plan-card .metric-row.employer .big-number {
+    font-size: 14pt !important;
+  }
+
+  .plan-card .card-section {
+    margin-top: 0.08in !important;
+    padding-top: 0.06in !important;
+  }
+
+  .plan-card .card-section h4 {
+    font-size: 7.5pt !important;
+    margin-bottom: 0.04in !important;
+  }
+
+  /* Put the benefits list in 2 columns to use horizontal space */
+  .plan-card .benefit-list {
+    column-count: 2 !important;
+    column-gap: 0.12in !important;
+    font-size: 8pt !important;
+  }
+
+  .plan-card .benefit-list li {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    padding: 0.02in 0 !important;
+    font-size: 8pt !important;
+  }
+
+  .plan-card .limit-note,
+  .plan-card .card-note {
+    font-size: 7.5pt !important;
+    padding: 0.04in 0.06in !important;
+    margin-top: 0.05in !important;
   }
 
   .section-title {
-    break-after: avoid-page;
-    page-break-after: avoid;
+    break-after: avoid-page !important;
+    page-break-after: avoid !important;
+    font-size: 13pt !important;
+    margin: 0 0 0.1in !important;
   }
 
   #topPlansGrid {
-    break-before: page;
-    page-break-before: always;
-  }
-
-  .plan-card,
-  .card-section {
-    break-inside: avoid;
-    page-break-inside: avoid;
+    break-before: page !important;
+    page-break-before: always !important;
   }
 }
