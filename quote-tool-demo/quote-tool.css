@@ -411,3 +411,51 @@ input, select {
   .option-grid, .flat-row, .mix-grid { grid-template-columns: 1fr; }
   .results-actions { flex-direction: column; }
 }
+
+@media print {
+  @page {
+    size: portrait;
+    margin: 0.5in;
+  }
+
+  body { background: #fff !important; }
+  .bg-orb,
+  .results-actions,
+  .sort-wrap,
+  #toggleMecBtn,
+  .lead-capture,
+  .cta-daniel,
+  .site-footer,
+  .funnel,
+  .hero {
+    display: none !important;
+  }
+
+  .container {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .card,
+  .card-glass {
+    box-shadow: none !important;
+  }
+
+  .plans-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0.22in !important;
+    align-items: start !important;
+  }
+
+  .section-title {
+    break-after: avoid-page;
+    page-break-after: avoid;
+  }
+
+  .plan-card,
+  .card-section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
