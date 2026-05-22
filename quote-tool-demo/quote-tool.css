@@ -453,7 +453,7 @@ input, select {
     page-break-after: avoid;
   }
 
-  .section-title:first-of-type {
+  #topPlansGrid {
     break-before: page;
     page-break-before: always;
   }
