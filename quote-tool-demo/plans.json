@@ -34,7 +34,7 @@
     "group": "top",
     "name": "Cigna EPO 1750 HSA",
     "network": "Utilizes Cigna network",
-    "typeBadge": "Includes $25 HSA Contribution Monthly",
+    "typeBadge": "Incl $25 Monthly HSA",
     "rates": {
       "employeeOnly": 429,
       "employeeSpouse": 754,
@@ -339,7 +339,7 @@
     "group": "low",
     "name": "PHCS Visit Limit 1750 HSA",
     "network": "Utilizes PHCS network",
-    "typeBadge": "Includes $25 HSA Contribution Monthly",
+    "typeBadge": "Incl $25 Monthly HSA",
     "rates": {
       "employeeOnly": 349,
       "employeeSpouse": 654,
