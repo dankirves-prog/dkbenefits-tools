@@ -30,6 +30,11 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
+  html {
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
   body {
     font-family: 'DM Sans', sans-serif;
     background: var(--off-white);
@@ -37,6 +42,9 @@
     padding: 16px 12px 32px;
     font-size: 14px;
     line-height: 1.55;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
   }
   body.embedded {
     background: transparent;
@@ -54,9 +62,8 @@
     border-radius: 14px;
     box-shadow: var(--shadow);
     border: 1px solid var(--line);
-    overflow: hidden;
+    overflow: visible;
     width: 100%;
-    min-height: 480px;
     display: flex;
     flex-direction: column;
   }
@@ -65,6 +72,8 @@
     height: 4px;
     background: #e8edf5;
     width: 100%;
+    border-radius: 14px 14px 0 0;
+    overflow: hidden;
   }
   .progress-fill {
     height: 4px;
@@ -2025,6 +2034,65 @@ var currentIndex = 0;
 var flow = [];
 var focusedOptionIndex = -1;
 var lastResizeH = 0;
+var resizeTimer = null;
+
+function measureHeight() {
+  var doc = document.documentElement;
+  var body = document.body;
+  var shell = document.querySelector('.app-shell');
+  var contentH = 0;
+
+  function includeBox(el) {
+    if (!el) return;
+    contentH = Math.max(
+      contentH,
+      el.scrollHeight || 0,
+      el.offsetHeight || 0
+    );
+  }
+
+  includeBox(shell);
+  var quiz = document.getElementById('quizView');
+  var results = document.getElementById('resultsView');
+  if (quiz && !quiz.classList.contains('is-hidden')) includeBox(quiz);
+  if (results && results.classList.contains('is-visible')) includeBox(results);
+
+  var docH = Math.max(
+    doc ? (doc.scrollHeight || 0) : 0,
+    doc ? (doc.offsetHeight || 0) : 0,
+    body ? (body.scrollHeight || 0) : 0,
+    body ? (body.offsetHeight || 0) : 0
+  );
+
+  // document/body scrollHeight is at least the iframe viewport, which
+  // blocks shrinking after a taller step. Use it only when it exceeds
+  // the viewport (true overflow from a short iframe).
+  var viewport = window.innerHeight || (doc && doc.clientHeight) || 0;
+  if (docH > viewport + 2) {
+    contentH = Math.max(contentH, docH);
+  } else if (!contentH) {
+    contentH = docH;
+  }
+
+  return Math.max(1, Math.ceil(contentH));
+}
+
+function postResizeHeight() {
+  var h = measureHeight();
+  lastResizeH = h;
+  window.parent.postMessage({ type: 'resize', height: h }, '*');
+}
+
+function sendResize() {
+  if (resizeTimer) clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(function() {
+    resizeTimer = null;
+    requestAnimationFrame(function() {
+      postResizeHeight();
+      setTimeout(postResizeHeight, 80);
+    });
+  }, 16);
+}
 
 function buildFlow() {
   return questions.filter(function(q) {
@@ -2047,30 +2115,6 @@ function getProgressPct() {
   var unlocked = Math.max(flow.length, 1);
   var answered = countAnsweredInFlow();
   return Math.min(100, Math.round((answered / unlocked) * 100));
-}
-
-function measureHeight() {
-  var h = 0;
-  function include(el) {
-    if (!el) return;
-    var r = el.getBoundingClientRect();
-    h = Math.max(h, el.scrollHeight, el.offsetHeight, Math.ceil(r.height));
-  }
-  include(document.querySelector('.app-shell'));
-  var quiz = document.getElementById('quizView');
-  var results = document.getElementById('resultsView');
-  if (quiz && !quiz.classList.contains('is-hidden')) include(quiz);
-  if (results && results.classList.contains('is-visible')) include(results);
-  include(document.body);
-  return Math.max(400, Math.ceil(h + 24));
-}
-
-function sendResize() {
-  setTimeout(function() {
-    var h = measureHeight();
-    lastResizeH = h;
-    window.parent.postMessage({ type: 'resize', height: h }, '*');
-  }, 50);
 }
 
 function showQuiz() {
@@ -2139,6 +2183,7 @@ function render() {
   document.getElementById('btnBack').disabled = currentIndex === 0;
   document.getElementById('btnNext').textContent = isLast ? 'See My Results' : 'Next';
   focusedOptionIndex = -1;
+  sendResize();
 }
 
 function selectOption(value, isExclusive) {
@@ -2169,6 +2214,7 @@ function goNext() {
   var q = getCurrentQuestion();
   if (q.required && !hasAnswer(q)) {
     document.getElementById('validationMsg').textContent = 'Please select an answer to continue.';
+    sendResize();
     return;
   }
   flow = buildFlow();
@@ -2266,10 +2312,17 @@ if (typeof ResizeObserver !== 'undefined') {
   ro.observe(document.body);
 }
 
+window.addEventListener('resize', sendResize);
+
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(function() { sendResize(); }).catch(function() {});
+}
+
 window.DKCompliance = {
   scoreAnswers: scoreAnswers,
   questions: questions,
-  version: ENGINE_VERSION
+  version: ENGINE_VERSION,
+  measureHeight: measureHeight
 };
 
 window.addEventListener('load', function() {
