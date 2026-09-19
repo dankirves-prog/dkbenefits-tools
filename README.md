@@ -7,13 +7,9 @@ The quote tool demo is now isolated in its own folder so existing files (includi
 Self-contained quiz + scoring + results (no Wix Velo). Scoring is a port of the live dkbenefits.net compliance quiz engine, with Pages-path additions (Marketplace notice on the no-benefits path, SBC distribution, state / mini-COBRA).
 
 - `compliance-assessment.html` — single-page assessment, hosted at `https://dankirves-prog.github.io/dkbenefits-tools/compliance-assessment.html`
-- `compliance-assessment-embed.html` — Wix HtmlComponent shim that iframes the Pages URL and forwards `postMessage` both ways (resize + optional future hooks), same pattern as `section125-embed.html`
+- `compliance-assessment-embed.html` — optional height:100% Wix HtmlComponent shim that iframes the Pages URL and forwards `postMessage` both ways (same pattern as Wrap / `section125-embed.html`). Does not set iframe height from resize messages.
 
-The assessment posts `{ type: 'resize', height }` on load, fonts ready, each step change, option select, and window resize (debounced; sent twice after layout). Height is the document content height (`document.documentElement.scrollHeight` / `body.scrollHeight` plus the content root), not a clipped iframe rect. The embed shim sets the iframe height from that message (absolute floor 450px, plus a few pixels of padding — no fixed 6953px results height).
-
-**Live Wix cutover:** point the compliance quiz HtmlComponent(s) at the embed shim (`compliance-assessment-embed.html`). Quiz and results now live in one iframe, so the two-component Velo page (`htmlQuiz` / `htmlResults`) can be replaced by a single HtmlComponent.
-
-**Wix Velo follow-up (not in this repo):** live Velo still floors the HtmlComponent with `$w("#htmlQuiz").height = Math.max(u.height + 40, 670)`. That 670px minimum leaves a large empty gap under short quiz steps even after Pages reports the true content height. After this Pages change, update Velo to `height + 40` only (no 670 floor) so short steps can shrink. Do not reintroduce a Velo file here unless one already exists.
+**Live Wix:** use **one** HtmlComponent, width 100%, with a tall fixed height (~4800px recommended so results don’t nest-scroll; Wrap/S125 use ~1900–2000px for shorter tools). Prefer pointing the HtmlComponent **directly** at `compliance-assessment.html` (same as Section 125), or at this height:100% embed shim (same as Wrap).
 
 Local preview:
 
