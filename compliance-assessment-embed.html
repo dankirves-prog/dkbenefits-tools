@@ -21,9 +21,13 @@
 </style>
 </head>
 <body>
-<iframe id="formFrame" src="https://dankirves-prog.github.io/dkbenefits-tools/compliance-assessment.html" title="Employee Benefits Compliance Assessment" allow="clipboard-write"></iframe>
+<iframe id="formFrame" title="Employee Benefits Compliance Assessment" allow="clipboard-write"></iframe>
 <script>
+var PAGES_SRC = 'https://dankirves-prog.github.io/dkbenefits-tools/compliance-assessment.html';
 var frame = document.getElementById('formFrame');
+var local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+frame.src = local ? 'compliance-assessment.html' : PAGES_SRC;
+
 var MIN_H = 450;
 window.addEventListener('message', function(e) {
   if (e.source === frame.contentWindow) {

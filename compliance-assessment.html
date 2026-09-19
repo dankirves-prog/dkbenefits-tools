@@ -2049,18 +2049,25 @@ function getProgressPct() {
   return Math.min(100, Math.round((answered / unlocked) * 100));
 }
 
+function measureHeight() {
+  var h = 0;
+  function include(el) {
+    if (!el) return;
+    var r = el.getBoundingClientRect();
+    h = Math.max(h, el.scrollHeight, el.offsetHeight, Math.ceil(r.height));
+  }
+  include(document.querySelector('.app-shell'));
+  var quiz = document.getElementById('quizView');
+  var results = document.getElementById('resultsView');
+  if (quiz && !quiz.classList.contains('is-hidden')) include(quiz);
+  if (results && results.classList.contains('is-visible')) include(results);
+  include(document.body);
+  return Math.max(400, Math.ceil(h + 24));
+}
+
 function sendResize() {
   setTimeout(function() {
-    var h = Math.max(
-      document.documentElement.scrollHeight,
-      document.body.scrollHeight,
-      document.documentElement.offsetHeight,
-      400
-    );
-    if (Math.abs(h - lastResizeH) < 2) {
-      window.parent.postMessage({ type: 'resize', height: h }, '*');
-      return;
-    }
+    var h = measureHeight();
     lastResizeH = h;
     window.parent.postMessage({ type: 'resize', height: h }, '*');
   }, 50);
@@ -2245,6 +2252,7 @@ document.addEventListener('keydown', handleKeyDown);
 
 window.addEventListener('message', function(e) {
   if (!e.data || typeof e.data !== 'object') return;
+  if (e.source === window) return;
   if (e.data.type === 'restart') handleRestart();
   if (e.data.type === 'renderResults' && e.data.payload) {
     showResultsView();
