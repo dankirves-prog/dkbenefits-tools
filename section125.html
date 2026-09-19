@@ -1,0 +1,1963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Section 125 Plan Tool</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Source+Sans+3:wght@400;500;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #1a2e4a;
+    --navy-dark: #0f1e32;
+    --navy-light: #2a4a70;
+    --gold: #c8a951;
+    --gold-light: #e8c97a;
+    --white: #ffffff;
+    --off-white: #f7f9fc;
+    --light-gray: #e8edf3;
+    --mid-gray: #8a9ab0;
+    --text: #1a2e4a;
+    --text-light: #5a6a7e;
+    --error: #c0392b;
+    --warning-bg: #fff8e1;
+    --warning-border: #f0b429;
+    --success: #27ae60;
+    --radius: 6px;
+    --shadow: 0 2px 12px rgba(26,46,74,0.10);
+    --shadow-lg: 0 8px 32px rgba(26,46,74,0.15);
+  }
+
+  body {
+    font-family: 'Source Sans 3', sans-serif;
+    background: var(--off-white);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .tool-header {
+    background: var(--navy);
+    padding: 24px 32px;
+    text-align: center;
+    border-bottom: 3px solid var(--gold);
+  }
+  .tool-header h1 {
+    font-family: 'Merriweather', serif;
+    color: var(--white);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .tool-header p {
+    color: var(--gold-light);
+    font-size: 13px;
+    margin-top: 4px;
+    font-weight: 500;
+  }
+
+  /* ── PROGRESS BAR ── */
+  .progress-wrap {
+    background: var(--white);
+    border-bottom: 1px solid var(--light-gray);
+    padding: 20px 32px 0;
+    box-shadow: var(--shadow);
+  }
+  .progress-steps {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .progress-steps::before {
+    content: '';
+    position: absolute;
+    top: 16px;
+    left: 24px;
+    right: 24px;
+    height: 2px;
+    background: var(--light-gray);
+    z-index: 0;
+  }
+  .progress-line {
+    position: absolute;
+    top: 16px;
+    left: 24px;
+    height: 2px;
+    background: var(--gold);
+    z-index: 1;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+  .step-dot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+    z-index: 2;
+    cursor: default;
+  }
+  .step-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--white);
+    border: 2px solid var(--light-gray);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--mid-gray);
+    transition: all 0.3s ease;
+  }
+  .step-dot.active .step-circle {
+    background: var(--navy);
+    border-color: var(--navy);
+    color: var(--white);
+  }
+  .step-dot.completed .step-circle {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--white);
+  }
+  .step-dot.completed .step-circle::after {
+    content: '✓';
+    font-size: 13px;
+  }
+  .step-dot.completed .step-circle span { display: none; }
+  .step-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--mid-gray);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    transition: color 0.3s;
+  }
+  .step-dot.active .step-label { color: var(--navy); }
+  .step-dot.completed .step-label { color: var(--gold); }
+  .progress-labels {
+    display: flex;
+    justify-content: space-between;
+    max-width: 720px;
+    margin: 8px auto 0;
+    padding-bottom: 16px;
+  }
+
+  /* ── MAIN CONTAINER ── */
+  .form-container {
+    max-width: 720px;
+    margin: 32px auto;
+    padding: 0 16px 48px;
+  }
+
+  /* ── STEP PANEL ── */
+  .step-panel {
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+  .step-panel.active { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .step-title {
+    font-family: 'Merriweather', serif;
+    font-size: 20px;
+    color: var(--navy);
+    margin-bottom: 4px;
+  }
+  .step-subtitle {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--light-gray);
+  }
+
+  /* ── FORM ELEMENTS ── */
+  .field-group {
+    margin-bottom: 20px;
+  }
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .field-row-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 560px) {
+    .field-row, .field-row-3 { grid-template-columns: 1fr; }
+  }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 6px;
+    letter-spacing: 0.2px;
+  }
+  label .required { color: var(--error); margin-left: 2px; }
+  label .optional {
+    font-weight: 400;
+    color: var(--mid-gray);
+    font-size: 11px;
+    margin-left: 4px;
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="date"],
+  select,
+  textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--light-gray);
+    border-radius: var(--radius);
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--white);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    appearance: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--navy);
+    box-shadow: 0 0 0 3px rgba(26,46,74,0.08);
+  }
+  input.error, select.error { border-color: var(--error); }
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a9ab0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+    cursor: pointer;
+  }
+
+  .helper-text {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-top: 5px;
+    line-height: 1.5;
+  }
+  .helper-text a { color: var(--navy-light); text-decoration: underline; }
+
+  .error-text {
+    font-size: 12px;
+    color: var(--error);
+    margin-top: 4px;
+    display: none;
+  }
+  .error-text.visible { display: block; }
+
+  /* ── RADIO & CHECKBOX ── */
+  .radio-group, .checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .radio-group.horizontal, .checkbox-group.horizontal {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .radio-option, .checkbox-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    padding: 10px 14px;
+    border: 1.5px solid var(--light-gray);
+    border-radius: var(--radius);
+    transition: border-color 0.2s, background 0.2s;
+    background: var(--white);
+  }
+  .radio-option:hover, .checkbox-option:hover {
+    border-color: var(--navy-light);
+    background: var(--off-white);
+  }
+  .radio-option.selected, .checkbox-option.selected {
+    border-color: var(--navy);
+    background: #f0f4f9;
+  }
+  .radio-option input, .checkbox-option input {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    margin-top: 1px;
+    cursor: pointer;
+    accent-color: var(--navy);
+  }
+  .radio-option .option-content, .checkbox-option .option-content {
+    flex: 1;
+  }
+  .option-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    display: block;
+  }
+  .option-desc {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-top: 2px;
+    line-height: 1.4;
+  }
+
+  /* ── WARNING / INFO BOXES ── */
+  .info-box {
+    background: var(--off-white);
+    border: 1px solid var(--light-gray);
+    border-left: 4px solid var(--navy);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin: 16px 0;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .warning-box {
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border);
+    border-left: 4px solid var(--warning-border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin: 16px 0;
+    font-size: 13px;
+    color: #7a5c00;
+    line-height: 1.6;
+    display: none;
+  }
+  .warning-box.visible { display: block; }
+  .warning-box strong, .info-box strong { font-weight: 700; }
+
+  /* ── SECTION DIVIDER ── */
+  .section-divider {
+    border: none;
+    border-top: 1px solid var(--light-gray);
+    margin: 28px 0;
+  }
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--mid-gray);
+    margin-bottom: 16px;
+    margin-top: 28px;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--light-gray);
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: var(--shadow);
+    margin-bottom: 24px;
+  }
+
+  /* ── LEGAL CHECKBOXES ── */
+  .legal-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1.5px solid var(--light-gray);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    background: var(--white);
+    transition: border-color 0.2s;
+    cursor: pointer;
+  }
+  .legal-check:hover { border-color: var(--navy-light); }
+  .legal-check.checked { border-color: var(--navy); background: #f0f4f9; }
+  .legal-check input {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    margin-top: 1px;
+    accent-color: var(--navy);
+    cursor: pointer;
+  }
+  .legal-check-text {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  /* ── NAVIGATION BUTTONS ── */
+  .nav-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--light-gray);
+    gap: 12px;
+  }
+  .btn {
+    padding: 12px 28px;
+    border-radius: var(--radius);
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    letter-spacing: 0.3px;
+  }
+  .btn-primary {
+    background: var(--navy);
+    color: var(--white);
+    box-shadow: 0 2px 8px rgba(26,46,74,0.2);
+  }
+  .btn-primary:hover {
+    background: var(--navy-dark);
+    box-shadow: 0 4px 16px rgba(26,46,74,0.3);
+    transform: translateY(-1px);
+  }
+  .btn-secondary {
+    background: var(--white);
+    color: var(--navy);
+    border: 1.5px solid var(--light-gray);
+  }
+  .btn-secondary:hover {
+    border-color: var(--navy);
+    background: var(--off-white);
+  }
+  .btn-generate {
+    background: var(--gold);
+    color: var(--navy-dark);
+    box-shadow: 0 2px 8px rgba(200,169,81,0.3);
+    padding: 14px 36px;
+    font-size: 15px;
+  }
+  .btn-generate:hover {
+    background: var(--gold-light);
+    box-shadow: 0 4px 16px rgba(200,169,81,0.4);
+    transform: translateY(-1px);
+  }
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  /* ── STATUS & DOWNLOAD ── */
+  .status-text {
+    font-size: 14px;
+    color: var(--text-light);
+    font-style: italic;
+    min-height: 20px;
+  }
+  .download-link {
+    display: none;
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: var(--navy);
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: var(--white);
+    font-weight: 700;
+    font-size: 15px;
+    text-align: center;
+    transition: background 0.2s;
+  }
+  .download-link:hover { background: var(--navy-dark); }
+  .download-link.visible { display: block; }
+
+  /* ── DISCLAIMER BOX ── */
+  .disclaimer-box {
+    background: var(--off-white);
+    border: 1px solid var(--light-gray);
+    border-radius: var(--radius);
+    padding: 20px;
+    font-size: 12px;
+    color: var(--text-light);
+    line-height: 1.7;
+    margin-top: 24px;
+  }
+  .disclaimer-box p { margin-bottom: 10px; }
+  .disclaimer-box p:last-child { margin-bottom: 0; }
+
+  /* ── STEP COUNTER ── */
+  .step-counter {
+    font-size: 12px;
+    color: var(--mid-gray);
+    font-weight: 600;
+    text-align: right;
+    margin-bottom: 8px;
+  }
+
+  /* ── CONDITIONAL SECTIONS ── */
+  .conditional { display: none; }
+  .conditional.visible { display: block; }
+
+  /* ── SUCCESS STATE ── */
+  .success-state {
+    text-align: center;
+    padding: 32px 24px;
+  }
+  .success-icon {
+    width: 64px;
+    height: 64px;
+    background: var(--success);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 28px;
+    color: white;
+  }
+  .success-state h3 {
+    font-family: 'Merriweather', serif;
+    font-size: 20px;
+    color: var(--navy);
+    margin-bottom: 8px;
+  }
+  .success-state p {
+    color: var(--text-light);
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+
+  /* ── REGENERATE NOTE ── */
+  .regenerate-note {
+    font-size: 12px;
+    color: var(--text-light);
+    text-align: center;
+    margin-top: 16px;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<div class="tool-header">
+  <h1>Section 125 Cafeteria Plan Document Builder</h1>
+  <p>Create a compliant, defensible Section 125 Plan Document — free from DK Benefits</p>
+</div>
+
+<!-- PROGRESS BAR -->
+<div class="progress-wrap">
+  <div class="progress-steps">
+    <div class="progress-line" id="progressLine"></div>
+    <div class="step-dot active" data-step="1">
+      <div class="step-circle"><span>1</span></div>
+      <div class="step-label">Company</div>
+    </div>
+    <div class="step-dot" data-step="2">
+      <div class="step-circle"><span>2</span></div>
+      <div class="step-label">Plan Dates</div>
+    </div>
+    <div class="step-dot" data-step="3">
+      <div class="step-circle"><span>3</span></div>
+      <div class="step-label">Plan Details</div>
+    </div>
+    <div class="step-dot" data-step="4">
+      <div class="step-circle"><span>4</span></div>
+      <div class="step-label">Benefits</div>
+    </div>
+    <div class="step-dot" data-step="5">
+      <div class="step-circle"><span>5</span></div>
+      <div class="step-label">Administrator</div>
+    </div>
+    <div class="step-dot" data-step="6">
+      <div class="step-circle"><span>6</span></div>
+      <div class="step-label">Generate</div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN FORM -->
+<div class="form-container">
+
+  <!-- ═══════════════════════════════════════
+       STEP 1 — COMPANY INFORMATION
+  ════════════════════════════════════════ -->
+  <div class="step-panel active" id="step1">
+    <div class="step-counter">Step 1 of 6</div>
+    <h2 class="step-title">Company Information</h2>
+    <p class="step-subtitle">Enter your company's legal information exactly as it appears on official documents.</p>
+
+    <div class="card">
+      <div class="field-group">
+        <label>Legal Company Name <span class="required">*</span></label>
+        <input type="text" id="companyName" placeholder="Acme Corporation" autocomplete="organization">
+        <div class="error-text" id="err-companyName">Please enter your company name.</div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-group">
+          <label>EIN (Employer Identification Number) <span class="required">*</span></label>
+          <input type="text" id="ein" placeholder="XX-XXXXXXX" maxlength="10" autocomplete="off">
+          <div class="helper-text">Format: XX-XXXXXXX (e.g., 12-3456789)</div>
+          <div class="error-text" id="err-ein">Please enter a valid EIN in XX-XXXXXXX format.</div>
+        </div>
+        <div class="field-group">
+          <label>Plan Number <span class="required">*</span></label>
+          <input type="text" id="planNumber" placeholder="501" maxlength="10">
+          <div class="helper-text">Most employers use <strong>501</strong> for their first welfare benefit plan. If you have an existing plan number, enter it here. If unsure, use 501.</div>
+          <div class="error-text" id="err-planNumber">Please enter a plan number.</div>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Street Address <span class="required">*</span></label>
+        <input type="text" id="address1" placeholder="123 Main Street" autocomplete="street-address">
+        <div class="error-text" id="err-address1">Please enter your street address.</div>
+      </div>
+
+      <div class="field-row-3">
+        <div class="field-group">
+          <label>City <span class="required">*</span></label>
+          <input type="text" id="city" placeholder="Orlando" autocomplete="address-level2">
+          <div class="error-text" id="err-city">Please enter your city.</div>
+        </div>
+        <div class="field-group">
+          <label>State <span class="required">*</span></label>
+          <select id="state" autocomplete="address-level1">
+            <option value="">Select...</option>
+            <option>AL</option><option>AK</option><option>AZ</option><option>AR</option>
+            <option>CA</option><option>CO</option><option>CT</option><option>DE</option>
+            <option>FL</option><option>GA</option><option>HI</option><option>ID</option>
+            <option>IL</option><option>IN</option><option>IA</option><option>KS</option>
+            <option>KY</option><option>LA</option><option>ME</option><option>MD</option>
+            <option>MA</option><option>MI</option><option>MN</option><option>MS</option>
+            <option>MO</option><option>MT</option><option>NE</option><option>NV</option>
+            <option>NH</option><option>NJ</option><option>NM</option><option>NY</option>
+            <option>NC</option><option>ND</option><option>OH</option><option>OK</option>
+            <option>OR</option><option>PA</option><option>RI</option><option>SC</option>
+            <option>SD</option><option>TN</option><option>TX</option><option>UT</option>
+            <option>VT</option><option>VA</option><option>WA</option><option>WV</option>
+            <option>WI</option><option>WY</option><option>DC</option>
+            <optgroup label="U.S. Territories">
+              <option>PR</option><option>VI</option><option>GU</option>
+              <option>AS</option><option>MP</option>
+            </optgroup>
+          </select>
+          <div class="error-text" id="err-state">Please select your state.</div>
+        </div>
+        <div class="field-group">
+          <label>Zip Code <span class="required">*</span></label>
+          <input type="text" id="zip" placeholder="32835" maxlength="10" autocomplete="postal-code">
+          <div class="error-text" id="err-zip">Please enter your zip code.</div>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-group">
+          <label>Company Phone <span class="required">*</span></label>
+          <input type="tel" id="phone" placeholder="(407) 555-1234" autocomplete="tel">
+          <div class="error-text" id="err-phone">Please enter a phone number.</div>
+        </div>
+        <div class="field-group">
+          <label><!-- spacer --></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">Business Entity Type</div>
+    <div class="card">
+      <div class="field-group">
+        <label>What is your business entity type? <span class="required">*</span></label>
+        <div class="radio-group" id="entityTypeGroup">
+          <label class="radio-option" onclick="selectRadio('entityType','c-corp',this)">
+            <input type="radio" name="entityType" value="c-corp">
+            <div class="option-content">
+              <span class="option-label">C-Corporation</span>
+            </div>
+          </label>
+          <label class="radio-option" onclick="selectRadio('entityType','s-corp',this)">
+            <input type="radio" name="entityType" value="s-corp">
+            <div class="option-content">
+              <span class="option-label">S-Corporation</span>
+              <span class="option-desc">Note: 2% or greater shareholders are generally ineligible to participate in a Section 125 plan as a matter of IRS law.</span>
+            </div>
+          </label>
+          <label class="radio-option" onclick="selectRadio('entityType','llc',this)">
+            <input type="radio" name="entityType" value="llc">
+            <div class="option-content">
+              <span class="option-label">LLC</span>
+            </div>
+          </label>
+          <label class="radio-option" onclick="selectRadio('entityType','partnership',this)">
+            <input type="radio" name="entityType" value="partnership">
+            <div class="option-content">
+              <span class="option-label">Partnership</span>
+              <span class="option-desc">Note: Partners are generally ineligible to participate in a Section 125 plan as a matter of IRS law.</span>
+            </div>
+          </label>
+          <label class="radio-option" onclick="selectRadio('entityType','sole-prop',this)">
+            <input type="radio" name="entityType" value="sole-prop">
+            <div class="option-content">
+              <span class="option-label">Sole Proprietor</span>
+              <span class="option-desc">Note: Sole proprietors are generally ineligible to participate in a Section 125 plan as a matter of IRS law.</span>
+            </div>
+          </label>
+          <label class="radio-option" onclick="selectRadio('entityType','non-profit',this)">
+            <input type="radio" name="entityType" value="non-profit">
+            <div class="option-content">
+              <span class="option-label">Non-Profit / Tax-Exempt Organization</span>
+            </div>
+          </label>
+          <label class="radio-option" onclick="selectRadio('entityType','other',this)">
+            <input type="radio" name="entityType" value="other">
+            <div class="option-content">
+              <span class="option-label">Other</span>
+            </div>
+          </label>
+        </div>
+        <div class="error-text" id="err-entityType">Please select your entity type.</div>
+      </div>
+
+      <!-- LLC S-Corp Follow-Up -->
+      <div class="conditional" id="llcSCorpSection">
+        <hr class="section-divider">
+        <div class="field-group">
+          <label>Is your LLC taxed as an S-Corporation? <span class="required">*</span></label>
+          <div class="radio-group horizontal" id="llcSCorpGroup">
+            <label class="radio-option" onclick="selectRadio('llcSCorp','yes',this)">
+              <input type="radio" name="llcSCorp" value="yes">
+              <div class="option-content">
+                <span class="option-label">Yes</span>
+              </div>
+            </label>
+            <label class="radio-option" onclick="selectRadio('llcSCorp','no',this)">
+              <input type="radio" name="llcSCorp" value="no">
+              <div class="option-content">
+                <span class="option-label">No</span>
+              </div>
+            </label>
+          </div>
+          <div class="helper-text">If your LLC is taxed as an S-Corp, 2% or greater members are generally ineligible to participate in a Section 125 plan.</div>
+          <div class="error-text" id="err-llcSCorp">Please answer this question.</div>
+        </div>
+      </div>
+
+      <!-- Owners Participating -->
+      <div class="conditional" id="ownersParticipatingSection">
+        <hr class="section-divider">
+        <div class="field-group">
+          <label>Are any owners, partners, or shareholders participating in this plan? <span class="required">*</span></label>
+          <div class="radio-group horizontal" id="ownersParticipatingGroup">
+            <label class="radio-option" onclick="selectRadio('ownersParticipating','yes',this)">
+              <input type="radio" name="ownersParticipating" value="yes">
+              <div class="option-content"><span class="option-label">Yes</span></div>
+            </label>
+            <label class="radio-option" onclick="selectRadio('ownersParticipating','no',this)">
+              <input type="radio" name="ownersParticipating" value="no">
+              <div class="option-content"><span class="option-label">No</span></div>
+            </label>
+          </div>
+          <div class="error-text" id="err-ownersParticipating">Please answer this question.</div>
+        </div>
+        <div class="warning-box" id="ownersWarning">
+          <strong>Please Note:</strong> Depending on your entity type, certain owners and partners may be ineligible to participate in a Section 125 plan under IRS rules. This plan document will include the appropriate eligibility language. If your situation changes, you can always regenerate a new document.
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <div></div>
+      <button class="btn btn-primary" onclick="goToStep(2)">Next: Plan Dates →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       STEP 2 — PLAN DATES & OE WINDOW
+  ════════════════════════════════════════ -->
+  <div class="step-panel" id="step2">
+    <div class="step-counter">Step 2 of 6</div>
+    <h2 class="step-title">Plan Dates & Open Enrollment</h2>
+    <p class="step-subtitle">IRS rules prohibit retroactive plan creation. Your effective date must be today or in the future.</p>
+
+    <div class="card">
+      <div class="field-row">
+        <div class="field-group">
+          <label>Effective Date of New Plan <span class="required">*</span></label>
+          <input type="date" id="effectiveDate">
+          <div class="error-text" id="err-effectiveDate">Please select a valid effective date (today or future).</div>
+        </div>
+        <div class="field-group">
+          <label>Plan Year Type <span class="required">*</span></label>
+          <select id="planYearType" onchange="handlePlanYearType()">
+            <option value="">Select...</option>
+            <option value="calendar">Calendar Year (Jan 1 – Dec 31)</option>
+            <option value="custom">Custom Plan Year</option>
+          </select>
+          <div class="error-text" id="err-planYearType">Please select a plan year type.</div>
+        </div>
+      </div>
+
+      <div class="conditional" id="customDatesSection">
+        <div class="field-row">
+          <div class="field-group">
+            <label>Plan Year Start <span class="required">*</span></label>
+            <div style="display:flex; gap:8px;">
+              <select id="planYearStartMonth" style="flex:1" onchange="checkShortPlanYear()">
+                <option value="">Month...</option>
+                <option value="1">January</option><option value="2">February</option>
+                <option value="3">March</option><option value="4">April</option>
+                <option value="5">May</option><option value="6">June</option>
+                <option value="7">July</option><option value="8">August</option>
+                <option value="9">September</option><option value="10">October</option>
+                <option value="11">November</option><option value="12">December</option>
+              </select>
+              <select id="planYearStartDay" style="flex:1">
+                <option value="">Day...</option>
+                <option value="1">1st</option><option value="2">2nd</option>
+                <option value="3">3rd</option><option value="4">4th</option>
+                <option value="5">5th</option><option value="6">6th</option>
+                <option value="7">7th</option><option value="8">8th</option>
+                <option value="9">9th</option><option value="10">10th</option>
+                <option value="11">11th</option><option value="12">12th</option>
+                <option value="13">13th</option><option value="14">14th</option>
+                <option value="15">15th</option><option value="16">16th</option>
+                <option value="17">17th</option><option value="18">18th</option>
+                <option value="19">19th</option><option value="20">20th</option>
+                <option value="21">21st</option><option value="22">22nd</option>
+                <option value="23">23rd</option><option value="24">24th</option>
+                <option value="25">25th</option><option value="26">26th</option>
+                <option value="27">27th</option><option value="28">28th</option>
+                <option value="29">29th</option><option value="30">30th</option>
+                <option value="31">31st</option>
+              </select>
+            </div>
+            <div class="error-text" id="err-planYearStart">Please select a plan year start month and day.</div>
+          </div>
+          <div class="field-group">
+            <label>Plan Year End <span class="required">*</span></label>
+            <div style="display:flex; gap:8px;">
+              <select id="planYearEndMonth" style="flex:1">
+                <option value="">Month...</option>
+                <option value="1">January</option><option value="2">February</option>
+                <option value="3">March</option><option value="4">April</option>
+                <option value="5">May</option><option value="6">June</option>
+                <option value="7">July</option><option value="8">August</option>
+                <option value="9">September</option><option value="10">October</option>
+                <option value="11">November</option><option value="12">December</option>
+              </select>
+              <select id="planYearEndDay" style="flex:1">
+                <option value="">Day...</option>
+                <option value="1">1st</option><option value="2">2nd</option>
+                <option value="3">3rd</option><option value="4">4th</option>
+                <option value="5">5th</option><option value="6">6th</option>
+                <option value="7">7th</option><option value="8">8th</option>
+                <option value="9">9th</option><option value="10">10th</option>
+                <option value="11">11th</option><option value="12">12th</option>
+                <option value="13">13th</option><option value="14">14th</option>
+                <option value="15">15th</option><option value="16">16th</option>
+                <option value="17">17th</option><option value="18">18th</option>
+                <option value="19">19th</option><option value="20">20th</option>
+                <option value="21">21st</option><option value="22">22nd</option>
+                <option value="23">23rd</option><option value="24">24th</option>
+                <option value="25">25th</option><option value="26">26th</option>
+                <option value="27">27th</option><option value="28">28th</option>
+                <option value="29">29th</option><option value="30">30th</option>
+                <option value="31">31st</option>
+              </select>
+            </div>
+            <div class="helper-text">The plan year end is typically the day before the start date of the following year.</div>
+            <div class="error-text" id="err-planYearEnd">Please select a plan year end month and day.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="warning-box visible" id="shortPlanYearNote" style="display:none">
+        <strong>Short Plan Year:</strong> Your effective date indicates this may be a short first plan year. This is permitted under Section 125. The document will reflect your selected effective date and plan year dates accordingly.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="field-group">
+        <label>Does a prior Section 125 plan exist? <span class="required">*</span></label>
+        <div class="radio-group horizontal" id="priorPlanGroup">
+          <label class="radio-option" onclick="selectRadio('priorPlan','yes',this);togglePriorAdoption(true)">
+            <input type="radio" name="priorPlan" value="yes">
+            <div class="option-content"><span class="option-label">Yes, I am restating this plan</span></div>
+          </label>
+          <label class="radio-option" onclick="selectRadio('priorPlan','no',this);togglePriorAdoption(false)">
+            <input type="radio" name="priorPlan" value="no">
+            <div class="option-content"><span class="option-label">No, this is our first plan</span></div>
+          </label>
+        </div>
+        <div class="error-text" id="err-priorPlan">Please select an option.</div>
+      </div>
+
+      <div class="conditional" id="priorAdoptionSection">
+        <div class="field-group">
+          <label>Approximate Original Adoption (Month / Year) <span class="required">*</span></label>
+          <input type="text" id="priorAdoptionMonthYear" placeholder="e.g., June / 2005">
+          <div class="error-text" id="err-priorAdoptionMonthYear">Please enter the approximate original adoption date.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="field-row">
+        <div class="field-group">
+          <label>Open Enrollment Election Period <span class="required">*</span></label>
+          <div class="radio-group" id="oeWindowGroup">
+            <label class="radio-option selected" onclick="selectRadio('oeWindow','30',this)">
+              <input type="radio" name="oeWindow" value="30" checked>
+              <div class="option-content">
+                <span class="option-label">30 days prior to renewal</span>
+              </div>
+            </label>
+            <label class="radio-option" onclick="selectRadio('oeWindow','60',this)">
+              <input type="radio" name="oeWindow" value="60">
+              <div class="option-content">
+                <span class="option-label">60 days prior to renewal</span>
+              </div>
+            </label>
+          </div>
+          <div class="helper-text">This is the number of days before your plan year renewal date during which employees may submit their benefit elections. All elections take effect on the first day of the new plan year, regardless of when they are submitted during open enrollment.</div>
+        </div>
+        <div class="field-group">
+          <label>New Hire Enrollment Window <span class="required">*</span></label>
+          <div class="radio-group" id="newHireWindowGroup">
+            <label class="radio-option selected" onclick="selectRadio('newHireWindow','30',this)">
+              <input type="radio" name="newHireWindow" value="30" checked>
+              <div class="option-content">
+                <span class="option-label">30 days from eligibility date</span>
+                <span class="option-desc">Employee must enroll within 30 days of becoming eligible.</span>
+              </div>
+            </label>
+            <label class="radio-option" onclick="selectRadio('newHireWindow','60',this)">
+              <input type="radio" name="newHireWindow" value="60">
+              <div class="option-content">
+                <span class="option-label">60 days from eligibility date</span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
+      <button class="btn btn-primary" onclick="goToStep(3)">Next: Plan Details →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       STEP 3 — PLAN DETAILS
+  ════════════════════════════════════════ -->
+  <div class="step-panel" id="step3">
+    <div class="step-counter">Step 3 of 6</div>
+    <h2 class="step-title">Plan Details</h2>
+    <p class="step-subtitle">Tell us about your organization's size and benefit structure.</p>
+
+    <div class="card">
+      <div class="field-group">
+        <label>How are your medical benefits funded? <span class="required">*</span></label>
+        <div class="radio-group" id="fundingTypeGroup">
+          <label class="radio-option" onclick="selectRadio('fundingType','fully-insured',this)">
+            <input type="radio" name="fundingType" value="fully-insured">
+            <div class="option-content">
+              <span class="option-label">Fully Insured</span>
+              <span class="option-desc">Your company pays premiums to an insurance carrier who assumes the risk.</span>
+            </div>
+          </label>
+          <label class="radio-option" onclick="selectRadio('fundingType','level-funded',this)">
+            <input type="radio" name="fundingType" value="level-funded">
+            <div class="option-content">
+              <span class="option-label">Level Funded</span>
+              <span class="option-desc">Fixed monthly payments with potential year-end refund if claims are low.</span>
+            </div>
+          </label>
+          <label class="radio-option" onclick="selectRadio('fundingType','self-funded',this)">
+            <input type="radio" name="fundingType" value="self-funded">
+            <div class="option-content">
+              <span class="option-label">Self Funded</span>
+              <span class="option-desc">Your company pays claims directly, typically with stop-loss insurance.</span>
+            </div>
+          </label>
+        </div>
+        <div class="helper-text">Not sure? Ask your insurance broker or TPA.</div>
+        <div class="error-text" id="err-fundingType">Please select a funding type.</div>
+      </div>
+
+      <div class="info-box" id="fundingNote" style="display:none">
+        <strong>Note:</strong> If your benefit funding arrangement changes in the future (for example, from fully insured to level-funded or self-funded), this plan document should be reviewed and restated to ensure it accurately reflects your plan design. You can always regenerate a new document at that time.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="field-row">
+        <div class="field-group">
+          <label>Number of Employees <span class="required">*</span></label>
+          <select id="employeeCount" onchange="handleEmployeeCount()">
+            <option value="">Select range...</option>
+            <option value="1-49">1 – 49 employees</option>
+            <option value="50-99">50 – 99 employees</option>
+            <option value="100-499">100 – 499 employees</option>
+            <option value="500+">500+ employees</option>
+          </select>
+          <div class="error-text" id="err-employeeCount">Please select your employee count range.</div>
+        </div>
+        <div class="field-group">
+          <label>Payroll Frequency <span class="required">*</span></label>
+          <select id="payrollFrequency">
+            <option value="">Select...</option>
+            <option value="Weekly">Weekly</option>
+            <option value="Bi-Weekly">Bi-Weekly (every 2 weeks)</option>
+            <option value="Semi-Monthly">Semi-Monthly (twice per month)</option>
+            <option value="Monthly">Monthly</option>
+          </select>
+          <div class="error-text" id="err-payrollFrequency">Please select your payroll frequency.</div>
+        </div>
+      </div>
+
+      <div class="info-box" id="employeeCountNote" style="display:none"></div>
+    </div>
+
+    <div class="card">
+      <div class="field-group">
+        <label>Do you have employees in more than one state? <span class="required">*</span></label>
+        <div class="radio-group horizontal" id="multiStateGroup">
+          <label class="radio-option" onclick="selectRadio('multiState','yes',this)">
+            <input type="radio" name="multiState" value="yes">
+            <div class="option-content"><span class="option-label">Yes</span></div>
+          </label>
+          <label class="radio-option" onclick="selectRadio('multiState','no',this)">
+            <input type="radio" name="multiState" value="no">
+            <div class="option-content"><span class="option-label">No</span></div>
+          </label>
+        </div>
+        <div class="error-text" id="err-multiState">Please answer this question.</div>
+        <div class="info-box" id="multiStateNote" style="display:none; margin-top:12px">
+          <strong>Multi-State Employer:</strong> This document governs your Section 125 Plan under federal law and your state of domicile. Some states have additional benefit laws that may apply to employees working in those states. This document will note that federal law governs and that state-specific laws may apply where your employees are located.
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-secondary" onclick="goToStep(2)">← Back</button>
+      <button class="btn btn-primary" onclick="goToStep(4)">Next: Eligibility & Benefits →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       STEP 4 — ELIGIBILITY & BENEFITS
+  ════════════════════════════════════════ -->
+  <div class="step-panel" id="step4">
+    <div class="step-counter">Step 4 of 6</div>
+    <h2 class="step-title">Eligibility & Benefits</h2>
+    <p class="step-subtitle">Define who is eligible and which benefits will be offered on a pre-tax basis.</p>
+
+    <div class="card">
+      <div class="field-row">
+        <div class="field-group">
+          <label>Full-Time Hours Per Week <span class="required">*</span></label>
+          <input type="number" id="fullTimeHours" placeholder="30" min="1" max="40">
+          <div class="helper-text">Under the ACA, 30 hours per week is the threshold for full-time status.</div>
+          <div class="error-text" id="err-fullTimeHours">Please enter valid full-time hours (1–40).</div>
+        </div>
+        <div class="field-group">
+          <label>Waiting Period <span class="required">*</span></label>
+          <select id="waitingPeriod" onchange="checkWaitingPeriod()">
+            <option value="">Select...</option>
+            <option value="No waiting period (coverage starts date of hire)">No waiting period (coverage starts date of hire)</option>
+            <option value="First of the month following date of hire">First of the month following date of hire</option>
+            <option value="First of the month following 30 days">First of the month following 30 days</option>
+            <option value="First of the month following 60 days">First of the month following 60 days</option>
+            <option value="30 days (coverage begins on the 31st day)">30 days (coverage begins on the 31st day)</option>
+            <option value="60 days (coverage begins on the 61st day)">60 days (coverage begins on the 61st day)</option>
+            <option value="90 days (coverage begins on the 91st day — maximum allowed under ACA)">90 days (coverage begins on the 91st day — maximum allowed under ACA)</option>
+          </select>
+          <div class="error-text" id="err-waitingPeriod">Please select a waiting period.</div>
+          <div class="warning-box" id="waitingPeriodWarning">
+            <strong>ACA Notice:</strong> The ACA generally prohibits waiting periods exceeding 90 days for group health plans. Please verify this waiting period complies with ACA requirements or consult your carrier.
+          </div>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Eligible Classes <span class="required">*</span></label>
+        <div class="checkbox-group" id="eligibleClassesGroup">
+          <label class="checkbox-option selected" onclick="toggleCheckbox(this, 'eligibleClasses', 'Full-Time')">
+            <input type="checkbox" name="eligibleClasses" value="Full-Time" checked>
+            <div class="option-content"><span class="option-label">Full-Time Employees</span></div>
+          </label>
+          <label class="checkbox-option" onclick="toggleCheckbox(this, 'eligibleClasses', 'Part-Time')">
+            <input type="checkbox" name="eligibleClasses" value="Part-Time">
+            <div class="option-content">
+              <span class="option-label">Part-Time Employees</span>
+              <span class="option-desc">Only if your plan and carrier allow part-time participation.</span>
+            </div>
+          </label>
+          <label class="checkbox-option" onclick="toggleCheckbox(this, 'eligibleClasses', 'Other')">
+            <input type="checkbox" name="eligibleClasses" value="Other">
+            <div class="option-content"><span class="option-label">Other (as defined by your plan)</span></div>
+          </label>
+        </div>
+        <div class="error-text" id="err-eligibleClasses">Please select at least one eligible class.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="field-group">
+        <label>Pre-Tax Benefits Offered <span class="required">*</span></label>
+        <p class="helper-text" style="margin-bottom:10px">Select all benefits that will be available on a pre-tax basis under this plan.</p>
+        <div class="checkbox-group" id="pretaxBenefitsGroup">
+          <label class="checkbox-option" onclick="toggleCheckbox(this,'pretaxBenefits','Medical');checkBenefitConflicts()">
+            <input type="checkbox" name="pretaxBenefits" value="Medical">
+            <div class="option-content"><span class="option-label">Medical</span></div>
+          </label>
+          <label class="checkbox-option" onclick="toggleCheckbox(this,'pretaxBenefits','Dental');checkBenefitConflicts()">
+            <input type="checkbox" name="pretaxBenefits" value="Dental">
+            <div class="option-content"><span class="option-label">Dental</span></div>
+          </label>
+          <label class="checkbox-option" onclick="toggleCheckbox(this,'pretaxBenefits','Vision');checkBenefitConflicts()">
+            <input type="checkbox" name="pretaxBenefits" value="Vision">
+            <div class="option-content"><span class="option-label">Vision</span></div>
+          </label>
+          <label class="checkbox-option" onclick="toggleCheckbox(this,'pretaxBenefits','Health FSA');checkBenefitConflicts();toggleFsaOptions()">
+            <input type="checkbox" name="pretaxBenefits" value="Health FSA">
+            <div class="option-content">
+              <span class="option-label">Health FSA (Flexible Spending Account)</span>
+              <span class="option-desc">Requires a separate FSA plan document for full administration.</span>
+            </div>
+          </label>
+          <label class="checkbox-option" onclick="toggleCheckbox(this,'pretaxBenefits','Dependent Care FSA');toggleFsaOptions()">
+            <input type="checkbox" name="pretaxBenefits" value="Dependent Care FSA">
+            <div class="option-content">
+              <span class="option-label">Dependent Care FSA</span>
+              <span class="option-desc">Requires a separate FSA plan document for full administration.</span>
+            </div>
+          </label>
+          <label class="checkbox-option" onclick="toggleCheckbox(this,'pretaxBenefits','HSA');checkBenefitConflicts()">
+            <input type="checkbox" name="pretaxBenefits" value="HSA">
+            <div class="option-content">
+              <span class="option-label">HSA (Health Savings Account)</span>
+            </div>
+          </label>
+        </div>
+        <div class="error-text" id="err-pretaxBenefits">Please select at least one benefit.</div>
+      </div>
+
+      <!-- HSA/FSA Conflict Warning -->
+      <div class="warning-box" id="hsaFsaWarning">
+        <strong>⚠ Important:</strong> A General Purpose Health FSA and HSA generally cannot be offered together under IRS rules. If you intend to offer both, your Health FSA must be structured as a <strong>Limited Purpose FSA</strong> covering only dental and vision expenses. Please confirm your plan design with your TPA or carrier before proceeding. You can always regenerate this document if your plan design changes.
+      </div>
+
+      <!-- FSA Options (conditional) -->
+      <div class="conditional" id="fsaOptionsSection">
+        <hr class="section-divider">
+        <div class="section-label">FSA Plan Design</div>
+
+        <div class="field-group">
+          <label>FSA Unused Funds Treatment <span class="required">*</span></label>
+          <div class="radio-group" id="fsaGracePeriodGroup">
+            <label class="radio-option" onclick="selectRadio('fsaGracePeriod','use-or-lose',this)">
+              <input type="radio" name="fsaGracePeriod" value="use-or-lose">
+              <div class="option-content">
+                <span class="option-label">Use It or Lose It</span>
+                <span class="option-desc">Unused FSA funds are forfeited at the end of the plan year. Standard IRS default.</span>
+              </div>
+            </label>
+            <label class="radio-option" onclick="selectRadio('fsaGracePeriod','grace-period',this)">
+              <input type="radio" name="fsaGracePeriod" value="grace-period">
+              <div class="option-content">
+                <span class="option-label">Grace Period</span>
+                <span class="option-desc">Employees have up to 2.5 months after the plan year ends to use remaining funds.</span>
+              </div>
+            </label>
+            <label class="radio-option" id="fsaRolloverOption" onclick="selectRadio('fsaGracePeriod','rollover',this)">
+              <input type="radio" name="fsaGracePeriod" value="rollover">
+              <div class="option-content">
+                <span class="option-label">Rollover / Carryover</span>
+                <span class="option-desc">Health FSA only. Employees may carry over up to the IRS-permitted amount to the next plan year. Not available for Dependent Care FSA.</span>
+              </div>
+            </label>
+            <label class="radio-option" onclick="selectRadio('fsaGracePeriod','administrator',this)">
+              <input type="radio" name="fsaGracePeriod" value="administrator">
+              <div class="option-content">
+                <span class="option-label">As established by FSA administrator</span>
+                <span class="option-desc">The FSA plan document and administrator govern unused funds treatment.</span>
+              </div>
+            </label>
+          </div>
+          <div class="error-text" id="err-fsaGracePeriod">Please select an FSA unused funds treatment.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-secondary" onclick="goToStep(3)">← Back</button>
+      <button class="btn btn-primary" onclick="goToStep(5)">Next: Administrator →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       STEP 5 — PLAN ADMINISTRATOR / SIGNER
+  ════════════════════════════════════════ -->
+  <div class="step-panel" id="step5">
+    <div class="step-counter">Step 5 of 6</div>
+    <h2 class="step-title">Plan Administrator & Authorized Signer</h2>
+    <p class="step-subtitle">This person will be named as Plan Administrator and Named Fiduciary, and will sign the document.</p>
+
+    <div class="info-box">
+      <strong>Important:</strong> The Plan Administrator should be an <strong>owner, officer, HR Director, or other person with authority to legally bind the company</strong>. An office manager or administrative assistant generally does not have this authority. If your situation changes, you can always regenerate a new document.
+    </div>
+
+    <div class="card">
+      <div class="field-row">
+        <div class="field-group">
+          <label>Full Name <span class="required">*</span></label>
+          <input type="text" id="signerName" placeholder="Jane Smith" autocomplete="name">
+          <div class="error-text" id="err-signerName">Please enter the administrator's name.</div>
+        </div>
+        <div class="field-group">
+          <label>Title / Position <span class="required">*</span></label>
+          <input type="text" id="signerTitle" placeholder="HR Director" autocomplete="organization-title">
+          <div class="error-text" id="err-signerTitle">Please enter the administrator's title.</div>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-group">
+          <label>Email Address <span class="required">*</span></label>
+          <input type="email" id="signerEmail" placeholder="jane@company.com" autocomplete="email">
+          <div class="error-text" id="err-signerEmail">Please enter a valid email address.</div>
+        </div>
+        <div class="field-group">
+          <label>Phone Number <span class="optional">(optional)</span></label>
+          <input type="tel" id="signerPhone" placeholder="(407) 555-1234" autocomplete="tel">
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-secondary" onclick="goToStep(4)">← Back</button>
+      <button class="btn btn-primary" onclick="goToStep(6)">Next: Review & Generate →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       STEP 6 — LEGAL & GENERATE
+  ════════════════════════════════════════ -->
+  <div class="step-panel" id="step6">
+    <div class="step-counter">Step 6 of 6</div>
+    <h2 class="step-title">Review, Acknowledge & Generate</h2>
+    <p class="step-subtitle">Please review and acknowledge the following before generating your plan document.</p>
+
+    <div class="card">
+      <div class="section-label">Acknowledgements</div>
+
+      <label class="legal-check" onclick="toggleLegal(this,'ackNoAdvice')">
+        <input type="checkbox" id="ackNoAdvice">
+        <div class="legal-check-text">
+          I agree to the legal and privacy notices. I understand that DK Benefits LLC is providing this document as a courtesy and does not provide legal, tax, or accounting advice. DK Benefits LLC cannot be held responsible for the accuracy of information entered, changes in applicable law, or the suitability of this document for my specific situation.
+        </div>
+      </label>
+
+      <label class="legal-check" onclick="toggleLegal(this,'ackNoRetro')">
+        <input type="checkbox" id="ackNoRetro">
+        <div class="legal-check-text">
+          I understand that this plan cannot be created retroactively. The effective date I have selected is today or in the future, and this plan will apply on a prospective basis only.
+        </div>
+      </label>
+
+      <label class="legal-check" onclick="toggleLegal(this,'ackAuthorized')">
+        <input type="checkbox" id="ackAuthorized">
+        <div class="legal-check-text">
+          I am authorized to adopt or restate this plan on behalf of the employer named above. I understand that by generating this document I am expressing my intent to adopt this Section 125 Plan, subject to physical execution of the signed document.
+        </div>
+      </label>
+
+      <label class="legal-check" onclick="toggleLegal(this,'ackComplex')">
+        <input type="checkbox" id="ackComplex">
+        <div class="legal-check-text">
+          I understand that this document provides a compliant and defensible Section 125 Plan framework. If my organization's benefit structure, funding arrangement, ownership, or other circumstances change materially, I will review and restate this plan document accordingly. DK Benefits LLC cannot be held responsible for changes in law or circumstances occurring after this document is generated.
+        </div>
+      </label>
+
+      <div class="error-text" id="err-legal" style="margin-top:8px">Please check all acknowledgement boxes to proceed.</div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Generate Your Document</div>
+      <p style="font-size:14px; color:var(--text-light); margin-bottom:20px;">
+        Click the button below to generate your Section 125 Plan Document. Once generated, print it, have the authorized signer sign and date it, and retain it in your plan records. <strong>The document takes effect only upon execution.</strong>
+      </p>
+
+      <button class="btn btn-generate" id="btnGenerate" onclick="submitForm()" style="width:100%">
+        Generate My Section 125 Plan Document
+      </button>
+
+      <p class="status-text" id="statusText" style="margin-top:16px; text-align:center"></p>
+      <a class="download-link" id="downloadLink" href="#" target="_blank">⬇ Download Your Section 125 Plan (PDF)</a>
+
+      <p class="regenerate-note" id="regenerateNote" style="display:none">
+        Need to make changes? Simply update your information and generate a new document at any time.
+      </p>
+    </div>
+
+    <div class="disclaimer-box">
+      <p><strong>Legal Note:</strong> This Section 125 document tool is provided free of charge by DK Benefits LLC as a courtesy to help employers better understand and organize their benefit plan documentation. While this document is designed to be compliant and defensible for employers with standard benefit structures, DK Benefits LLC cannot be held responsible for the accuracy of information entered, changes in applicable law, or the suitability of this document for your specific situation.</p>
+      <p>The information entered on this page is used solely to generate documents based on the employer's own selections and representations. DK Benefits LLC does not provide legal, tax, or accounting advice through this tool, and use of this tool does not create an attorney-client, fiduciary, or advisory relationship. The employer remains fully responsible for the accuracy and completeness of all information entered, the proper adoption and administration of its benefit plans, and compliance with all applicable laws.</p>
+      <p><strong>Privacy Note:</strong> The information you submit is stored securely and used only for document generation, administrative purposes, and reasonable business follow-up. We do not sell, rent, or share your data with third parties.</p>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-secondary" onclick="goToStep(5)">← Back</button>
+      <div></div>
+    </div>
+  </div>
+
+</div><!-- /form-container -->
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let currentStep = 1;
+const TOTAL_STEPS = 6;
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  // Set today as min date for effective date
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const todayStr = today.toISOString().split('T')[0];
+  document.getElementById('effectiveDate').min = todayStr;
+  document.getElementById('effectiveDate').value = todayStr;
+
+  // EIN auto-format
+  document.getElementById('ein').addEventListener('input', function() {
+    let val = this.value.replace(/\D/g,'');
+    if (val.length > 2) val = val.slice(0,2) + '-' + val.slice(2,9);
+    this.value = val;
+  });
+
+  // Phone auto-format helper
+  function autoFormatPhone(el) {
+    el.addEventListener('input', function() {
+      let val = this.value.replace(/\D/g,'');
+      if (val.length <= 3) {
+        this.value = val.length ? '(' + val : '';
+      } else if (val.length <= 6) {
+        this.value = '(' + val.slice(0,3) + ') ' + val.slice(3);
+      } else {
+        this.value = '(' + val.slice(0,3) + ') ' + val.slice(3,6) + '-' + val.slice(6,10);
+      }
+    });
+  }
+  autoFormatPhone(document.getElementById('phone'));
+  autoFormatPhone(document.getElementById('signerPhone'));
+
+  // Entity type triggers
+  document.querySelectorAll('input[name="entityType"]').forEach(r => {
+    r.addEventListener('change', handleEntityType);
+  });
+
+  // Funding type triggers
+  document.querySelectorAll('input[name="fundingType"]').forEach(r => {
+    r.addEventListener('change', handleFundingType);
+  });
+
+  // Owners participating warning
+  document.querySelectorAll('input[name="ownersParticipating"]').forEach(r => {
+    r.addEventListener('change', handleOwnersParticipating);
+  });
+
+  // Multi-state
+  document.querySelectorAll('input[name="multiState"]').forEach(r => {
+    r.addEventListener('change', handleMultiState);
+  });
+
+  updateProgressBar();
+});
+
+// ═══════════════════════════════════════════
+// RADIO / CHECKBOX HELPERS
+// ═══════════════════════════════════════════
+function selectRadio(name, value, labelEl) {
+  document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+    r.closest('.radio-option').classList.remove('selected');
+  });
+  labelEl.classList.add('selected');
+  clearError('err-' + name);
+}
+
+function toggleCheckbox(labelEl, name, value) {
+  const cb = labelEl.querySelector('input[type="checkbox"]');
+  cb.checked = !cb.checked;
+  labelEl.classList.toggle('selected', cb.checked);
+  clearError('err-' + name);
+}
+
+function toggleLegal(labelEl, id) {
+  const cb = document.getElementById(id);
+  cb.checked = !cb.checked;
+  labelEl.classList.toggle('checked', cb.checked);
+  clearError('err-legal');
+}
+
+// ═══════════════════════════════════════════
+// CONDITIONAL HANDLERS
+// ═══════════════════════════════════════════
+function handleEntityType() {
+  const val = getRadioValue('entityType');
+  const llcSection = document.getElementById('llcSCorpSection');
+  const ownersSection = document.getElementById('ownersParticipatingSection');
+
+  // Show LLC S-Corp question only for LLC
+  if (val === 'llc') {
+    llcSection.classList.add('visible');
+  } else {
+    llcSection.classList.remove('visible');
+    document.querySelectorAll('input[name="llcSCorp"]').forEach(r => r.checked = false);
+    document.querySelectorAll('.radio-option input[name="llcSCorp"]').forEach(r => {
+      r.closest('.radio-option').classList.remove('selected');
+    });
+  }
+
+  // Show owners question for entity types where it matters
+  const showOwners = ['s-corp','llc','partnership','sole-prop'].includes(val);
+  if (showOwners) {
+    ownersSection.classList.add('visible');
+  } else {
+    ownersSection.classList.remove('visible');
+  }
+}
+
+function handleOwnersParticipating() {
+  const val = getRadioValue('ownersParticipating');
+  const warn = document.getElementById('ownersWarning');
+  if (val === 'yes') {
+    warn.classList.add('visible');
+  } else {
+    warn.classList.remove('visible');
+  }
+}
+
+function togglePriorAdoption(show) {
+  const sec = document.getElementById('priorAdoptionSection');
+  if (show) sec.classList.add('visible');
+  else {
+    sec.classList.remove('visible');
+    document.getElementById('priorAdoptionMonthYear').value = '';
+  }
+  clearError('err-priorPlan');
+}
+
+function handlePlanYearType() {
+  const val = document.getElementById('planYearType').value;
+  const sec = document.getElementById('customDatesSection');
+  if (val === 'custom') {
+    sec.classList.add('visible');
+  } else {
+    sec.classList.remove('visible');
+    document.getElementById('planYearStartMonth').value = '';
+    document.getElementById('planYearStartDay').value = '';
+    document.getElementById('planYearEndMonth').value = '';
+    document.getElementById('planYearEndDay').value = '';
+  }
+  clearError('err-planYearType');
+  checkShortPlanYear();
+}
+
+function checkShortPlanYear() {
+  const effDate = document.getElementById('effectiveDate').value;
+  const planYearType = document.getElementById('planYearType').value;
+  const note = document.getElementById('shortPlanYearNote');
+  if (!effDate || !planYearType) { note.style.display = 'none'; return; }
+
+  const eff = new Date(effDate + 'T00:00:00');
+  let isShort = false;
+
+  if (planYearType === 'calendar') {
+    // Short year if effective date is after Jan 1 of the same year
+    const jan1 = new Date(eff.getFullYear(), 0, 1);
+    if (eff > jan1) isShort = true;
+  } else if (planYearType === 'custom') {
+    const startMonth = parseInt(document.getElementById('planYearStartMonth').value);
+    const startDay = parseInt(document.getElementById('planYearStartDay').value);
+    if (startMonth && startDay) {
+      // Check if effective date is after the plan year start in the current year
+      const pyStartThisYear = new Date(eff.getFullYear(), startMonth - 1, startDay);
+      if (eff > pyStartThisYear) isShort = true;
+    }
+  }
+
+  note.style.display = isShort ? 'block' : 'none';
+}
+
+function handleFundingType() {
+  const val = getRadioValue('fundingType');
+  const note = document.getElementById('fundingNote');
+  if (val === 'level-funded' || val === 'self-funded') {
+    note.style.display = 'block';
+  } else {
+    note.style.display = 'none';
+  }
+  clearError('err-fundingType');
+}
+
+function handleEmployeeCount() {
+  const val = document.getElementById('employeeCount').value;
+  const note = document.getElementById('employeeCountNote');
+
+  if (val === '50-99' || val === '100-499' || val === '500+') {
+    note.style.display = 'block';
+    if (val === '50-99') {
+      note.innerHTML = '<strong>50+ Employees:</strong> Your organization is likely subject to FMLA (Family and Medical Leave Act), which interacts with Section 125 election rules. The document will include applicable FMLA language. You are also an Applicable Large Employer (ALE) under the ACA. If your situation changes, you can always regenerate this document.';
+    } else if (val === '100-499') {
+      note.innerHTML = '<strong>100+ Employees:</strong> Nondiscrimination testing becomes more significant at your organization size. Consider working with a qualified TPA to ensure annual testing is properly managed. FMLA and ALE provisions will be included in your document.';
+    } else {
+      note.innerHTML = '<strong>500+ Employees:</strong> At your organization size, we strongly recommend working with a qualified benefits attorney or TPA to supplement this document. Nondiscrimination testing, FMLA, and ACA compliance are all significant considerations. This document provides a solid foundation.';
+    }
+  } else {
+    note.style.display = 'none';
+  }
+  clearError('err-employeeCount');
+}
+
+function handleMultiState() {
+  const val = getRadioValue('multiState');
+  const note = document.getElementById('multiStateNote');
+  if (val === 'yes') {
+    note.style.display = 'block';
+  } else {
+    note.style.display = 'none';
+  }
+  clearError('err-multiState');
+}
+
+function checkWaitingPeriod() {
+  const val = document.getElementById('waitingPeriod').value;
+  const warn = document.getElementById('waitingPeriodWarning');
+  // Only the 90-day option hits the ACA max — it's already labeled as such
+  // No additional warning needed since the label itself informs the user
+  warn.classList.remove('visible');
+  clearError('err-waitingPeriod');
+}
+
+function checkBenefitConflicts() {
+  const benefits = getCheckedValues('pretaxBenefits');
+  const hasHsa = benefits.includes('HSA');
+  const hasHealthFsa = benefits.includes('Health FSA');
+  const warn = document.getElementById('hsaFsaWarning');
+  warn.classList.toggle('visible', hasHsa && hasHealthFsa);
+}
+
+function toggleFsaOptions() {
+  const benefits = getCheckedValues('pretaxBenefits');
+  const hasHealthFsa = benefits.includes('Health FSA');
+  const hasDcFsa = benefits.includes('Dependent Care FSA');
+  const hasFsa = hasHealthFsa || hasDcFsa;
+  const sec = document.getElementById('fsaOptionsSection');
+  if (hasFsa) sec.classList.add('visible');
+  else sec.classList.remove('visible');
+
+  // IRS carryover relief applies to Health FSAs only — never Dependent Care FSA.
+  const rolloverOpt = document.getElementById('fsaRolloverOption');
+  if (rolloverOpt) {
+    rolloverOpt.style.display = hasHealthFsa ? '' : 'none';
+    if (!hasHealthFsa) {
+      const rolloverRadio = rolloverOpt.querySelector('input[type="radio"]');
+      if (rolloverRadio && rolloverRadio.checked) {
+        rolloverRadio.checked = false;
+        rolloverOpt.classList.remove('selected');
+      }
+    }
+  }
+
+  // If FSA section is hidden, clear any unused-funds selection so it cannot leak into payload.
+  if (!hasFsa) {
+    document.querySelectorAll('input[name="fsaGracePeriod"]').forEach(r => {
+      r.checked = false;
+      const lab = r.closest('.radio-option');
+      if (lab) lab.classList.remove('selected');
+    });
+  }
+}
+
+// ═══════════════════════════════════════════
+// NAVIGATION & VALIDATION
+// ═══════════════════════════════════════════
+function goToStep(step) {
+  if (step > currentStep) {
+    if (!validateStep(currentStep)) return;
+  }
+  document.getElementById(`step${currentStep}`).classList.remove('active');
+  currentStep = step;
+  document.getElementById(`step${currentStep}`).classList.add('active');
+updateProgressBar();
+window.scrollTo({ top: 0, behavior: 'smooth' });
+window.parent.postMessage({ type: 'section125_scrollTop' }, '*');
+}
+
+function updateProgressBar() {
+  const dots = document.querySelectorAll('.step-dot');
+  dots.forEach((dot, i) => {
+    const stepNum = i + 1;
+    dot.classList.remove('active','completed');
+    if (stepNum === currentStep) dot.classList.add('active');
+    else if (stepNum < currentStep) dot.classList.add('completed');
+  });
+
+  // Progress line width
+  const pct = ((currentStep - 1) / (TOTAL_STEPS - 1)) * 100;
+  document.getElementById('progressLine').style.width = pct + '%';
+}
+
+function validateStep(step) {
+  let valid = true;
+
+  if (step === 1) {
+    valid = requireField('companyName') && valid;
+    valid = requireEIN() && valid;
+    valid = requireField('planNumber') && valid;
+    valid = requireField('address1') && valid;
+    valid = requireField('city') && valid;
+    valid = requireSelect('state') && valid;
+    valid = requireField('zip') && valid;
+    valid = requireField('phone') && valid;
+    valid = requireRadio('entityType') && valid;
+
+    const entityType = getRadioValue('entityType');
+    if (entityType === 'llc') {
+      valid = requireRadio('llcSCorp') && valid;
+    }
+    if (['s-corp','llc','partnership','sole-prop'].includes(entityType)) {
+      valid = requireRadio('ownersParticipating') && valid;
+    }
+  }
+
+  if (step === 2) {
+    valid = requireDateNotPast('effectiveDate') && valid;
+    valid = requireSelect('planYearType', 'err-planYearType') && valid;
+    if (document.getElementById('planYearType').value === 'custom') {
+      const sm = document.getElementById('planYearStartMonth').value;
+      const sd = document.getElementById('planYearStartDay').value;
+      const em = document.getElementById('planYearEndMonth').value;
+      const ed = document.getElementById('planYearEndDay').value;
+      if (!sm || !sd) { showError('err-planYearStart'); valid = false; }
+      else clearError('err-planYearStart');
+      if (!em || !ed) { showError('err-planYearEnd'); valid = false; }
+      else clearError('err-planYearEnd');
+    }
+    valid = requireRadio('priorPlan') && valid;
+    if (getRadioValue('priorPlan') === 'yes') {
+      valid = requireField('priorAdoptionMonthYear') && valid;
+    }
+  }
+
+  if (step === 3) {
+    valid = requireRadio('fundingType') && valid;
+    valid = requireSelectById('employeeCount') && valid;
+    valid = requireSelectById('payrollFrequency') && valid;
+    valid = requireRadio('multiState') && valid;
+  }
+
+  if (step === 4) {
+    valid = requireNumber('fullTimeHours', 1, 40) && valid;
+    valid = requireSelectById('waitingPeriod') && valid;
+    valid = requireAtLeastOneCheckbox('eligibleClasses') && valid;
+    valid = requireAtLeastOneCheckbox('pretaxBenefits') && valid;
+    const benefits = getCheckedValues('pretaxBenefits');
+    const hasFsa = benefits.includes('Health FSA') || benefits.includes('Dependent Care FSA');
+    if (hasFsa) valid = requireRadio('fsaGracePeriod') && valid;
+  }
+
+  if (step === 5) {
+    valid = requireField('signerName') && valid;
+    valid = requireField('signerTitle') && valid;
+    valid = requireEmail('signerEmail') && valid;
+  }
+
+  if (step === 6) {
+    const allChecked = ['ackNoAdvice','ackNoRetro','ackAuthorized','ackComplex'].every(id => document.getElementById(id).checked);
+    if (!allChecked) {
+      showError('err-legal');
+      valid = false;
+    }
+  }
+
+  return valid;
+}
+
+// ═══════════════════════════════════════════
+// VALIDATION HELPERS
+// ═══════════════════════════════════════════
+function requireField(id, errId) {
+  errId = errId || 'err-' + id;
+  const val = (document.getElementById(id).value || '').trim();
+  if (!val) { showError(errId); return false; }
+  clearError(errId); return true;
+}
+
+function requireEIN() {
+  const val = document.getElementById('ein').value;
+  const pattern = /^\d{2}-\d{7}$/;
+  if (!pattern.test(val)) { showError('err-ein'); return false; }
+  clearError('err-ein'); return true;
+}
+
+function requireSelect(id, errId) {
+  errId = errId || 'err-' + id;
+  const val = document.getElementById(id).value;
+  if (!val) { showError(errId); return false; }
+  clearError(errId); return true;
+}
+
+function requireSelectById(id) {
+  return requireSelect(id, 'err-' + id);
+}
+
+function requireDateNotPast(id) {
+  const val = document.getElementById(id).value;
+  if (!val) { showError('err-' + id); return false; }
+  const today = new Date(); today.setHours(0,0,0,0);
+  const selected = new Date(val + 'T00:00:00');
+  if (selected < today) { showError('err-' + id); return false; }
+  clearError('err-' + id); return true;
+}
+
+function requireRadio(name) {
+  const val = getRadioValue(name);
+  if (!val) { showError('err-' + name); return false; }
+  clearError('err-' + name); return true;
+}
+
+function requireNumber(id, min, max) {
+  const val = parseFloat(document.getElementById(id).value);
+  if (!Number.isFinite(val) || val < min || val > max) { showError('err-' + id); return false; }
+  clearError('err-' + id); return true;
+}
+
+function requireEmail(id) {
+  const val = (document.getElementById(id).value || '').trim();
+  const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!pattern.test(val)) { showError('err-' + id); return false; }
+  clearError('err-' + id); return true;
+}
+
+function requireAtLeastOneCheckbox(name) {
+  const vals = getCheckedValues(name);
+  if (!vals.length) { showError('err-' + name); return false; }
+  clearError('err-' + name); return true;
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  if (el) { el.classList.add('visible'); if (msg) el.textContent = msg; }
+}
+
+function clearError(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('visible');
+}
+
+function getRadioValue(name) {
+  const checked = document.querySelector(`input[name="${name}"]:checked`);
+  return checked ? checked.value : '';
+}
+
+function getCheckedValues(name) {
+  return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(c => c.value);
+}
+
+// ═══════════════════════════════════════════
+// OE DATE CALCULATOR
+// ═══════════════════════════════════════════
+function calcOEDates(planYearStartStr, planYearType, oeDays) {
+  let pyStart;
+  if (planYearType === 'calendar') {
+    const effDate = document.getElementById('effectiveDate').value;
+    const year = effDate ? new Date(effDate + 'T00:00:00').getFullYear() : new Date().getFullYear();
+    pyStart = new Date(year, 0, 1); // Jan 1
+    // If effective date is after Jan 1 of this year, use next year
+    if (new Date(effDate + 'T00:00:00') > pyStart) {
+      pyStart = new Date(year + 1, 0, 1);
+    }
+  } else {
+    pyStart = new Date(planYearStartStr + 'T00:00:00');
+  }
+
+  const oeEnd = new Date(pyStart);
+  oeEnd.setDate(oeEnd.getDate() - 1);
+
+  const oeStart = new Date(pyStart);
+  oeStart.setDate(oeStart.getDate() - parseInt(oeDays));
+
+  const fmt = (d) => d.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+  return { oeStart: fmt(oeStart), oeEnd: fmt(oeEnd) };
+}
+
+// ═══════════════════════════════════════════
+// FORM SUBMISSION
+// ═══════════════════════════════════════════
+async function submitForm() {
+  if (!validateStep(6)) return;
+
+  const btn = document.getElementById('btnGenerate');
+  const status = document.getElementById('statusText');
+  const dl = document.getElementById('downloadLink');
+  const regenNote = document.getElementById('regenerateNote');
+
+  btn.disabled = true;
+  dl.classList.remove('visible');
+  regenNote.style.display = 'none';
+  status.textContent = 'Saving your information...';
+
+  try {
+    const planYearType = document.getElementById('planYearType').value;
+
+    // Build plan year strings from month/day selectors
+    const monthNames = ['','January','February','March','April','May','June',
+                        'July','August','September','October','November','December'];
+
+    let planYearStartStr = null;
+    let planYearEndStr = null;
+    let planYearStartMonthDay = null;
+    let planYearEndMonthDay = null;
+
+    if (planYearType === 'custom') {
+      const sm = parseInt(document.getElementById('planYearStartMonth').value);
+      const sd = parseInt(document.getElementById('planYearStartDay').value);
+      const em = parseInt(document.getElementById('planYearEndMonth').value);
+      const ed = parseInt(document.getElementById('planYearEndDay').value);
+      planYearStartMonthDay = `${monthNames[sm]} ${sd}`;
+      planYearEndMonthDay = `${monthNames[em]} ${ed}`;
+      // For OE calculation use current/next year
+      const effYear = new Date(document.getElementById('effectiveDate').value + 'T00:00:00').getFullYear();
+      planYearStartStr = `${effYear}-${String(sm).padStart(2,'0')}-${String(sd).padStart(2,'0')}`;
+    }
+
+    // Short plan year detection
+    const effDate = document.getElementById('effectiveDate').value;
+    const eff = new Date(effDate + 'T00:00:00');
+    let shortPlanYear = false;
+    if (planYearType === 'calendar') {
+      const jan1 = new Date(eff.getFullYear(), 0, 1);
+      if (eff > jan1) shortPlanYear = true;
+    } else if (planYearType === 'custom' && planYearStartStr) {
+      const pyStart = new Date(planYearStartStr + 'T00:00:00');
+      if (eff > pyStart) shortPlanYear = true;
+    }
+
+    const oeDays = parseInt(getRadioValue('oeWindow')) || 30;
+    const { oeStart, oeEnd } = calcOEDates(planYearStartStr, planYearType, oeDays);
+
+    const record = {
+      companyName: document.getElementById('companyName').value.trim(),
+      ein: document.getElementById('ein').value.trim(),
+      planNumber: document.getElementById('planNumber').value.trim() || '501',
+      address1: document.getElementById('address1').value.trim(),
+      city: document.getElementById('city').value.trim(),
+      state: document.getElementById('state').value,
+      zip: document.getElementById('zip').value.trim(),
+      contactPhone: document.getElementById('phone').value.trim(),
+      entityType: getRadioValue('entityType'),
+      llcTaxedAsSCorp: getRadioValue('llcSCorp') === 'yes',
+      ownersParticipating: getRadioValue('ownersParticipating') === 'yes',
+      effectiveDate: document.getElementById('effectiveDate').value,
+      planYearType,
+      planYearStartMonthDay,
+      planYearEndMonthDay,
+      planYearStartStr,
+      shortPlanYear,
+      oeWindowDays: oeDays,
+      oeStartDate: oeStart,
+      oeEndDate: oeEnd,
+      newHireEnrollmentWindow: parseInt(getRadioValue('newHireWindow')) || 30,
+      priorPlan: getRadioValue('priorPlan') === 'yes',
+      priorAdoptionMonthYear: document.getElementById('priorAdoptionMonthYear').value.trim(),
+      medicalFundingType: getRadioValue('fundingType'),
+      employeeCount: document.getElementById('employeeCount').value,
+      payrollFrequency: document.getElementById('payrollFrequency').value,
+      multiState: getRadioValue('multiState') === 'yes',
+      fullTimeHours: parseFloat(document.getElementById('fullTimeHours').value),
+      waitingPeriod: document.getElementById('waitingPeriod').value,
+      eligibleClasses: JSON.stringify(getCheckedValues('eligibleClasses')),
+      pretaxBenefits: JSON.stringify(getCheckedValues('pretaxBenefits')),
+      fsaGracePeriodType: getRadioValue('fsaGracePeriod'),
+      signerName: document.getElementById('signerName').value.trim(),
+      signerTitle: document.getElementById('signerTitle').value.trim(),
+      contactEmail: document.getElementById('signerEmail').value.trim(),
+      contactPhone2: document.getElementById('signerPhone').value.trim(),
+      ackNoAdvice: true,
+      ackNoRetroCreate: true,
+      ackAuthorized: true,
+      title: `${document.getElementById('companyName').value.trim()} – Section 125 – ${new Date().toISOString().slice(0,10)}`
+    };
+
+    // Send data to Wix page via postMessage (bypasses CORS)
+    status.textContent = 'Generating your plan document...';
+
+    window.parent.postMessage({
+      type: 'section125_generate',
+      record: record
+    }, '*');
+
+    // Response will come back via message event listener below
+
+  } catch (err) {
+    console.error(err);
+    status.textContent = err.message || 'Something went wrong. Please try again.';
+    status.style.color = 'var(--error)';
+    btn.disabled = false;
+  }
+}
+
+// ═══════════════════════════════════════════
+// LISTEN FOR RESPONSE FROM WIX PAGE CODE
+// ═══════════════════════════════════════════
+window.addEventListener('message', function(event) {
+  const btn = document.getElementById('btnGenerate');
+  const status = document.getElementById('statusText');
+  const dl = document.getElementById('downloadLink');
+  const regenNote = document.getElementById('regenerateNote');
+
+  if (!event.data || event.data.type !== 'section125_result') return;
+
+  if (event.data.error) {
+    status.textContent = event.data.error;
+    status.style.color = 'var(--error)';
+    btn.disabled = false;
+    return;
+  }
+
+if (event.data.downloadUrl) {
+    dl.href = event.data.downloadUrl;
+    dl.textContent = '⬇ Download Your Section 125 Plan (PDF)';
+    dl.target = '_blank';
+    dl.rel = 'noopener noreferrer';
+    dl.onclick = null;
+    dl.classList.add('visible');
+    regenNote.style.display = 'block';
+    status.textContent = '✓ Your Section 125 Plan is ready!';
+    status.style.color = 'var(--success)';
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
