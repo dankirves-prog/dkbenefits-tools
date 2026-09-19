@@ -690,8 +690,8 @@
     <div class="step-subtitle">This version is for private-employer ERISA welfare plans only. Fiduciary roles must be explicitly identified.</div>
 
     <div class="warn-box">
-      <strong>Scope limitation</strong>
-      Governmental plans, church or church-related plans, and arrangements of uncertain ERISA status are not supported in this version. If your plan falls into one of those categories, stop here.
+      <strong>Scope limitation:</strong>
+      This tool builds an ERISA wrap plan document and summary plan description for private-employer welfare plans. Governmental plans and church or church-related plans are generally not subject to ERISA, so an ERISA wrap is not the right document. Arrangements of uncertain ERISA status are also not supported — confirm status before using this tool.
     </div>
 
     <div class="section-divider">ERISA Applicability</div>
@@ -705,27 +705,29 @@
           </label>
           <label class="radio-option">
             <input type="radio" name="erisaApplicability" value="governmental"/>
-            <div><div class="opt-label">Governmental plan</div><div class="opt-desc">Federal, state, or local government employer. Not supported in this version.</div></div>
+            <div><div class="opt-label">Governmental plan</div><div class="opt-desc">Federal, state, or local government employer. Generally not subject to ERISA; an ERISA wrap is not the right document.</div></div>
           </label>
           <label class="radio-option">
             <input type="radio" name="erisaApplicability" value="church"/>
-            <div><div class="opt-label">Church or church-related plan</div><div class="opt-desc">Not supported in this version.</div></div>
+            <div><div class="opt-label">Church or church-related plan</div><div class="opt-desc">Generally not subject to ERISA unless the plan has elected ERISA coverage. Not supported here.</div></div>
           </label>
           <label class="radio-option">
             <input type="radio" name="erisaApplicability" value="other"/>
-            <div><div class="opt-label">Other / nonstandard arrangement</div><div class="opt-desc">Not supported in this version.</div></div>
+            <div><div class="opt-label">Other / nonstandard arrangement</div><div class="opt-desc">ERISA status may be unclear. Do not use this tool until status is confirmed.</div></div>
           </label>
           <label class="radio-option">
             <input type="radio" name="erisaApplicability" value="unsure"/>
-            <div><div class="opt-label">Not sure</div><div class="opt-desc">Please confirm ERISA status before proceeding.</div></div>
+            <div><div class="opt-label">Not sure</div><div class="opt-desc">Confirm whether ERISA applies before continuing.</div></div>
           </label>
         </div>
       </div>
     </div>
 
     <div id="erisaStopBlock" class="stop-box conditional">
-      <strong>Not supported in this version</strong>
-      This tool only generates documents for private-employer ERISA welfare plans. Please use a qualified ERISA attorney or a different tool for your plan type.
+      <strong>Why this tool doesn’t apply</strong>
+      Governmental plans and church or church-related plans are generally not subject to ERISA (church plans that have elected ERISA coverage under Code §410(d) are uncommon and still not supported here). This generator creates an ERISA wrap / SPD for private-employer welfare plans, so it is the wrong document for those arrangements.<br/><br/>
+      You may still need other materials under different rules (for example state law, carrier certificates, or a Section 125 cafeteria plan if you use pre-tax deductions). Those are separate from an ERISA wrap.<br/><br/>
+      If you are unsure whether ERISA applies, confirm plan status with counsel or your advisor before using any wrap document tool.
     </div>
 
     <div class="section-divider">Plan Administrator
@@ -1798,6 +1800,12 @@ document.querySelectorAll('input[name="eligClasses"]').forEach(cb => {
   <a id="downloadLink" class="btn-download" href="#" target="_blank">
     Download Wrap Plan PDF
   </a>
+  <div class="mini-note" style="text-align:left; margin:16px auto 0; max-width:560px;">
+    <strong style="display:block; margin-bottom:4px;">What this PDF is</strong>
+    An ERISA wrap plan document / summary plan description shell for a private-employer welfare plan. It supplies ERISA-required framework language and incorporates your carrier and administrator materials by reference.
+    <strong style="display:block; margin:10px 0 4px;">What this PDF is not</strong>
+    It is not a substitute for certificates of coverage, evidence of coverage, TPA booklets, schedules, or riders. Those underlying materials must still exist and be distributed with this wrap. This tool also does not replace legal advice, Form 5500 filing, or required notices — the employer remains responsible for adoption and compliance.
+  </div>
   <div id="section125Nudge" style="display:none; margin-top:20px; text-align:center; font-family:Arial,sans-serif; font-size:0.82rem; color:#2c3e55; line-height:1.6;">
     If you also need a Section 125 Plan Document, you can build one for free using our Section 125 Plan Builder tool.<br/>
     <a href="https://www.dkbenefits.net/section125plantool" target="_blank" style="color:#1a2e4a; font-weight:bold; text-decoration:underline;">
