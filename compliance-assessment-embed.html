@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Employee Benefits Compliance Assessment</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    background: transparent;
+  }
+  iframe {
+    border: 0;
+    width: 100%;
+    display: block;
+    min-height: 450px;
+    height: 450px;
+  }
+</style>
+</head>
+<body>
+<iframe id="formFrame" title="Employee Benefits Compliance Assessment" allow="clipboard-write"></iframe>
+<script>
+var PAGES_SRC = 'https://dankirves-prog.github.io/dkbenefits-tools/compliance-assessment.html';
+var frame = document.getElementById('formFrame');
+var local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+frame.src = local ? 'compliance-assessment.html' : PAGES_SRC;
+
+var MIN_H = 450;
+window.addEventListener('message', function(e) {
+  if (e.source === frame.contentWindow) {
+    if (e.data && e.data.type === 'resize' && typeof e.data.height === 'number') {
+      var h = Math.max(MIN_H, Math.round(e.data.height));
+      frame.style.height = h + 'px';
+    }
+    window.parent.postMessage(e.data, '*');
+  } else if (e.source === window.parent) {
+    frame.contentWindow.postMessage(e.data, '*');
+  }
+});
+</script>
+</body>
+</html>

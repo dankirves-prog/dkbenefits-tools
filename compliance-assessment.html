@@ -1,0 +1,2283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Employee Benefits Compliance Assessment | DK Benefits</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap');
+
+  :root {
+    --navy: #1a2e4a;
+    --navy-deep: #111f33;
+    --navy-mid: #243a58;
+    --gold: #c8a951;
+    --gold-lt: #e8d08a;
+    --white: #ffffff;
+    --off-white: #f7f9fc;
+    --light: #e8edf3;
+    --line: #e2eaf5;
+    --mid: #6b7f96;
+    --text: #1a2e4a;
+    --text-body: #2c3e55;
+    --blue: #2563c4;
+    --err: #b91c1c;
+    --ok: #15803d;
+    --warn: #b45309;
+    --radius: 12px;
+    --shadow: 0 4px 20px rgba(26,46,74,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--off-white);
+    color: var(--text);
+    padding: 16px 12px 32px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  body.embedded {
+    background: transparent;
+    padding: 0;
+  }
+
+  .app-shell {
+    max-width: 820px;
+    margin: 0 auto;
+  }
+
+  /* ── QUIZ ── */
+  .quiz-wrapper {
+    background: var(--white);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--line);
+    overflow: hidden;
+    width: 100%;
+    min-height: 480px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .progress-track {
+    height: 4px;
+    background: #e8edf5;
+    width: 100%;
+  }
+  .progress-fill {
+    height: 4px;
+    background: linear-gradient(90deg, var(--navy), var(--navy-mid));
+    border-radius: 0 2px 2px 0;
+    transition: width 0.35s ease;
+    width: 0%;
+  }
+
+  .quiz-header {
+    background: var(--navy);
+    padding: 16px 28px 14px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 3px solid var(--gold);
+  }
+  .quiz-header-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 17px;
+    color: #f4f7fb;
+    letter-spacing: 0.2px;
+    line-height: 1.3;
+  }
+  .quiz-header-sub {
+    font-size: 12px;
+    color: #9aafc4;
+    margin-top: 3px;
+    font-weight: 400;
+  }
+  .quiz-header-meta {
+    font-size: 12px;
+    color: #9aafc4;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .quiz-header-meta .step-label {
+    display: block;
+    color: var(--gold-lt);
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .quiz-header-meta .final-hint {
+    color: var(--gold);
+    font-weight: 600;
+  }
+
+  .intro-banner {
+    background: #f4f7fb;
+    border-bottom: 1px solid var(--line);
+    padding: 12px 28px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .intro-banner-text {
+    font-size: 13px;
+    color: #3a4a5c;
+    line-height: 1.5;
+  }
+  .intro-banner-text strong { color: var(--navy); font-weight: 600; }
+  .intro-banner-privacy {
+    font-size: 11px;
+    color: #6b8aaa;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .question-area { padding: 22px 28px 6px; flex: 1; }
+  .question-text {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.5;
+    margin-bottom: 6px;
+  }
+  .question-helper {
+    font-size: 12px;
+    color: var(--mid);
+    margin-bottom: 16px;
+    line-height: 1.5;
+    background: #f8fafc;
+    border-left: 3px solid var(--gold);
+    padding: 8px 12px;
+    border-radius: 0 6px 6px 0;
+  }
+  .question-multiselect-hint {
+    font-size: 11px;
+    color: var(--navy);
+    font-weight: 600;
+    margin-bottom: 10px;
+    margin-top: -4px;
+  }
+
+  .options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .option-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    background: var(--white);
+    user-select: none;
+    outline: none;
+  }
+  .option-card:hover {
+    border-color: #c5d0e0;
+    background: #f4f7fb;
+  }
+  .option-card:focus-visible {
+    border-color: var(--navy);
+    box-shadow: 0 0 0 3px rgba(26,46,74,0.18);
+  }
+  .option-card.selected {
+    border-color: var(--navy);
+    background: var(--navy);
+    box-shadow: 0 2px 10px rgba(26,46,74,0.18);
+  }
+  .option-radio {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid #c5d0e0;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--white);
+  }
+  .option-card.multi .option-radio { border-radius: 4px; }
+  .option-card.selected .option-radio {
+    border-color: var(--gold);
+    background: rgba(255,255,255,0.12);
+  }
+  .option-radio-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gold);
+    opacity: 0;
+  }
+  .option-card.multi .option-radio-dot { border-radius: 1px; }
+  .option-card.selected .option-radio-dot { opacity: 1; }
+  .option-label {
+    font-size: 14px;
+    color: var(--text-body);
+    line-height: 1.4;
+  }
+  .option-card.selected .option-label {
+    color: var(--white);
+    font-weight: 500;
+  }
+
+  .validation-msg {
+    font-size: 12px;
+    color: var(--err);
+    padding: 4px 0 0 2px;
+    min-height: 20px;
+  }
+
+  .nav-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 28px 18px;
+    border-top: 1px solid #f0f4fb;
+    margin-top: auto;
+    gap: 8px;
+  }
+  .btn-back, .btn-next {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    outline: none;
+  }
+  .btn-back {
+    padding: 9px 18px;
+    background: #f0f4fb;
+    color: #4a6080;
+    border: 1.5px solid var(--line);
+  }
+  .btn-back:hover { background: var(--light); }
+  .btn-back:focus-visible { box-shadow: 0 0 0 3px rgba(26,46,74,0.2); }
+  .btn-back:disabled { opacity: 0.4; cursor: default; }
+  .btn-next {
+    padding: 9px 22px;
+    background: var(--navy);
+    color: var(--white);
+    border: none;
+    box-shadow: 0 2px 8px rgba(26,46,74,0.22);
+  }
+  .btn-next:hover { background: var(--navy-mid); }
+  .btn-next:focus-visible { box-shadow: 0 0 0 3px rgba(200,169,81,0.45); }
+  .progress-label {
+    font-size: 12px;
+    color: #8aa3be;
+    text-align: center;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* ── RESULTS ── */
+  #resultsView { display: none; }
+  #resultsView.is-visible { display: block; }
+  #quizView.is-hidden { display: none; }
+
+  .no-data-notice {
+    font-size: 12px;
+    color: var(--ok);
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 8px 14px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+  }
+
+  .snapshot-card {
+    border-radius: 14px;
+    margin-bottom: 24px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    border: 1px solid #d0ddf0;
+    background: var(--white);
+  }
+  .snapshot-header {
+    background: var(--white);
+    border-bottom: 3px solid var(--gold);
+    padding: 18px 22px 14px;
+  }
+  .snapshot-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--navy);
+    margin-bottom: 14px;
+  }
+  .snapshot-alert {
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .snapshot-alert-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; color: #b45309; }
+  .snapshot-alert-text { font-size: 13px; color: #92400e; line-height: 1.5; font-weight: 500; }
+  .snapshot-alert-sub  { font-size: 11px; color: #b45309; margin-top: 3px; font-weight: 400; }
+  .snapshot-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 10px;
+    margin-bottom: 16px;
+  }
+  .snapshot-item {
+    font-size: 12px;
+    color: #3a4a5c;
+    padding: 9px 11px;
+    background: #f4f7fc;
+    border-radius: 8px;
+    border-left: 3px solid #c5d0e0;
+  }
+  .snapshot-item strong {
+    display: block;
+    color: var(--navy);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 2px;
+    font-weight: 600;
+  }
+  .snapshot-item.status-good   { border-left-color: #22c55e; background: #f0fdf4; }
+  .snapshot-item.status-warn   { border-left-color: #f59e0b; background: #fffbeb; }
+  .snapshot-item.status-alert  { border-left-color: #ef4444; background: #fef2f2; }
+
+  .readiness-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1.5px solid;
+  }
+  .readiness-row.score-strong { background: #f0fdf4; border-color: #86efac; }
+  .readiness-row.score-good   { background: #eff6ff; border-color: #93c5fd; }
+  .readiness-row.score-needs  { background: #fffbeb; border-color: #fcd34d; }
+  .readiness-row.score-action { background: #fff7ed; border-color: #fdba74; }
+  .readiness-row.score-gaps   { background: #fef2f2; border-color: #fca5a5; }
+  .readiness-score-display {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .readiness-row.score-strong .readiness-score-display { color: #16a34a; }
+  .readiness-row.score-good   .readiness-score-display { color: #2563eb; }
+  .readiness-row.score-needs  .readiness-score-display { color: #d97706; }
+  .readiness-row.score-action .readiness-score-display { color: #ea580c; }
+  .readiness-row.score-gaps   .readiness-score-display { color: #dc2626; }
+  .readiness-score-denom { font-size: 13px; opacity: 0.5; }
+  .readiness-label { font-size: 13px; font-weight: 600; display: block; }
+  .readiness-sub { font-size: 11px; margin-top: 2px; display: block; }
+  .readiness-row.score-strong .readiness-label { color: #15803d; }
+  .readiness-row.score-good   .readiness-label { color: #1d4ed8; }
+  .readiness-row.score-needs  .readiness-label { color: #b45309; }
+  .readiness-row.score-action .readiness-label { color: #c2410c; }
+  .readiness-row.score-gaps   .readiness-label { color: #b91c1c; }
+  .readiness-row.score-strong .readiness-sub { color: #166534; }
+  .readiness-row.score-good   .readiness-sub { color: #1e40af; }
+  .readiness-row.score-needs  .readiness-sub { color: #92400e; }
+  .readiness-row.score-action .readiness-sub { color: #9a3412; }
+  .readiness-row.score-gaps   .readiness-sub { color: #991b1b; }
+
+  .snapshot-body { background: var(--white); padding: 14px 22px 18px; }
+  .btn-talk-expert {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 8px 16px;
+    background: var(--white);
+    color: var(--navy);
+    border: 1.5px solid var(--navy);
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .btn-talk-expert:hover { background: var(--navy); color: var(--white); }
+  .btn-talk-expert:focus-visible { outline: 3px solid rgba(26,46,74,0.3); outline-offset: 2px; }
+
+  .results-section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--navy);
+    margin-bottom: 4px;
+  }
+  .results-subtitle {
+    font-size: 13px;
+    color: var(--mid);
+    margin-bottom: 16px;
+  }
+
+  .action-card {
+    background: var(--white);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(26,46,74,0.06);
+    border: 1px solid var(--line);
+    border-left: 4px solid #c5d0e0;
+  }
+  .action-card.status-actionNeeded { border-left-color: #ef4444; }
+  .action-card.status-confirm      { border-left-color: #f59e0b; }
+  .action-card.status-inPlace      { border-left-color: #22c55e; }
+
+  .action-card-header {
+    padding: 12px 18px 10px;
+    border-bottom: 1px solid #f0f4fb;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .action-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.35;
+  }
+  .status-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .status-badge.status-actionNeeded { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+  .status-badge.status-confirm      { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+  .status-badge.status-inPlace      { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+
+  .action-card-body { padding: 12px 18px 14px; }
+  .action-card-section { margin-bottom: 10px; }
+  .action-card-section:last-child { margin-bottom: 0; }
+  .action-card-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.7px;
+    color: var(--mid);
+    margin-bottom: 3px;
+  }
+  .action-card-text { font-size: 13px; color: #3a4a5c; line-height: 1.55; }
+  .action-card-finding {
+    background: #f8fafc;
+    padding: 7px 11px;
+    border-radius: 6px;
+    border-left: 3px solid #c5d0e0;
+    font-style: italic;
+  }
+  .action-card.status-actionNeeded .action-card-finding { border-left-color: #fca5a5; background: #fef2f2; }
+  .action-card.status-confirm      .action-card-finding { border-left-color: #fde68a; background: #fffbeb; }
+  .action-card.status-inPlace      .action-card-finding { border-left-color: #86efac; background: #f0fdf4; }
+
+  .action-card-ctas, .action-card-links {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .action-card-links {
+    padding-top: 10px;
+    border-top: 1px solid #f0f4fb;
+  }
+  .notice-link {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 12px;
+    background: #f4f7fc;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--navy);
+    border: 1px solid var(--line);
+  }
+  .notice-link:hover { background: #e8edf3; border-color: #c5d0e0; }
+  .notice-link:focus-visible { outline: 3px solid rgba(26,46,74,0.25); outline-offset: 2px; }
+  .notice-link-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--navy);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .notice-link-arrow { font-size: 11px; opacity: 0.5; }
+  .notice-link-helper {
+    font-size: 11px;
+    color: var(--mid);
+    margin-top: 2px;
+    font-weight: 400;
+  }
+
+  .inline-cta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    width: 100%;
+    text-align: left;
+  }
+  .inline-cta:hover { filter: brightness(1.06); }
+  .inline-cta:focus-visible {
+    outline: 3px solid rgba(200,169,81,0.55);
+    outline-offset: 2px;
+  }
+  .inline-cta-text { flex: 1; }
+  .inline-cta-title { display: block; font-size: 13px; font-weight: 600; }
+  .inline-cta-sub   { display: block; font-size: 11px; opacity: 0.85; font-weight: 400; margin-top: 1px; }
+  .inline-cta-arrow { font-size: 14px; opacity: 0.65; }
+  .btn-wrap-inline    { background: var(--navy); color: var(--white); }
+  .btn-sec125-inline  { background: #1e4d3a; color: var(--white); }
+  .btn-contact-inline { background: var(--navy-mid); color: var(--white); }
+  .btn-quote-inline   { background: #0e4a5c; color: var(--white); }
+
+  .strategic-section-header {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--navy);
+    margin: 24px 0 10px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--line);
+  }
+  .strategic-card {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 10px;
+    border: 1px solid var(--line);
+    box-shadow: 0 2px 8px rgba(26,46,74,0.05);
+  }
+  .strategic-card-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 5px; }
+  .strategic-card-body { font-size: 13px; color: #5a6a7e; line-height: 1.6; margin-bottom: 10px; }
+
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #c8d8ef, transparent);
+    margin: 24px 0;
+  }
+  .legal-notice {
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-top: 20px;
+    border: 1px solid var(--line);
+  }
+  .legal-notice-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #4a6080;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .legal-notice p {
+    font-size: 11px;
+    color: #7a8fa6;
+    line-height: 1.65;
+    margin-bottom: 8px;
+  }
+  .legal-notice p:last-child { margin-bottom: 0; }
+
+  .start-over-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 22px;
+  }
+  .btn-start-over {
+    padding: 10px 28px;
+    background: var(--navy);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-start-over:hover { background: var(--navy-mid); }
+  .btn-start-over:focus-visible { outline: 3px solid rgba(200,169,81,0.5); outline-offset: 2px; }
+
+  @media (max-width: 480px) {
+    body { padding: 8px 6px 24px; font-size: 13px; }
+    .quiz-header { padding: 14px 16px 12px; flex-direction: column; gap: 6px; }
+    .quiz-header-title { font-size: 15px; }
+    .quiz-header-meta { text-align: left; }
+    .intro-banner, .question-area { padding-left: 16px; padding-right: 16px; }
+    .nav-row { padding: 12px 16px 16px; }
+    .snapshot-grid { grid-template-columns: 1fr; }
+    .snapshot-header { padding: 14px 14px 12px; }
+    .btn-talk-expert { width: 100%; justify-content: center; }
+    .btn-start-over { width: 100%; max-width: 280px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="quizView">
+    <div class="quiz-wrapper" role="region" aria-label="Employee Benefits Compliance Assessment">
+      <div class="progress-track" role="progressbar" aria-label="Assessment progress" aria-valuemin="0" aria-valuemax="100" id="progressBar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+
+      <div class="quiz-header">
+        <div>
+          <div class="quiz-header-title">Employee Benefits Compliance Assessment</div>
+          <div class="quiz-header-sub">A short quiz-style assessment for employers</div>
+        </div>
+        <div class="quiz-header-meta">
+          <span class="step-label" id="headerProgress">Step 1</span>
+          Under 3 minutes • No sign-in
+        </div>
+      </div>
+
+      <div class="intro-banner" id="introBanner">
+        <div>
+          <div class="intro-banner-text">
+            <strong>Is your benefits program in good shape?</strong> Answer a few questions and get an instant compliance snapshot tailored to your business — covering ERISA documents, ACA notices, COBRA, and related employer duties.
+          </div>
+          <div class="intro-banner-privacy"><span aria-hidden="true">🔒</span> Your answers stay on your screen — nothing is collected or stored.</div>
+        </div>
+      </div>
+
+      <div class="question-area" id="questionArea">
+        <div class="question-text" id="questionText"></div>
+        <div class="question-helper" id="questionHelper" style="display:none"></div>
+        <div class="question-multiselect-hint" id="multiselectHint" style="display:none">Select all that apply</div>
+        <div class="options-list" id="optionsList" role="radiogroup" aria-labelledby="questionText"></div>
+        <div class="validation-msg" id="validationMsg" role="alert" aria-live="polite"></div>
+      </div>
+
+      <div class="nav-row">
+        <button class="btn-back" id="btnBack" type="button" aria-label="Go to previous question">Back</button>
+        <div class="progress-label" id="progressLabel"></div>
+        <button class="btn-next" id="btnNext" type="button">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="resultsView"></div>
+</div>
+
+<script>
+/* ========================================================================
+   Employee Benefits Compliance Assessment
+   Scoring ported from Wix Velo nqox8 (3.2.0-phase4) plus Pages-path additions.
+   No Wix APIs. Answers stay in-page.
+   ======================================================================== */
+
+const ENGINE_VERSION = '3.3.0-pages';
+
+const URL_WRAP    = 'https://www.dkbenefits.net/wrap-plan-document-tool';
+const URL_SEC125  = 'https://www.dkbenefits.net/section125plantool';
+const URL_CONTACT = 'https://www.dkbenefits.net/contact';
+const URL_QUOTE   = 'https://www.dkbenefits.net/instant-group-quote';
+
+const LINKS = {
+  exchangeOffers: {
+    url: 'https://www.dol.gov/agencies/ebsa/laws-and-regulations/laws/affordable-care-act/for-employers-and-advisers/coverage-options-notice',
+    label: 'DOL Marketplace Notice (employers who offer a plan)',
+    helper: "Click 'Model Notice for employers who offer a health plan to some or all employees' to download"
+  },
+  exchangeNoPlan: {
+    url: 'https://www.dol.gov/agencies/ebsa/laws-and-regulations/laws/affordable-care-act/for-employers-and-advisers/coverage-options-notice',
+    label: 'DOL Marketplace Notice (employers who do not offer a plan)',
+    helper: "Click 'Model Notice for employers who do not offer a health plan' to download"
+  },
+  partD: {
+    url: 'https://www.cms.gov/medicare/employers-plan-sponsors/creditable-coverage/model-notice-letters',
+    label: 'CMS Medicare Part D Model Notice Letters',
+    helper: 'Choose creditable or non-creditable coverage version based on your plan'
+  },
+  chipra: {
+    url: 'https://www.dol.gov/agencies/ebsa/laws-and-regulations/laws/chipra',
+    label: 'DOL CHIPRA Model Notice',
+    helper: "Click 'Model Notice for Employers Regarding Premium Assistance Opportunities' — state contact info updates periodically"
+  },
+  cobraGeneralNotice: {
+    url: 'https://www.dol.gov/sites/dolgov/files/EBSA/laws-and-regulations/laws/cobra/model-general-notice.docx',
+    label: 'DOL Model COBRA General Notice (.docx)',
+    helper: 'Direct download — for new enrollees, within 90 days of coverage start'
+  },
+  cobraElectionNotice: {
+    url: 'https://www.dol.gov/sites/dolgov/files/EBSA/laws-and-regulations/laws/cobra/model-election-notice.docx',
+    label: 'DOL Model COBRA Election Notice (.docx)',
+    helper: 'Direct download — for qualifying events, within 14 days'
+  },
+  whcraHipaaSbc: {
+    url: 'https://www.dol.gov/sites/dolgov/files/ebsa/about-ebsa/our-activities/resource-center/publications/compliance-assistance-guide-appendix-c.pdf',
+    label: 'DOL Compliance Assistance Guide — Appendix C',
+    helper: 'WHCRA notice template included in this PDF (also covers HIPAA, SBC, and other model notices)'
+  },
+  rxdc: {
+    url: 'https://www.cms.gov/marketplace/about/oversight/other-insurance-protections/prescription-drug-data-collection-rxdc',
+    label: 'CMS Prescription Drug Data Collection (RxDC) Homepage',
+    helper: 'Current reporting instructions, templates, FAQs, and submission guidance'
+  },
+  hipaaPrivacy: {
+    url: 'https://www.hhs.gov/hipaa/for-professionals/privacy/guidance/model-notices-privacy-practices/index.html',
+    label: 'HHS Model Notices of Privacy Practices',
+    helper: "Use the 'Group Health Plan' version"
+  }
+};
+
+const CARD_KEY_ORDER = [
+  'wrap', 'sec125', 'aca_no_medical', 'aca_no_coverage', 'annual_notices',
+  'exchange_notice', 'rxdc', 'hipaa_privacy', 'cobra', 'state_cobra', 'form5500',
+  'spd', 'aca_reporting', 'ale_borderline', 'pcori', 'nd_testing', 'sbc',
+  'exchange_notice_future', 'options', 'competition'
+];
+const STATUS_RANK = { actionNeeded: 0, confirm: 1, inPlace: 2 };
+
+const questions = [
+  {
+    id: 'offerBenefits',
+    text: 'Do you currently offer any benefits to your employees?',
+    helper: 'Benefits include medical, dental, vision, life insurance, disability, or any other employer-sponsored benefit.',
+    options: [
+      { value: 'yes', label: 'Yes — we currently offer benefits' },
+      { value: 'no', label: 'No — we do not currently offer benefits' }
+    ],
+    required: true
+  },
+  {
+    id: 'employeeCount',
+    text: 'How many full-time employees do you currently have?',
+    helper: 'Full-time generally means 30 or more hours per week. We\'ll ask about part-time employees separately. Federal COBRA size is generally based on a prior-year typical-business-day count, not only today\'s snapshot.',
+    options: [
+      { value: 'under20', label: 'Fewer than 20' },
+      { value: '20to49', label: '20 to 49' },
+      { value: '50plus', label: '50 or more' },
+      { value: 'notSure', label: 'Not sure' }
+    ],
+    required: true
+  },
+  {
+    id: 'partTime',
+    text: 'Do part-time employees make up a significant portion of your workforce?',
+    helper: 'This matters because part-time hours are converted to full-time equivalents (FTEs) when determining your size under federal law. A company with 40 full-time and 20+ part-time employees could be treated as having 50+ FTEs.',
+    options: [
+      { value: 'yes', label: 'Yes — we have a significant number of part-time employees' },
+      { value: 'no', label: 'No — most of our employees are full-time' },
+      { value: 'notSure', label: 'Not sure' }
+    ],
+    required: true,
+    showIf: function(a) { return a.offerBenefits === 'yes' || a.employeeCount === '20to49' || a.employeeCount === 'under20'; }
+  },
+  {
+    id: 'benefitsOffered',
+    text: 'Which benefits do you offer?',
+    helper: null,
+    options: [
+      { value: 'medicalOnly', label: 'Medical / health insurance only' },
+      { value: 'medicalPlus', label: 'Medical plus other benefits (dental, vision, life, disability, etc.)' },
+      { value: 'nonMedicalOnly', label: 'No medical, but other benefits (dental, vision, life, disability, etc.)' }
+    ],
+    required: true,
+    showIf: function(a) { return a.offerBenefits === 'yes'; }
+  },
+  {
+    id: 'medicalFunding',
+    text: 'How is your medical plan funded?',
+    helper: 'Fully insured means you pay premiums to an insurance carrier. Self-funded means you pay claims directly as they occur. Level-funded is a hybrid — fixed monthly payments with claims reconciled at year end.',
+    options: [
+      { value: 'fullyInsured', label: 'Fully insured through an insurance carrier' },
+      { value: 'selfFunded', label: 'Self-funded — we pay claims directly' },
+      { value: 'levelFunded', label: 'Level-funded arrangement' },
+      { value: 'notSure', label: 'Not sure' }
+    ],
+    required: true,
+    showIf: function(a) { return a.offerBenefits === 'yes' && (a.benefitsOffered === 'medicalOnly' || a.benefitsOffered === 'medicalPlus'); }
+  },
+  {
+    id: 'wrapPlanInPlace',
+    text: 'Do you currently have a written ERISA wrap plan in place?',
+    helper: 'A wrap plan is a master plan document that consolidates all your benefit plans under a single ERISA plan instrument. Many employers don\'t realize carrier certificates alone don\'t satisfy this requirement.',
+    options: [
+      { value: 'yes', label: 'Yes — we have a written wrap plan' },
+      { value: 'no', label: 'No — we do not have a wrap plan' },
+      { value: 'notSure', label: 'Not sure' }
+    ],
+    required: true,
+    showIf: function(a) { return a.offerBenefits === 'yes'; }
+  },
+  {
+    id: 'wrapPlanAge',
+    text: 'When was your wrap plan last reviewed or updated?',
+    helper: 'A wrap plan should reflect your current benefit offerings. If benefits have been added, removed, or carriers have changed since it was created, a review or restatement may be needed.',
+    options: [
+      { value: 'within1year', label: 'Within the last 12 months' },
+      { value: '1to3years', label: '1 to 3 years ago' },
+      { value: 'over3years', label: 'More than 3 years ago' },
+      { value: 'notSure', label: 'Not sure' }
+    ],
+    required: true,
+    showIf: function(a) { return a.offerBenefits === 'yes' && a.wrapPlanInPlace === 'yes'; }
+  },
+  {
+    id: 'spdDistributed',
+    text: 'Have employees received a Summary Plan Description (SPD)?',
+    helper: 'An SPD is a plain-language document that explains plan benefits, eligibility, and participant rights. ERISA requires it be provided to participants within 90 days of enrollment and updated every 5 years if changes are made.',
+    options: [
+      { value: 'yes', label: 'Yes — employees have received an SPD' },
+      { value: 'no', label: 'No — employees have not received an SPD' },
+      { value: 'notSure', label: 'Not sure' }
+    ],
+    required: true,
+    showIf: function(a) { return a.offerBenefits === 'yes'; }
+  },
+  {
+    id: 'sbcDistributed',
+    text: 'Have employees received a Summary of Benefits and Coverage (SBC)?',
+    helper: 'The ACA generally requires SBCs for group health coverage. The SBC is a standardized snapshot of what the plan covers and what it costs. Carriers typically prepare it; employers are responsible for timely distribution.',
+    options: [
+      { value: 'yes', label: 'Yes — employees have received an SBC' },
+      { value: 'no', label: 'No — employees have not received an SBC' },
+      { value: 'notSure', label: 'Not sure' }
+    ],
+    required: true,
+    showIf: function(a) { return a.offerBenefits === 'yes' && (a.benefitsOffered === 'medicalOnly' || a.benefitsOffered === 'medicalPlus'); }
+  },
+  {
+    id: 'employeeContrib',
+    text: 'Do employees contribute toward benefits through payroll deductions?',
+    helper: null,
+    options: [
+      { value: 'yes', label: 'Yes — employees contribute through payroll deductions' },
+      { value: 'no', label: 'No — the employer pays the full cost' }
+    ],
+    required: true,
+    showIf: function(a) { return a.offerBenefits === 'yes'; }
+  },
+  {
+    id: 'pretax',
+    text: 'Are those payroll deductions taken pre-tax?',
+    helper: 'Pre-tax means deductions are taken before federal income tax and payroll taxes are calculated — reducing the employee\'s taxable income. This is common but requires a written Section 125 plan document to be legal.',
+    options: [
+      { value: 'yes', label: 'Yes — deductions are pre-tax' },
+      { value: 'no', label: 'No — deductions are post-tax' },
+      { value: 'notSure', label: 'Not sure' }
+    ],
+    required: true,
+    showIf: function(a) { return a.offerBenefits === 'yes' && a.employeeContrib === 'yes'; }
+  },
+  {
+    id: 'section125InPlace',
+    text: 'Do you have a written Section 125 cafeteria plan document in place?',
+    helper: 'A Section 125 plan document (also called a Premium Only Plan or POP) is required by the IRS to legally support pre-tax payroll deductions. Without it, those deductions technically lack legal standing.',
+    options: [
+      { value: 'yes', label: 'Yes — we have a written Section 125 plan document' },
+      { value: 'no', label: 'No — we do not have one' },
+      { value: 'notSure', label: 'Not sure' }
+    ],
+    required: true,
+    showIf: function(a) { return a.offerBenefits === 'yes' && a.employeeContrib === 'yes' && a.pretax === 'yes'; }
+  },
+  {
+    id: 'section125Age',
+    text: 'When was your Section 125 plan document last reviewed or updated?',
+    helper: 'A Section 125 document should reflect your current plan — including which benefits are offered, your open enrollment process, and how mid-year election changes are handled. The IRS expects the document to match how your plan actually operates.',
+    options: [
+      { value: 'within1year', label: 'Within the last 12 months' },
+      { value: '1to3years', label: '1 to 3 years ago' },
+      { value: 'over3years', label: 'More than 3 years ago' },
+      { value: 'notSure', label: 'Not sure' }
+    ],
+    required: true,
+    showIf: function(a) { return a.offerBenefits === 'yes' && a.employeeContrib === 'yes' && a.pretax === 'yes' && a.section125InPlace === 'yes'; }
+  },
+  {
+    id: 'annualNotices',
+    text: 'Do you distribute required annual notices to employees?',
+    helper: 'Three notices are required annually for most group health plans regardless of size: the Medicare Part D creditable coverage notice, the CHIPRA/Medicaid premium assistance notice, and the WHCRA notice. These are commonly missed and can carry per-day, per-employee penalties.',
+    options: [
+      { value: 'yes', label: 'Yes — we distribute required annual notices' },
+      { value: 'no', label: 'No — we do not distribute these notices' },
+      { value: 'notSure', label: 'Not sure' }
+    ],
+    required: true,
+    showIf: function(a) { return a.offerBenefits === 'yes'; }
+  },
+  {
+    id: 'exchangeNotice',
+    text: 'When new employees are hired, do you provide them with a Marketplace Coverage Options notice within 14 days of their start date?',
+    helper: 'This is the ACA Marketplace/Exchange Notice — required under FLSA Section 18B for all FLSA-covered employers, regardless of size or whether benefits are offered. It\'s a one-time notice per employee, not annual. The DOL publishes model versions for employers who offer a plan and for those who don\'t.',
+    options: [
+      { value: 'yes', label: 'Yes — it\'s part of our new-hire packet' },
+      { value: 'no', label: 'No — we do not provide this notice' },
+      { value: 'notSure', label: 'Not sure' },
+      { value: 'noRecognize', label: 'I don\'t recognize this notice' }
+    ],
+    required: true,
+    showIf: function(a) { return a.offerBenefits === 'yes' || a.offerBenefits === 'no'; }
+  },
+  {
+    id: 'rxdcFamiliar',
+    text: 'Are you familiar with RxDC reporting (the federal prescription drug data collection required for group health plans)?',
+    helper: 'RxDC stands for Prescription Drug Data Collection. It\'s an annual reporting requirement established by the Consolidated Appropriations Act, 2021, that applies to all group health plans with prescription drug coverage — fully insured AND self-funded, regardless of size. Reports are due June 1 each year for the prior calendar year\'s data, submitted to CMS.',
+    options: [
+      { value: 'yes', label: 'Yes — I\'m familiar with RxDC' },
+      { value: 'no', label: 'No — I haven\'t heard of this' }
+    ],
+    required: true,
+    showIf: function(a) { return a.offerBenefits === 'yes' && (a.benefitsOffered === 'medicalOnly' || a.benefitsOffered === 'medicalPlus'); }
+  },
+  {
+    id: 'rxdcStatus',
+    text: 'For your most recent plan year, was RxDC reporting completed for your plan?',
+    helper: 'For fully insured plans, the carrier typically files RxDC on behalf of the employer (with employer-supplied premium and enrollment data). For self-funded plans, the TPA usually files but legal responsibility stays with the plan sponsor. Vendor data-request deadlines are typically March–April, well before the June 1 CMS deadline.',
+    options: [
+      { value: 'carrierHandled', label: 'Yes — our carrier or TPA handled the filing' },
+      { value: 'filedDirectly', label: 'Yes — we filed directly with CMS' },
+      { value: 'notDone', label: 'No — it wasn\'t completed' },
+      { value: 'notSure', label: 'Not sure' }
+    ],
+    required: true,
+    showIf: function(a) { return a.offerBenefits === 'yes' && a.rxdcFamiliar === 'yes' && (a.benefitsOffered === 'medicalOnly' || a.benefitsOffered === 'medicalPlus'); }
+  },
+  {
+    id: 'hipaaPrivacy',
+    text: 'Do you maintain a HIPAA Notice of Privacy Practices and distribute it to plan participants?',
+    helper: 'Self-funded and level-funded health plans are direct HIPAA covered entities. They must maintain their own Notice of Privacy Practices, distribute it at enrollment and within 60 days of material changes, and follow PHI handling protocols. Fully insured employers typically rely on the carrier\'s notice and have minimal direct obligations.',
+    options: [
+      { value: 'yes', label: 'Yes — we have an NPP and distribute it' },
+      { value: 'no', label: 'No — we don\'t have one in place' },
+      { value: 'notSure', label: 'Not sure' }
+    ],
+    required: true,
+    showIf: function(a) { return a.offerBenefits === 'yes' && (a.medicalFunding === 'selfFunded' || a.medicalFunding === 'levelFunded'); }
+  },
+  {
+    id: 'cobraAdmin',
+    text: 'Who is currently handling COBRA notice administration for your plan?',
+    helper: 'Federal COBRA generally uses the prior calendar year\'s typical-business-day employee count (not only today\'s FTE snapshot) and commonly applies at 20 or more employees. It requires general/initial notices within 90 days of new enrollee coverage start, and election notices within 14 days of each qualifying event (termination, hour reduction, dependent aging out, etc.). Notices must be tracked and delivery documented.',
+    options: [
+      { value: 'inHouse',    label: 'In-house — we send the notices ourselves' },
+      { value: 'thirdParty', label: 'A third-party COBRA administrator handles it' },
+      { value: 'broker',     label: 'Our broker / benefits advisor handles it' },
+      { value: 'noOne',      label: 'No one is currently handling it' },
+      { value: 'notSure',    label: 'Not sure' }
+    ],
+    required: true,
+    showIf: function(a) { return a.offerBenefits === 'yes' && (a.employeeCount === '20to49' || a.employeeCount === '50plus'); }
+  },
+  {
+    id: 'stateCobra',
+    text: 'Do you have a process for state continuation coverage / mini-COBRA where it may apply?',
+    helper: 'Federal COBRA often starts at 20 employees. Many states require continuation coverage (sometimes called mini-COBRA) for smaller groups. Which plans are covered, how long coverage lasts, and notice rules vary by state — this question flags the issue; it does not determine your state\'s rule.',
+    options: [
+      { value: 'yes', label: 'Yes — we have a process where state continuation applies' },
+      { value: 'no', label: 'No — we do not have a process for this' },
+      { value: 'notSure', label: 'Not sure' }
+    ],
+    required: true,
+    showIf: function(a) {
+      return a.offerBenefits === 'yes' && a.employeeCount === 'under20' &&
+        (a.benefitsOffered === 'medicalOnly' || a.benefitsOffered === 'medicalPlus');
+    }
+  },
+  {
+    id: 'planStructure',
+    text: 'Does any of the following apply to your benefits plan?',
+    helper: 'These factors can affect whether a Form 5500 annual filing is required, regardless of participant count. Most small to mid-size employers select \'None of these apply.\' Select all that apply.',
+    multiSelect: true,
+    options: [
+      { value: 'mewa',      label: 'Multiple unrelated employers share the same plan (a MEWA / association plan)' },
+      { value: 'trust',     label: 'We maintain a trust, VEBA, or separate claims account for the plan' },
+      { value: 'prior5500', label: 'We\'ve filed a Form 5500 for this plan before' },
+      { value: 'none',      label: 'None of these apply', exclusive: true }
+    ],
+    required: true,
+    showIf: function(a) { return a.offerBenefits === 'yes'; }
+  },
+  {
+    id: 'participants100',
+    text: 'At the start of your plan year, how many employees were eligible to participate in your benefits plan?',
+    helper: 'This includes ALL eligible employees — even those who declined or waived coverage. Someone who waived enrollment still counts as a participant for Form 5500 purposes. This surprises many employers who think only enrolled employees count.',
+    options: [
+      { value: 'under100', label: 'Fewer than 100 eligible employees' },
+      { value: '100plus', label: '100 or more eligible employees' },
+      { value: 'notSure', label: 'Not sure' }
+    ],
+    required: true,
+    showIf: function(a) { return a.offerBenefits === 'yes' && (a.employeeCount === '50plus' || a.employeeCount === '20to49'); }
+  },
+  {
+    id: 'nobenGrowth',
+    text: 'Is your company planning to grow or hire significantly in the next 12 months?',
+    helper: null,
+    options: [
+      { value: 'yes', label: 'Yes — we expect significant growth' },
+      { value: 'no', label: 'No — headcount will stay roughly the same' },
+      { value: 'notSure', label: 'Not sure' }
+    ],
+    required: true,
+    showIf: function(a) { return a.offerBenefits === 'no'; }
+  },
+  {
+    id: 'nobenCompetition',
+    text: 'Are you competing for employees with companies that offer benefits?',
+    helper: 'Even when not required by law, benefits can be a significant factor in attracting and retaining good employees — especially as the labor market tightens.',
+    options: [
+      { value: 'yes', label: 'Yes — talent competition is a factor for us' },
+      { value: 'no', label: 'No — benefits are not a competitive factor in our hiring' },
+      { value: 'notSure', label: 'Not sure' }
+    ],
+    required: true,
+    showIf: function(a) { return a.offerBenefits === 'no'; }
+  }
+];
+
+function deriveFlags(e) {
+  var t = e.offerBenefits === 'yes';
+  var r = e.benefitsOffered === 'medicalOnly' || e.benefitsOffered === 'medicalPlus';
+  var n = e.medicalFunding === 'selfFunded';
+  var a = e.medicalFunding === 'levelFunded';
+  var c = e.employeeCount || 'notSure';
+  var f = Array.isArray(e.planStructure) ? e.planStructure : [];
+  return {
+    offersBenefits: t,
+    medicalOffered: r,
+    selfFunded: n,
+    levelFunded: a,
+    selfOrLevel: n || a,
+    hasContrib: e.employeeContrib === 'yes',
+    pretaxYes: e.pretax === 'yes',
+    pretaxNotSure: e.pretax === 'notSure',
+    empCount: c,
+    cobraApplies: c === '20to49' || c === '50plus',
+    aleApplies: c === '50plus',
+    partTimeFTE: e.partTime === 'yes' || e.partTime === 'notSure',
+    planStructure: f,
+    hasMewa: f.indexOf('mewa') !== -1,
+    hasTrust: f.indexOf('trust') !== -1,
+    hasPrior5500: f.indexOf('prior5500') !== -1,
+    planStructureNone: f.indexOf('none') !== -1
+  };
+}
+
+function determineForm5500(e, t) {
+  if (!t.offersBenefits) return { status: 'notApplicable', note: '' };
+  var r = e.participants100;
+  if (r === '100plus') return { status: 'required', note: '' };
+  if (r === 'under100') {
+    if (t.hasMewa) return { status: 'confirm', note: 'Multiple-employer arrangements (MEWAs) may have additional Form 5500 reporting requirements regardless of participant count.' };
+    if (t.hasTrust) return { status: 'confirm', note: 'Plans with a trust or separate claims account may be required to file regardless of participant count.' };
+    if (t.hasPrior5500) return { status: 'confirm', note: 'You indicated prior Form 5500 filings. Confirm whether ongoing filing is still required based on your current plan structure.' };
+    return { status: 'notRequired', note: '' };
+  }
+  if (t.empCount === 'under20' && t.planStructureNone) return { status: 'notRequired', note: '' };
+  return { status: 'confirm', note: 'Confirm your participant count at the start of the plan year — including employees who waived coverage — to determine whether a Form 5500 is required.' };
+}
+
+function sizeLabel(empCount) {
+  if (empCount === 'under20') return 'Under 20';
+  if (empCount === '20to49') return '20–49';
+  if (empCount === '50plus') return '50+';
+  return 'Not confirmed';
+}
+
+function marketplaceSnapshotLine(answers) {
+  var e = answers.exchangeNotice;
+  if (e === 'yes') return { label: 'Marketplace notice', value: 'Provided to new hires', status: 'good' };
+  if (e === 'no') return { label: 'Marketplace notice', value: 'Not provided', status: 'alert' };
+  if (e === 'notSure' || e === 'noRecognize') return { label: 'Marketplace notice', value: 'Confirm', status: 'warn' };
+  return { label: 'Marketplace notice', value: 'Not confirmed', status: 'warn' };
+}
+
+function buildSnapshot(e, t, r) {
+  if (!t.offersBenefits) {
+    var n = t.empCount === '50plus';
+    return {
+      lines: [
+        { label: 'Benefits status', value: 'Not currently offering', status: 'neutral' },
+        { label: 'ACA employer mandate', value: n ? 'May apply — confirm' : 'Likely does not apply', status: n ? 'alert' : 'good' },
+        { label: 'Federal COBRA', value: (t.empCount === '20to49' || t.empCount === '50plus') ? 'Would apply when benefits offered' : 'Likely does not apply', status: 'neutral' },
+        marketplaceSnapshotLine(e),
+        { label: 'Readiness score', value: 'Not applicable', status: 'neutral' }
+      ],
+      alert: n,
+      alertText: n ? 'Federal Coverage Requirement May Apply' : null,
+      alertSubText: n ? 'Employers with 50+ full-time equivalent employees are generally subject to the ACA employer mandate.' : null
+    };
+  }
+
+  var w = t.medicalOffered
+    ? (e.medicalFunding === 'fullyInsured' ? 'Fully insured medical'
+      : e.medicalFunding === 'selfFunded' ? 'Self-funded medical'
+      : e.medicalFunding === 'levelFunded' ? 'Level-funded medical'
+      : 'Medical funding not confirmed')
+    : 'Medical: Not offered';
+  var g = t.empCount === '50plus' && e.benefitsOffered === 'nonMedicalOnly';
+  var cobraVal, cobraSt, acaVal, acaSt, wrapVal, wrapSt, s125Val, s125St, rxVal, rxSt, f5500Val, f5500St;
+
+  if (t.empCount === 'under20') { cobraVal = 'Likely does not apply (under 20)'; cobraSt = 'neutral'; }
+  else if (t.empCount === '20to49') { cobraVal = 'Likely applies (20–49 employees)'; cobraSt = 'neutral'; }
+  else if (t.empCount === '50plus') { cobraVal = 'Likely applies (50+ employees)'; cobraSt = 'neutral'; }
+  else { cobraVal = 'Confirm applicability'; cobraSt = 'warn'; }
+
+  if (t.empCount === '50plus') {
+    if (g) { acaVal = 'Likely applies — medical coverage may be required'; acaSt = 'alert'; }
+    else { acaVal = 'Likely applies (ALE)'; acaSt = 'neutral'; }
+  } else if (t.empCount === '20to49' && e.partTime === 'yes') {
+    acaVal = 'Confirm — part-time FTEs may push you over 50'; acaSt = 'warn';
+  } else {
+    acaVal = 'Likely does not apply'; acaSt = 'good';
+  }
+
+  if (e.wrapPlanInPlace === 'yes') {
+    if (e.wrapPlanAge === 'over3years' || e.wrapPlanAge === 'notSure') { wrapVal = 'In place — review recommended'; wrapSt = 'warn'; }
+    else { wrapVal = 'In place'; wrapSt = 'good'; }
+  } else if (e.wrapPlanInPlace === 'no') { wrapVal = 'Not in place'; wrapSt = 'alert'; }
+  else { wrapVal = 'Status unknown'; wrapSt = 'warn'; }
+
+  if (t.hasContrib && t.pretaxYes) {
+    if (e.section125InPlace === 'yes') {
+      if (e.section125Age === 'over3years' || e.section125Age === 'notSure') { s125Val = 'In place — review recommended'; s125St = 'warn'; }
+      else { s125Val = 'In place'; s125St = 'good'; }
+    } else if (e.section125InPlace === 'no') { s125Val = 'Not in place'; s125St = 'alert'; }
+    else { s125Val = 'Status unknown'; s125St = 'warn'; }
+  } else { s125Val = 'Not applicable'; s125St = 'neutral'; }
+
+  if (e.rxdcFamiliar === 'no') { rxVal = 'Confirm — not familiar'; rxSt = 'warn'; }
+  else if (e.rxdcStatus === 'carrierHandled' || e.rxdcStatus === 'filedDirectly') {
+    rxVal = t.selfOrLevel ? 'Filed — sponsor liability remains' : 'Filed via carrier/TPA'; rxSt = 'good';
+  } else if (e.rxdcStatus === 'notDone') { rxVal = 'Not completed'; rxSt = 'alert'; }
+  else if (e.rxdcStatus === 'notSure') { rxVal = 'Confirm with carrier'; rxSt = 'warn'; }
+  else { rxVal = t.medicalOffered ? 'Status unknown' : 'Not applicable'; rxSt = t.medicalOffered ? 'warn' : 'neutral'; }
+
+  if (r.form5500Status === 'required') { f5500Val = 'Likely required'; f5500St = 'alert'; }
+  else if (r.form5500Status === 'notRequired') { f5500Val = 'Likely not required'; f5500St = 'good'; }
+  else if (r.form5500Status === 'notApplicable') { f5500Val = 'Not applicable'; f5500St = 'neutral'; }
+  else { f5500Val = 'Confirm'; f5500St = 'warn'; }
+
+  var lines = [
+    { label: 'Plan type', value: w, status: e.benefitsOffered === 'nonMedicalOnly' ? 'warn' : 'neutral' },
+    { label: 'Employer size', value: sizeLabel(t.empCount), status: 'neutral' },
+    { label: 'Federal COBRA', value: cobraVal, status: cobraSt },
+    { label: 'ACA employer reporting', value: acaVal, status: acaSt },
+    { label: 'Wrap plan', value: wrapVal, status: wrapSt },
+    { label: 'Section 125', value: s125Val, status: s125St },
+    { label: 'RxDC reporting', value: rxVal, status: rxSt },
+    { label: 'Form 5500', value: f5500Val, status: f5500St }
+  ];
+  if (t.medicalOffered && e.sbcDistributed) {
+    lines.push(
+      e.sbcDistributed === 'yes' ? { label: 'SBC distribution', value: 'Distributed', status: 'good' }
+      : e.sbcDistributed === 'no' ? { label: 'SBC distribution', value: 'Not distributed', status: 'alert' }
+      : { label: 'SBC distribution', value: 'Confirm', status: 'warn' }
+    );
+  }
+
+  return {
+    lines: lines,
+    alert: g,
+    alertText: g ? 'ACA Medical Coverage Gap' : null,
+    alertSubText: g ? 'You indicated you do not offer medical coverage. Employers with 50+ full-time equivalent employees are generally required under the ACA to offer affordable health coverage to full-time employees.' : null
+  };
+}
+
+function computeReadiness(e, t, r) {
+  if (!t.offersBenefits) return { score: null, label: null };
+  var n = 10;
+  if (e.wrapPlanInPlace === 'no') n -= 2;
+  else if (e.wrapPlanInPlace === 'notSure' || e.wrapPlanAge === 'over3years') n -= 1;
+  else if (e.wrapPlanAge === 'notSure') n -= 0.5;
+
+  if (e.spdDistributed === 'no') n -= 1.5;
+  else if (e.spdDistributed === 'notSure') n -= 0.5;
+
+  if (t.medicalOffered) {
+    if (e.sbcDistributed === 'no') n -= 1.5;
+    else if (e.sbcDistributed === 'notSure') n -= 0.5;
+  }
+
+  if (t.hasContrib && t.pretaxYes) {
+    if (e.section125InPlace === 'no') n -= 2;
+    else if (e.section125InPlace === 'notSure' || e.section125Age === 'over3years') n -= 1;
+    else if (e.section125Age === 'notSure') n -= 0.5;
+  }
+
+  if (e.annualNotices === 'no') n -= 1.5;
+  else if (e.annualNotices === 'notSure') n -= 1;
+
+  if (e.exchangeNotice === 'no') n -= 0.75;
+  else if (e.exchangeNotice === 'notSure' || e.exchangeNotice === 'noRecognize') n -= 0.5;
+
+  if (e.rxdcFamiliar === 'no') n -= 1;
+  else if (e.rxdcFamiliar === 'yes') {
+    if (e.rxdcStatus === 'notDone') n -= 1.5;
+    else if (e.rxdcStatus === 'notSure') n -= 0.75;
+  }
+  if (t.selfOrLevel && (e.rxdcFamiliar === 'no' || e.rxdcStatus === 'notDone' || e.rxdcStatus === 'notSure')) n -= 0.5;
+
+  if (t.cobraApplies) {
+    if (e.cobraAdmin === 'noOne') n -= 1.5;
+    else if (e.cobraAdmin === 'notSure') n -= 0.75;
+  }
+  if (t.empCount === 'under20' && t.medicalOffered) {
+    if (e.stateCobra === 'no') n -= 0.75;
+    else if (e.stateCobra === 'notSure') n -= 0.5;
+  }
+
+  if (r.form5500Status === 'required' && !t.hasPrior5500) n -= 1.5;
+  else if (r.form5500Status === 'confirm') n -= 0.5;
+
+  if (t.empCount === '50plus') {
+    if (e.partTime === 'yes' || e.partTime === 'notSure') n -= 0.5;
+    if (e.benefitsOffered === 'nonMedicalOnly') n -= 2;
+  }
+  if (t.selfOrLevel) {
+    if (e.hipaaPrivacy === 'no') n -= 1;
+    else if (e.hipaaPrivacy === 'notSure') n -= 0.5;
+  }
+  if (t.hasMewa) n -= 0.5;
+  if (t.hasTrust) n -= 0.5;
+
+  n = Math.max(1, Math.round(n * 2) / 2);
+  var a = 'Strong';
+  if (n <= 2) a = 'Significant Gaps';
+  else if (n <= 4) a = 'Action Recommended';
+  else if (n <= 6) a = 'Needs Attention';
+  else if (n <= 8) a = 'Good — a few items to confirm';
+  return { score: n, label: a };
+}
+
+function sortCards(cards) {
+  return cards.slice().sort(function(a, b) {
+    var r = (STATUS_RANK[a.status] != null ? STATUS_RANK[a.status] : 9) - (STATUS_RANK[b.status] != null ? STATUS_RANK[b.status] : 9);
+    if (r !== 0) return r;
+    var i = CARD_KEY_ORDER.indexOf(a.key);
+    var j = CARD_KEY_ORDER.indexOf(b.key);
+    return (i === -1 ? 999 : i) - (j === -1 ? 999 : j);
+  });
+}
+
+function buildExchangeNoticeCard(e, offersBenefits) {
+  var status, finding, action;
+  if (e.exchangeNotice === 'yes') {
+    status = 'inPlace';
+    finding = 'You confirmed new hires receive the Marketplace Coverage Options notice within 14 days of start.';
+    action = 'Continue including it in your new-hire packet. Use the DOL model notice that matches whether you offer a plan. Update the model notice when the DOL refreshes it.';
+  } else if (e.exchangeNotice === 'no') {
+    status = 'actionNeeded';
+    finding = 'New hires are not currently receiving the Marketplace Coverage Options notice.';
+    action = 'Required under ACA Section 18B / FLSA Section 18B for all FLSA-covered employers, regardless of size or whether benefits are offered. Add the DOL model notice to your new-hire packet — it\'s a one-time notice per employee, not annual.';
+  } else if (e.exchangeNotice === 'notSure' || e.exchangeNotice === 'noRecognize') {
+    status = 'confirm';
+    finding = 'You weren\'t sure (or weren\'t familiar with this notice).';
+    action = 'This is the ACA Marketplace/Exchange Notice — required for all FLSA-covered employers within 14 days of each new hire\'s start date. Download the DOL model notice and confirm it\'s in your new-hire packet.';
+  } else {
+    return null;
+  }
+  return {
+    key: 'exchange_notice',
+    title: 'Marketplace / Exchange Notice',
+    status: status,
+    description: 'Required under FLSA Section 18B for all FLSA-covered employers, regardless of size or whether they offer benefits. Must be provided to each new hire within 14 days of start date.',
+    finding: finding,
+    action: action,
+    ctas: [],
+    links: offersBenefits ? [LINKS.exchangeOffers] : [LINKS.exchangeNoPlan]
+  };
+}
+
+function exchangeFutureCard(title, finding, action) {
+  return {
+    key: 'exchange_notice_future',
+    title: title,
+    status: 'confirm',
+    description: 'When you begin offering a health plan, you will use the DOL “offers a plan” Marketplace Notice version for new hires (within 14 days of start).',
+    finding: finding,
+    action: action,
+    ctas: [],
+    links: [LINKS.exchangeOffers]
+  };
+}
+
+function scoreNoBenefits(e, flags) {
+  var path = '1a';
+  if (flags.empCount === '50plus') path = '1c';
+  else if (flags.empCount === '20to49' || e.nobenGrowth === 'yes') path = '1b';
+
+  var snapshot = buildSnapshot(e, flags, { form5500Status: 'notApplicable' });
+  var cards = [];
+  var exchangeCard = buildExchangeNoticeCard(e, false);
+  if (exchangeCard) cards.push(exchangeCard);
+
+  if (path === '1c') {
+    cards.push({
+      key: 'aca_no_coverage',
+      title: 'Federal Coverage Requirement May Apply',
+      status: 'actionNeeded',
+      description: 'Employers with 50+ full-time equivalent employees (Applicable Large Employers) are generally required under the ACA to offer affordable, minimum-value medical coverage to full-time employees.',
+      finding: 'You indicated 50+ full-time employees and no current benefits offering. ACA employer shared responsibility penalties may apply.',
+      action: 'Get an instant idea of coverage costs (no identifiable info needed — just generic group parameters), then talk to our team about getting compliant. There are more affordable options than most employers expect.',
+      ctas: ['quote', 'contact'],
+      links: []
+    });
+    cards.push(exchangeFutureCard(
+      'Marketplace Notice — Get Ready',
+      'You don\'t currently offer a plan, but since you\'ll likely need to start soon, get familiar with the notice you\'ll use once your plan is in place.',
+      'Download the DOL model notice (offers-plan version) and have it ready to integrate into your new-hire packet from day one.'
+    ));
+  } else if (path === '1b') {
+    var growing = e.nobenGrowth === 'yes';
+    cards.push({
+      key: 'options',
+      title: 'Plan ahead for offering benefits',
+      status: 'confirm',
+      description: growing
+        ? 'You\'re under 50 employees but expecting growth. If you reach 50+ FTEs (including part-time hours), the ACA employer mandate applies.'
+        : 'You\'re under 50 employees and not currently required to offer benefits. State continuation coverage may apply if you do offer benefits.',
+      finding: growing ? 'Growth plans mean ACA obligations may be on the horizon.' : 'No federal requirement to offer benefits at your current size.',
+      action: 'Get an instant cost estimate at your current size (no info required), then talk through your timing with us. We can help you design a package that grows with your business.',
+      ctas: ['quote', 'contact'],
+      links: []
+    });
+    cards.push(exchangeFutureCard(
+      'Marketplace Notice — When You Start Offering',
+      'If you begin offering a health plan, you will use the DOL offers-plan model notice for new hires (in addition to any no-plan notice you use today).',
+      'Bookmark the DOL model notice (offers-plan version) for when you\'re ready.'
+    ));
+  } else {
+    cards.push({
+      key: 'options',
+      title: 'Explore your benefits options when you\'re ready',
+      status: 'confirm',
+      description: 'There\'s no federal requirement to offer benefits at your current size, but starting with the right guidance makes everything easier and more affordable.',
+      finding: 'You\'re a small employer without current benefits or immediate growth pressure.',
+      action: 'When you\'re ready, even basic dental and vision coverage can make a competitive difference. Use our instant quote tool (no info required) to see what\'s available at your size.',
+      ctas: ['quote', 'contact'],
+      links: []
+    });
+  }
+
+  if (e.nobenCompetition === 'yes') {
+    cards.push({
+      key: 'competition',
+      title: 'Benefits as a competitive tool',
+      status: 'confirm',
+      description: 'Even when not required by law, benefits significantly impact your ability to attract and retain employees.',
+      finding: 'You mentioned competing for employees with companies that offer benefits.',
+      action: 'Even a basic package (dental, vision, supplemental) can make a real difference without large business cost. We help small employers design competitive packages.',
+      ctas: ['quote', 'contact'],
+      links: []
+    });
+  }
+
+  return {
+    version: ENGINE_VERSION,
+    answers: e,
+    path: path,
+    readiness: { score: null, label: null },
+    snapshot: snapshot,
+    cards: sortCards(cards),
+    strategicItems: []
+  };
+}
+
+function buildBenefitCards(e, t, r) {
+  var b = [];
+  var wrapStatus, wrapFinding, wrapAction, wrapCtas = [];
+  if (e.wrapPlanInPlace === 'no') {
+    wrapStatus = 'actionNeeded';
+    wrapFinding = 'You don\'t currently have a written wrap plan in place.';
+    wrapAction = 'A written ERISA wrap plan is one of the most commonly missing compliance documents — and one of the easiest to fix. Many brokers don\'t provide this, and compliance vendors typically charge $200–$500. We provide it at no cost.';
+    wrapCtas = ['wrap'];
+  } else if (e.wrapPlanInPlace === 'notSure') {
+    wrapStatus = 'confirm';
+    wrapFinding = 'You weren\'t sure whether a written wrap plan is in place.';
+    wrapAction = 'Many employers rely on carrier certificates alone, which typically do not satisfy ERISA\'s written plan requirements. Confirm with your broker or generate a current document using our free tool.';
+    wrapCtas = ['wrap'];
+  } else if (e.wrapPlanAge === 'over3years') {
+    wrapStatus = 'actionNeeded';
+    wrapFinding = 'Your wrap plan was last updated more than 3 years ago.';
+    wrapAction = 'If benefits, carriers, or plan structure have changed, a review or restatement is recommended. Use our free tool to generate a current version.';
+    wrapCtas = ['wrap'];
+  } else if (e.wrapPlanAge === 'notSure') {
+    wrapStatus = 'confirm';
+    wrapFinding = 'You have a wrap plan in place but weren\'t sure when it was last updated.';
+    wrapAction = 'Confirm it reflects your current benefit offerings and plan structure. If it\'s been a while, use our free tool to generate a refreshed version.';
+    wrapCtas = ['wrap'];
+  } else if (e.wrapPlanAge === '1to3years') {
+    wrapStatus = 'inPlace';
+    wrapFinding = 'Your wrap plan is in place and was updated within the last 3 years.';
+    wrapAction = 'Confirm it reflects any benefit or carrier changes made since it was last updated.';
+  } else {
+    wrapStatus = 'inPlace';
+    wrapFinding = 'Your wrap plan appears current.';
+    wrapAction = 'Confirm it covers all currently offered benefits.';
+  }
+  b.push({
+    key: 'wrap',
+    title: 'ERISA Wrap Plan Document',
+    status: wrapStatus,
+    description: 'A master plan document required by ERISA that consolidates your benefit plans under a single written instrument. Carrier certificates alone do not satisfy this requirement.',
+    finding: wrapFinding,
+    action: wrapAction,
+    ctas: wrapCtas,
+    links: []
+  });
+
+  var spdStatus, spdFinding, spdAction;
+  if (e.spdDistributed === 'yes') {
+    spdStatus = 'inPlace';
+    spdFinding = 'You confirmed SPDs have been distributed to participants.';
+    spdAction = 'Maintain proof of delivery and update the document when plan changes occur. An updated SPD must be provided every 5 years if material changes are made, or every 10 years if unchanged.';
+  } else if (e.spdDistributed === 'no') {
+    spdStatus = 'actionNeeded';
+    spdFinding = 'Employees have not received an SPD.';
+    spdAction = 'This is a common audit finding. ERISA requires participants to receive an SPD within 90 days of enrollment. When you generate a Wrap Plan above, you receive a Wrap SPD — combine it with your carrier\'s benefits certificate/booklet to form the complete ERISA-compliant SPD package. The Wrap SPD provides the ERISA-required disclosures (rights, claims procedures, etc.) that carrier certificates typically don\'t include on their own.';
+  } else {
+    spdStatus = 'confirm';
+    spdFinding = 'You weren\'t sure whether SPDs have been distributed.';
+    spdAction = 'Employers should be able to demonstrate when and how SPDs were provided to plan participants. Review your records or distribute proactively. Note: when you generate a Wrap Plan above, the Wrap SPD it produces is meant to be combined with your carrier\'s certificate/booklet — together they form the complete SPD package required by ERISA.';
+  }
+  b.push({
+    key: 'spd',
+    title: 'Summary Plan Description (SPD)',
+    status: spdStatus,
+    description: 'A plain-language document explaining plan benefits, eligibility, and participant rights. ERISA requires distribution within 90 days of enrollment. Carrier certificates alone don\'t typically satisfy ERISA\'s SPD requirements — a Wrap SPD provides the missing disclosures.',
+    finding: spdFinding,
+    action: spdAction,
+    ctas: [],
+    links: []
+  });
+
+  if (t.medicalOffered) {
+    var sbcStatus, sbcFinding, sbcAction;
+    if (e.sbcDistributed === 'no') {
+      sbcStatus = 'actionNeeded';
+      sbcFinding = 'Employees have not received an SBC.';
+      sbcAction = 'The ACA generally requires a Summary of Benefits and Coverage for group health plans. Request current SBCs from your carrier and distribute them at enrollment, at renewal, and within 7 days of a written request.';
+    } else if (e.sbcDistributed === 'notSure') {
+      sbcStatus = 'confirm';
+      sbcFinding = 'You weren\'t sure whether employees have received an SBC.';
+      sbcAction = 'Confirm SBCs are distributed at enrollment, at renewal, and within 7 days of a written request. Your carrier typically prepares these — contact them if you haven\'t received them.';
+    } else {
+      sbcStatus = 'inPlace';
+      sbcFinding = e.sbcDistributed === 'yes'
+        ? 'You confirmed employees have received an SBC.'
+        : 'Your carrier typically provides SBCs automatically with your medical plan.';
+      sbcAction = 'Confirm SBCs are distributed at enrollment, at renewal, and within 7 days of a written request. Your carrier should furnish these — contact them if you haven\'t received them.';
+    }
+    b.push({
+      key: 'sbc',
+      title: 'Summary of Benefits and Coverage (SBC)',
+      status: sbcStatus,
+      description: 'A standardized ACA-required document provided by your insurance carrier showing what the plan covers and what it costs.',
+      finding: sbcFinding,
+      action: sbcAction,
+      ctas: [],
+      links: []
+    });
+  }
+
+  if (t.hasContrib && t.pretaxYes) {
+    var A, C, S, P = [];
+    if (e.section125InPlace === 'no') {
+      A = 'actionNeeded'; C = 'You don\'t have a written Section 125 cafeteria plan document.';
+      S = 'Pre-tax payroll deductions require a written Section 125 plan under IRS rules. Without it, those deductions technically lack legal standing. Generate a current document at no cost using our free tool below.';
+      P = ['sec125'];
+    } else if (e.section125InPlace === 'notSure') {
+      A = 'confirm'; C = 'You weren\'t sure whether a Section 125 plan document is in place.';
+      S = 'If pre-tax deductions are happening, a written Section 125 plan document is required by the IRS. If you\'re not sure whether one is in place — or if yours needs to be restated to reflect current plan design — you can generate a current document at no cost using our free tool below.';
+      P = ['sec125'];
+    } else if (e.section125Age === 'over3years') {
+      A = 'actionNeeded'; C = 'Your Section 125 plan document was last updated more than 3 years ago.';
+      S = 'Your Section 125 document may need restatement to reflect current benefit offerings, open enrollment processes, or election-change handling. Generate a refreshed version at no cost using our free tool below.';
+      P = ['sec125'];
+    } else if (e.section125Age === 'notSure') {
+      A = 'confirm'; C = 'You have a Section 125 document but weren\'t sure when it was last updated.';
+      S = 'Confirm it accurately reflects your current plan design and election procedures. If yours needs to be restated, generate a refreshed version at no cost using our free tool below.';
+      P = ['sec125'];
+    } else if (e.section125Age === '1to3years') {
+      A = 'inPlace'; C = 'Your Section 125 plan document is in place and reasonably current.';
+      S = 'Confirm it reflects your current benefit offerings and open enrollment process.';
+    } else {
+      A = 'inPlace'; C = 'Your Section 125 plan document is in place and current.';
+      S = 'Confirm elections are being administered consistently with the plan terms.';
+    }
+    b.push({
+      key: 'sec125',
+      title: 'Section 125 Cafeteria Plan Document',
+      status: A,
+      description: 'An IRS-required written plan that allows pre-tax payroll deductions for benefit contributions. Without it, pre-tax treatment lacks legal standing.',
+      finding: C,
+      action: S,
+      ctas: P,
+      links: []
+    });
+  } else if (t.hasContrib && t.pretaxNotSure) {
+    b.push({
+      key: 'sec125',
+      title: 'Section 125 Cafeteria Plan Document',
+      status: 'confirm',
+      description: 'An IRS-required written plan that allows pre-tax payroll deductions for benefit contributions.',
+      finding: 'You weren\'t sure whether employee deductions are taken pre-tax.',
+      action: 'Check with your payroll provider. If deductions are pre-tax, a written Section 125 plan document is required by the IRS. If you need one — or need yours restated — you can generate it at no cost using our free tool below.',
+      ctas: ['sec125'],
+      links: []
+    });
+  }
+
+  if (t.cobraApplies) {
+    var k, x, R;
+    var q = ' DK Benefits clients required to offer federal COBRA get notice administration handled by our office at no charge — and you keep the 2% surcharge instead of paying it to a third-party admin.';
+    if (e.cobraAdmin === 'noOne') {
+      k = 'actionNeeded';
+      x = 'No one is currently handling COBRA notice administration.';
+      R = 'Federal COBRA requires general/initial notices within 90 days of new enrollee coverage start, and election notices within 14 days of any qualifying event (termination, hour reduction, dependent aging out, etc.). Missing or late notices can result in significant penalties — and former employees can sue directly. Documented delivery with proof of mailing is your best protection.' + q;
+    } else if (e.cobraAdmin === 'notSure') {
+      k = 'confirm';
+      x = 'You weren\'t sure who handles COBRA notice administration.';
+      R = 'Federal COBRA requires general/initial notices within 90 days of new enrollee coverage start, and election notices within 14 days of any qualifying event. Confirm who\'s responsible for sending these notices — your broker, a third-party administrator, or in-house staff.' + q;
+    } else if (e.cobraAdmin === 'thirdParty') {
+      k = 'inPlace';
+      x = 'You indicated a third-party COBRA administrator handles this.';
+      R = 'Third-party COBRA administrators typically charge $1,000+/year plus per-event fees, and they keep the 2% admin surcharge themselves.' + q;
+    } else if (e.cobraAdmin === 'broker') {
+      k = 'inPlace';
+      x = 'You indicated your broker or benefits advisor handles COBRA notices.';
+      R = 'Confirm your broker is sending general/initial notices within 90 days of new enrollee coverage and election notices within 14 days of qualifying events, and maintaining proof of delivery.' + q;
+    } else if (e.cobraAdmin === 'inHouse') {
+      k = 'inPlace';
+      x = 'You indicated COBRA notices are handled in-house.';
+      R = 'Federal COBRA requires general/initial notices within 90 days of new enrollee coverage start, and election notices within 14 days of any qualifying event. Documented delivery with proof of mailing is your best protection — the DOL model notices below are the standard templates.' + q;
+    } else {
+      k = 'confirm';
+      x = 'COBRA administration status not confirmed.';
+      R = 'Federal COBRA requires general/initial notices within 90 days of new enrollee coverage start, and election notices within 14 days of any qualifying event.' + q;
+    }
+    b.push({
+      key: 'cobra',
+      title: 'COBRA Continuation Coverage',
+      status: k,
+      description: 'Federal COBRA generally applies to employers with 20+ employees, typically measured using the prior year\'s typical-business-day employee count rather than only today\'s FTE snapshot. Qualifying events trigger notice obligations. Notices must be tracked with documented delivery.',
+      finding: x,
+      action: R,
+      ctas: ['contact'],
+      links: [LINKS.cobraGeneralNotice, LINKS.cobraElectionNotice]
+    });
+  }
+
+  if (t.empCount === 'under20' && t.medicalOffered) {
+    var scStatus, scFinding, scAction, scCtas = [];
+    if (e.stateCobra === 'no') {
+      scStatus = 'actionNeeded';
+      scFinding = 'No process is currently in place for state continuation / mini-COBRA.';
+      scAction = 'Federal COBRA often does not apply under 20 employees, so state rules may be the only continuation requirement. Confirm whether your state requires continuation and, if it does, put a notice process in place. We can help you check — rules vary and this assessment does not apply a single-state standard.';
+      scCtas = ['contact'];
+    } else if (e.stateCobra === 'notSure') {
+      scStatus = 'confirm';
+      scFinding = 'You weren\'t sure whether a state continuation process is in place.';
+      scAction = 'Many states require continuation coverage for groups below the federal COBRA threshold. Confirm with counsel or your broker what applies where you operate. Do not assume federal COBRA non-applicability means no continuation duty.';
+      scCtas = ['contact'];
+    } else if (e.stateCobra === 'yes') {
+      scStatus = 'inPlace';
+      scFinding = 'You indicated you have a process for state continuation where it applies.';
+      scAction = 'Confirm the process matches your state\'s current rules (eligible plans, duration, and notice timing) and that qualifying events are tracked.';
+    } else {
+      scStatus = 'confirm';
+      scFinding = 'State continuation process was not confirmed.';
+      scAction = 'Because federal COBRA generally starts at 20 employees, check whether your state requires mini-COBRA or similar continuation for smaller groups.';
+      scCtas = ['contact'];
+    }
+    b.push({
+      key: 'state_cobra',
+      title: 'State Continuation / Mini-COBRA',
+      status: scStatus,
+      description: 'Federal COBRA generally begins at 20 employees (typically using a prior-year typical-business-day count). Many states require continuation coverage — sometimes called mini-COBRA — for smaller groups. Requirements, duration, and which plans are covered vary by state.',
+      finding: scFinding,
+      action: scAction,
+      ctas: scCtas,
+      links: []
+    });
+  }
+
+  if (t.aleApplies) {
+    if (!t.medicalOffered) {
+      b.push({
+        key: 'aca_no_medical',
+        title: 'ACA Medical Coverage Obligation',
+        status: 'actionNeeded',
+        description: 'As an Applicable Large Employer (50+ FTEs), you are generally required under the ACA to offer affordable, minimum-value health coverage to full-time employees.',
+        finding: 'You indicated you do not currently offer medical coverage. Offering only non-medical benefits (dental, vision, life) does not satisfy this requirement.',
+        action: 'Failure to offer compliant coverage can trigger employer shared responsibility penalties. There are more affordable options than most employers expect. Get an instant idea of coverage costs without sharing any identifiable info, or talk to our team about your specific situation.',
+        ctas: ['quote', 'contact'],
+        links: []
+      });
+    }
+    b.push({
+      key: 'aca_reporting',
+      title: 'ACA Employer Reporting (Forms 1094-C / 1095-C)',
+      status: e.benefitsOffered === 'nonMedicalOnly' ? 'actionNeeded' : 'confirm',
+      description: 'Applicable Large Employers must file Forms 1094-C and 1095-C annually with the IRS. These forms report offers of coverage and are used to assess shared responsibility exposure.',
+      finding: t.partTimeFTE
+        ? 'You\'re 50+ employees with a significant part-time workforce. Part-time hours convert to FTEs for ALE determination.'
+        : 'You\'re at 50+ employees, which places you in ALE territory.',
+      action: t.medicalOffered
+        ? 'Confirm your offer strategy meets ACA minimum value and affordability standards. The affordability percentage is indexed annually by the IRS. Most employers use one of three safe harbors — based on the employee\'s W-2 wages, hourly rate of pay, or the federal poverty level — to demonstrate compliance without having to verify each employee\'s actual income. Talk to our team to confirm your safe harbor choice is set up correctly.'
+        : 'ACA reporting is required regardless of whether you offer medical coverage. The affordability percentage is indexed annually by the IRS. Penalties apply for failing to offer affordable coverage to 95%+ of full-time employees.',
+      ctas: ['contact'],
+      links: []
+    });
+  } else if (t.empCount === '20to49' && t.partTimeFTE) {
+    b.push({
+      key: 'ale_borderline',
+      title: 'ACA ALE Status — Confirm',
+      status: 'confirm',
+      description: 'Applicable Large Employer (ALE) status under the ACA is based on full-time equivalent count, which includes part-time hours.',
+      finding: 'You indicated 20–49 full-time employees with a significant part-time workforce. Part-time hours convert to FTEs.',
+      action: 'Calculate your full FTE count to confirm whether ACA reporting and employer mandate rules apply. We can help you walk through the calculation.',
+      ctas: ['contact'],
+      links: []
+    });
+  }
+
+  var u, d, p;
+  if (e.annualNotices === 'yes') {
+    u = 'inPlace';
+    d = 'You confirmed annual notices are being distributed.';
+    p = 'Verify all three required notices go out each year: Medicare Part D (before October 15), CHIPRA/Medicaid (before plan year start), and WHCRA (at enrollment and annually).';
+  } else if (e.annualNotices === 'no') {
+    u = 'actionNeeded';
+    d = 'Required annual notices are not being distributed.';
+    p = 'Three notices are required annually for most group health plans regardless of size. Set up a simple annual distribution calendar. Model notices are linked below.';
+  } else {
+    u = 'confirm';
+    d = 'You weren\'t sure whether annual notices are distributed.';
+    p = 'Three notices are required annually for most group health plans: Medicare Part D, CHIPRA/Medicaid, and WHCRA. Confirm your distribution process or set one up. Model notices are linked below.';
+  }
+  b.push({
+    key: 'annual_notices',
+    title: 'Required Annual Notices',
+    status: u,
+    description: 'Three federal notices required annually for most group health plans: Medicare Part D creditable coverage, CHIPRA/Medicaid premium assistance, and WHCRA.',
+    finding: d,
+    action: p,
+    ctas: [],
+    links: [LINKS.partD, LINKS.chipra, LINKS.whcraHipaaSbc]
+  });
+
+  var exchangeCard = buildExchangeNoticeCard(e, true);
+  if (exchangeCard) b.push(exchangeCard);
+
+  if (t.medicalOffered) {
+    var m, g, w;
+    if (e.rxdcFamiliar === 'no') {
+      m = 'confirm';
+      g = 'You\'re not familiar with RxDC reporting.';
+      w = t.selfOrLevel
+        ? 'RxDC (Prescription Drug Data Collection) is required annually for group health plans with prescription drug coverage, due June 1 each year for the prior calendar year. Self-funded and level-funded plans carry legal responsibility even when a TPA files. Your role: confirm the filing arrangement with your TPA in writing, respond to TPA data requests (typically February–April), and keep proof of submission. The CMS RxDC page has full reporting instructions and the templates your TPA uses.'
+        : 'RxDC (Prescription Drug Data Collection) is required annually for group health plans with prescription drug coverage, due June 1 each year for the prior calendar year. For fully insured plans, your carrier typically handles the technical filing. Your role: respond to your carrier\'s data request when they reach out (typically February–April), and confirm in writing that they\'re submitting on your plan\'s behalf. The CMS RxDC page has full instructions if your carrier asks for specific employer info.';
+    } else if (e.rxdcStatus === 'carrierHandled' || e.rxdcStatus === 'filedDirectly') {
+      m = 'inPlace';
+      g = e.rxdcStatus === 'carrierHandled' ? 'Your carrier or TPA handled RxDC reporting.' : 'Your group filed RxDC reporting directly.';
+      w = t.selfOrLevel
+        ? 'Even though your TPA handles filing, legal responsibility stays with you as plan sponsor for self-funded and level-funded plans. Retain documentation of TPA\'s filing and verify completion each year by June 1.'
+        : 'Maintain a written agreement with your carrier specifying RxDC filing responsibility. Respond promptly to annual data requests (typically due to carrier in February–April for the June 1 CMS deadline).';
+    } else if (e.rxdcStatus === 'notDone') {
+      m = 'actionNeeded';
+      g = 'RxDC reporting wasn\'t completed for your most recent plan year.';
+      w = t.selfOrLevel
+        ? 'Self-funded and level-funded plans carry legal responsibility for filing personally. Contact your TPA immediately about the filing arrangement and your obligations. The annual June 1 deadline applies regardless of size or grandfathered status.'
+        : 'Reach out to your carrier — they\'re typically the reporting entity for fully insured plans. Get written confirmation they will file and respond to their data requests. Penalties can apply for non-filing.';
+    } else {
+      m = 'confirm';
+      g = 'You weren\'t sure of your RxDC filing status.';
+      w = t.selfOrLevel
+        ? 'Self-funded/level-funded plan sponsors carry legal RxDC liability. Confirm your TPA\'s filing arrangement in writing and request proof of completion for the most recent year.'
+        : 'Contact your insurance carrier and ask: Are you submitting RxDC on our plan\'s behalf? Was filing completed for the most recent reference year? Get the answer in writing.';
+    }
+    b.push({
+      key: 'rxdc',
+      title: 'RxDC (Prescription Drug Data) Reporting',
+      status: m,
+      description: 'Annual federal reporting required for group health plans with prescription drug coverage under the Consolidated Appropriations Act, 2021. Due June 1 each year for the prior calendar year. Applies to fully insured AND self-funded plans of all sizes — but in practice the carrier or TPA handles the technical filing.',
+      finding: g,
+      action: w,
+      ctas: [],
+      links: [LINKS.rxdc]
+    });
+  }
+
+  if (t.selfOrLevel) {
+    var D, N, O;
+    if (e.hipaaPrivacy === 'yes') {
+      D = 'inPlace';
+      N = 'You confirmed a HIPAA Notice of Privacy Practices is maintained and distributed.';
+      O = 'Distribute at enrollment and within 60 days of material changes. Provide a reminder of NPP availability every 3 years. Train staff handling PHI and document those trainings.';
+    } else if (e.hipaaPrivacy === 'no') {
+      D = 'actionNeeded';
+      N = 'No HIPAA Notice of Privacy Practices is currently in place.';
+      O = 'Self-funded and level-funded plans are direct HIPAA covered entities. You must maintain a written Notice of Privacy Practices, distribute it at enrollment and within 60 days of material changes, and follow PHI handling protocols.';
+    } else {
+      D = 'confirm';
+      N = 'You weren\'t sure whether a HIPAA Notice of Privacy Practices is in place.';
+      O = 'Self-funded/level-funded plans are direct HIPAA covered entities. Confirm with your TPA or compliance team whether an NPP has been issued and distributed.';
+    }
+    b.push({
+      key: 'hipaa_privacy',
+      title: 'HIPAA Notice of Privacy Practices',
+      status: D,
+      description: 'Self-funded and level-funded plans are direct HIPAA covered entities and must maintain their own Notice of Privacy Practices. Fully insured plans typically rely on the carrier\'s notice.',
+      finding: N,
+      action: O,
+      ctas: [],
+      links: [LINKS.hipaaPrivacy]
+    });
+  }
+
+  if (t.selfFunded) {
+    b.push({
+      key: 'pcori',
+      title: 'PCORI Fee Filing',
+      status: 'confirm',
+      description: 'The Patient-Centered Outcomes Research Institute fee is paid annually by self-funded plans via IRS Form 720.',
+      finding: 'Self-funded plans are subject to the PCORI fee.',
+      action: 'PCORI fees are due July 31 of the year following the plan year end via IRS Form 720. Confirm your TPA or CPA is filing this annually — it\'s commonly missed.',
+      ctas: [],
+      links: []
+    });
+    b.push({
+      key: 'nd_testing',
+      title: 'Non-Discrimination Testing',
+      status: 'confirm',
+      description: 'Self-funded health plans are subject to non-discrimination testing to ensure benefits do not favor highly compensated employees.',
+      finding: 'Self-funded plans require annual testing.',
+      action: 'Confirm testing is being performed annually by your TPA, CPA, or compliance vendor. Failures can result in adverse tax consequences for highly compensated employees.',
+      ctas: [],
+      links: []
+    });
+  }
+
+  if (r.form5500Status === 'required') {
+    b.push({
+      key: 'form5500',
+      title: 'Form 5500 Annual Filing',
+      status: t.hasPrior5500 ? 'confirm' : 'actionNeeded',
+      description: 'An annual return/report filed with the DOL via the EFAST2 system for plans with 100+ participants at the start of the plan year, or with plan assets, or in certain MEWA arrangements.',
+      finding: t.hasPrior5500
+        ? 'Based on your answers, Form 5500 filing is required and you\'ve filed before — continue the annual cadence.'
+        : 'Based on your answers, Form 5500 filing is required but you haven\'t filed before.',
+      action: 'Filing is typically handled by ERISA counsel, a specialized filing vendor, or a CPA. Due 7 months after plan year end (with extension available). After filing, the Summary Annual Report (SAR) must be distributed to participants within 9 months of plan year end.',
+      ctas: ['contact'],
+      links: []
+    });
+  } else if (r.form5500Status === 'confirm') {
+    b.push({
+      key: 'form5500',
+      title: 'Form 5500 Annual Filing',
+      status: 'confirm',
+      description: 'An annual DOL filing required for plans with 100+ participants at plan year start, plans with assets, or certain MEWA arrangements.',
+      finding: 'Your plan structure has some characteristics that may require Form 5500 filing.',
+      action: r.form5500Note || 'Confirm your participant count at the start of the plan year (including waived enrollees) and your plan structure to determine whether filing is required.',
+      ctas: ['contact'],
+      links: []
+    });
+  }
+
+  return b;
+}
+
+function buildStrategicItems(t) {
+  var r = [];
+  if (t.offersBenefits) {
+    r.push({
+      key: 'quote',
+      title: 'Compare your rates against some popular plans offered by DK Benefits',
+      body: 'See what coverage costs for your group size using major carrier networks. No identifiable info required — just enter ZIP and headcount. Try different contribution structures to find what works for your budget.',
+      ctaType: 'quote'
+    });
+    r.push({
+      key: 'strategy',
+      title: 'Review your overall benefits strategy',
+      body: 'Beyond compliance, there may be opportunities to improve your coverage, reduce costs, or offer a more competitive package. We review your current benefits program, shop across carriers, and look for cost-saving structures — all at no direct cost to you. Our compensation comes from the carriers, not from fees charged to employers.',
+      ctaType: 'contact'
+    });
+  }
+  return r;
+}
+
+function scoreAnswers(answers) {
+  var flags = deriveFlags(answers);
+  if (!flags.offersBenefits) return scoreNoBenefits(answers, flags);
+  var form5500 = determineForm5500(answers, flags);
+  var formMeta = { form5500Status: form5500.status, form5500Note: form5500.note };
+  var readiness = computeReadiness(answers, flags, formMeta);
+  var path = flags.aleApplies ? '4' : flags.cobraApplies ? '3' : '2';
+  return {
+    version: ENGINE_VERSION,
+    answers: answers,
+    path: path,
+    readiness: readiness,
+    snapshot: buildSnapshot(answers, flags, formMeta),
+    cards: sortCards(buildBenefitCards(answers, flags, formMeta)),
+    strategicItems: buildStrategicItems(flags)
+  };
+}
+
+/* ── RESULTS RENDER ── */
+function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
+function getReadinessClass(score) {
+  if (score >= 9) return 'score-strong';
+  if (score >= 7) return 'score-good';
+  if (score >= 5) return 'score-needs';
+  if (score >= 3) return 'score-action';
+  return 'score-gaps';
+}
+function getReadinessSubtext(score) {
+  if (score >= 9) return 'Your compliance posture looks solid. Periodic review is still recommended.';
+  if (score >= 7) return 'Core items appear to be in order. A few items to confirm or update.';
+  if (score >= 5) return 'Some important items need attention. Most are straightforward to address.';
+  if (score >= 3) return 'Multiple compliance items require action. We can help you prioritize.';
+  return 'Significant gaps identified. Let\'s get these addressed — most are fixable.';
+}
+function statusBadgeLabel(status) {
+  if (status === 'actionNeeded') return 'Action Needed';
+  if (status === 'confirm') return 'Confirm';
+  if (status === 'inPlace') return 'In Place';
+  return '';
+}
+
+function renderSnapshotGrid(lines) {
+  if (!Array.isArray(lines) || !lines.length) return '';
+  return lines.map(function(line) {
+    var cls = line.status ? 'status-' + line.status : '';
+    return '<div class="snapshot-item ' + cls + '"><strong>' + escHtml(line.label) + '</strong>' + escHtml(line.value) + '</div>';
+  }).join('');
+}
+function renderSnapshotAlert(alertText, alertSubText) {
+  if (!alertText) return '';
+  return '<div class="snapshot-alert" role="alert">' +
+    '<div class="snapshot-alert-icon" aria-hidden="true">!</div>' +
+    '<div><div class="snapshot-alert-text">' + escHtml(alertText) + '</div>' +
+    (alertSubText ? '<div class="snapshot-alert-sub">' + escHtml(alertSubText) + '</div>' : '') +
+    '</div></div>';
+}
+
+function renderCtaButton(type) {
+  if (type === 'wrap') {
+    return '<button class="inline-cta btn-wrap-inline" type="button" onclick="handleCTA(\'wrap\')" aria-label="Generate Free Wrap Plan Document">' +
+      '<div class="inline-cta-text"><span class="inline-cta-title">Generate Free Wrap Plan Document</span>' +
+      '<span class="inline-cta-sub">Many brokers charge $200–$500 — we provide it at no cost</span></div>' +
+      '<span class="inline-cta-arrow" aria-hidden="true">→</span></button>';
+  }
+  if (type === 'sec125') {
+    return '<button class="inline-cta btn-sec125-inline" type="button" onclick="handleCTA(\'sec125\')" aria-label="Generate Free Section 125 Document">' +
+      '<div class="inline-cta-text"><span class="inline-cta-title">Generate Free Section 125 Document</span>' +
+      '<span class="inline-cta-sub">A document many advisors charge for — at no cost here</span></div>' +
+      '<span class="inline-cta-arrow" aria-hidden="true">→</span></button>';
+  }
+  if (type === 'contact') {
+    return '<button class="inline-cta btn-contact-inline" type="button" onclick="handleCTA(\'contact\')" aria-label="Talk to Our Team">' +
+      '<div class="inline-cta-text"><span class="inline-cta-title">Talk to Our Team</span>' +
+      '<span class="inline-cta-sub">No obligation — guidance at no direct cost to you</span></div>' +
+      '<span class="inline-cta-arrow" aria-hidden="true">→</span></button>';
+  }
+  if (type === 'quote') {
+    return '<button class="inline-cta btn-quote-inline" type="button" onclick="handleCTA(\'quote\')" aria-label="Get an Instant Group Quote">' +
+      '<div class="inline-cta-text"><span class="inline-cta-title">Get an Instant Group Quote</span>' +
+      '<span class="inline-cta-sub">No identifiable info required — just ZIP and headcount</span></div>' +
+      '<span class="inline-cta-arrow" aria-hidden="true">→</span></button>';
+  }
+  return '';
+}
+
+function renderLinks(links) {
+  if (!Array.isArray(links) || !links.length) return '';
+  var html = links.map(function(link) {
+    return '<a class="notice-link" href="' + escHtml(link.url) + '" target="_blank" rel="noopener">' +
+      '<div class="notice-link-label">' + escHtml(link.label) + ' <span class="notice-link-arrow" aria-hidden="true">↗</span></div>' +
+      (link.helper ? '<div class="notice-link-helper">' + escHtml(link.helper) + '</div>' : '') +
+      '</a>';
+  }).join('');
+  return '<div class="action-card-links">' + html + '</div>';
+}
+
+function renderActionCard(card) {
+  var badge = statusBadgeLabel(card.status);
+  var ctasHTML = Array.isArray(card.ctas) && card.ctas.length
+    ? '<div class="action-card-ctas">' + card.ctas.map(renderCtaButton).join('') + '</div>'
+    : '';
+  return '<article class="action-card status-' + escHtml(card.status) + '" aria-label="' + escHtml(card.title) + ' — ' + escHtml(badge) + '">' +
+    '<header class="action-card-header">' +
+    '<div class="action-card-title">' + escHtml(card.title) + '</div>' +
+    '<span class="status-badge status-' + escHtml(card.status) + '">' + escHtml(badge) + '</span></header>' +
+    '<div class="action-card-body">' +
+    '<div class="action-card-section"><div class="action-card-label">What it is</div>' +
+    '<div class="action-card-text">' + escHtml(card.description) + '</div></div>' +
+    '<div class="action-card-section"><div class="action-card-label">What we found</div>' +
+    '<div class="action-card-text action-card-finding">' + escHtml(card.finding) + '</div></div>' +
+    '<div class="action-card-section"><div class="action-card-label">What to do</div>' +
+    '<div class="action-card-text">' + escHtml(card.action) + '</div>' +
+    ctasHTML + renderLinks(card.links) +
+    '</div></div></article>';
+}
+
+function renderStrategicCard(item) {
+  return '<div class="strategic-card"><div class="strategic-card-title">' + escHtml(item.title) + '</div>' +
+    '<div class="strategic-card-body">' + escHtml(item.body) + '</div>' +
+    renderCtaButton(item.ctaType) + '</div>';
+}
+
+function renderLegalAndRestart() {
+  return '<div class="section-divider" aria-hidden="true"></div>' +
+    '<div class="legal-notice"><div class="legal-notice-title">Important Legal Notice</div>' +
+    '<p>This compliance assessment is provided for general informational and educational purposes only. It is not legal, tax, accounting, or ERISA advice, and it does not create an advisor-client, broker-client, or fiduciary relationship of any kind.</p>' +
+    '<p>The results, explanations, and checklist generated here are based solely on the information you selected and are intended to highlight common compliance considerations, not to provide definitive guidance or confirm compliance. Laws and regulations vary based on plan design, funding arrangement, employer size, and other facts that may not be fully captured here. Final determinations require review of your specific plan documents and circumstances.</p>' +
+    '<p>Responsibility for compliance always remains with the employer. DK Benefits LLC does not assume responsibility or liability for actions taken, or not taken, based on the use of this assessment or its results.</p>' +
+    '<p>You should consult with qualified ERISA counsel, a compliance professional, your payroll provider, or other appropriate advisors before making compliance decisions or filings. We are happy to help point you to resources, tools, or next steps, but final determinations should always be confirmed by professionals familiar with your specific situation.</p>' +
+    '</div><div class="start-over-row">' +
+    '<button class="btn-start-over" type="button" onclick="handleRestart()" aria-label="Start the assessment over from the beginning">Start Over</button></div>';
+}
+
+function renderResults(data) {
+  var isNoBenefits = !data.answers || data.answers.offerBenefits !== 'yes';
+  var cardsHTML = Array.isArray(data.cards) && data.cards.length ? data.cards.map(renderActionCard).join('') : '';
+  var strategicHTML = Array.isArray(data.strategicItems) && data.strategicItems.length
+    ? '<div class="strategic-section-header">Strategic considerations</div>' + data.strategicItems.map(renderStrategicCard).join('')
+    : '';
+  var readiness = data.readiness || {};
+  var readinessHTML = '';
+  if (readiness.score) {
+    readinessHTML = '<div class="readiness-row ' + getReadinessClass(readiness.score) + '">' +
+      '<div class="readiness-score-display" aria-label="Compliance readiness score: ' + escHtml(readiness.score) + ' out of 10">' +
+      escHtml(readiness.score) + '<span class="readiness-score-denom">/10</span></div>' +
+      '<div><span class="readiness-label">Compliance Readiness: ' + escHtml(readiness.label) + '</span>' +
+      '<span class="readiness-sub">' + escHtml(getReadinessSubtext(readiness.score)) + '</span></div></div>';
+  }
+  var snapshot = data.snapshot || {};
+  var snapshotTitle = isNoBenefits ? 'Your Benefits Overview' : 'Executive Compliance Snapshot';
+  document.getElementById('resultsView').innerHTML =
+    '<div class="no-data-notice"><span aria-hidden="true">🔒</span> Your answers stay on your screen — nothing is collected or stored.</div>' +
+    '<section class="snapshot-card" aria-label="' + snapshotTitle + '"><div class="snapshot-header">' +
+    '<h2 class="snapshot-title">' + snapshotTitle + '</h2>' +
+    renderSnapshotAlert(snapshot.alertText, snapshot.alertSubText) +
+    '<div class="snapshot-grid">' + renderSnapshotGrid(snapshot.lines) + '</div>' +
+    readinessHTML +
+    '<button class="btn-talk-expert" type="button" onclick="handleCTA(\'contact\')" aria-label="Talk to an Expert">Talk to an Expert →</button>' +
+    '</div></section>' +
+    '<h2 class="results-section-title">' + (isNoBenefits ? 'What this means for you' : 'Your Compliance Action Items') + '</h2>' +
+    '<div class="results-subtitle">Based on your answers. Items requiring action appear first, followed by items to confirm, then items in place. Final determinations require review of your specific plan documents and circumstances.</div>' +
+    cardsHTML + strategicHTML + renderLegalAndRestart();
+}
+
+function handleCTA(type) {
+  var url = null;
+  if (type === 'wrap') url = URL_WRAP;
+  else if (type === 'sec125') url = URL_SEC125;
+  else if (type === 'contact') url = URL_CONTACT;
+  else if (type === 'quote') url = URL_QUOTE;
+  if (url) {
+    try { window.open(url, '_blank', 'noopener'); } catch (err) {}
+    window.parent.postMessage({ type: 'cta', payload: { tool: type, url: url } }, '*');
+  }
+}
+
+/* ── QUIZ STATE ── */
+var answers = {};
+var currentIndex = 0;
+var flow = [];
+var focusedOptionIndex = -1;
+var lastResizeH = 0;
+
+function buildFlow() {
+  return questions.filter(function(q) {
+    return typeof q.showIf === 'function' ? q.showIf(answers) : true;
+  });
+}
+function getCurrentQuestion() { return flow[currentIndex]; }
+
+function hasAnswer(q) {
+  if (!q) return false;
+  if (q.multiSelect) return Array.isArray(answers[q.id]) && answers[q.id].length > 0;
+  return answers[q.id] !== undefined && answers[q.id] !== null && answers[q.id] !== '';
+}
+
+function countAnsweredInFlow() {
+  return flow.filter(hasAnswer).length;
+}
+
+function getProgressPct() {
+  var unlocked = Math.max(flow.length, 1);
+  var answered = countAnsweredInFlow();
+  return Math.min(100, Math.round((answered / unlocked) * 100));
+}
+
+function measureHeight() {
+  var h = 0;
+  function include(el) {
+    if (!el) return;
+    var r = el.getBoundingClientRect();
+    h = Math.max(h, el.scrollHeight, el.offsetHeight, Math.ceil(r.height));
+  }
+  include(document.querySelector('.app-shell'));
+  var quiz = document.getElementById('quizView');
+  var results = document.getElementById('resultsView');
+  if (quiz && !quiz.classList.contains('is-hidden')) include(quiz);
+  if (results && results.classList.contains('is-visible')) include(results);
+  include(document.body);
+  return Math.max(400, Math.ceil(h + 24));
+}
+
+function sendResize() {
+  setTimeout(function() {
+    var h = measureHeight();
+    lastResizeH = h;
+    window.parent.postMessage({ type: 'resize', height: h }, '*');
+  }, 50);
+}
+
+function showQuiz() {
+  document.getElementById('quizView').classList.remove('is-hidden');
+  document.getElementById('resultsView').classList.remove('is-visible');
+  document.getElementById('resultsView').innerHTML = '';
+}
+
+function showResultsView() {
+  document.getElementById('quizView').classList.add('is-hidden');
+  document.getElementById('resultsView').classList.add('is-visible');
+}
+
+function render() {
+  flow = buildFlow();
+  if (currentIndex >= flow.length) {
+    submitAssessment();
+    return;
+  }
+  var q = getCurrentQuestion();
+  var num = currentIndex + 1;
+  var isLast = currentIndex === flow.length - 1;
+  var pct = getProgressPct();
+
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressBar').setAttribute('aria-valuenow', pct);
+  document.getElementById('headerProgress').innerHTML = isLast
+    ? '<span class="final-hint">Final step</span>'
+    : 'Step ' + num;
+  document.getElementById('progressLabel').textContent = 'Step ' + num;
+
+  document.getElementById('introBanner').style.display = currentIndex === 0 ? 'flex' : 'none';
+  document.getElementById('questionText').textContent = q.text;
+
+  var helperEl = document.getElementById('questionHelper');
+  if (q.helper) {
+    helperEl.textContent = q.helper;
+    helperEl.style.display = 'block';
+  } else {
+    helperEl.style.display = 'none';
+  }
+  document.getElementById('multiselectHint').style.display = q.multiSelect ? 'block' : 'none';
+
+  var optionsList = document.getElementById('optionsList');
+  optionsList.innerHTML = '';
+  optionsList.setAttribute('role', q.multiSelect ? 'group' : 'radiogroup');
+
+  q.options.forEach(function(opt, idx) {
+    var isSelected = q.multiSelect
+      ? (Array.isArray(answers[q.id]) && answers[q.id].indexOf(opt.value) !== -1)
+      : (answers[q.id] === opt.value);
+    var card = document.createElement('div');
+    card.className = 'option-card' + (q.multiSelect ? ' multi' : '') + (isSelected ? ' selected' : '');
+    card.setAttribute('role', q.multiSelect ? 'checkbox' : 'radio');
+    card.setAttribute('aria-checked', isSelected ? 'true' : 'false');
+    card.setAttribute('tabindex', idx === 0 ? '0' : '-1');
+    card.setAttribute('data-idx', idx);
+    card.setAttribute('aria-label', opt.label);
+    card.innerHTML = '<div class="option-radio" aria-hidden="true"><div class="option-radio-dot"></div></div>' +
+      '<div class="option-label">' + escHtml(opt.label) + '</div>';
+    card.onclick = function() { selectOption(opt.value, opt.exclusive); };
+    optionsList.appendChild(card);
+  });
+
+  document.getElementById('validationMsg').textContent = '';
+  document.getElementById('btnBack').disabled = currentIndex === 0;
+  document.getElementById('btnNext').textContent = isLast ? 'See My Results' : 'Next';
+  focusedOptionIndex = -1;
+}
+
+function selectOption(value, isExclusive) {
+  var q = getCurrentQuestion();
+  if (q.multiSelect) {
+    if (!Array.isArray(answers[q.id])) answers[q.id] = [];
+    if (isExclusive) {
+      if (answers[q.id].length === 1 && answers[q.id][0] === value) answers[q.id] = [];
+      else answers[q.id] = [value];
+    } else {
+      var exclusiveValues = q.options.filter(function(o) { return o.exclusive; }).map(function(o) { return o.value; });
+      answers[q.id] = answers[q.id].filter(function(v) { return exclusiveValues.indexOf(v) === -1; });
+      var idx = answers[q.id].indexOf(value);
+      if (idx === -1) answers[q.id].push(value);
+      else answers[q.id].splice(idx, 1);
+    }
+  } else {
+    answers[q.id] = value;
+  }
+  document.getElementById('validationMsg').textContent = '';
+  render();
+  flow = buildFlow();
+  document.getElementById('btnNext').textContent = currentIndex === flow.length - 1 ? 'See My Results' : 'Next';
+  sendResize();
+}
+
+function goNext() {
+  var q = getCurrentQuestion();
+  if (q.required && !hasAnswer(q)) {
+    document.getElementById('validationMsg').textContent = 'Please select an answer to continue.';
+    return;
+  }
+  flow = buildFlow();
+  currentIndex++;
+  if (currentIndex >= flow.length) {
+    submitAssessment();
+    return;
+  }
+  render();
+  sendResize();
+}
+
+function goBack() {
+  if (currentIndex > 0) {
+    currentIndex--;
+    render();
+    sendResize();
+  }
+}
+
+function submitAssessment() {
+  var payload = scoreAnswers(answers);
+  window.parent.postMessage({ type: 'quizComplete', payload: { answers: Object.assign({}, answers) } }, '*');
+  window.parent.postMessage({ type: 'renderResults', payload: payload }, '*');
+  showResultsView();
+  renderResults(payload);
+  sendResize();
+}
+
+function handleRestart() {
+  answers = {};
+  currentIndex = 0;
+  flow = buildFlow();
+  showQuiz();
+  render();
+  sendResize();
+  window.parent.postMessage({ type: 'restart' }, '*');
+}
+
+function focusOption(idx) {
+  var cards = document.getElementById('optionsList').querySelectorAll('.option-card');
+  if (idx < 0 || idx >= cards.length) return;
+  cards.forEach(function(c, i) { c.setAttribute('tabindex', i === idx ? '0' : '-1'); });
+  cards[idx].focus();
+  focusedOptionIndex = idx;
+}
+
+function handleKeyDown(e) {
+  var quizVisible = !document.getElementById('quizView').classList.contains('is-hidden');
+  if (!quizVisible) return;
+  var cards = document.getElementById('optionsList').querySelectorAll('.option-card');
+  if (!cards.length) return;
+  var target = e.target;
+  var isOptionFocused = target && target.classList && target.classList.contains('option-card');
+  if (!isOptionFocused) return;
+  var idx = parseInt(target.getAttribute('data-idx'), 10);
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+    e.preventDefault();
+    focusOption(Math.min(idx + 1, cards.length - 1));
+  } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+    e.preventDefault();
+    focusOption(Math.max(idx - 1, 0));
+  } else if (e.key === ' ' || e.key === 'Spacebar') {
+    e.preventDefault();
+    target.click();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    var q = getCurrentQuestion();
+    var opt = q.options[idx];
+    var isCurrentlySelected = q.multiSelect
+      ? (Array.isArray(answers[q.id]) && answers[q.id].indexOf(opt.value) !== -1)
+      : (answers[q.id] === opt.value);
+    if (!isCurrentlySelected) target.click();
+    else goNext();
+  }
+}
+
+document.getElementById('btnBack').addEventListener('click', goBack);
+document.getElementById('btnNext').addEventListener('click', goNext);
+document.addEventListener('keydown', handleKeyDown);
+
+window.addEventListener('message', function(e) {
+  if (!e.data || typeof e.data !== 'object') return;
+  if (e.source === window) return;
+  if (e.data.type === 'restart') handleRestart();
+  if (e.data.type === 'renderResults' && e.data.payload) {
+    showResultsView();
+    renderResults(e.data.payload);
+    sendResize();
+  }
+});
+
+if (typeof ResizeObserver !== 'undefined') {
+  var ro = new ResizeObserver(function() { sendResize(); });
+  ro.observe(document.body);
+}
+
+window.DKCompliance = {
+  scoreAnswers: scoreAnswers,
+  questions: questions,
+  version: ENGINE_VERSION
+};
+
+window.addEventListener('load', function() {
+  if (window.self !== window.top) document.body.classList.add('embedded');
+  flow = buildFlow();
+  render();
+  sendResize();
+});
+</script>
+</body>
+</html>
