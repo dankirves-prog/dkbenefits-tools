@@ -9,7 +9,9 @@ Self-contained quiz + scoring + results (no Wix Velo). Scoring is a port of the 
 - `compliance-assessment.html` — single-page assessment, hosted at `https://dankirves-prog.github.io/dkbenefits-tools/compliance-assessment.html`
 - `compliance-assessment-embed.html` — optional height:100% Wix HtmlComponent shim that iframes the Pages URL and forwards `postMessage` both ways (same pattern as Wrap / `section125-embed.html`). Does not set iframe height from resize messages.
 
-**Live Wix:** use **one** HtmlComponent, width 100%, with a tall fixed height (~4800px recommended so results don’t nest-scroll; Wrap/S125 use ~1900–2000px for shorter tools). Prefer pointing the HtmlComponent **directly** at `compliance-assessment.html` (same as Section 125), or at this height:100% embed shim (same as Wrap).
+The assessment posts `{ type: 'resize', height }` on load, fonts ready, each step change, option select, and window resize (debounced; sent twice after layout). Height is the document content height, not a clipped iframe rect.
+
+**Live Wix:** one HtmlComponent pointed at `compliance-assessment.html`. A simple Velo `onMessage` listener sets the HtmlComponent height to `data.height +` a small pad — no `Math.max` floor and no 670px minimum. Do not use a fixed ~4800px box as the primary approach; parent-driven auto-height is the live pattern. Embedded `body` does not force `min-height: 100vh`, so short steps do not paint a tall empty canvas inside the HtmlComponent.
 
 Local preview:
 
