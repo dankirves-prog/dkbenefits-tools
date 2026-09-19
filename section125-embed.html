@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>html,body{margin:0;padding:0;height:100%;width:100%;overflow:hidden}iframe{border:0;width:100%;height:100%;display:block}</style>
+</head>
+<body>
+<iframe id="formFrame" src="https://dankirves-prog.github.io/dkbenefits-tools/section125.html" allow="clipboard-write"></iframe>
+<script>
+var frame = document.getElementById('formFrame');
+window.addEventListener('message', function(e) {
+  if (e.source === frame.contentWindow) {
+    window.parent.postMessage(e.data, '*');
+  } else if (e.source === window.parent) {
+    frame.contentWindow.postMessage(e.data, '*');
+  }
+});
+</script>
+</body>
+</html>

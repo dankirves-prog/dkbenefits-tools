@@ -2,6 +2,11 @@
 
 The quote tool demo is now isolated in its own folder so existing files (including `wrapplan.html`) are not affected.
 
+## Section 125 Plan Tool
+
+- `section125.html` — Section 125 cafeteria plan wizard, hosted on GitHub Pages at `https://dankirves-prog.github.io/dkbenefits-tools/section125.html`
+- `section125-embed.html` — Wix HtmlComponent shim that iframes the Pages URL and forwards `postMessage` both ways (same pattern as the Wrap Plan filesusr shim)
+
 ## Quote Tool Demo Location
 
 - Local path: `quote-tool-demo/`
