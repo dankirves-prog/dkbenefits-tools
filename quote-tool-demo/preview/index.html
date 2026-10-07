@@ -76,15 +76,17 @@
         <div class="results-top">
           <p class="eyebrow">Group rates</p>
           <h2 id="results-heading">Your group</h2>
-          <p id="results-summary" class="summary-line"></p>
           <p id="rates-as-of" class="as-of" hidden></p>
           <p id="participation-note" class="message" hidden></p>
         </div>
 
         <div id="results-actions" class="results-actions">
-          <button type="button" id="my-plans-btn" class="btn btn-secondary" aria-expanded="false" aria-controls="my-plans-panel">My Plans (0)</button>
+          <p id="results-summary" class="summary-line"></p>
           <p class="inline-cta">Questions? Call or text Daniel <a href="tel:4074765076">407-476-5076</a></p>
-          <button type="button" id="goto-lead" class="btn btn-primary">Get my plan details</button>
+          <div class="results-actions-buttons">
+            <button type="button" id="my-plans-btn" class="btn btn-secondary" aria-expanded="false" aria-controls="my-plans-panel">My Plans (0)</button>
+            <button type="button" id="goto-lead" class="btn btn-primary">Get my plan details</button>
+          </div>
         </div>
         <div id="my-plans-slot">
           <section id="my-plans-panel" class="panel my-plans" hidden aria-labelledby="drawer-heading">
@@ -100,8 +102,15 @@
           </section>
         </div>
 
+        <div class="results-grid">
+        <div class="side-tools">
         <section class="panel mix-panel" aria-labelledby="mix-heading">
-          <h3 id="mix-heading">Estimated enrollment mix</h3>
+          <div class="mix-head">
+            <h3 id="mix-heading">Estimated enrollment mix</h3>
+            <button type="button" id="mix-toggle" class="btn btn-secondary" aria-expanded="false" aria-controls="mix-details">Adjust</button>
+          </div>
+          <p id="mix-summary-line" class="mix-summary"></p>
+          <div id="mix-details">
           <div class="mix-grid">
             <label for="mix-ee">Employee only
               <input id="mix-ee" data-mix="employeeOnly" type="number" min="0" step="1" inputmode="numeric" />
@@ -118,36 +127,9 @@
           </div>
           <p id="mix-note" class="hint" role="status"></p>
           <p class="tier-legend">Tiers: Employee, Employee + Spouse, Employee + Child, Family.</p>
+          </div>
         </section>
 
-        <div class="toolbar">
-          <div class="sort-field">
-            <label for="sort-mode">Sort options</label>
-            <select id="sort-mode">
-              <option value="price">Lowest monthly premium</option>
-              <option value="carrier">Carrier</option>
-              <option value="recommended">Recommended</option>
-              <option value="lowestCost">Lowest employer cost</option>
-              <option value="strongestCoverage">Strongest coverage</option>
-            </select>
-          </div>
-          <div id="carrier-filters" class="chips" role="radiogroup" aria-label="Filter by carrier"></div>
-          <div class="toolbar-actions">
-            <button type="button" id="edit-btn" class="btn btn-secondary">Edit answers</button>
-            <button type="button" id="start-over-btn" class="btn btn-secondary">Start over</button>
-            <button type="button" id="print-btn" class="btn btn-secondary">Print / Save as PDF</button>
-          </div>
-          <p id="print-help" class="hint print-help">Prints every plan in the current list. Save plans to print just those.</p>
-          <div id="start-over-confirm" class="confirm-panel" hidden>
-            <p id="start-over-message">Start over? This clears your answers.</p>
-            <div class="confirm-actions">
-              <button type="button" id="start-over-yes" class="btn btn-primary">Yes, start over</button>
-              <button type="button" id="start-over-no" class="btn btn-secondary">Keep working</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="quote-layout">
         <section id="contrib" class="panel contrib" aria-labelledby="contrib-heading">
           <div class="contrib-head">
             <h3 id="contrib-heading">Contribution</h3>
@@ -209,8 +191,36 @@
           </select>
           </div>
         </section>
+        </div>
 
         <div class="quote-main">
+        <div class="toolbar">
+          <div class="sort-field">
+            <label for="sort-mode">Sort options</label>
+            <select id="sort-mode">
+              <option value="price">Lowest monthly premium</option>
+              <option value="carrier">Carrier</option>
+              <option value="recommended">Recommended</option>
+              <option value="lowestCost">Lowest employer cost</option>
+              <option value="strongestCoverage">Strongest coverage</option>
+            </select>
+          </div>
+          <div id="carrier-filters" class="chips" role="radiogroup" aria-label="Filter by carrier"></div>
+          <div class="toolbar-actions">
+            <button type="button" id="edit-btn" class="btn btn-secondary">Edit answers</button>
+            <button type="button" id="start-over-btn" class="btn btn-secondary">Start over</button>
+            <button type="button" id="print-btn" class="btn btn-secondary">Print / Save as PDF</button>
+          </div>
+          <p id="print-help" class="hint print-help">Prints every plan in the current list. Save plans to print just those.</p>
+          <div id="start-over-confirm" class="confirm-panel" hidden>
+            <p id="start-over-message">Start over? This clears your answers.</p>
+            <div class="confirm-actions">
+              <button type="button" id="start-over-yes" class="btn btn-primary">Yes, start over</button>
+              <button type="button" id="start-over-no" class="btn btn-secondary">Keep working</button>
+            </div>
+          </div>
+        </div>
+
         <p id="filter-empty" class="message" hidden>No plans match this carrier.</p>
 
         <section id="section-top" aria-labelledby="top-heading">
@@ -241,9 +251,13 @@
 
         <div id="lead-home">
         <section id="lead" class="panel lead" aria-labelledby="lead-heading">
-          <h3 id="lead-heading">Get these plan details and more options from Daniel.</h3>
-          <p>Share your contact info for a quick, no-pressure conversation with Daniel about the best next steps for your company.</p>
-          <p id="lead-saved-note" class="hint">Save any plans you want included, and Daniel will receive them with this request.</p>
+          <div class="lead-head">
+            <h3 id="lead-heading">Get your plan details from Daniel</h3>
+            <button type="button" id="lead-back" class="btn btn-secondary">Back to plans</button>
+          </div>
+          <p id="lead-next">Daniel will follow up with the plans listed here.</p>
+          <p id="lead-saved-note" class="hint">All plans shown will be included with this request.</p>
+          <ul id="lead-plan-list" class="lead-plan-list"><li>All plans shown</li></ul>
           <form id="lead-form">
             <label for="first-name">First name
               <input id="first-name" name="firstName" type="text" autocomplete="given-name" required placeholder="First name" />

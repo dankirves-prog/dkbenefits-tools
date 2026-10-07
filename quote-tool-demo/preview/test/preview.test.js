@@ -866,7 +866,16 @@ test('preview layout does not pin controls to the screen', () => {
   assert.equal(css.includes('100vh'), false);
   assert.match(page, /id="results-actions"/);
   assert.match(page, /class="header-phone"/);
+  assert.match(page, /Get your plan details from Daniel/);
+  assert.match(page, /Back to plans/);
+  assert.match(page, /class="results-grid"/);
   assert.equal((page.match(/Questions\? Call or text Daniel/g) || []).length, 1);
+  const live = fs.readFileSync(path.join(ROOT, 'quote-tool.html'), 'utf8');
+  assert.match(live, /Get your plan details from Daniel/);
+  assert.match(live, /preview\/preview\.css/);
+  assert.match(live, /preview\/preview\.js/);
+  assert.match(css, /results-grid/);
+  assert.equal(css.includes('position: sticky'), false);
   assert.equal(js.includes('cta-strip'), false);
   assert.doesNotMatch(page, /id="dock"/);
   assert.doesNotMatch(page, /id="plans-drawer"/);
