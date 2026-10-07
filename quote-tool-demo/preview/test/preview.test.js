@@ -260,7 +260,7 @@ async function flushActivity() {
   await new Promise((resolve) => setImmediate(resolve));
 }
 
-function trackerFor(storage, posts, search) {
+function trackerFor(storage, posts, search, pathname) {
   const tracker = activity.createQuoteActivityTracker({
     storage,
     post: (payload) => {
@@ -269,7 +269,8 @@ function trackerFor(storage, posts, search) {
     },
     now: () => new Date(FIXED)
   });
-  tracker.captureLandingUtms(preview.attributionSearch(search || ''));
+  const path = pathname == null ? '/quote-tool-demo/quote-tool.html' : pathname;
+  tracker.captureLandingUtms(preview.attributionSearch(search || '', path));
   return tracker;
 }
 
@@ -429,26 +430,42 @@ test('lead POST payload matches the live tool byte for byte', async () => {
   await compare(SCENARIOS[2], { firstName: 'Grace', email: 'grace@example.com', phone: '' });
 });
 
-test('preview tags attribution with utm_source=preview only when no UTM params are present', async () => {
-  assert.equal(preview.attributionSearch(''), '?utm_source=preview');
-  assert.equal(preview.attributionSearch('?'), '?utm_source=preview');
-  assert.equal(preview.attributionSearch('?utm_source=not-an-email'), '?utm_source=not-an-email');
-  assert.equal(preview.attributionSearch(UTM), UTM);
+test('live visitors keep the old attribution, and only the preview path adds utm_source=preview', async () => {
+  const livePath = '/quote-tool-demo/quote-tool.html';
+  const previewPath = '/quote-tool-demo/preview/index.html';
+  assert.equal(preview.attributionSearch('', livePath), '');
+  assert.equal(preview.attributionSearch('?', livePath), '?');
+  assert.equal(preview.attributionSearch('', previewPath), '?utm_source=preview');
+  assert.equal(preview.attributionSearch('?', '/quote-tool-demo/preview/'), '?utm_source=preview');
+  assert.equal(preview.attributionSearch('?utm_source=not-an-email', livePath), '?utm_source=not-an-email');
+  assert.equal(preview.attributionSearch(UTM, livePath), UTM);
+  assert.equal(preview.attributionSearch(UTM, previewPath), UTM);
   assert.equal(preview.WEBHOOK_URL, WEBHOOK);
   assert.equal(LIVE_SOURCE.indexOf(WEBHOOK) !== -1, true);
 
   const barePosts = [];
   const bare = preview.createModel({
     plans: PLANS,
-    tracker: trackerFor(memoryStorage(), barePosts, ''),
+    tracker: trackerFor(memoryStorage(), barePosts, '', livePath),
     pageUrl: PAGE,
     now: () => new Date(FIXED)
   });
   reach(bare, 10, 7);
   await flushActivity();
   assert.equal(barePosts.filter((post) => post.event === 'rates_displayed').length, 1);
-  assert.equal(barePosts.find((post) => post.event === 'rates_displayed').utm_source, 'preview');
+  assert.equal(Object.hasOwn(barePosts.find((post) => post.event === 'rates_displayed'), 'utm_source'), false);
   assert.equal(barePosts.find((post) => post.event === 'rates_displayed').utm_medium, undefined);
+
+  const previewPosts = [];
+  const previewVisit = preview.createModel({
+    plans: PLANS,
+    tracker: trackerFor(memoryStorage(), previewPosts, '', previewPath),
+    pageUrl: 'https://example.test/quote-tool-demo/preview/index.html',
+    now: () => new Date(FIXED)
+  });
+  reach(previewVisit, 10, 7);
+  await flushActivity();
+  assert.equal(previewPosts.find((post) => post.event === 'rates_displayed').utm_source, 'preview');
 
   const taggedPosts = [];
   const tagged = preview.createModel({

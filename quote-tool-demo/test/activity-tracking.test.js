@@ -661,7 +661,8 @@ test('the merged script is the paste-ready file and the page still posts the fie
   assert.equal(serverSource.includes('AKfycby4-ZxTQfsAgIBO0JYSngccVoj5HRKtNshy6N2XlJhbxaEk2oW7b_xIRBGlcSq0CZ0z'), false);
 
   const page = fs.readFileSync(path.join(__dirname, '../quote-tool.js'), 'utf8');
-  const html = fs.readFileSync(path.join(__dirname, '../quote-tool.html'), 'utf8');
+  const classic = fs.readFileSync(path.join(__dirname, '../quote-tool-classic.html'), 'utf8');
+  const live = fs.readFileSync(path.join(__dirname, '../quote-tool.html'), 'utf8');
   assert.equal(page.includes('firstName: firstName.value.trim()'), true);
   assert.equal(page.includes('email: email.value.trim()'), true);
   assert.equal(page.includes('phone: phone.value.trim()'), true);
@@ -670,5 +671,13 @@ test('the merged script is the paste-ready file and the page still posts the fie
   assert.equal(page.includes('contribution: {'), true);
   assert.equal(page.includes('selectedPlans: Array.from(selectedPlans.values())'), true);
   assert.equal(page.includes('activityTracker.decorateLeadPayload('), true);
-  assert.equal(html.indexOf('quote-activity.js') < html.indexOf('quote-tool.js'), true);
+  assert.equal(classic.indexOf('quote-activity.js') < classic.indexOf('quote-tool.js'), true);
+  assert.equal(classic.includes('quote-tool.css'), true);
+  assert.equal(live.includes('quote-activity.js'), true);
+  assert.equal(live.includes('preview/preview.js'), true);
+  assert.equal(live.includes('preview/preview.css'), true);
+  assert.equal(live.includes('preview/quote-math.js'), true);
+  assert.equal(live.includes('utm_source=preview'), false);
+  assert.equal(live.includes('quote-tool.js'), false);
+  assert.equal(live.includes('100vh'), false);
 });
