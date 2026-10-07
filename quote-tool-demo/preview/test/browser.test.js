@@ -644,6 +644,59 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.equal(leaked, false);
     assert.ok(posts.every((post) => post.url.includes(WEBHOOK)));
 
+    await evaluate('sessionStorage.clear()');
+    await send('Page.navigate', { url: `${ORIGIN}/quote-tool-demo/quote-tool-classic.html` }, sessionId);
+    await waitFor(async () => String(await evaluate('document.getElementById("questionHost") && document.getElementById("questionHost").innerText')).includes('What state'), 'classic question');
+    const classicScripts = await evaluate('[...document.scripts].map((script) => script.getAttribute("src")).join(" ")');
+    assert.match(classicScripts, /quote-activity\.js/);
+    assert.match(classicScripts, /quote-tool\.js/);
+
+    await evaluate('sessionStorage.clear()');
+    const beforeLive = posts.length;
+    await send('Page.navigate', { url: `${ORIGIN}/quote-tool-demo/quote-tool.html` }, sessionId);
+    await waitFor(async () => String(await evaluate('document.getElementById("question-heading") && document.getElementById("question-heading").textContent')).includes('What state'), 'live question');
+    const liveCheck = await evaluate(`(() => {
+      const scripts = [...document.scripts].map((script) => script.getAttribute('src') || '').join(' ');
+      const sheets = [...document.styleSheets].map((sheet) => sheet.href || '').join(' ');
+      const resources = performance.getEntriesByType('resource').map((entry) => entry.name + ' ' + (entry.responseStatus || 0));
+      return {
+        scripts,
+        sheets,
+        overflow: getComputedStyle(document.body).overflow,
+        resources
+      };
+    })()`);
+    assert.match(liveCheck.scripts, /quote-activity\.js/);
+    assert.match(liveCheck.scripts, /preview\/quote-math\.js/);
+    assert.match(liveCheck.scripts, /preview\/preview\.js/);
+    assert.doesNotMatch(liveCheck.scripts, /quote-tool\.js/);
+    assert.match(liveCheck.sheets, /preview\/preview\.css/);
+    assert.notEqual(liveCheck.overflow, 'hidden');
+    ['plans.json', 'preview/preview.css', 'preview/preview.js', 'preview/quote-math.js', 'quote-activity.js', 'preview/preview-config.json'].forEach((asset) => {
+      const hit = liveCheck.resources.find((line) => line.includes(asset));
+      assert.ok(hit, 'missing asset ' + asset);
+      assert.match(hit, / 200$/, asset + ' did not load: ' + hit);
+    });
+    await evaluate('document.querySelector(\'[data-value="Florida"]\').click()');
+    await waitFor(async () => String(await evaluate('document.getElementById("question-heading").textContent')).includes('benefits eligible'), 'live eligible');
+    await evaluate('document.getElementById("q-number").value = "10"; document.getElementById("next-btn").click();');
+    await waitFor(async () => String(await evaluate('document.getElementById("question-heading").textContent')).includes('expect to enroll'), 'live enrolling');
+    await evaluate('document.getElementById("q-number").value = "7"; document.getElementById("next-btn").click();');
+    await waitFor(async () => String(await evaluate('document.getElementById("question-heading").textContent')).includes('What matters most'), 'live priority');
+    await evaluate('document.querySelector(\'[data-value="cost"]\').click()');
+    await waitFor(async () => String(await evaluate('document.getElementById("question-heading").textContent')).includes('group health plan'), 'live coverage');
+    await evaluate('document.querySelector(\'[data-value="no"]\').click()');
+    await waitFor(async () => String(await evaluate('document.getElementById("question-heading").textContent')).includes('hoping to start'), 'live timeline');
+    await evaluate('document.querySelector(\'[data-value="30"]\').click()');
+    await waitFor(async () => !(await evaluate('document.getElementById("results").hidden')), 'live results');
+    await sleep(250);
+    const livePosts = posts.slice(beforeLive);
+    assert.equal(livePosts.filter((post) => post.body.includes('"event":"quote_started"')).length, 1);
+    assert.equal(livePosts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 1);
+    assert.ok(livePosts.every((post) => !post.body.includes('utm_source')));
+    assert.equal(await evaluate('document.getElementById("load-error").hidden'), true);
+    assert.match(await evaluate('document.getElementById("results-summary").textContent'), /Florida/);
+
     async function openHarness(query, width, height) {
       await setViewport(width, height);
       await send('Page.navigate', { url: `${ORIGIN}/quote-tool-demo/preview/test/wix-harness.html${query}` }, sessionId);
