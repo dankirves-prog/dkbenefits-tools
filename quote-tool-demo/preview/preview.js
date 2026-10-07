@@ -820,6 +820,8 @@
       note.hidden = !state.participation;
       note.textContent = state.participation || '';
       $('contrib-summary').textContent = launcherLabel(state);
+      var mixLine = $('mix-summary-line');
+      if (mixLine) mixLine.textContent = state.mixSummary || '';
       parkMyPlans();
       parkLead();
       var sections = state.sections;
@@ -865,7 +867,13 @@
       if (savedNote) {
         savedNote.textContent = state.saved.length
           ? 'Your ' + state.saved.length + ' saved plan' + (state.saved.length === 1 ? '' : 's') + ' will be included with this request.'
-          : 'Save any plans you want included, and Daniel will receive them with this request.';
+          : 'All plans shown will be included with this request.';
+      }
+      var planList = $('lead-plan-list');
+      if (planList) {
+        planList.innerHTML = state.saved.length
+          ? state.saved.map(function (plan) { return '<li>' + escapeHtml(plan.name) + '</li>'; }).join('')
+          : '<li>All plans shown</li>';
       }
       $('print-help').textContent = state.saved.length
         ? 'Printing will include the ' + state.saved.length + ' saved plan' + (state.saved.length === 1 ? '' : 's') + ' only. Clear saved plans to print the full list.'
@@ -977,9 +985,18 @@
     }
 
     function revealLead(place) {
+      closeMyPlans();
       leadPlace = place || 'header';
       placeLead();
+      var back = $('lead-back');
+      if (back) back.hidden = false;
       $('first-name').focus({ preventScroll: true });
+    }
+
+    function closeLead() {
+      leadPlace = 'home';
+      parkLead();
+      $('goto-lead').focus({ preventScroll: true });
     }
 
     function layoutFor(mode, state) {
@@ -1249,6 +1266,19 @@
         if ($('contrib').classList.contains('is-open')) closeContrib();
         else openContrib();
       });
+      if ($('mix-toggle')) {
+        $('mix-toggle').addEventListener('click', function () {
+          var panel = document.querySelector('.mix-panel');
+          var open = panel.classList.toggle('is-open');
+          $('mix-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+          $('mix-toggle').textContent = open ? 'Done' : 'Adjust';
+        });
+      }
+      if ($('lead-back')) {
+        $('lead-back').addEventListener('click', function () {
+          closeLead();
+        });
+      }
       $('show-all-plans').addEventListener('click', function () {
         showAllPlans = !showAllPlans;
         renderDynamic();
@@ -1282,9 +1312,13 @@
             return response.text().then(function (responseText) {
               if (!response.ok) throw new Error('Webhook failed with status ' + response.status + ': ' + responseText);
               $('lead-form').hidden = true;
+              if ($('lead-next')) $('lead-next').hidden = true;
+              if ($('lead-saved-note')) $('lead-saved-note').hidden = true;
+              if ($('lead-plan-list')) $('lead-plan-list').hidden = true;
               $('lead-success').hidden = false;
-              $('lead-success').innerHTML = '<h3>Thanks, ' + escapeHtml(firstName) + '. Daniel has your information.</h3>' +
-                '<p>He will follow up about these plans for your group. You can also call or text him at <a href="tel:4074765076">407-476-5076</a>.</p>';
+              $('lead-success').innerHTML = '<h3>Thanks, ' + escapeHtml(firstName) + '.</h3>' +
+                '<p>Daniel has your request and will follow up about these plans.</p>' +
+                '<p>Next, call or text him at <a href="tel:4074765076">407-476-5076</a>.</p>';
             });
           })
           .catch(function (error) {
