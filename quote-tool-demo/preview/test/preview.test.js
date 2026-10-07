@@ -430,6 +430,121 @@ test('lead POST payload matches the live tool byte for byte', async () => {
   await compare(SCENARIOS[2], { firstName: 'Grace', email: 'grace@example.com', phone: '' });
 });
 
+test('a full visitor flow makes no Apps Script request until the lead form is submitted', async () => {
+  assert.equal(preview.ACTIVITY_TRACKING_ENABLED, false);
+  const activitySource = fs.readFileSync(path.join(ROOT, 'quote-activity.js'), 'utf8');
+  assert.equal(activitySource.includes('fetch('), false);
+  assert.equal(activitySource.includes('script.google.com'), false);
+  assert.equal(activitySource.includes('XMLHttpRequest'), false);
+  assert.equal(activitySource.includes('sendBeacon'), false);
+
+  const calls = [];
+  const previousFetch = global.fetch;
+  global.fetch = (url, opts) => {
+    calls.push({ url: String(url), method: opts && opts.method, body: opts && opts.body });
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve('{"ok":true}')
+    });
+  };
+
+  try {
+    const skippedStart = await preview.postActivityPayload({ event: 'quote_started', sessionId: UUID });
+    const skippedRates = await preview.postActivityPayload({ event: 'rates_displayed', sessionId: UUID });
+    assert.deepEqual(skippedStart, { ok: true, body: { skipped: 'activity_disabled' } });
+    assert.deepEqual(skippedRates, { ok: true, body: { skipped: 'activity_disabled' } });
+    assert.equal(calls.length, 0);
+
+    const storage = memoryStorage();
+    storage.setItem('dkb_quote_session_id', UUID);
+    const visited = preview.createModel({
+      plans: PLANS,
+      tracker: activity.createQuoteActivityTracker({
+        storage,
+        post: preview.postActivityPayload,
+        now: () => new Date(FIXED)
+      }),
+      pageUrl: PAGE,
+      now: () => new Date(FIXED)
+    });
+    visited.setAnswer('Florida');
+    reach(visited, 10, 7, 'cost', 'no', '30');
+    visited.setSort('price');
+    visited.setContribution({ employerPercent: 75, dependentPercent: 25 });
+    visited.setContribution({ model: 'percent', employerPercent: 50, dependentPercent: 0 });
+    visited.toggleSaved('cigna-epo-1000', true);
+    await flushActivity();
+    assert.equal(calls.filter((call) => call.url.includes('script.google.com')).length, 0);
+
+    const loaded = await readyLive(UTM);
+    const classicSkipped = await loaded.sandbox.postActivityPayload({ event: 'quote_started', sessionId: UUID });
+    assert.equal(JSON.stringify(classicSkipped), JSON.stringify({ ok: true, body: { skipped: 'activity_disabled' } }));
+    const googlePosts = () => loaded.posts.filter((post) => String(post.url).includes('script.google.com'));
+    assert.equal(googlePosts().length, 0);
+
+    const live = loaded.sandbox.__live;
+    const next = loaded.elements.get('nextBtn');
+    const clickNext = async () => {
+      await next.listeners.click[0]();
+      await flushActivity();
+    };
+    await loaded.elements.get('heroStartBtn').listeners.click[0]();
+    await flushActivity();
+    const input = loaded.sandbox.document.getElementById('qInput');
+    input.value = 'Florida';
+    await clickNext();
+    input.value = '10';
+    await clickNext();
+    input.value = '7';
+    await clickNext();
+    live.answers.priority = 'cost';
+    await clickNext();
+    live.answers.coverage = 'no';
+    await clickNext();
+    live.answers.timeline = '30';
+    await clickNext();
+    assert.equal(loaded.elements.get('resultsSection').classList.contains('hidden'), false);
+    assert.equal(googlePosts().length, 0);
+
+    const plan = live.plans.find((item) => item.id === 'cigna-epo-1000');
+    live.selectedPlans.set(plan.id, {
+      id: plan.id,
+      name: plan.name,
+      network: plan.network,
+      typeBadge: plan.typeBadge,
+      rates: plan.rates
+    });
+    const contact = { firstName: 'Ada', email: 'ada@example.com', phone: '407-555-0100' };
+    live.elements.firstName.value = contact.firstName;
+    live.elements.email.value = contact.email;
+    live.elements.phone.value = contact.phone;
+    await live.elements.leadForm.listeners.submit[0]({ preventDefault() {} });
+    await flushActivity();
+    assert.equal(googlePosts().length, 1);
+    assert.equal(googlePosts()[0].method, 'POST');
+    const lead = JSON.parse(googlePosts()[0].body);
+    assert.equal(lead.event, 'lead_submitted');
+    assert.equal(calls.filter((call) => call.url.includes('script.google.com')).length, 0);
+
+    const compareStorage = memoryStorage();
+    compareStorage.setItem('dkb_quote_session_id', UUID);
+    const compareModel = preview.createModel({
+      plans: PLANS,
+      tracker: trackerFor(compareStorage, [], UTM),
+      pageUrl: PAGE,
+      now: () => new Date(FIXED)
+    });
+    compareModel.setAnswer('Florida');
+    reach(compareModel, 10, 7, 'cost', 'no', '30');
+    compareModel.setSort('recommended');
+    compareModel.toggleSaved('cigna-epo-1000', true);
+    assert.equal(JSON.stringify(compareModel.leadPayload(contact)), JSON.stringify(lead));
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
+
 test('live visitors keep the old attribution, and only the preview path adds utm_source=preview', async () => {
   const livePath = '/quote-tool-demo/quote-tool.html';
   const previewPath = '/quote-tool-demo/preview/index.html';

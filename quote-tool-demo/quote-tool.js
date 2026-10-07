@@ -48,8 +48,12 @@ const firstName = document.getElementById('firstName');
 const email = document.getElementById('email');
 const phone = document.getElementById('phone');
 const leadWebhookUrl = 'https://script.google.com/macros/s/AKfycby4-ZxTQfsAgIBO0JYSngccVoj5HRKtNshy6N2XlJhbxaEk2oW7b_xIRBGlcSq0CZ0z/exec';
+const ACTIVITY_TRACKING_ENABLED = false;
 
 function postActivityPayload(payload) {
+  if (!ACTIVITY_TRACKING_ENABLED) {
+    return Promise.resolve({ ok: true, body: { skipped: 'activity_disabled' } });
+  }
   return fetch(leadWebhookUrl, {
     method: 'POST',
     body: JSON.stringify(payload)

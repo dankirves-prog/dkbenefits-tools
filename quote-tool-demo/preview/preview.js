@@ -10,6 +10,7 @@
   if (root) root.QuotePreview = api;
 })(typeof window !== 'undefined' ? window : globalThis, function (QuoteActivity, QuoteMath) {
   var WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby4-ZxTQfsAgIBO0JYSngccVoj5HRKtNshy6N2XlJhbxaEk2oW7b_xIRBGlcSq0CZ0z/exec';
+  var ACTIVITY_TRACKING_ENABLED = false;
   var PREVIEW_UTM_SOURCE = 'preview';
   var QUESTIONS = [
     { key: 'state', title: 'What state is your business located in?', kind: 'choice', options: [{ label: 'Florida', value: 'Florida' }, { label: 'Georgia', value: 'Georgia' }] },
@@ -64,6 +65,9 @@
   }
 
   function postActivityPayload(payload) {
+    if (!ACTIVITY_TRACKING_ENABLED) {
+      return Promise.resolve({ ok: true, body: { skipped: 'activity_disabled' } });
+    }
     return fetch(WEBHOOK_URL, {
       method: 'POST',
       body: JSON.stringify(payload)
@@ -1360,6 +1364,7 @@
 
   return {
     WEBHOOK_URL: WEBHOOK_URL,
+    ACTIVITY_TRACKING_ENABLED: ACTIVITY_TRACKING_ENABLED,
     PREVIEW_UTM_SOURCE: PREVIEW_UTM_SOURCE,
     QUESTIONS: QUESTIONS,
     attributionSearch: attributionSearch,
