@@ -31,6 +31,8 @@
     ['specialist', 'Specialist'],
     ['urgentCare', 'Urgent care'],
     ['emergencyRoom', 'Emergency room'],
+    ['inpatientHospital', 'Inpatient Hospital'],
+    ['outpatientSurgery', 'Outpatient Surgery'],
     ['rx', 'RX summary']
   ];
 
@@ -471,7 +473,9 @@
       return '<div><dt>' + row[1] + '</dt><dd>' + escapeHtml(detailValue(plan, row[0])) + '</dd></div>';
     }).join('');
     var fullDetails = DETAIL_ROWS.filter(function (row) {
-      return row[0] !== 'deductible' && row[0] !== 'oopMax';
+      if (row[0] === 'deductible' || row[0] === 'oopMax') return false;
+      if ((row[0] === 'inpatientHospital' || row[0] === 'outpatientSurgery') && !detailValue(plan, row[0])) return false;
+      return true;
     }).map(function (row) {
       return '<div class="detail-row"><dt>' + row[1] + '</dt><dd>' + escapeHtml(detailValue(plan, row[0])) + '</dd></div>';
     }).join('');
@@ -522,8 +526,12 @@
       ['specialist', 'Specialist'],
       ['urgentCare', 'Urgent care'],
       ['emergencyRoom', 'Emergency room'],
+      ['inpatientHospital', 'Inpatient Hospital'],
+      ['outpatientSurgery', 'Outpatient Surgery'],
       ['rx', 'Rx']
     ].forEach(function (row) {
+      if ((row[0] === 'inpatientHospital' || row[0] === 'outpatientSurgery') &&
+          !(plans || []).some(function (plan) { return detailValue(plan, row[0]); })) return;
       rows.push([row[1], function (plan) { return detailValue(plan, row[0]); }, false]);
     });
     if ((plans || []).some(function (plan) { return QuoteMath.majorMedicalNote(plan); })) {

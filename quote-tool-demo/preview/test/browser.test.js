@@ -365,6 +365,12 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"] .details-toggle\').click()');
     await sleep(40);
     assert.equal(await evaluate('document.getElementById("details-cigna-epo-1000").hidden'), false);
+    const expandedText = await evaluate('document.getElementById("details-cigna-epo-1000").innerText');
+    assert.match(expandedText, /Inpatient Hospital/);
+    assert.match(expandedText, /\$2,500 copay per admission after deductible/);
+    assert.match(expandedText, /Outpatient Surgery/);
+    assert.match(expandedText, /\$2,500 copay per surgery after deductible/);
+    assert.match(expandedText, /\$0 copay/);
     const expanded = await evaluate(`(() => {
       const card = document.querySelector('[data-plan-id="cigna-epo-1000"]');
       const box = card.getBoundingClientRect();
@@ -472,6 +478,9 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.match(compare, /VL\*/);
     assert.match(compare, /Employee paycheck/);
     assert.match(compare, /Out-of-pocket max/);
+    assert.match(compare, /Inpatient Hospital/);
+    assert.match(compare, /Outpatient Surgery/);
+    assert.match(compare, /limit 2 ICU \+ 2 non-ICU admissions\/yr/);
     assert.match(compare, /Remove/);
     await shot('my_plans_warning_r3.png');
     await savePdf('proposal_saved_plans_r3.pdf');
