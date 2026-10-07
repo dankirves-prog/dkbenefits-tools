@@ -397,6 +397,13 @@ test('printed proposals keep Important information on the last plan page', { tim
           assert.match(pages[0], /Incl \$25 Monthly HSA/);
           renderPage(file, 1, 'print_saved_4plans.png');
         }
+        if (launch.id === 'iframe-desktop' && count === 6) {
+          assert.match(pages[0], /Cigna PPO 8300/);
+          assert.match(pages[0], /Visit Limit/);
+          assert.match(pages[0], /Total monthly premium/);
+          assert.match(pages[0], /Employer monthly contribution/);
+          renderPage(file, 1, 'print_totals_6plans.png');
+        }
         if (launch.id === 'iframe-desktop' && count === 7) {
           renderPage(file, 1, 'print_saved_7_page1.png');
           renderPage(file, 2, 'print_saved_7_page2.png');
