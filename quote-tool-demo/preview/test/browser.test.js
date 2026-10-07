@@ -115,6 +115,12 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     }, sessionId);
   }
 
+  async function setContentWidth(width, height) {
+    await setViewport(width, height);
+    const gutter = await evaluate('innerWidth - document.documentElement.clientWidth');
+    if (gutter > 0) await setViewport(width + gutter, height);
+  }
+
   async function pressKey(key) {
     const enter = key === 'Enter';
     const code = enter ? 'Enter' : 'Space';
@@ -628,6 +634,7 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
         })()`);
         return ready;
       }, 'harness preview ' + query);
+      await setContentWidth(width, height);
       await sleep(200);
     }
 
@@ -636,6 +643,12 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     }
 
     await openHarness('?layout=320', 320, 693);
+    const harnessFit = await evaluate(`(() => {
+      const root = document.documentElement;
+      return { client: root.clientWidth, scroll: root.scrollWidth };
+    })()`);
+    assert.equal(harnessFit.client, 320);
+    assert.ok(harnessFit.scroll <= harnessFit.client + 1, 'harness page added a horizontal scrollbar: ' + harnessFit.scroll + ' > ' + harnessFit.client);
     await shot('wix_mobile_questions.png');
     const mobileFrame = await evaluate(`(() => {
       const frame = document.getElementById('tool').getBoundingClientRect();
@@ -728,6 +741,71 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.ok(desktopActions >= 0 && desktopActions < 900, 'desktop CTA should be in the first screen, top=' + desktopActions);
     assert.equal(await frameEval(`[...doc.querySelectorAll('body *')].some((el) => win.getComputedStyle(el).position === 'fixed' || win.getComputedStyle(el).position === 'sticky')`), false);
     await shot('wix_desktop_inline_cta.png');
+
+    async function assertNoOverflow(label) {
+      const report = await evaluate(`(() => {
+        const root = document.documentElement;
+        const vw = root.clientWidth;
+        const sw = Math.max(root.scrollWidth, document.body.scrollWidth);
+        const offenders = [];
+        if (sw > vw + 1) {
+          for (const el of document.querySelectorAll('body *')) {
+            const style = getComputedStyle(el);
+            if (style.display === 'none' || style.visibility === 'hidden') continue;
+            const rect = el.getBoundingClientRect();
+            if (rect.width > 0 && (rect.right > vw + 1 || rect.left < -1)) {
+              offenders.push((el.id || String(el.className).slice(0, 40) || el.tagName) + ' right=' + Math.round(rect.right));
+            }
+          }
+        }
+        return { vw, sw, offenders: offenders.slice(0, 8) };
+      })()`);
+      assert.ok(report.sw <= report.vw + 1, label + ' horizontal overflow ' + (report.sw - report.vw) + 'px at ' + report.vw + ': ' + report.offenders.join(', '));
+    }
+
+    const widths = [320, 360, 375, 390, 414];
+    await openPreview();
+    for (const width of widths) {
+      await setContentWidth(width, 800);
+      await sleep(40);
+      assert.equal(await evaluate('document.documentElement.clientWidth'), width);
+      assert.match(await evaluate('document.querySelector(".header-phone").innerText'), /Call\/Text Daniel/);
+      assert.equal(await evaluate('document.querySelector(".header-phone").getAttribute("href")'), 'tel:4074765076');
+      await assertNoOverflow('questions ' + width);
+    }
+    await evaluate('document.querySelector(\'[data-value="Florida"]\').click()');
+    await waitFor(async () => (await evaluate('document.getElementById("question-heading").textContent')).includes('benefits eligible'), 'overflow eligible');
+    await evaluate('document.getElementById("q-number").value = "10"; document.getElementById("next-btn").click();');
+    await waitFor(async () => (await evaluate('document.getElementById("question-heading").textContent')).includes('expect to enroll'), 'overflow enrolling');
+    await evaluate('document.getElementById("q-number").value = "7"; document.getElementById("next-btn").click();');
+    await waitFor(async () => (await evaluate('document.getElementById("question-heading").textContent')).includes('What matters most'), 'overflow priority');
+    await evaluate('document.querySelector(\'[data-value="balanced"]\').click()');
+    await waitFor(async () => (await evaluate('document.getElementById("question-heading").textContent')).includes('group health plan'), 'overflow coverage');
+    await evaluate('document.querySelector(\'[data-value="yes"]\').click()');
+    await waitFor(async () => (await evaluate('document.getElementById("question-heading").textContent')).includes('hoping to start'), 'overflow timeline');
+    await evaluate('document.querySelector(\'[data-value="later"]\').click()');
+    await waitFor(async () => !(await evaluate('document.getElementById("results").hidden')), 'overflow results');
+    await sleep(200);
+    await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"] .save-toggle\').click()');
+    await evaluate('document.getElementById("goto-lead").click()');
+    for (const width of widths) {
+      await setContentWidth(width, 800);
+      await sleep(40);
+      await assertNoOverflow('results ' + width);
+      await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"] .details-toggle\').click()');
+      await sleep(30);
+      await assertNoOverflow('expanded card ' + width);
+      await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"] .details-toggle\').click()');
+      if (await evaluate('document.getElementById("contrib").classList.contains("is-open")') === false) {
+        await evaluate('document.getElementById("contrib-toggle").click()');
+      }
+      await assertNoOverflow('contribution ' + width);
+      if (await evaluate('document.getElementById("my-plans-panel").hidden') === true) {
+        await evaluate('document.getElementById("my-plans-btn").click()');
+      }
+      await assertNoOverflow('my plans ' + width);
+      await assertNoOverflow('lead form ' + width);
+    }
   } finally {
     if (ws) ws.close();
     chrome.kill('SIGKILL');
