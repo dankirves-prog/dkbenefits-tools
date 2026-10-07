@@ -711,7 +711,7 @@
         var hide = deferAfter != null && index >= deferAfter;
         if (hide) {
           deferred += 1;
-          html += planArticle(plan, state).replace('class="plan-card"', 'class="plan-card is-deferred"');
+          html += planArticle(plan, state).replace('class="plan-card"', 'class="plan-card is-deferred" hidden');
           return;
         }
         html += planArticle(plan, state);

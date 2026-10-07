@@ -582,7 +582,16 @@ input[type="range"] { width: 100%; accent-color: var(--navy); height: 32px; }
 
 @media (max-width: 859px) {
   .wrap { width: min(1180px, calc(100% - 16px)); }
-  .header-inner { align-items: flex-start; flex-direction: column; padding: 12px 0; }
+  .header-inner { align-items: center; flex-direction: row; min-height: 48px; padding: 6px 0; }
+  .brand-sub { display: none; }
+  .header-phone { font-size: 0.92rem; }
+  .intro { padding: 8px 0 0; }
+  .intro .eyebrow, .intro .trust { display: none; }
+  h1 { font-size: 1.35rem; margin: 0 0 6px; }
+  .lede { margin: 0 0 8px; font-size: 0.95rem; }
+  .question-panel { margin: 8px 0 16px; padding: 12px; }
+  .assist { margin: 4px 0 8px; }
+  .question-panel h2 { margin: 0 0 8px; font-size: 1.15rem; }
   #contrib-body { display: none; }
   #contrib.is-open #contrib-body { display: block; }
   .results-actions, .cta-strip { align-items: stretch; }
