@@ -93,7 +93,7 @@
     "id": "uhc-ppo-3000-hsa",
     "group": "top",
     "name": "United Healthcare PPO 3000 HSA",
-    "network": "Utilizes Cigna network",
+    "network": "Utilizes UHC Choice Plus network",
     "typeBadge": "Incl $25 Monthly HSA",
     "rates": {
       "employeeOnly": 534,
@@ -102,7 +102,7 @@
       "family": 1304
     },
     "details": {
-      "deductible": "#3,000",
+      "deductible": "$3,000",
       "oopMax": "$8,500",
       "pcp": "$50 copay after deductible",
       "specialist": "$50 copay after deductible",
@@ -111,7 +111,7 @@
       "rx": "Generic $0 after deductible"
     },
     "notes": [
-      "HSA compatible HDHP Health Plan. Deductible must be met before copays except preventive $0 and telemedicine $0. Deductible and Out of Pocket Max double for Out of Netowork with 50% coinsurance."
+      "HSA compatible HDHP Health Plan. Deductible must be met before copays except preventive $0 and telemedicine $0. Deductible and Out of Pocket Max double for Out of Network with 50% coinsurance."
     ],
     "limitedNotes": [
       "Patient Assistance Programs available for Brand Rx."
@@ -174,7 +174,7 @@
       "Balanced PPO option with stronger copay predictability. Facility services are covered at 30% coinsurance after deductible. $0 Telemedicine."
     ],
     "limitedNotes": [
-      "Major Medical plan; utilizes the Cigna PPO network and balanced value with most services covered as first dollar benefits."
+      "Major Medical plan; utilizes the UHC Choice Plus PPO network and balanced value with most services covered as first dollar benefits."
     ],
     "status": "active",
     "ratesValidUntil": "2026-12-31"
@@ -264,7 +264,7 @@
       "Balanced PPO option with stronger copay predictability. Facility services are covered at 20% coinsurance after deductible. $0 Telemedicine."
     ],
     "limitedNotes": [
-      "Major Medical plan; utilizes the Cigna PPO network and balanced value with most services covered as first dollar benefits."
+      "Major Medical plan; utilizes the UHC Choice Plus PPO network and balanced value with most services covered as first dollar benefits."
     ],
     "status": "active",
     "ratesValidUntil": "2026-12-31"
