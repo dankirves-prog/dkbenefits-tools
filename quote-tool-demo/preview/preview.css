@@ -693,11 +693,13 @@ input[type="range"] { width: 100%; accent-color: var(--navy); height: 32px; }
   .print-table .abbrev-legend, .print-root .abbrev-legend { margin: 3px 0 0; font-size: 7pt; color: #3e5168; }
   .print-ppp { margin: 1px 0 0; font-size: 7pt; color: #3e5168; }
   .print-table .print-tier { width: 100%; margin-top: 3px; border-collapse: collapse; table-layout: fixed; }
-  .print-table .print-tier th, .print-table .print-tier td { padding: 0 2px; border-bottom: 1px solid #d5deea; font-size: 6.5pt; font-weight: 400; line-height: 1.15; text-align: left; }
-  .print-table .print-tier thead th { font-weight: 700; text-align: right; }
+  .print-table .print-tier th, .print-table .print-tier td { padding: 0 2px; border-bottom: 1px solid #d5deea; font-size: 6.5pt; font-weight: 400; line-height: 1.15; text-align: left; overflow-wrap: normal; word-break: normal; hyphens: none; }
+  .print-table .print-tier thead th { font-weight: 700; text-align: right; white-space: nowrap; }
   .print-table .print-tier thead th:first-child { text-align: left; }
   .print-table .print-tier th[scope="row"] { text-align: left; font-weight: 600; color: #3e5168; white-space: normal; }
   .print-table .print-tier td { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .print-table .print-tier.is-compact th, .print-table .print-tier.is-compact td { font-size: 5.5pt; padding: 0 1px; line-height: 1.1; }
+  .print-table .print-tier.is-compact thead th { font-size: 5pt; letter-spacing: -0.02em; }
   .print-disclaimer { margin-top: 8px; font-size: 7.5pt; color: #3e5168; }
   .print-disclaimer h2 { font-size: 9pt; color: #122033; margin: 0 0 2px; }
 }

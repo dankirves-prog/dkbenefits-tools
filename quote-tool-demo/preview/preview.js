@@ -585,14 +585,17 @@
     return 'PPP = per pay period (' + label + ', ' + periods + ')';
   }
 
-  function printTierTable(plan, state) {
+  function printTierTable(plan, state, compact) {
     var contribution = state.resolvedContribution;
     var rows = PRINT_TIER_ROWS.map(function (tier) {
       return '<tr><th scope="row">' + tier[1] + '</th><td>' +
         QuoteMath.money(plan.rates[tier[0]]) + '</td><td>' +
         QuoteMath.money(QuoteMath.perPaycheck(plan, tier[0], contribution)) + '</td></tr>';
     }).join('');
-    return '<table class="print-tier"><colgroup><col style="width:44%"><col style="width:28%"><col style="width:28%"></colgroup><thead><tr><th scope="col"></th><th scope="col">Premium</th><th scope="col">EE Cost PPP</th></tr></thead><tbody>' +
+    var cols = compact
+      ? '<col style="width:36%"><col style="width:32%"><col style="width:32%">'
+      : '<col style="width:44%"><col style="width:28%"><col style="width:28%">';
+    return '<table class="print-tier' + (compact ? ' is-compact' : '') + '"><colgroup>' + cols + '</colgroup><thead><tr><th scope="col"></th><th scope="col">Premium</th><th scope="col">EE Cost PPP</th></tr></thead><tbody>' +
       rows + '</tbody></table>';
   }
 
@@ -638,9 +641,11 @@
     plans.forEach(function () { cols += '<col style="width:' + share + '%">'; });
     var head = plans.map(function (plan) {
       var note = QuoteMath.majorMedicalNote(plan);
+      var callout = note ? '<p class="low-callout">' + escapeHtml(note) + '</p>' : '';
+      var tier = interactive ? '' : printTierTable(plan, state, plans.length >= 6);
+      var action = interactive ? '<button type="button" class="btn btn-secondary" data-remove="' + escapeHtml(plan.id) + '">Remove</button>' : '';
       return '<th scope="col"><span class="compare-name">' + escapeHtml(QuoteMath.displayName(plan)) + '</span>' + badgeHtml(plan) +
-        (note ? '<p class="low-callout">' + escapeHtml(note) + '</p>' : '') +
-        (interactive ? '<button type="button" class="btn btn-secondary" data-remove="' + escapeHtml(plan.id) + '">Remove</button>' : printTierTable(plan, state)) +
+        (interactive ? callout + action : tier + callout) +
         '</th>';
     }).join('');
     var body = rows.map(function (row) {
