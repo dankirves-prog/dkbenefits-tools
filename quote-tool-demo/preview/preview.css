@@ -730,31 +730,30 @@ input[type="range"] { width: 100%; accent-color: var(--navy); height: 32px; }
   .print-disclaimer h2 { font-size: 8pt; color: #122033; margin: 0 0 1px; column-span: all; line-height: 1.1; }
   .print-disclaimer p { margin: 0 0 2px; }
   .print-notes-page { break-before: page; page-break-before: always; }
-  .print-notes-head { border-bottom: 1px solid #163e73; margin: 0 0 6px; padding-bottom: 2px; }
-  .print-notes-head .print-brand { margin: 0; font-size: 12pt; line-height: 1.05; }
-  .print-notes-head p { margin: 0; font-size: 8.5pt; line-height: 1.25; }
-  .print-notes-page h2 { margin: 2px 0 6px; font-size: 11pt; line-height: 1.2; color: #122033; }
+  .print-notes-head { border-bottom: 1px solid #163e73; margin: 0 0 2px; padding-bottom: 1px; }
+  .print-notes-head .print-brand { margin: 0; font-size: 11pt; line-height: 1.05; }
+  .print-notes-head p { margin: 0; font-size: 8pt; line-height: 1.15; }
+  .print-notes-page h2 { margin: 1px 0 2px; font-size: 10pt; line-height: 1.15; color: #122033; }
   .print-notes-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
   .print-notes-table tr { break-inside: avoid; page-break-inside: avoid; }
   .print-notes-table th,
   .print-notes-table td {
     border-bottom: 1px solid #d5deea;
-    padding: 5px 8px 6px 0;
+    padding: 1px 6px 1px 0;
     vertical-align: top;
     text-align: left;
-    font-size: 8.5pt;
-    line-height: 1.35;
+    font-size: 8pt;
+    line-height: 1.1;
     font-weight: 400;
     overflow-wrap: break-word;
     word-wrap: break-word;
   }
-  .print-notes-table th { width: 28%; padding-right: 12px; }
-  .print-notes-carrier { display: block; font-size: 8pt; font-weight: 700; color: #3e5168; }
-  .print-notes-name { display: block; margin-top: 1px; font-size: 9pt; font-weight: 700; line-height: 1.25; }
-  .print-notes-table .badge { display: inline-block; max-width: 100%; margin: 3px 0 0; padding: 0 5px; font-size: 7.5pt; line-height: 1.3; }
-  .print-notes-label { margin: 0 0 1px; font-size: 8pt; font-weight: 700; color: #163e73; }
-  .print-notes-table td .print-notes-label + p,
-  .print-notes-table td p { margin: 0 0 3px; }
-  .print-notes-table td .print-notes-label { margin-top: 4px; }
-  .print-notes-table td .print-notes-label:first-child { margin-top: 0; }
+  .print-notes-table th { width: 18%; padding-right: 6px; }
+  .print-notes-carrier { display: block; font-size: 7.5pt; font-weight: 700; color: #3e5168; line-height: 1.15; }
+  .print-notes-name { display: block; font-size: 8pt; font-weight: 700; line-height: 1.15; }
+  .print-notes-table .badge { display: inline-block; max-width: 100%; margin: 1px 0 0; padding: 0 3px; font-size: 7.5pt; line-height: 1.15; }
+  .print-notes-label { margin: 0; font-size: 7.5pt; font-weight: 700; color: #163e73; line-height: 1.1; }
+  .print-notes-table p { margin: 0; }
+  .print-notes-list { margin: 0; padding: 0 0 0 0.9em; }
+  .print-notes-list li { margin: 0; padding: 0; }
 }

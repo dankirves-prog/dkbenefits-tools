@@ -728,28 +728,28 @@
   }
 
   function notesRowUnits(plan) {
-    var charsPerLine = 84;
-    function linesFor(text) {
+    function linesFor(text, charsPerLine) {
       return Math.max(1, Math.ceil(String(text).length / charsPerLine));
     }
     var notes = filledNoteLines(plan.notes);
     var limits = filledNoteLines(plan.limitedNotes);
-    var lines = 0;
+    var noteLines = 0;
     if (notes.length) {
-      lines += 1;
-      notes.forEach(function (line) { lines += linesFor(line); });
+      noteLines = 1;
+      notes.forEach(function (line) { noteLines += linesFor(line, 68); });
     }
+    var limitLines = 0;
     if (limits.length) {
-      lines += 1;
-      limits.forEach(function (line) { lines += linesFor(line); });
+      limitLines = 1;
+      limits.forEach(function (line) { limitLines += linesFor(line, 58); });
     }
-    var name = QuoteMath.carrierOf(plan) + ' ' + QuoteMath.displayName(plan);
-    var left = Math.max(1, Math.ceil(name.length / 26)) + (plan.typeBadge ? 1 : 0);
-    return Math.max(left, lines, 1);
+    var name = QuoteMath.displayName(plan);
+    var left = 1 + Math.max(1, Math.ceil(name.length / 20)) + (plan.typeBadge ? 1 : 0);
+    return Math.max(left, noteLines, limitLines, 1);
   }
 
   function notesPageGroups(plans) {
-    var budget = 34;
+    var budget = 52;
     var pages = [];
     var bucket = [];
     var used = 0;
@@ -767,31 +767,34 @@
     return pages;
   }
 
+  function printNotesColumn(label, lines, asList) {
+    if (!lines.length) return '<td></td>';
+    var body = asList
+      ? '<ul class="print-notes-list">' + lines.map(function (line) {
+          return '<li>' + escapeHtml(line) + '</li>';
+        }).join('') + '</ul>'
+      : lines.map(function (line) {
+          return '<p>' + escapeHtml(line) + '</p>';
+        }).join('');
+    return '<td><p class="print-notes-label">' + label + '</p>' + body + '</td>';
+  }
+
   function printNotesSection(plans, continued) {
     var rows = plans.map(function (plan) {
-      var notes = filledNoteLines(plan.notes);
       var limits = filledNoteLines(plan.limitedNotes);
-      var body = '';
-      if (notes.length) {
-        body += '<p class="print-notes-label">Notes</p>' + notes.map(function (line) {
-          return '<p>' + escapeHtml(line) + '</p>';
-        }).join('');
-      }
-      if (limits.length) {
-        body += '<p class="print-notes-label">Limitations</p>' + limits.map(function (line) {
-          return '<p>' + escapeHtml(line) + '</p>';
-        }).join('');
-      }
       return '<tr><th scope="row"><span class="print-notes-carrier">' + escapeHtml(QuoteMath.carrierOf(plan)) + '</span>' +
         '<span class="print-notes-name">' + escapeHtml(QuoteMath.displayName(plan)) + '</span>' +
         badgeHtml(plan) +
-        '</th><td>' + body + '</td></tr>';
+        '</th>' +
+        printNotesColumn('Notes', filledNoteLines(plan.notes), false) +
+        printNotesColumn('Limitations', limits, limits.length > 1) +
+        '</tr>';
     }).join('');
     var title = continued ? 'Notes and Limitations (continued)' : 'Notes and Limitations';
     return '<section class="print-notes-page"><header class="print-notes-head"><p class="print-brand">DK Benefits</p>' +
       '<p>Daniel Kirves · Call/Text 407-476-5076 · dan@dkbenefits.net</p></header>' +
       '<h2>' + escapeHtml(title) + '</h2>' +
-      '<table class="print-notes-table"><colgroup><col style="width:28%"><col style="width:72%"></colgroup><tbody>' +
+      '<table class="print-notes-table"><colgroup><col style="width:18%"><col style="width:41%"><col style="width:41%"></colgroup><tbody>' +
       rows + '</tbody></table></section>';
   }
 

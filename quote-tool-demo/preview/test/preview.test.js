@@ -1114,6 +1114,9 @@ test('printed notes page follows the proposal and lists each selected plan in fu
   const css = fs.readFileSync(path.join(__dirname, '../preview.css'), 'utf8');
   assert.match(css, /\.print-notes-page\s*\{[^}]*break-before:\s*page/);
   assert.match(css, /\.print-notes-table tr\s*\{[^}]*break-inside:\s*avoid/);
+  assert.match(css, /\.print-notes-table th,\s*\.print-notes-table td\s*\{[^}]*font-size:\s*8pt/);
+  assert.match(css, /\.print-notes-table th\s*\{[^}]*width:\s*18%/);
+  assert.doesNotMatch(css, /\.print-notes-[^{]*\{[^}]*font-size:\s*(?:[0-6](?:\.\d+)?|7(?:\.[0-4]\d*)?)pt/);
   const model = preview.createModel({ plans: PLANS, pageUrl: PAGE, now: () => new Date(FIXED) });
   reach(model, 10, 7);
   ['cigna-ppo-8300-hsa', 'cigna-epo-1750-hsa', 'UHC-PPO-2000-Deductible', 'phcs-visit-limit-1750-HSA', 'cigna-epo-1000', 'uhc-ppo-3000-hsa'].forEach((id) => {
@@ -1137,12 +1140,29 @@ test('printed notes page follows the proposal and lists each selected plan in fu
   });
   assert.match(html, /class="print-notes-label">Notes</);
   assert.match(html, /class="print-notes-label">Limitations</);
+  assert.match(html, /<col style="width:18%">/);
+  assert.match(html, /<ul class="print-notes-list">/);
+  assert.equal((html.match(/class="print-notes-page"/g) || []).length, 1, 'six saved plans stay on one notes page');
+  ['cigna-ppo-8300-hsa', 'cigna-epo-1750-hsa', 'UHC-PPO-2000-Deductible', 'phcs-visit-limit-1750-HSA', 'cigna-epo-1000', 'uhc-ppo-3000-hsa'].forEach((id) => {
+    model.toggleSaved(id, false);
+  });
+  ['phcs-visit-limit-1750-HSA', 'phcs-visit-limit-1000', 'cigna-ppo-8300-hsa', 'UHC-ppo-8300-hsa', 'phcs-ppo-8300-hsa', 'uhc-ppo-4500'].forEach((id) => {
+    model.toggleSaved(id, true);
+  });
+  const worstState = model.getState();
+  worstState.printLayout = 'saved';
+  worstState.printPlans = model.plansForPrint('saved');
+  const worstHtml = preview.printHtml(worstState);
+  assert.equal(worstState.printPlans.length, 6);
+  assert.equal((worstHtml.match(/class="print-notes-page"/g) || []).length, 1, 'both Visit Limit plans plus four others stay on one notes page');
+  assert.match(worstHtml, /Visit Limit 1000/);
+  assert.match(worstHtml, /Visit Limit 1750/);
   const allState = model.getState();
   allState.printLayout = 'all';
   allState.printPlans = model.plansForPrint('all');
   const allHtml = preview.printHtml(allState);
   const sections = allHtml.split('class="print-notes-page"').slice(1);
-  assert.ok(sections.length >= 2, 'print-all notes should continue onto another page');
+  assert.ok(sections.length >= 2 && sections.length <= 3, 'print-all notes should use two or three pages, got ' + sections.length);
   assert.match(sections[0], /<h2>Notes and Limitations<\/h2>/);
   assert.doesNotMatch(sections[0], /Notes and Limitations \(continued\)/);
   sections.slice(1).forEach((section) => {
