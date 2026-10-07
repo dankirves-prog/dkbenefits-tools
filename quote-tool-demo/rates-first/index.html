@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>DK Benefits | Group health rates</title>
+  <meta name="description" content="Group health rates for small businesses. No company info needed." />
+  <link rel="stylesheet" href="preview.css" />
+  <link rel="stylesheet" href="rates-first.css" />
+  <script>
+    window.__rfT0 = (window.performance && performance.now) ? performance.now() : 0;
+    window.__rfPlans = fetch('../plans.json', { cache: 'no-store' });
+  </script>
+</head>
+<body class="is-results rf-page">
+  <a class="skip" href="#top-plans">Skip to plan rates</a>
+  <div class="app">
+    <header class="site-header">
+      <div class="wrap header-inner">
+        <p class="brand-name">DK Benefits</p>
+        <a class="header-phone" href="tel:4074765076" aria-label="Call or text Daniel at 407-476-5076">
+          <span class="phone-full">Call or text 407-476-5076</span>
+          <span class="phone-short">Call/Text Daniel</span>
+        </a>
+      </div>
+    </header>
+
+    <main id="quote-app" class="wrap">
+      <section class="intro" aria-labelledby="intro-heading">
+        <h1 id="intro-heading">Group health rates for small businesses</h1>
+        <p class="trust">No company info needed. No spam.</p>
+        <p id="rates-as-of" class="as-of" hidden></p>
+      </section>
+
+      <div class="rf-toolbar toolbar" aria-label="Plan tools">
+        <div id="carrier-filters" class="chips" role="radiogroup" aria-label="Filter by carrier"></div>
+        <div class="sort-field">
+          <label for="sort-mode">Sort</label>
+          <select id="sort-mode">
+            <option value="price">Lowest price</option>
+            <option value="carrier">Carrier</option>
+            <option value="recommended">Recommended</option>
+            <option value="lowestCost">Lowest employer cost</option>
+            <option value="strongestCoverage">Strongest coverage</option>
+          </select>
+        </div>
+        <div class="toolbar-actions">
+          <button type="button" id="my-plans-btn" class="btn btn-secondary" aria-expanded="false" aria-controls="my-plans-panel">My Plans (0)</button>
+          <button type="button" id="print-all-btn" class="btn btn-secondary">Print all</button>
+          <button type="button" id="customize-btn" class="btn btn-secondary" aria-expanded="false" aria-controls="customize-panel">Customize for your group</button>
+          <button type="button" id="contact-btn" class="btn btn-primary">Send these to Daniel</button>
+        </div>
+      </div>
+
+      <section id="my-plans-panel" class="panel my-plans" hidden aria-labelledby="drawer-heading">
+        <div class="drawer-head">
+          <h2 id="drawer-heading">My Plans</h2>
+          <button type="button" id="drawer-close" class="btn btn-secondary">Close</button>
+        </div>
+        <div id="drawer-body"></div>
+        <div class="drawer-actions">
+          <button type="button" id="drawer-print" class="btn btn-secondary">Print saved</button>
+          <button type="button" id="drawer-send" class="btn btn-primary">Send these to Daniel</button>
+        </div>
+      </section>
+
+      <div class="results-grid">
+        <div class="quote-main">
+          <p id="filter-empty" class="message" hidden>No plans match this carrier.</p>
+          <section id="section-top" aria-labelledby="top-heading">
+            <h2 id="top-heading" class="section-title">Featured Plan Options</h2>
+            <div id="top-plans" class="plan-list" aria-busy="true">
+              <article class="plan-card skeleton" aria-hidden="true"><span class="sk-line"></span><span class="sk-block"></span></article>
+            </div>
+          </section>
+          <section id="section-low" aria-labelledby="low-heading">
+            <h2 id="low-heading" class="section-title">Lower Cost Options</h2>
+            <div id="low-plans" class="plan-list"></div>
+          </section>
+          <section id="section-mec" hidden>
+            <button type="button" id="mec-toggle" class="btn btn-secondary" aria-expanded="false">Show MEC Section</button>
+            <div id="mec-wrap" hidden>
+              <h2 id="mec-heading" class="section-title">Minimum Essential Coverage Option</h2>
+              <div id="mec-plans" class="plan-list"></div>
+            </div>
+          </section>
+          <details class="disclaimer" id="disclaimer">
+            <summary>Rates, eligibility, and license information</summary>
+            <p>Rates shown are based on current published pricing and the answers provided. Final eligibility, participation, underwriting, plan availability, effective dates, and carrier/program approval may change pricing or options. Benefits are governed by official plan documents.</p>
+            <p>Plan availability may vary by state. If your business is outside Florida or Georgia, Daniel can let you know whether DK Benefits can assist directly or connect you with an appropriate resource.</p>
+            <p>Use of this tool does not create a broker-client relationship or guarantee coverage.</p>
+            <p>DK Benefits LLC owns and operates this tool.</p>
+            <p>DK Benefits LLC Florida Agency License #L109331. Daniel Kirves Florida Resident Agent License #W588866. Georgia Agent License #3366904.</p>
+          </details>
+        </div>
+
+        <div id="customize-panel" class="side-tools">
+          <section class="panel mix-panel" aria-labelledby="mix-heading">
+            <div class="mix-head">
+              <h2 id="mix-heading">Customize for your group</h2>
+              <button type="button" id="clear-group" class="btn btn-secondary">Clear</button>
+            </div>
+            <p class="hint">Optional. Monthly tier rates stay visible either way. Totals appear after you enter enrollment.</p>
+            <div class="mix-grid rf-counts">
+              <label for="eligible">Eligible employees
+                <input id="eligible" type="number" min="1" step="1" inputmode="numeric" placeholder="Eligible" autocomplete="off" />
+              </label>
+              <label for="enrolling">Enrolling
+                <input id="enrolling" type="number" min="1" step="1" inputmode="numeric" placeholder="Enrolling" autocomplete="off" />
+              </label>
+            </div>
+            <h3 class="rf-subhead">Enrollment mix</h3>
+            <div class="mix-grid">
+              <label for="mix-ee">Employee only
+                <input id="mix-ee" data-mix="employeeOnly" type="number" min="0" step="1" inputmode="numeric" placeholder="0" autocomplete="off" />
+              </label>
+              <label for="mix-es">Employee + spouse
+                <input id="mix-es" data-mix="employeeSpouse" type="number" min="0" step="1" inputmode="numeric" placeholder="0" autocomplete="off" />
+              </label>
+              <label for="mix-ec">Employee + child
+                <input id="mix-ec" data-mix="employeeChildren" type="number" min="0" step="1" inputmode="numeric" placeholder="0" autocomplete="off" />
+              </label>
+              <label for="mix-fam">Family
+                <input id="mix-fam" data-mix="family" type="number" min="0" step="1" inputmode="numeric" placeholder="0" autocomplete="off" />
+              </label>
+            </div>
+            <p id="mix-note" class="hint" role="status"></p>
+            <p id="participation-note" class="message" hidden></p>
+          </section>
+
+          <section class="panel pay-cycle" aria-labelledby="pay-cycle-heading">
+            <h3 id="pay-cycle-heading">Employee pay cycle</h3>
+            <div id="pay-cycle-options" class="mode-switch" role="radiogroup" aria-labelledby="pay-cycle-heading">
+              <button type="button" class="mode-btn" role="radio" data-pay="26" aria-checked="false" tabindex="0">Bi-weekly</button>
+              <button type="button" class="mode-btn" role="radio" data-pay="52" aria-checked="false" tabindex="-1">Weekly</button>
+              <button type="button" class="mode-btn" role="radio" data-pay="24" aria-checked="false" tabindex="-1">Semi-monthly</button>
+              <button type="button" class="mode-btn" role="radio" data-pay="12" aria-checked="false" tabindex="-1">Monthly</button>
+            </div>
+          </section>
+
+          <section id="contrib" class="panel contrib is-open" aria-labelledby="contrib-heading">
+            <h3 id="contrib-heading">Contribution</h3>
+            <div id="contrib-body">
+              <div class="mode-switch" role="group" aria-label="Contribution type">
+                <button type="button" id="model-percent" class="mode-btn" aria-pressed="false">% of premium</button>
+                <button type="button" id="model-flat" class="mode-btn" aria-pressed="false">Flat dollar</button>
+              </div>
+              <div id="percent-fields" hidden>
+                <div class="contrib-line">
+                  <p id="ee-preset-label" class="contrib-label">Employer pays this much of employee-only</p>
+                  <div class="presets" role="group" aria-labelledby="ee-preset-label">
+                    <button type="button" class="preset" data-ee="50">50%</button>
+                    <button type="button" class="preset" data-ee="75">75%</button>
+                    <button type="button" class="preset" data-ee="100">100%</button>
+                  </div>
+                  <label class="slider-label" for="employer-contribution">Fine tune <span id="employer-percent-readout">—</span></label>
+                  <input id="employer-contribution" type="range" min="50" max="100" step="1" value="50" disabled />
+                </div>
+                <div class="contrib-line">
+                  <p id="dep-preset-label" class="contrib-label">Employer pays this much of the dependent portion</p>
+                  <div class="presets" role="group" aria-labelledby="dep-preset-label">
+                    <button type="button" class="preset" data-dep="0">0%</button>
+                    <button type="button" class="preset" data-dep="50">50%</button>
+                    <button type="button" class="preset" data-dep="75">75%</button>
+                    <button type="button" class="preset" data-dep="100">100%</button>
+                  </div>
+                  <label class="slider-label" for="dependent-contribution">Fine tune <span id="dependent-percent-readout">—</span></label>
+                  <input id="dependent-contribution" type="range" min="0" max="100" step="1" value="0" disabled />
+                  <p class="hint">If you set employee-only and skip this, the dependent portion stays at 0%.</p>
+                </div>
+              </div>
+              <div id="flat-fields" hidden>
+                <p id="flat-preset-label" class="contrib-label">Flat monthly amount per enrolled employee</p>
+                <div class="presets" role="group" aria-labelledby="flat-preset-label">
+                  <button type="button" class="preset" data-flat="200">$200</button>
+                  <button type="button" class="preset" data-flat="300">$300</button>
+                  <button type="button" class="preset" data-flat="400">$400</button>
+                  <button type="button" class="preset" data-flat="custom">Custom</button>
+                </div>
+                <label class="custom-flat" for="flat-custom-amount">Custom amount
+                  <input id="flat-custom-amount" type="number" min="1" step="1" inputmode="numeric" placeholder="Custom amount" hidden />
+                </label>
+                <p id="flat-readout" class="readout"></p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <section id="lead" class="panel lead" hidden aria-labelledby="lead-heading">
+        <div class="lead-head">
+          <h2 id="lead-heading">Send these rates to Daniel</h2>
+          <button type="button" id="lead-back" class="btn btn-secondary">Back to plans</button>
+        </div>
+        <p id="lead-next">Daniel will follow up about the plans listed here. Printing stays free and does not need this form.</p>
+        <p id="lead-saved-note" class="hint"></p>
+        <ul id="lead-plan-list" class="lead-plan-list"></ul>
+        <form id="lead-form">
+          <fieldset class="state-bubbles">
+            <legend>What state is your business in?</legend>
+            <div class="mode-switch" role="radiogroup" aria-label="Business state">
+              <button type="button" class="mode-btn" role="radio" data-state="Florida" aria-checked="false">Florida</button>
+              <button type="button" class="mode-btn" role="radio" data-state="Georgia" aria-checked="false">Georgia</button>
+              <button type="button" class="mode-btn" role="radio" data-state="Other" aria-checked="false">Other</button>
+            </div>
+          </fieldset>
+          <p id="lead-error" class="message message-error" hidden></p>
+          <label for="first-name">First name
+            <input id="first-name" name="firstName" type="text" autocomplete="given-name" required placeholder="First name" />
+          </label>
+          <label for="email">Work email
+            <input id="email" name="email" type="email" autocomplete="email" required placeholder="you@company.com" />
+          </label>
+          <label for="phone">Best phone (optional)
+            <input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="407-555-0123" />
+          </label>
+          <button id="lead-submit" class="btn btn-primary" type="submit">Send these to Daniel</button>
+        </form>
+        <div id="lead-success" class="success" role="status" hidden></div>
+      </section>
+
+      <section id="load-error" class="panel load-error" hidden role="alert"></section>
+    </main>
+  </div>
+  <div id="print-root" class="print-root" aria-hidden="true"></div>
+  <script src="../quote-activity.js"></script>
+  <script src="quote-math.js"></script>
+  <script src="rates-first.js"></script>
+</body>
+</html>
