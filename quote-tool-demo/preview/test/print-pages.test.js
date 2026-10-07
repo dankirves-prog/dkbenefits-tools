@@ -15,8 +15,27 @@ const PLAN_IDS = [
   'cigna-ppo-8300-hsa',
   'cigna-epo-1750-hsa',
   'UHC-PPO-2000-Deductible',
-  'phcs-visit-limit-1750-HSA'
+  'phcs-visit-limit-1750-HSA',
+  'cigna-epo-1000',
+  'uhc-ppo-3000-hsa',
+  'cigna-ppo-4500',
+  'uhc-ppo-4500',
+  'phcs-ppo-4500',
+  'cigna-ppo-3500',
+  'uhc-ppo-3500',
+  'phcs-ppo-3500'
 ];
+const SAVED_PAGE_COUNTS = {
+  1: 1,
+  2: 1,
+  3: 1,
+  4: 1,
+  5: 1,
+  6: 1,
+  7: 2,
+  9: 2,
+  12: 2
+};
 const DISCLAIMER_HTML = [
   'Important information',
   'Rates shown are based on current published pricing and the answers provided. Final eligibility, participation, underwriting, plan availability, effective dates, and carrier/program approval may change pricing or options. Benefits are governed by official plan documents.',
@@ -73,7 +92,7 @@ function hasPlanContent(text) {
   return /Total monthly premium/.test(text) && /EE Cost PPP/.test(text);
 }
 
-test('printed proposals keep Important information on the last plan page', { timeout: 240000 }, async () => {
+test('printed proposals keep Important information on the last plan page', { timeout: 420000 }, async () => {
   fs.mkdirSync(ARTIFACTS, { recursive: true });
   const work = '/tmp/print-pages-8705';
   fs.rmSync(work, { recursive: true, force: true });
@@ -192,6 +211,14 @@ test('printed proposals keep Important information on the last plan page', { tim
     DISCLAIMER_HTML.forEach((sentence) => {
       assert.ok(html.includes(sentence), 'print HTML dropped disclaimer wording: ' + sentence);
     });
+    const sheetHtml = [...html.matchAll(/<section class="print-sheet[\s\S]*?<\/section>/g)].map((match) => match[0]);
+    assert.ok(sheetHtml.length >= 1, filename + ' has no plan sheet');
+    sheetHtml.forEach((sheet, index) => {
+      const columns = (sheet.match(/class="print-tier/g) || []).length;
+      assert.ok(columns >= 1 && columns <= 6, filename + ' sheet ' + (index + 1) + ' has ' + columns + ' plans');
+    });
+    assert.ok(html.indexOf('print-header') < html.indexOf('print-sheet'), filename + ' header is not on page 1');
+    assert.ok(html.lastIndexOf('print-disclaimer') > html.lastIndexOf('print-sheet'), filename + ' disclaimer is not after the plans');
     const created = await send('Target.createTarget', { url: 'about:blank' });
     const attached = await send('Target.attachToTarget', { targetId: created.targetId, flatten: true });
     const printSession = attached.sessionId;
@@ -352,16 +379,27 @@ test('printed proposals keep Important information on the last plan page', { tim
           return doc.getElementById('my-plans-btn').textContent;
         })()`);
         assert.match(saved, new RegExp('My Plans \\(' + count + '\\)'), launch.id + ' save ' + id + ' -> ' + saved);
+        const expectedPages = SAVED_PAGE_COUNTS[count];
+        if (!expectedPages) continue;
         const file = await printIframe(launch.id + '-saved-' + count + '.pdf');
-        const pages = assertProposal(file, 1, launch.id + ' saved-' + count);
+        const pages = assertProposal(file, expectedPages, launch.id + ' saved-' + count);
         assert.match(pages[0], /Inpatient Hospital/);
         assert.match(pages[0], /Outpatient Surgery/);
         assert.match(pages[0], /EE Cost PPP/);
+        assert.match(pages[0], /Group rate proposal/);
         assert.match(pages[0], /Saved plans only/);
+        assert.equal(hasPlanContent(pages[0]), true, launch.id + ' saved-' + count + ' page 1 has no plans');
+        if (expectedPages > 1) {
+          assert.doesNotMatch(pages[0], /Important information/, launch.id + ' saved-' + count + ' put the disclaimer on page 1');
+        }
         if (launch.id === 'iframe-desktop' && count === 4) {
           assert.match(pages[0], /Cigna PPO 8300/);
           assert.match(pages[0], /Incl \$25 Monthly HSA/);
           renderPage(file, 1, 'print_saved_4plans.png');
+        }
+        if (launch.id === 'iframe-desktop' && count === 7) {
+          renderPage(file, 1, 'print_saved_7_page1.png');
+          renderPage(file, 2, 'print_saved_7_page2.png');
         }
       }
     }

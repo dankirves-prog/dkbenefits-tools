@@ -686,9 +686,7 @@
 
   function printHtml(state) {
     var items = state.printPlans || [];
-    var savedLayout = state.printLayout === 'saved' || (state.printLayout !== 'all' && state.saved && state.saved.length > 0);
-    var perPage = savedLayout ? Math.max(items.length, 1) : 6;
-    var chunks = printChunks(items, { perPage: perPage });
+    var chunks = printChunks(items, { perPage: 6 });
     var tables = chunks.map(function (chunk, index) {
       return '<section class="print-sheet' + (index ? ' print-next' : ' print-first') + '">' +
         comparisonTable(chunk.plans, state, false) + '</section>';
