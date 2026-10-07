@@ -826,6 +826,20 @@ test('edit answers keeps the six answers on one screen', () => {
   assert.equal(math.mixTotal(model.getState().mixUsed), 7);
 });
 
+test('preview layout does not pin controls to the screen', () => {
+  const js = fs.readFileSync(path.join(__dirname, '../preview.js'), 'utf8');
+  const css = fs.readFileSync(path.join(__dirname, '../preview.css'), 'utf8');
+  const page = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  assert.equal(js.includes('scrollIntoView'), false);
+  assert.equal(css.includes('position: fixed'), false);
+  assert.equal(css.includes('position: sticky'), false);
+  assert.equal(css.includes('100vh'), false);
+  assert.match(page, /id="results-actions"/);
+  assert.match(page, /Questions\? Call or text Daniel/);
+  assert.doesNotMatch(page, /id="dock"/);
+  assert.doesNotMatch(page, /id="plans-drawer"/);
+});
+
 test('rates-as-of label lives in the preview config, not plans.json', () => {
   const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../preview-config.json'), 'utf8'));
   assert.equal(config.ratesAsOfLabel, 'Rates as of October 2026');

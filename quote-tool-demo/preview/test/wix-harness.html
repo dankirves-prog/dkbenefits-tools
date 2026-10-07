@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wix embed harness</title>
+  <style>
+    body { margin: 0; background: #f4f4f4; font-family: Arial, sans-serif; }
+    .wix-header {
+      height: 122px;
+      background: #0f2f57;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      font-weight: 700;
+    }
+    body.desktop .wix-header { height: 156px; }
+    iframe {
+      display: block;
+      width: 100%;
+      height: 929px;
+      border: 0;
+      background: #fff;
+      overflow: clip;
+    }
+    body.desktop iframe { height: 8153px; }
+    body.layout320 iframe { width: 320px; height: 929px; }
+    .below { height: 480px; padding: 16px; color: #333; }
+  </style>
+</head>
+<body>
+  <header class="wix-header" id="wix-header">Wix header</header>
+  <iframe id="tool" title="DK Benefits Quote Tool" src="../index.html"></iframe>
+  <div class="below">Page content below the quote embed.</div>
+  <script>
+    var params = new URLSearchParams(location.search);
+    if (params.get('desktop') === '1') document.body.classList.add('desktop');
+    if (params.get('layout') === '320') document.body.classList.add('layout320');
+  </script>
+</body>
+</html>

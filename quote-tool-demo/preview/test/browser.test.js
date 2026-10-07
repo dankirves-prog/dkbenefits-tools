@@ -403,12 +403,21 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     await setViewport(390, 844);
     await evaluate('window.scrollTo(0, 0)');
     await sleep(100);
-    const launcher = await evaluate('getComputedStyle(document.getElementById("contrib-launcher")).display');
-    assert.equal(launcher, 'flex');
-    const dockText = await evaluate('document.getElementById("dock").innerText');
-    assert.match(dockText, /Call or text Daniel/);
-    assert.match(dockText, /407-476-5076/);
-    assert.match(dockText, /Adjust/);
+    const fixedUi = await evaluate('[...document.querySelectorAll("body *")].filter((el) => getComputedStyle(el).position === "fixed").map((el) => el.id || el.className).join(",")');
+    assert.equal(fixedUi, '', 'no screen-fixed controls: ' + fixedUi);
+    const actionsText = await evaluate('document.getElementById("results-actions").innerText');
+    assert.match(actionsText, /Call or text Daniel/);
+    assert.match(actionsText, /407-476-5076/);
+    assert.match(actionsText, /My Plans/);
+    assert.match(actionsText, /Get my plan details/);
+    assert.equal(await evaluate('document.getElementById("contrib").classList.contains("is-open")'), false);
+    assert.equal(await evaluate('getComputedStyle(document.getElementById("contrib-body")).display'), 'none');
+    await evaluate('document.getElementById("contrib-toggle").click()');
+    assert.equal(await evaluate('document.getElementById("contrib").classList.contains("is-open")'), true);
+    assert.notEqual(await evaluate('getComputedStyle(document.getElementById("contrib-body")).display'), 'none');
+    await evaluate('document.getElementById("contrib-toggle").click()');
+    const stripCount = await evaluate('document.querySelectorAll(".cta-strip").length');
+    assert.ok(stripCount >= 1, 'expected an inline call strip, found ' + stripCount);
     await evaluate('document.querySelector("#top-plans").scrollIntoView({ behavior: "instant", block: "center" })');
     await sleep(80);
     await shot('mobile_results_r2.png');
@@ -431,12 +440,6 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.match(await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"]\').innerText'), /\$4,858/);
     await evaluate('document.getElementById("mix-ee").value = "4"; document.getElementById("mix-ee").dispatchEvent(new Event("input", { bubbles: true }));');
 
-    await evaluate('document.getElementById("contrib-launcher").click()');
-    await sleep(100);
-    const sheetOpen = await evaluate('document.getElementById("contrib").classList.contains("is-open")');
-    assert.equal(sheetOpen, true);
-    await evaluate('document.getElementById("contrib-close").click()');
-
     await setViewport(1440, 1000);
     await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"] .save-toggle\').click()');
     await evaluate('document.querySelector(\'[data-plan-id="UHC-PPO-2000-Deductible"] .save-toggle\').click()');
@@ -446,6 +449,9 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.match(await evaluate('document.getElementById("my-plans-btn").textContent'), /My Plans \(4\)/);
     await evaluate('document.getElementById("my-plans-btn").click()');
     await sleep(80);
+    assert.equal(await evaluate('getComputedStyle(document.getElementById("my-plans-panel")).position'), 'static');
+    await evaluate('document.getElementById("my-plans-panel").scrollIntoView({ behavior: "instant", block: "start" })');
+    await sleep(40);
     const compare = await evaluate('document.getElementById("drawer-body").innerText');
     assert.match(compare, /Cigna EPO 1000/);
     assert.match(compare, /UHC PPO 2000/);
@@ -609,6 +615,119 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.equal(posts.length, beforeReload);
     assert.equal(leaked, false);
     assert.ok(posts.every((post) => post.url.includes(WEBHOOK)));
+
+    async function openHarness(query, width, height) {
+      await setViewport(width, height);
+      await send('Page.navigate', { url: `${ORIGIN}/quote-tool-demo/preview/test/wix-harness.html${query}` }, sessionId);
+      await waitFor(async () => {
+        const ready = await evaluate(`(() => {
+          const frame = document.getElementById('tool');
+          if (!frame || !frame.contentDocument) return false;
+          const heading = frame.contentDocument.getElementById('question-heading');
+          return !!(heading && heading.textContent && heading.textContent !== 'Loading plan options…');
+        })()`);
+        return ready;
+      }, 'harness preview ' + query);
+      await sleep(200);
+    }
+
+    async function frameEval(expression) {
+      return evaluate(`(() => { const doc = document.getElementById('tool').contentDocument; const win = doc.defaultView; return eval(${JSON.stringify(expression)}); })()`);
+    }
+
+    await openHarness('?layout=320', 320, 693);
+    await shot('wix_mobile_questions.png');
+    const mobileFrame = await evaluate(`(() => {
+      const frame = document.getElementById('tool').getBoundingClientRect();
+      return { width: Math.round(frame.width), height: Math.round(frame.height), top: Math.round(frame.top) };
+    })()`);
+    assert.equal(mobileFrame.width, 320);
+    assert.equal(mobileFrame.height, 929);
+    assert.equal(mobileFrame.top, 122);
+    const parentBefore = await evaluate('document.scrollingElement.scrollTop');
+    await frameEval(`doc.querySelector('[data-value="Florida"]').click()`);
+    await sleep(250);
+    await frameEval(`doc.getElementById('q-number').value = '10'; doc.getElementById('next-btn').click();`);
+    await sleep(200);
+    await frameEval(`doc.getElementById('q-number').value = '7'; doc.getElementById('next-btn').click();`);
+    await sleep(200);
+    await frameEval(`doc.querySelector('[data-value="balanced"]').click()`);
+    await sleep(220);
+    await frameEval(`doc.querySelector('[data-value="yes"]').click()`);
+    await sleep(220);
+    await frameEval(`doc.querySelector('[data-value="later"]').click()`);
+    await waitFor(async () => frameEval(`doc.getElementById('results').hidden === false`), 'harness mobile results');
+    await sleep(200);
+    const parentAfterQuestions = await evaluate('document.scrollingElement.scrollTop');
+    assert.equal(parentAfterQuestions, parentBefore, 'answering questions should not scroll the Wix page');
+    const mobileFixed = await frameEval(`[...doc.querySelectorAll('body *')].filter((el) => win.getComputedStyle(el).position === 'fixed').map((el) => el.id || String(el.className)).join(',')`);
+    assert.equal(mobileFixed, '');
+    const actionsTop = await frameEval(`doc.getElementById('results-actions').getBoundingClientRect().top`);
+    assert.ok(actionsTop >= 0 && actionsTop < 929, 'results actions should sit inside the iframe, top=' + actionsTop);
+    assert.match(await frameEval(`doc.getElementById('results-actions').innerText`), /Call or text Daniel/);
+    const overflowX = await frameEval(`doc.documentElement.scrollWidth <= win.innerWidth + 1`);
+    assert.equal(overflowX, true);
+    await shot('wix_mobile_results.png');
+    await frameEval(`doc.getElementById('goto-lead').click()`);
+    await sleep(80);
+    const leadTop = await frameEval(`doc.getElementById('lead').getBoundingClientRect().top`);
+    assert.ok(leadTop >= 0 && leadTop < 929, 'lead form should open inside the iframe, top=' + leadTop);
+    assert.equal(await evaluate('document.scrollingElement.scrollTop'), parentBefore);
+    await shot('wix_mobile_lead.png');
+    await frameEval(`doc.querySelector('[data-plan-id="cigna-epo-1000"] .save-toggle').click()`);
+    await sleep(80);
+    await frameEval(`(() => { const el = doc.querySelector('.cta-strip'); const top = el.getBoundingClientRect().top + win.scrollY - 8; win.scrollTo(0, Math.max(0, top)); return true; })()`);
+    await frameEval(`doc.querySelector('.cta-strip .open-my-plans').click()`);
+    await sleep(80);
+    const panelInFrame = await frameEval(`doc.getElementById('my-plans-panel').getBoundingClientRect().top`);
+    assert.ok(panelInFrame >= 0 && panelInFrame < 929, 'My Plans should open inside the iframe, top=' + panelInFrame);
+    assert.equal(await evaluate('document.scrollingElement.scrollTop'), parentBefore);
+    await shot('wix_mobile_my_plans.png');
+
+    await openHarness('', 390, 844);
+    await frameEval(`doc.querySelector('[data-value="Florida"]').click()`);
+    await sleep(250);
+    await frameEval(`doc.getElementById('q-number').value = '10'; doc.getElementById('next-btn').click();`);
+    await sleep(180);
+    await frameEval(`doc.getElementById('q-number').value = '7'; doc.getElementById('next-btn').click();`);
+    await sleep(180);
+    await frameEval(`doc.querySelector('[data-value="cost"]').click()`);
+    await sleep(200);
+    await frameEval(`doc.querySelector('[data-value="no"]').click()`);
+    await sleep(200);
+    await frameEval(`doc.querySelector('[data-value="30"]').click()`);
+    await waitFor(async () => frameEval(`doc.getElementById('results').hidden === false`), '390 results');
+    await sleep(200);
+    assert.equal(await evaluate('document.scrollingElement.scrollTop'), 0);
+    await shot('wix_mobile_390_start_results.png');
+
+    await openHarness('?desktop=1', 1440, 900);
+    const desktopFrame = await evaluate(`(() => {
+      const frame = document.getElementById('tool').getBoundingClientRect();
+      return { height: Math.round(frame.height), top: Math.round(frame.top) };
+    })()`);
+    assert.equal(desktopFrame.height, 8153);
+    assert.equal(desktopFrame.top, 156);
+    await frameEval(`doc.querySelector('[data-value="Florida"]').click()`);
+    await sleep(250);
+    await frameEval(`doc.getElementById('q-number').value = '10'; doc.getElementById('next-btn').click();`);
+    await sleep(180);
+    await frameEval(`doc.getElementById('q-number').value = '7'; doc.getElementById('next-btn').click();`);
+    await sleep(180);
+    await frameEval(`doc.querySelector('[data-value="balanced"]').click()`);
+    await sleep(200);
+    await frameEval(`doc.querySelector('[data-value="yes"]').click()`);
+    await sleep(200);
+    await frameEval(`doc.querySelector('[data-value="later"]').click()`);
+    await waitFor(async () => frameEval(`doc.getElementById('results').hidden === false`), 'desktop harness results');
+    await sleep(250);
+    assert.equal(await evaluate('document.scrollingElement.scrollTop'), 0, 'results should not push the Wix header away');
+    const headerStillVisible = await evaluate('document.getElementById("wix-header").getBoundingClientRect().top');
+    assert.equal(headerStillVisible, 0);
+    const desktopActions = await frameEval(`doc.getElementById('results-actions').getBoundingClientRect().top`);
+    assert.ok(desktopActions >= 0 && desktopActions < 900, 'desktop CTA should be in the first screen, top=' + desktopActions);
+    assert.equal(await frameEval(`[...doc.querySelectorAll('body *')].some((el) => win.getComputedStyle(el).position === 'fixed' || win.getComputedStyle(el).position === 'sticky')`), false);
+    await shot('wix_desktop_inline_cta.png');
   } finally {
     if (ws) ws.close();
     chrome.kill('SIGKILL');

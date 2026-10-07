@@ -78,6 +78,25 @@
           <p id="participation-note" class="message" hidden></p>
         </div>
 
+        <div id="results-actions" class="results-actions">
+          <button type="button" id="my-plans-btn" class="btn btn-secondary" aria-expanded="false" aria-controls="my-plans-panel">My Plans (0)</button>
+          <p class="inline-cta">Questions? Call or text Daniel <a href="tel:4074765076">407-476-5076</a></p>
+          <button type="button" id="goto-lead" class="btn btn-primary">Get my plan details</button>
+        </div>
+        <div id="my-plans-slot">
+          <section id="my-plans-panel" class="panel my-plans" hidden aria-labelledby="drawer-heading">
+            <div class="drawer-head">
+              <h2 id="drawer-heading">My Plans</h2>
+              <button type="button" id="drawer-close" class="btn btn-secondary">Close</button>
+            </div>
+            <div id="drawer-body"></div>
+            <div class="drawer-actions">
+              <button type="button" id="drawer-print" class="btn btn-secondary">Print these plans</button>
+              <button type="button" id="drawer-send" class="btn btn-primary">Send these to Daniel</button>
+            </div>
+          </section>
+        </div>
+
         <section class="panel mix-panel" aria-labelledby="mix-heading">
           <h3 id="mix-heading">Estimated enrollment mix</h3>
           <div class="mix-grid">
@@ -129,8 +148,10 @@
         <section id="contrib" class="panel contrib" aria-labelledby="contrib-heading">
           <div class="contrib-head">
             <h3 id="contrib-heading">Contribution</h3>
-            <button type="button" id="contrib-close" class="btn btn-secondary contrib-close">Done</button>
+            <button type="button" id="contrib-toggle" class="btn btn-secondary" aria-expanded="false" aria-controls="contrib-body">Change</button>
           </div>
+          <p id="contrib-summary" class="contrib-summary">Employer pays 50% of employee-only</p>
+          <div id="contrib-body">
           <div class="mode-switch" role="group" aria-label="Contribution type">
             <button type="button" id="model-percent" class="mode-btn" aria-pressed="true">% of premium</button>
             <button type="button" id="model-flat" class="mode-btn" aria-pressed="false">Flat dollar</button>
@@ -183,6 +204,7 @@
             <option value="24">Semi-monthly</option>
             <option value="12">Monthly</option>
           </select>
+          </div>
         </section>
 
         <div class="quote-main">
@@ -192,6 +214,7 @@
           <h3 id="top-heading" class="section-title">Featured Plan Options</h3>
           <div id="top-plans" class="plan-list"></div>
         </section>
+        <button type="button" id="show-all-plans" class="btn btn-secondary show-all-plans" hidden>Show all plans</button>
         <section id="section-low" aria-labelledby="low-heading">
           <h3 id="low-heading" class="section-title">Lower Cost Options</h3>
           <div id="low-plans" class="plan-list"></div>
@@ -213,6 +236,7 @@
           <p>DK Benefits LLC Florida Agency License #L109331. Daniel Kirves Florida Resident Agent License #W588866. Georgia Agent License #3366904.</p>
         </details>
 
+        <div id="lead-home">
         <section id="lead" class="panel lead" aria-labelledby="lead-heading">
           <h3 id="lead-heading">Get these plan details and more options from Daniel.</h3>
           <p>Share your contact info for a quick, no-pressure conversation with Daniel about the best next steps for your company.</p>
@@ -234,38 +258,11 @@
         </section>
         </div>
         </div>
+        </div>
       </section>
 
       <section id="load-error" class="panel load-error" hidden role="alert"></section>
     </main>
-  </div>
-
-  <button type="button" id="contrib-backdrop" class="backdrop" hidden>Close contribution tools</button>
-  <div id="dock" class="dock" hidden>
-    <button type="button" id="contrib-launcher" class="contrib-launcher" aria-expanded="false" aria-controls="contrib">
-      <span id="contrib-launcher-label">Employer pays 50% of employee-only</span>
-      <span class="launcher-action">Adjust</span>
-    </button>
-    <div class="contact-bar">
-      <button type="button" id="my-plans-btn" class="btn btn-secondary" aria-expanded="false" aria-controls="plans-drawer">My Plans (0)</button>
-      <p>Questions? Call or text Daniel <a href="tel:4074765076">407-476-5076</a></p>
-      <button type="button" id="goto-lead" class="btn btn-primary">Get my plan details</button>
-    </div>
-  </div>
-
-  <div id="plans-drawer" class="drawer" hidden>
-    <button type="button" id="drawer-backdrop" class="backdrop">Close my plans</button>
-    <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawer-heading">
-      <div class="drawer-head">
-        <h2 id="drawer-heading">My Plans</h2>
-        <button type="button" id="drawer-close" class="btn btn-secondary">Close</button>
-      </div>
-      <div id="drawer-body"></div>
-      <div class="drawer-actions">
-        <button type="button" id="drawer-print" class="btn btn-secondary">Print these plans</button>
-        <button type="button" id="drawer-send" class="btn btn-primary">Send these to Daniel</button>
-      </div>
-    </div>
   </div>
 
   <div id="print-root" class="print-root" aria-hidden="true"></div>

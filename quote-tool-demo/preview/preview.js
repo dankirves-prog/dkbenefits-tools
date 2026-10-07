@@ -629,8 +629,11 @@
     var intro = document.getElementById('intro');
     var results = document.getElementById('results');
     var loadError = document.getElementById('load-error');
-    var dock = document.getElementById('dock');
     var advanceTimer = 0;
+    var showAllPlans = false;
+    var myPlansPlace = 'header';
+    var leadPlace = 'home';
+    var MOBILE_FEATURED_LIMIT = 4;
     var advanceToken = 0;
     var printMode = 'auto';
     var model = null;
@@ -647,10 +650,75 @@
         '<p>Please refresh and try again, or call/text Daniel at <a href="tel:4074765076">407-476-5076</a>.</p>';
     }
 
-    function scrollTo(el) {
-      if (!el) return;
-      var behavior = reducedMotion(win) ? 'auto' : 'smooth';
-      el.scrollIntoView({ behavior: behavior, block: 'start' });
+    function scrollInside() {
+      win.scrollTo(0, 0);
+    }
+
+    function narrowResults() {
+      return win.matchMedia && win.matchMedia('(max-width: 859px)').matches;
+    }
+
+    function ctaStrip(afterId, savedCount) {
+      return '<aside class="cta-strip" data-after="' + escapeHtml(afterId) + '">' +
+        '<p>Questions? Call or text Daniel <a href="tel:4074765076">407-476-5076</a></p>' +
+        '<button type="button" class="btn btn-secondary open-my-plans" data-after="' + escapeHtml(afterId) + '">My Plans (' + savedCount + ')</button>' +
+        '<button type="button" class="btn btn-primary inline-lead" data-after="' + escapeHtml(afterId) + '">Get my plan details</button>' +
+        '</aside>';
+    }
+
+    function parkMyPlans() {
+      var panel = $('my-plans-panel');
+      var slot = $('my-plans-slot');
+      if (panel && slot && panel.parentElement !== slot) slot.appendChild(panel);
+    }
+
+    function parkLead() {
+      var lead = $('lead');
+      var home = $('lead-home');
+      if (lead && home && lead.parentElement !== home) home.appendChild(lead);
+    }
+
+    function anchorFor(place) {
+      if (place && place !== 'header' && place !== 'home') {
+        var strip = document.querySelector('.cta-strip[data-after="' + place + '"]');
+        if (strip) return strip;
+      }
+      return $('results-actions');
+    }
+
+    function placeMyPlans() {
+      var panel = $('my-plans-panel');
+      if (!panel || panel.hidden) return;
+      anchorFor(myPlansPlace).insertAdjacentElement('afterend', panel);
+    }
+
+    function placeLead() {
+      if (!leadPlace || leadPlace === 'home') {
+        parkLead();
+        return;
+      }
+      var anchor = anchorFor(leadPlace);
+      var panel = $('my-plans-panel');
+      if (panel && !panel.hidden && panel.previousElementSibling === anchor) anchor = panel;
+      anchor.insertAdjacentElement('afterend', $('lead'));
+    }
+
+    function plansMarkup(plans, state, deferAfter) {
+      var html = '';
+      var visible = 0;
+      var deferred = 0;
+      plans.forEach(function (plan, index) {
+        var hide = deferAfter != null && index >= deferAfter;
+        if (hide) {
+          deferred += 1;
+          html += planArticle(plan, state).replace('class="plan-card"', 'class="plan-card is-deferred"');
+          return;
+        }
+        html += planArticle(plan, state);
+        visible += 1;
+        if (visible % 3 === 0 && index < plans.length - 1) html += ctaStrip(plan.id, state.saved.length);
+      });
+      return { html: html, deferred: deferred };
     }
 
     function renderQuestion() {
@@ -661,7 +729,6 @@
       questionSection.hidden = false;
       if (reviewSection) reviewSection.hidden = true;
       results.hidden = true;
-      dock.hidden = true;
       document.body.classList.remove('is-results', 'is-review');
       $('assist').hidden = state.step !== 0;
       $('progress-text').textContent = 'Question ' + (state.step + 1) + ' of ' + QUESTIONS.length;
@@ -740,14 +807,21 @@
       var note = $('participation-note');
       note.hidden = !state.participation;
       note.textContent = state.participation || '';
-      $('contrib-launcher-label').textContent = launcherLabel(state);
+      $('contrib-summary').textContent = launcherLabel(state);
+      parkMyPlans();
+      parkLead();
       var sections = state.sections;
       var any = false;
+      var deferred = 0;
+      var narrow = narrowResults() && !showAllPlans;
       sections.groups.forEach(function (group) {
         if (group.id === 'mec') return;
         var section = $('section-' + group.id);
         var host = $(group.id + '-plans');
-        host.innerHTML = group.plans.map(function (plan) { return planArticle(plan, state); }).join('');
+        var limit = narrow && group.id === 'top' ? MOBILE_FEATURED_LIMIT : null;
+        var built = plansMarkup(group.plans, state, limit);
+        host.innerHTML = built.html;
+        deferred += built.deferred;
         var show = group.plans.length > 0;
         section.hidden = !show;
         if (show) any = true;
@@ -768,6 +842,16 @@
           : 'No plans match this carrier.';
       }
       $('my-plans-btn').textContent = 'My Plans (' + state.saved.length + ')';
+      document.querySelectorAll('.open-my-plans').forEach(function (button) {
+        button.textContent = 'My Plans (' + state.saved.length + ')';
+      });
+      var showAllBtn = $('show-all-plans');
+      var canFold = narrowResults() && sections.groups.some(function (group) {
+        return group.id === 'top' && group.plans.length > MOBILE_FEATURED_LIMIT;
+      });
+      showAllBtn.hidden = !canFold;
+      showAllBtn.textContent = showAllPlans ? 'Show fewer plans' : 'Show all ' + (deferred + MOBILE_FEATURED_LIMIT) + ' featured plans';
+      showAllBtn.setAttribute('aria-expanded', showAllPlans ? 'true' : 'false');
       var savedNote = $('lead-saved-note');
       if (savedNote) {
         savedNote.textContent = state.saved.length
@@ -777,7 +861,9 @@
       $('print-help').textContent = state.saved.length
         ? 'Printing will include the ' + state.saved.length + ' saved plan' + (state.saved.length === 1 ? '' : 's') + ' only. Clear saved plans to print the full list.'
         : 'Prints every plan in the current list. Save plans to print just those.';
-      if (!$('plans-drawer').hidden) $('drawer-body').innerHTML = compareHtml(state);
+      if (!$('my-plans-panel').hidden) $('drawer-body').innerHTML = compareHtml(state);
+      placeMyPlans();
+      placeLead();
       $('drawer-print').disabled = state.saved.length === 0;
       $('print-root').innerHTML = printHtml(state);
       $('sort-mode').value = state.sortMode;
@@ -801,14 +887,13 @@
       questionSection.hidden = true;
       if (reviewSection) reviewSection.hidden = true;
       results.hidden = false;
-      dock.hidden = false;
       document.body.classList.add('is-results');
       document.body.classList.remove('is-review');
       closeContrib();
       syncMixInputs();
       renderChips();
       renderDynamic();
-      if (scroll) scrollTo(results);
+      if (scroll) scrollInside();
     }
 
     function renderReview() {
@@ -817,7 +902,6 @@
       questionSection.hidden = true;
       reviewSection.hidden = false;
       results.hidden = true;
-      dock.hidden = true;
       document.body.classList.remove('is-results');
       document.body.classList.add('is-review');
       closeContrib();
@@ -858,17 +942,35 @@
       else renderQuestion();
     }
 
-    function openDrawer() {
-      $('plans-drawer').hidden = false;
+    function openMyPlans(place) {
+      myPlansPlace = place || 'header';
+      $('my-plans-panel').hidden = false;
       $('my-plans-btn').setAttribute('aria-expanded', 'true');
       $('drawer-body').innerHTML = compareHtml(model.getState());
       $('drawer-print').disabled = model.getState().saved.length === 0;
-      $('drawer-close').focus();
+      placeMyPlans();
+      $('drawer-close').focus({ preventScroll: true });
     }
 
-    function closeDrawer() {
-      $('plans-drawer').hidden = true;
+    function closeMyPlans() {
+      $('my-plans-panel').hidden = true;
       $('my-plans-btn').setAttribute('aria-expanded', 'false');
+      parkMyPlans();
+    }
+
+    function toggleMyPlans(place) {
+      var panel = $('my-plans-panel');
+      if (!panel.hidden && myPlansPlace === (place || 'header')) {
+        closeMyPlans();
+        return;
+      }
+      openMyPlans(place || 'header');
+    }
+
+    function revealLead(place) {
+      leadPlace = place || 'header';
+      placeLead();
+      $('first-name').focus({ preventScroll: true });
     }
 
     function layoutFor(mode, state) {
@@ -899,7 +1001,7 @@
       if (!result.ok) {
         renderQuestion();
         var input = document.getElementById('q-number');
-        if (input) input.focus();
+        if (input) input.focus({ preventScroll: true });
         return;
       }
       render();
@@ -917,15 +1019,14 @@
 
     function openContrib() {
       $('contrib').classList.add('is-open');
-      $('contrib-launcher').setAttribute('aria-expanded', 'true');
-      $('contrib-backdrop').hidden = false;
-      $('contrib-close').focus();
+      $('contrib-toggle').setAttribute('aria-expanded', 'true');
+      $('contrib-toggle').textContent = 'Done';
     }
 
     function closeContrib() {
       $('contrib').classList.remove('is-open');
-      $('contrib-launcher').setAttribute('aria-expanded', 'false');
-      $('contrib-backdrop').hidden = true;
+      $('contrib-toggle').setAttribute('aria-expanded', 'false');
+      $('contrib-toggle').textContent = 'Change';
     }
 
     var choiceFromKey = false;
@@ -970,10 +1071,10 @@
         renderQuestion();
       });
       $('edit-btn').addEventListener('click', function () {
-        closeDrawer();
+        closeMyPlans();
         model.editAnswers();
         renderReview();
-        scrollTo(reviewSection);
+        scrollInside();
       });
       $('review-fields').addEventListener('click', function (event) {
         var choice = event.target.closest('[data-review][data-value]');
@@ -1002,10 +1103,13 @@
         $('lead-success').hidden = true;
         $('lead-error').hidden = true;
         $('lead-submit').disabled = false;
+        leadPlace = 'home';
+        showAllPlans = false;
         closeContrib();
-        closeDrawer();
+        closeMyPlans();
+        parkLead();
         renderQuestion();
-        scrollTo(intro);
+        scrollInside();
       }
       $('start-over-btn').addEventListener('click', function () {
         var count = model.getState().saved.length;
@@ -1013,11 +1117,11 @@
           ? 'Start over? This clears your answers and your ' + count + ' saved plan' + (count === 1 ? '' : 's') + '.'
           : 'Start over? This clears your answers.';
         $('start-over-confirm').hidden = false;
-        $('start-over-no').focus();
+        $('start-over-no').focus({ preventScroll: true });
       });
       $('start-over-no').addEventListener('click', function () {
         $('start-over-confirm').hidden = true;
-        $('start-over-btn').focus();
+        $('start-over-btn').focus({ preventScroll: true });
       });
       $('start-over-yes').addEventListener('click', resetQuote);
       $('print-btn').addEventListener('click', function () {
@@ -1104,6 +1208,16 @@
           renderDynamic();
           return;
         }
+        var myPlans = event.target.closest('.open-my-plans');
+        if (myPlans) {
+          toggleMyPlans(myPlans.getAttribute('data-after') || 'header');
+          return;
+        }
+        var inlineLead = event.target.closest('.inline-lead');
+        if (inlineLead) {
+          revealLead(inlineLead.getAttribute('data-after') || 'header');
+          return;
+        }
         var details = event.target.closest('.details-toggle');
         if (!details) return;
         var panel = document.getElementById(details.getAttribute('aria-controls'));
@@ -1118,39 +1232,43 @@
         model.toggleSaved(button.getAttribute('data-remove'), false);
         renderDynamic();
       });
-      $('my-plans-btn').addEventListener('click', openDrawer);
-      $('drawer-close').addEventListener('click', function () {
-        closeDrawer();
-        $('my-plans-btn').focus();
+      $('my-plans-btn').addEventListener('click', function () {
+        toggleMyPlans('header');
       });
-      $('drawer-backdrop').addEventListener('click', closeDrawer);
+      $('drawer-close').addEventListener('click', function () {
+        closeMyPlans();
+        $('my-plans-btn').focus({ preventScroll: true });
+      });
       $('drawer-send').addEventListener('click', function () {
-        closeDrawer();
-        closeContrib();
-        scrollTo($('lead'));
-        $('first-name').focus();
+        revealLead(myPlansPlace || 'header');
       });
       $('mec-toggle').addEventListener('click', function () {
         model.toggleMec(!model.getState().mecOpen);
         renderDynamic();
       });
-      $('contrib-launcher').addEventListener('click', openContrib);
-      $('contrib-close').addEventListener('click', function () {
-        closeContrib();
-        $('contrib-launcher').focus();
+      $('contrib-toggle').addEventListener('click', function () {
+        if ($('contrib').classList.contains('is-open')) closeContrib();
+        else openContrib();
       });
-      $('contrib-backdrop').addEventListener('click', closeContrib);
+      $('show-all-plans').addEventListener('click', function () {
+        showAllPlans = !showAllPlans;
+        renderDynamic();
+      });
       document.addEventListener('keydown', function (event) {
         if (event.key !== 'Escape') return;
         closeContrib();
-        closeDrawer();
+        closeMyPlans();
       });
       $('goto-lead').addEventListener('click', function () {
-        closeContrib();
-        closeDrawer();
-        scrollTo($('lead'));
-        $('first-name').focus();
+        revealLead('header');
       });
+      if (win.matchMedia) {
+        var narrowMedia = win.matchMedia('(max-width: 859px)');
+        var onNarrowChange = function () {
+          if (model && model.getState().phase === 'results') renderDynamic();
+        };
+        if (narrowMedia.addEventListener) narrowMedia.addEventListener('change', onNarrowChange);
+      }
       $('lead-form').addEventListener('submit', function (event) {
         event.preventDefault();
         var firstName = $('first-name').value.trim();
@@ -1168,7 +1286,6 @@
               $('lead-success').hidden = false;
               $('lead-success').innerHTML = '<h3>Thanks, ' + escapeHtml(firstName) + '. Daniel has your information.</h3>' +
                 '<p>He will follow up about these plans for your group. You can also call or text him at <a href="tel:4074765076">407-476-5076</a>.</p>';
-              scrollTo($('lead-success'));
             });
           })
           .catch(function (error) {
