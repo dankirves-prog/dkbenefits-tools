@@ -990,6 +990,10 @@ test('saved plans print in one table and visit-limit wording stays attached', ()
   assert.ok(planTypeAt < networkAt && networkAt < badgeRowAt && badgeRowAt < noteAt && noteAt < deductibleAt, 'plan rows keep their order');
   assert.match(savedHtml, /class="print-pricing"/);
   assert.match(savedHtml, /class="print-info-start"/);
+  assert.match(savedHtml, /print-name-row/);
+  assert.match(savedHtml, /print-badge-row/);
+  assert.match(savedHtml, /print-rates-row/);
+  assert.doesNotMatch(savedHtml, /<th scope="col"><span class="compare-name">[^<]*<\/span>(?:<p class="badge">[^<]*<\/p>)?<table class="print-tier/);
   assert.doesNotMatch(savedHtml, /low-callout/);
   assert.doesNotMatch(savedHtml, /Total monthly(?! premium)/);
   assert.doesNotMatch(savedHtml, /Employer monthly(?! contribution)/);
@@ -1040,6 +1044,7 @@ test('saved plans print in one table and visit-limit wording stays attached', ()
   assert.match(compare, /low-callout/);
   assert.match(compare, /Employee paycheck/);
   assert.doesNotMatch(compare, /print-tier/);
+  assert.doesNotMatch(compare, /print-name-row/);
   assert.doesNotMatch(compare, /EE Cost PPP/);
   model.setContribution({ model: 'flat', flatSelect: '300' });
   const flatCompare = preview.compareHtml(model.getState());
