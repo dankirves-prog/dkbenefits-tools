@@ -250,6 +250,51 @@ test('printed proposals keep Important information on the last plan page', { tim
       assert.equal(disclaimer.columns, '2');
       const disclaimerPx = parseFloat(disclaimer.font);
       assert.ok(disclaimerPx >= 9.5 && disclaimerPx <= 11, 'disclaimer should stay about 7.5–8pt, got ' + disclaimer.font);
+      await send('Emulation.setDeviceMetricsOverride', {
+        width: 979,
+        height: 8000,
+        deviceScaleFactor: 1,
+        mobile: false
+      }, printSession);
+      await evaluate(`Promise.race([document.fonts && document.fonts.ready, new Promise((resolve) => setTimeout(resolve, 1500))])`, printSession);
+      const fit = await evaluate(`(() => {
+        const printable = 11 * 96 - 0.8 * 96;
+        const root = document.querySelector('.print-root');
+        const offenders = [];
+        const note = (right, width, height, label) => {
+          if (width < 0.5 || height < 0.5) return;
+          if (right > printable + 1) {
+            offenders.push(label + ' right ' + right.toFixed(1) + ' over ' + (right - printable).toFixed(1));
+          }
+        };
+        root.querySelectorAll('*').forEach((el) => {
+          const rect = el.getBoundingClientRect();
+          const className = typeof el.className === 'string' ? el.className.trim().split(/\\s+/).slice(0, 2).join('.') : '';
+          const label = el.tagName.toLowerCase() + (className ? '.' + className : '');
+          note(rect.right, rect.width, rect.height, label);
+        });
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        let textNode;
+        while ((textNode = walker.nextNode())) {
+          if (!textNode.textContent.trim()) continue;
+          const range = document.createRange();
+          range.selectNodeContents(textNode);
+          const rects = range.getClientRects();
+          const sample = textNode.textContent.trim().replace(/\\s+/g, ' ').slice(0, 28);
+          for (let i = 0; i < rects.length; i += 1) note(rects[i].right, rects[i].width, rects[i].height, 'text:' + sample);
+        }
+        const tierAlign = [...root.querySelectorAll('.print-sheet')].map((sheet, index) => {
+          const tops = [...sheet.querySelectorAll('table.print-tier')].map((table) => Math.round(table.getBoundingClientRect().top));
+          const aligned = tops.every((top) => Math.abs(top - tops[0]) <= 1);
+          return { sheet: index + 1, aligned, tops };
+        });
+        return { printable, offenders: offenders.slice(0, 8), count: offenders.length, tierAlign };
+      })()`, printSession);
+      assert.equal(fit.count, 0, filename + ' extends past the printable width ' + JSON.stringify(fit.offenders));
+      fit.tierAlign.forEach((sheet) => {
+        assert.equal(sheet.aligned, true, filename + ' sheet ' + sheet.sheet + ' tier tables are not aligned ' + JSON.stringify(sheet.tops));
+      });
+      await send('Emulation.clearDeviceMetricsOverride', {}, printSession);
       const pdf = await send('Page.printToPDF', {
         printBackground: true,
         preferCSSPageSize: true,
@@ -396,6 +441,16 @@ test('printed proposals keep Important information on the last plan page', { tim
           assert.match(pages[0], /Cigna PPO 8300/);
           assert.match(pages[0], /Incl \$25 Monthly HSA/);
           renderPage(file, 1, 'print_saved_4plans.png');
+        }
+        if (launch.id === 'iframe-desktop' && count === 6) {
+          assert.match(pages[0], /Cigna PPO 8300/);
+          assert.match(pages[0], /Visit Limit/);
+          assert.match(pages[0], /Total monthly premium/);
+          assert.match(pages[0], /Employer monthly/);
+          assert.match(pages[0], /Plan type/);
+          assert.match(pages[0], /Coverage note/);
+          assert.match(pages[0], /Important information/);
+          renderPage(file, 1, 'print_totals_6plans.png');
         }
         if (launch.id === 'iframe-desktop' && count === 7) {
           renderPage(file, 1, 'print_saved_7_page1.png');

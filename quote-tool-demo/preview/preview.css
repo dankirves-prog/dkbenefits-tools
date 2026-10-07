@@ -691,23 +691,30 @@ input[type="range"] { width: 100%; accent-color: var(--navy); height: 32px; }
   .print-summary h2 { margin: 0; font-size: 10pt; line-height: 1.1; }
   .print-next { break-before: page; page-break-before: always; }
   .print-sheet { break-inside: auto; page-break-inside: auto; margin: 0; }
+  .print-root, .print-sheet, .print-table { max-width: 100%; }
   .print-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
-  .print-table th, .print-table td { border-bottom: 1px solid #d5deea; padding: 0 2px; text-align: left; vertical-align: top; line-height: 1.1; word-wrap: break-word; overflow-wrap: anywhere; }
+  .print-table th, .print-table td { box-sizing: border-box; min-width: 0; max-width: 100%; border-bottom: 1px solid #d5deea; padding: 0 2px; text-align: left; vertical-align: top; line-height: 1.1; word-wrap: break-word; overflow-wrap: anywhere; }
+  .print-table tr.print-name-row th,
+  .print-table tr.print-badge-row th { border-bottom: none; vertical-align: bottom; padding-top: 0; padding-bottom: 0; }
+  .print-table tr.print-name-row .compare-name { display: block; }
+  .print-table tr.print-rates-row > th { vertical-align: top; padding: 1px 0 0; border-bottom: 1px solid #d5deea; }
   .print-table tr, .print-table thead, .print-table thead th { break-inside: avoid; page-break-inside: avoid; }
   .print-table th[scope="row"] { color: #3e5168; font-weight: 600; }
   .print-table .compare-emph th, .print-table .compare-emph td { font-weight: 700; }
-  .print-table .badge { display: inline-block; max-width: 100%; margin: 1px 0 0; padding: 0 4px; font-size: 7.5pt; line-height: 1.15; overflow-wrap: anywhere; }
+  .print-table tr.print-pricing th, .print-table tr.print-pricing td { font-weight: 700; background: #f3f6fb; padding-top: 1px; padding-bottom: 1px; }
+  .print-table tr.print-info-start th, .print-table tr.print-info-start td { border-top: 1px solid #163e73; padding-top: 3px; }
+  .print-table .badge { box-sizing: border-box; display: inline-block; max-width: 100%; margin: 1px 0 0; padding: 0 4px; font-size: 7.5pt; line-height: 1.15; overflow-wrap: anywhere; }
   .print-table .low-callout { margin: 1px 0 0; padding: 1px 3px; font-size: 7.5pt; }
   .print-table .abbrev-legend, .print-root .abbrev-legend { margin: 2px 0 0; font-size: 7.5pt; line-height: 1.15; color: #3e5168; break-inside: avoid; page-break-inside: avoid; }
   .print-ppp { margin: 0; font-size: 8pt; line-height: 1.15; color: #3e5168; }
-  .print-table .print-tier { width: 100%; margin-top: 1px; border-collapse: collapse; table-layout: fixed; break-inside: avoid; page-break-inside: avoid; }
-  .print-table .print-tier th, .print-table .print-tier td { padding: 0 1px; border-bottom: 1px solid #d5deea; font-size: 6.5pt; font-weight: 400; line-height: 1.1; text-align: left; overflow-wrap: normal; word-break: normal; hyphens: none; }
-  .print-table .print-tier thead th { font-weight: 700; text-align: right; white-space: nowrap; }
+  .print-table .print-tier { width: 100%; max-width: 100%; margin-top: 0; border-collapse: collapse; table-layout: fixed; break-inside: avoid; page-break-inside: avoid; }
+  .print-table .print-tier th, .print-table .print-tier td { box-sizing: border-box; min-width: 0; max-width: 100%; padding: 0 1px; border-bottom: 1px solid #d5deea; font-size: 6.5pt; font-weight: 400; line-height: 1.1; text-align: left; overflow-wrap: normal; word-break: normal; hyphens: none; }
+  .print-table .print-tier thead th { font-weight: 700; text-align: right; white-space: normal; }
   .print-table .print-tier thead th:first-child { text-align: left; }
   .print-table .print-tier th[scope="row"] { text-align: left; font-weight: 600; color: #3e5168; white-space: normal; }
   .print-table .print-tier td { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .print-table .print-tier.is-compact th, .print-table .print-tier.is-compact td { font-size: 6pt; padding: 0 1px; line-height: 1.05; }
-  .print-table .print-tier.is-compact thead th { font-size: 6pt; letter-spacing: -0.02em; }
+  .print-table .print-tier.is-compact thead th { font-size: 6pt; letter-spacing: 0; }
   .print-disclaimer {
     margin-top: 3px;
     font-size: 7.5pt;

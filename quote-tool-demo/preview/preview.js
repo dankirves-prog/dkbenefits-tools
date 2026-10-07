@@ -604,11 +604,11 @@
     var rows = [
       ['Plan type', function (plan) { return QuoteMath.planType(plan); }, false],
       ['Network', function (plan) { return plan.network || ''; }, false],
-      ['Badge', function (plan) { return plan.typeBadge || ''; }, false],
-      ['Total monthly premium', function (plan, totals) { return QuoteMath.money(totals.gross); }, false],
-      [flat ? 'Employer contribution (flat)' : 'Employer monthly contribution', function (plan, totals) { return QuoteMath.money(totals.employer); }, false]
+      ['Badge', function (plan) { return plan.typeBadge || ''; }, false]
     ];
     if (includePaycheck !== false) {
+      rows.push(['Total monthly premium', function (plan, totals) { return QuoteMath.money(totals.gross); }, false]);
+      rows.push([flat ? 'Employer contribution (flat)' : 'Employer monthly contribution', function (plan, totals) { return QuoteMath.money(totals.employer); }, false]);
       QuoteMath.TIER_LABELS.forEach(function (tier) {
         rows.push(['Employee paycheck \u2014 ' + tier[1], function (plan, totals) { return QuoteMath.money(totals.paycheck[tier[0]]); }, true]);
       });
@@ -634,20 +634,54 @@
     return rows;
   }
 
+  function printPricingRows(state) {
+    var flat = state.resolvedContribution && state.resolvedContribution.model === 'flat';
+    return [
+      ['Total monthly premium', function (plan, totals) { return QuoteMath.money(totals.gross); }, 'print-pricing'],
+      [flat ? 'Employer contribution (flat)' : 'Employer monthly contribution', function (plan, totals) { return QuoteMath.money(totals.employer); }, 'print-pricing']
+    ];
+  }
+
+  function printPlanHead(plans, state) {
+    var compact = plans.length >= 6;
+    var names = plans.map(function (plan) {
+      return '<th scope="col"><span class="compare-name">' + escapeHtml(QuoteMath.displayName(plan)) + '</span></th>';
+    }).join('');
+    var badges = plans.map(function (plan) {
+      return '<th scope="col">' + badgeHtml(plan) + '</th>';
+    }).join('');
+    var tiers = plans.map(function (plan) {
+      return '<th scope="col">' + printTierTable(plan, state, compact) + '</th>';
+    }).join('');
+    return '<tr class="print-name-row"><th scope="col">Compare</th>' + names + '</tr>' +
+      '<tr class="print-badge-row"><th scope="col"></th>' + badges + '</tr>' +
+      '<tr class="print-rates-row"><th scope="col"></th>' + tiers + '</tr>';
+  }
+
   function comparisonTable(plans, state, interactive) {
     var rows = comparisonRows(state, plans, interactive);
+    if (!interactive) {
+      rows = printPricingRows(state).concat(rows.map(function (row, index) {
+        if (index === 0) return [row[0], row[1], 'print-info-start'];
+        return row;
+      }));
+    }
     var share = plans.length ? (84 / plans.length).toFixed(3) : '84';
     var cols = '<col style="width:16%">';
     plans.forEach(function () { cols += '<col style="width:' + share + '%">'; });
-    var head = plans.map(function (plan) {
-      var note = QuoteMath.majorMedicalNote(plan);
-      var callout = note ? '<p class="low-callout">' + escapeHtml(note) + '</p>' : '';
-      var tier = interactive ? '' : printTierTable(plan, state, plans.length >= 6);
-      var action = interactive ? '<button type="button" class="btn btn-secondary" data-remove="' + escapeHtml(plan.id) + '">Remove</button>' : '';
-      return '<th scope="col"><span class="compare-name">' + escapeHtml(QuoteMath.displayName(plan)) + '</span>' + badgeHtml(plan) +
-        (interactive ? callout + action : tier + callout) +
-        '</th>';
-    }).join('');
+    var head;
+    if (interactive) {
+      head = '<tr><th scope="col">Compare</th>' + plans.map(function (plan) {
+        var note = QuoteMath.majorMedicalNote(plan);
+        var callout = note ? '<p class="low-callout">' + escapeHtml(note) + '</p>' : '';
+        var action = '<button type="button" class="btn btn-secondary" data-remove="' + escapeHtml(plan.id) + '">Remove</button>';
+        return '<th scope="col"><span class="compare-name">' + escapeHtml(QuoteMath.displayName(plan)) + '</span>' + badgeHtml(plan) +
+          callout + action +
+          '</th>';
+      }).join('') + '</tr>';
+    } else {
+      head = printPlanHead(plans, state);
+    }
     var body = rows.map(function (row) {
       var cells = plans.map(function (plan) {
         var totals = QuoteMath.planTotals(plan, state.mixUsed, state.resolvedContribution);
@@ -655,10 +689,11 @@
         var warning = row[0] === 'Coverage note' && text;
         return '<td' + (warning ? ' class="coverage-warning"' : '') + '>' + escapeHtml(text) + '</td>';
       }).join('');
-      return '<tr class="' + (row[2] ? 'compare-emph' : '') + '"><th scope="row">' + escapeHtml(row[0]) + '</th>' + cells + '</tr>';
+      var rowClass = row[2] === true ? 'compare-emph' : (typeof row[2] === 'string' ? row[2] : '');
+      return '<tr class="' + rowClass + '"><th scope="row">' + escapeHtml(row[0]) + '</th>' + cells + '</tr>';
     }).join('');
     var tableClass = interactive ? 'compare-table' : 'print-table';
-    return '<table class="' + tableClass + '"><colgroup>' + cols + '</colgroup><thead><tr><th scope="col">Compare</th>' + head + '</tr></thead><tbody>' + body + '</tbody></table>' + legendHtml(plans);
+    return '<table class="' + tableClass + '"><colgroup>' + cols + '</colgroup><thead>' + head + '</thead><tbody>' + body + '</tbody></table>' + legendHtml(plans);
   }
 
   function compareHtml(state) {
