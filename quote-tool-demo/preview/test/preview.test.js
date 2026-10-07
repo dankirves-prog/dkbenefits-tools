@@ -848,7 +848,9 @@ test('preview layout does not pin controls to the screen', () => {
   assert.equal(css.includes('position: sticky'), false);
   assert.equal(css.includes('100vh'), false);
   assert.match(page, /id="results-actions"/);
-  assert.match(page, /Questions\? Call or text Daniel/);
+  assert.match(page, /class="header-phone"/);
+  assert.equal((page.match(/Questions\? Call or text Daniel/g) || []).length, 1);
+  assert.equal(js.includes('cta-strip'), false);
   assert.doesNotMatch(page, /id="dock"/);
   assert.doesNotMatch(page, /id="plans-drawer"/);
 });

@@ -478,7 +478,7 @@ input[type="range"] { width: 100%; accent-color: var(--navy); height: 32px; }
 
 .lead { margin-top: 14px; }
 .results, .question-panel { scroll-margin-top: 8px; }
-.results-actions, .cta-strip {
+.results-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -489,9 +489,9 @@ input[type="range"] { width: 100%; accent-color: var(--navy); height: 32px; }
   border: 1px solid var(--line);
   border-radius: 12px;
 }
-.results-actions .btn, .cta-strip .btn { flex: none; }
-.inline-cta, .cta-strip p { margin: 0; font-weight: 600; }
-.inline-cta a, .cta-strip a { color: var(--navy); font-weight: 700; }
+.results-actions .btn { flex: none; }
+.inline-cta { margin: 0; font-weight: 600; }
+.inline-cta a { color: var(--navy); font-weight: 700; }
 .my-plans { margin-top: 12px; min-width: 0; max-width: 100%; }
 .my-plans .compare-wrap { max-width: 100%; min-width: 0; }
 .show-all-plans { margin-top: 14px; }
@@ -602,8 +602,8 @@ input[type="range"] { width: 100%; accent-color: var(--navy); height: 32px; }
   .question-panel h2 { margin: 0 0 8px; font-size: 1.15rem; }
   #contrib-body { display: none; }
   #contrib.is-open #contrib-body { display: block; }
-  .results-actions, .cta-strip { align-items: stretch; }
-  .results-actions .btn, .cta-strip .btn { width: 100%; }
+  .results-actions { align-items: stretch; }
+  .results-actions .btn { width: 100%; }
   .totals { grid-template-columns: 1fr; }
   .question-actions { flex-direction: column-reverse; }
   .plan-card { padding: 12px; }

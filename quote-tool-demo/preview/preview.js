@@ -666,14 +666,6 @@
       return win.matchMedia && win.matchMedia('(max-width: 859px)').matches;
     }
 
-    function ctaStrip(afterId, savedCount) {
-      return '<aside class="cta-strip" data-after="' + escapeHtml(afterId) + '">' +
-        '<p>Questions? Call or text Daniel <a href="tel:4074765076">407-476-5076</a></p>' +
-        '<button type="button" class="btn btn-secondary open-my-plans" data-after="' + escapeHtml(afterId) + '">My Plans (' + savedCount + ')</button>' +
-        '<button type="button" class="btn btn-primary inline-lead" data-after="' + escapeHtml(afterId) + '">Get my plan details</button>' +
-        '</aside>';
-    }
-
     function parkMyPlans() {
       var panel = $('my-plans-panel');
       var slot = $('my-plans-slot');
@@ -686,11 +678,7 @@
       if (lead && home && lead.parentElement !== home) home.appendChild(lead);
     }
 
-    function anchorFor(place) {
-      if (place && place !== 'header' && place !== 'home') {
-        var strip = document.querySelector('.cta-strip[data-after="' + place + '"]');
-        if (strip) return strip;
-      }
+    function anchorFor() {
       return $('results-actions');
     }
 
@@ -713,7 +701,6 @@
 
     function plansMarkup(plans, state, deferAfter) {
       var html = '';
-      var visible = 0;
       var deferred = 0;
       plans.forEach(function (plan, index) {
         var hide = deferAfter != null && index >= deferAfter;
@@ -723,8 +710,6 @@
           return;
         }
         html += planArticle(plan, state);
-        visible += 1;
-        if (visible % 3 === 0 && index < plans.length - 1) html += ctaStrip(plan.id, state.saved.length);
       });
       return { html: html, deferred: deferred };
     }
@@ -850,9 +835,6 @@
           : 'No plans match this carrier.';
       }
       $('my-plans-btn').textContent = 'My Plans (' + state.saved.length + ')';
-      document.querySelectorAll('.open-my-plans').forEach(function (button) {
-        button.textContent = 'My Plans (' + state.saved.length + ')';
-      });
       var showAllBtn = $('show-all-plans');
       var canFold = narrowResults() && sections.groups.some(function (group) {
         return group.id === 'top' && group.plans.length > MOBILE_FEATURED_LIMIT;
@@ -1214,16 +1196,6 @@
           var on = save.getAttribute('aria-pressed') === 'true';
           model.toggleSaved(save.getAttribute('data-plan-id'), !on);
           renderDynamic();
-          return;
-        }
-        var myPlans = event.target.closest('.open-my-plans');
-        if (myPlans) {
-          toggleMyPlans(myPlans.getAttribute('data-after') || 'header');
-          return;
-        }
-        var inlineLead = event.target.closest('.inline-lead');
-        if (inlineLead) {
-          revealLead(inlineLead.getAttribute('data-after') || 'header');
           return;
         }
         var details = event.target.closest('.details-toggle');

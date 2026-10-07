@@ -429,10 +429,22 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.notEqual(await evaluate('getComputedStyle(document.getElementById("contrib-body")).display'), 'none');
     await evaluate('document.getElementById("contrib-toggle").click()');
     const stripCount = await evaluate('document.querySelectorAll(".cta-strip").length');
-    assert.ok(stripCount >= 1, 'expected an inline call strip, found ' + stripCount);
-    await evaluate('document.querySelector("#top-plans").scrollIntoView({ behavior: "instant", block: "center" })');
+    assert.equal(stripCount, 0);
+    const repeatedCall = await evaluate('[...document.querySelectorAll("body *")].filter((el) => el.childNodes.length && [...el.childNodes].some((node) => node.nodeType === 3 && node.textContent.includes("Questions? Call or text Daniel")) && !el.closest("#results-actions")).length');
+    assert.equal(repeatedCall, 0);
+    await evaluate('document.querySelector("#top-plans").scrollIntoView({ behavior: "instant", block: "start" })');
     await sleep(80);
-    await shot('mobile_results_r2.png');
+    const plansClip = await evaluate(`(() => {
+      const el = document.getElementById('top-plans');
+      const box = el.getBoundingClientRect();
+      return {
+        x: Math.max(0, box.x),
+        y: Math.max(0, box.y + window.scrollY),
+        width: Math.ceil(box.width),
+        height: Math.ceil(box.height)
+      };
+    })()`);
+    await shot('mobile_results_no_strip.png', plansClip);
     await evaluate('document.getElementById("mix-fam").value = "20"; document.getElementById("mix-fam").dispatchEvent(new Event("input", { bubbles: true }));');
     await sleep(40);
     const mixError = await evaluate('document.getElementById("mix-note").innerText');
@@ -698,8 +710,8 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     await shot('wix_mobile_lead.png');
     await frameEval(`doc.querySelector('[data-plan-id="cigna-epo-1000"] .save-toggle').click()`);
     await sleep(80);
-    await frameEval(`(() => { const el = doc.querySelector('.cta-strip'); const top = el.getBoundingClientRect().top + win.scrollY - 8; win.scrollTo(0, Math.max(0, top)); return true; })()`);
-    await frameEval(`doc.querySelector('.cta-strip .open-my-plans').click()`);
+    await frameEval(`(() => { const el = doc.getElementById('results-actions'); const top = el.getBoundingClientRect().top + win.scrollY - 8; win.scrollTo(0, Math.max(0, top)); return true; })()`);
+    await frameEval(`doc.getElementById('my-plans-btn').click()`);
     await sleep(80);
     const panelInFrame = await frameEval(`doc.getElementById('my-plans-panel').getBoundingClientRect().top`);
     assert.ok(panelInFrame >= 0 && panelInFrame < 929, 'My Plans should open inside the iframe, top=' + panelInFrame);
