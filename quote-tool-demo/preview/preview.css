@@ -320,7 +320,7 @@ input[type="range"] { width: 100%; accent-color: var(--navy); height: 32px; }
 .compare-card button { margin-top: 4px; }
 
 .section-title { margin: 22px 0 10px; font-size: 1.2rem; }
-.plan-list { display: grid; gap: 14px; align-items: start; }
+.plan-list { display: grid; gap: 14px; align-items: start; scroll-margin-top: 12px; }
 .tier-legend, .print-help { margin: 8px 0 0; color: var(--muted); font-size: 0.88rem; }
 .print-help { grid-column: 1 / -1; }
 
