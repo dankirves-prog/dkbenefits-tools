@@ -189,6 +189,102 @@ test('printed proposals keep Important information on the last plan page', { tim
     }
   }
 
+  function choiceMetrics() {
+    return frameEval(`(() => {
+      const buttons = [...doc.querySelectorAll('#question-control .choice')];
+      const read = (el) => {
+        const style = win.getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        return {
+          label: el.textContent.trim(),
+          pressed: el.getAttribute('aria-pressed'),
+          w: Math.round(rect.width * 100) / 100,
+          h: Math.round(rect.height * 100) / 100,
+          pad: [style.paddingTop, style.paddingRight, style.paddingBottom, style.paddingLeft].join(' '),
+          borderWidth: [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth].join(' '),
+          fontSize: style.fontSize,
+          fontWeight: style.fontWeight,
+          fontFamily: style.fontFamily,
+          radius: style.borderRadius
+        };
+      };
+      return { heading: doc.getElementById('question-heading').textContent, buttons: buttons.map(read) };
+    })()`);
+  }
+
+  async function captureQuestion(launch) {
+    const box = await evaluate(`(() => {
+      const frame = document.getElementById('tool');
+      const panel = frame.contentDocument.querySelector('#question-section');
+      const fr = frame.getBoundingClientRect();
+      const pr = panel.getBoundingClientRect();
+      const rects = [...frame.contentDocument.querySelectorAll('#question-control .choice')].map((el) => el.getBoundingClientRect());
+      return {
+        x: Math.max(0, fr.x + pr.x),
+        y: Math.max(0, fr.y + pr.y),
+        width: pr.width,
+        height: pr.height,
+        buttonTop: fr.y + Math.min.apply(null, rects.map((rect) => rect.top)),
+        buttonBottom: fr.y + Math.max.apply(null, rects.map((rect) => rect.bottom)),
+        viewportH: innerHeight,
+        viewportW: innerWidth
+      };
+    })()`);
+    if (box.buttonBottom > box.viewportH - 8 || box.y + box.height > box.viewportH - 4) {
+      await send('Emulation.setDeviceMetricsOverride', {
+        width: Math.ceil(box.viewportW),
+        height: Math.ceil(box.y + box.height + 24),
+        deviceScaleFactor: 1,
+        mobile: false
+      }, sessionId);
+      await sleep(80);
+      return captureQuestion(launch);
+    }
+    assert.ok(box.buttonTop >= box.y - 1 && box.buttonBottom <= box.y + box.height + 1, launch.id + ' state choices are outside the question panel');
+    assert.ok(box.buttonBottom <= box.viewportH && box.x + box.width <= box.viewportW + 1, launch.id + ' state question is cut off ' + JSON.stringify(box));
+    const shot = await send('Page.captureScreenshot', {
+      format: 'png',
+      clip: { x: box.x, y: box.y, width: box.width, height: box.height, scale: 1 }
+    }, sessionId);
+    const name = launch.id === 'iframe-desktop' ? 'state_question_desktop.png' : 'state_question_mobile320.png';
+    const dest = path.join(ARTIFACTS, name);
+    fs.writeFileSync(dest, Buffer.from(shot.data, 'base64'));
+    assert.ok(fs.statSync(dest).size > 8000, name + ' was empty');
+  }
+
+  async function assertStateChoices(launch) {
+    await waitFor(async () => String(await frameEval(`doc.getElementById('question-heading').textContent`)).includes('What state'), 'state question');
+    const metrics = await choiceMetrics();
+    assert.equal(metrics.buttons.length, 2, launch.id + ' state choices');
+    const florida = metrics.buttons[0];
+    const georgia = metrics.buttons[1];
+    assert.equal(florida.label, 'Florida');
+    assert.equal(georgia.label, 'Georgia');
+    assert.equal(florida.pressed, 'false', launch.id + ' Florida starts selected');
+    assert.equal(georgia.pressed, 'false', launch.id + ' Georgia starts selected');
+    ['w', 'h', 'pad', 'borderWidth', 'fontSize', 'fontWeight', 'fontFamily', 'radius'].forEach((key) => {
+      assert.equal(florida[key], georgia[key], launch.id + ' ' + key + ' differs: ' + florida[key] + ' vs ' + georgia[key]);
+    });
+    await frameEval(`doc.querySelector('[data-value="Florida"]').setAttribute('aria-pressed', 'true')`);
+    const selected = (await choiceMetrics()).buttons[0];
+    ['w', 'h', 'pad', 'borderWidth', 'fontSize', 'fontWeight', 'fontFamily'].forEach((key) => {
+      assert.equal(selected[key], florida[key], launch.id + ' selected Florida changed ' + key);
+    });
+    await frameEval(`doc.querySelector('[data-value="Florida"]').setAttribute('aria-pressed', 'false')`);
+    await captureQuestion(launch);
+  }
+
+  function freeSpace(file, page) {
+    const bbox = execFileSync('pdftotext', ['-bbox-layout', '-f', String(page), '-l', String(page), file, '-'], { encoding: 'utf8' });
+    let ymax = 0;
+    bbox.split('<word ').forEach((token) => {
+      const match = token.match(/yMax="([\d.]+)"/);
+      if (match) ymax = Math.max(ymax, Number(match[1]));
+    });
+    const contentBottom = 612 - 0.4 * 72;
+    return { ymax, freePt: contentBottom - ymax, freeIn: (contentBottom - ymax) / 72 };
+  }
+
   async function reachResults() {
     await frameEval(`doc.querySelector('[data-value="Florida"]').click()`);
     await waitFor(async () => String(await frameEval(`doc.getElementById('question-heading').textContent`)).includes('benefits eligible'), 'eligible');
@@ -429,6 +525,7 @@ test('printed proposals keep Important information on the last plan page', { tim
       const frameWidth = await evaluate(`document.getElementById('tool').clientWidth`);
       assert.ok(frameWidth >= launch.minFrame, launch.id + ' iframe width ' + frameWidth);
       if (launch.maxFrame) assert.equal(frameWidth, launch.maxFrame, launch.id + ' iframe width');
+      await assertStateChoices(launch);
       await reachResults();
       assert.equal(await frameEval(`win.getComputedStyle(doc.getElementById('print-root')).display`), 'none', 'print layout must stay off screen');
       assert.equal(await frameEval(`doc.body.classList.contains('is-results')`), true);
@@ -475,6 +572,10 @@ test('printed proposals keep Important information on the last plan page', { tim
           assert.equal(pages.length, expectedPages + 1, launch.id + ' six saved plans should use one notes page');
           assert.match(pages[expectedPages], /Notes and Limitations/);
           assert.doesNotMatch(pages[expectedPages], /\(continued\)/);
+          const space = freeSpace(file, expectedPages);
+          counts[counts.length - 1].freeUnderDisclaimerPt = Number(space.freePt.toFixed(1));
+          counts[counts.length - 1].freeUnderDisclaimerIn = Number(space.freeIn.toFixed(3));
+          assert.ok(space.freePt > 0, launch.id + ' saved-6 disclaimer overflowed by ' + space.freePt);
         }
         if (launch.id === 'iframe-desktop' && count === 6) {
           assert.match(pages[0], /Cigna PPO 8300/);
@@ -487,6 +588,7 @@ test('printed proposals keep Important information on the last plan page', { tim
           assert.match(pages.join(' '), /Labs, X-rays and imaging are each limited to 3 per year/);
           assert.match(pages.join(' '), /Patient Assistance Programs available for Brand Rx/);
           renderPage(file, 1, 'print_totals_6plans.png');
+          renderPage(file, 1, 'print_6plans_spacing.png');
           renderPage(file, expectedPages + 1, 'notes_page_6plans.png');
         }
         if (launch.id === 'iframe-desktop' && count === 7) {
@@ -521,7 +623,15 @@ test('printed proposals keep Important information on the last plan page', { tim
       assert.doesNotMatch(worstPages[1], /\(continued\)/);
       assert.match(worstPages[1], /Visit Limit 1000/);
       assert.match(worstPages[1], /Visit Limit 1750/);
-      if (launch.id === 'iframe-desktop') renderPage(worstFile, 2, 'notes_page_6plans_worst.png');
+      const worstSpace = freeSpace(worstFile, 1);
+      counts[counts.length - 1].freeUnderDisclaimerPt = Number(worstSpace.freePt.toFixed(1));
+      counts[counts.length - 1].freeUnderDisclaimerIn = Number(worstSpace.freeIn.toFixed(3));
+      assert.ok(worstSpace.freePt > 0, launch.id + ' worst-6 disclaimer overflowed by ' + worstSpace.freePt);
+      if (launch.id === 'iframe-desktop') {
+        renderPage(worstFile, 1, 'print_worst6_page1.png');
+        renderPage(worstFile, 2, 'notes_page_worst6.png');
+        renderPage(worstFile, 2, 'notes_page_6plans_worst.png');
+      }
     }
 
     console.log(JSON.stringify(counts, null, 2));

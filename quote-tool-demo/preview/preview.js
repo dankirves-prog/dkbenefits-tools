@@ -767,14 +767,26 @@
     return pages;
   }
 
+  function highlightMajorMedical(line) {
+    var text = String(line || '');
+    var match = text.match(/This is not traditional major medical coverage\./i);
+    if (!match) return escapeHtml(text);
+    var start = match.index;
+    var end = start + match[0].length;
+    return escapeHtml(text.slice(0, start)) +
+      '<span class="coverage-warning">' + escapeHtml(text.slice(start, end)) + '</span>' +
+      escapeHtml(text.slice(end));
+  }
+
   function printNotesColumn(label, lines, asList) {
     if (!lines.length) return '<td></td>';
+    var renderLine = label === 'Notes' ? highlightMajorMedical : escapeHtml;
     var body = asList
       ? '<ul class="print-notes-list">' + lines.map(function (line) {
-          return '<li>' + escapeHtml(line) + '</li>';
+          return '<li>' + renderLine(line) + '</li>';
         }).join('') + '</ul>'
       : lines.map(function (line) {
-          return '<p>' + escapeHtml(line) + '</p>';
+          return '<p>' + renderLine(line) + '</p>';
         }).join('');
     return '<td><p class="print-notes-label">' + label + '</p>' + body + '</td>';
   }
@@ -957,7 +969,7 @@
       var host = $('question-control');
       if (question.kind === 'choice') {
         host.innerHTML = '<div class="choices">' + question.options.map(function (option) {
-          var pressed = state.answers[question.key] === option.value;
+          var pressed = !!chosenKeys[question.key] && state.answers[question.key] === option.value;
           return '<button type="button" class="choice" data-value="' + escapeHtml(option.value) + '" aria-pressed="' + (pressed ? 'true' : 'false') + '">' + escapeHtml(option.label) + '</button>';
         }).join('') + '</div>';
       } else {
@@ -1258,8 +1270,11 @@
     }
 
     var choiceFromKey = false;
+    var chosenKeys = {};
 
     function chooseOption(choice) {
+      var question = model.getState().question;
+      if (question) chosenKeys[question.key] = true;
       model.setAnswer(choice.dataset.value);
       if (model.getState().step === QUESTIONS.length - 1) goNext();
       else {
@@ -1324,6 +1339,7 @@
         showResults(true);
       });
       function resetQuote() {
+        chosenKeys = {};
         model.startOver();
         $('start-over-confirm').hidden = true;
         $('lead-form').hidden = false;
