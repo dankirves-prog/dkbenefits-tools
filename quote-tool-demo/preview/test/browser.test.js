@@ -256,10 +256,12 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     await waitFor(async () => (await evaluate('document.getElementById("question-heading").textContent')).includes('What state'), 'state question');
     const choiceHeight = await evaluate('document.querySelector(".choice").getBoundingClientRect().height');
     assert.ok(choiceHeight >= 60, 'choice options should be large tap targets');
-    await shot('desktop_question_v2.png');
+    assert.equal(await evaluate('document.getElementById("assist").hidden'), false);
+    await shot('desktop_question_r2.png');
 
     await evaluate('document.querySelector(\'[data-value="Florida"]\').click()');
     await waitFor(async () => (await evaluate('document.getElementById("question-heading").textContent')).includes('benefits eligible'), 'eligible after Florida');
+    assert.equal(await evaluate('document.getElementById("assist").hidden'), true);
     await evaluate('document.getElementById("q-number").value = "10"; document.getElementById("next-btn").click();');
     await waitFor(async () => (await evaluate('document.getElementById("question-heading").textContent')).includes('expect to enroll'), 'enrolling');
     await evaluate('document.getElementById("q-number").value = "7"; document.getElementById("next-btn").click();');
@@ -288,6 +290,12 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.match(card, /\$273/);
     assert.match(card, /\$269/);
     assert.match(card, /\$421/);
+    assert.match(card, /Excellent Value/);
+    assert.match(card, /Save plan/);
+    assert.match(card, /View plan details/);
+    const lowText = await evaluate('document.querySelector("#low-plans [data-plan-id=\\"phcs-visit-limit-1000\\"]").innerText');
+    assert.match(lowText, /not traditional major medical/i);
+    assert.match(lowText, /Lower Cost/);
     const lowInFeatured = await evaluate('!!document.querySelector("#top-plans [data-plan-id=\\"phcs-visit-limit-1000\\"]")');
     const lowInSection = await evaluate('!!document.querySelector("#low-plans [data-plan-id=\\"phcs-visit-limit-1000\\"]")');
     assert.equal(lowInFeatured, false);
@@ -298,9 +306,39 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.equal(ratesPost.utm_source, 'preview');
 
     await setViewport(1440, 1100);
+    const columns = await evaluate('getComputedStyle(document.querySelector("#top-plans")).gridTemplateColumns');
+    assert.ok(columns.split(" ").filter(Boolean).length >= 2, 'desktop cards should be two per row: ' + columns);
+    await evaluate('document.querySelector("#top-plans").scrollIntoView({ behavior: "instant", block: "start" })');
+    await sleep(80);
     const cardTop = await evaluate('document.querySelector("#top-plans .plan-card").getBoundingClientRect().top');
-    assert.ok(cardTop > 0 && cardTop < 1000, 'first plan card should be visible beside the contribution panel, top=' + cardTop);
-    await shot('desktop_results_v2.png');
+    assert.ok(cardTop > 0 && cardTop < 500, 'first plan card should be visible, top=' + cardTop);
+    await shot('desktop_cards_r2.png');
+    await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"] .details-toggle\').click()');
+    await sleep(40);
+    assert.equal(await evaluate('document.getElementById("details-cigna-epo-1000").hidden'), false);
+    const expanded = await evaluate(`(() => {
+      const card = document.querySelector('[data-plan-id="cigna-epo-1000"]');
+      const box = card.getBoundingClientRect();
+      return { x: Math.max(0, box.left - 8), y: Math.max(0, box.top + window.scrollY - 8), width: Math.ceil(box.width + 16), height: Math.min(1400, Math.ceil(box.height + 16)) };
+    })()`);
+    await shot('expanded_card_r2.png', { x: expanded.x, y: expanded.y, width: expanded.width, height: expanded.height, scale: 1 });
+
+    async function savePdf(filename) {
+      await send('Emulation.setEmulatedMedia', { media: 'print' }, sessionId);
+      await sleep(80);
+      const pdf = await send('Page.printToPDF', {
+        printBackground: true,
+        landscape: true,
+        preferCSSPageSize: true
+      }, sessionId);
+      const pdfPath = path.join(ARTIFACTS, filename);
+      fs.writeFileSync(pdfPath, Buffer.from(pdf.data, 'base64'));
+      await send('Emulation.setEmulatedMedia', { media: 'screen' }, sessionId);
+      const bytes = fs.readFileSync(pdfPath);
+      assert.equal(bytes.subarray(0, 5).toString(), '%PDF-');
+      assert.ok(bytes.length > 20000, filename + ' was unexpectedly small');
+    }
+    await savePdf('proposal_all_plans_r2.pdf');
 
     await evaluate('document.getElementById("sort-mode").value = "carrier"; document.getElementById("sort-mode").dispatchEvent(new Event("change", { bubbles: true }));');
     await evaluate('document.querySelector(\'[data-carrier="Cigna"]\').click()');
@@ -328,7 +366,16 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.match(dockText, /Call or text Daniel/);
     assert.match(dockText, /407-476-5076/);
     assert.match(dockText, /Adjust/);
-    await shot('mobile_results_v2.png');
+    await evaluate('document.querySelector("#top-plans").scrollIntoView({ behavior: "instant", block: "center" })');
+    await sleep(80);
+    await shot('mobile_results_r2.png');
+    await evaluate('document.getElementById("mix-fam").value = "20"; document.getElementById("mix-fam").dispatchEvent(new Event("input", { bubbles: true }));');
+    await sleep(40);
+    const mixError = await evaluate('document.getElementById("mix-note").innerText');
+    assert.match(mixError, /higher than the 10 eligible/);
+    const still = await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"]\').innerText');
+    assert.match(still, /\$4,858/);
+    await evaluate('document.getElementById("mix-fam").value = "1"; document.getElementById("mix-fam").dispatchEvent(new Event("input", { bubbles: true }));');
 
     await evaluate('document.getElementById("contrib-launcher").click()');
     await sleep(100);
@@ -336,33 +383,36 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.equal(sheetOpen, true);
     await evaluate('document.getElementById("contrib-close").click()');
 
-    await setViewport(1280, 900);
-    await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"] .save-plan\').click()');
-    await evaluate('document.querySelector(\'[data-plan-id="UHC-PPO-2000-Deductible"] .save-plan\').click()');
+    await setViewport(1440, 1000);
+    await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"] .save-toggle\').click()');
+    await evaluate('document.querySelector(\'[data-plan-id="UHC-PPO-2000-Deductible"] .save-toggle\').click()');
+    await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1750-hsa"] .save-toggle\').click()');
     await sleep(50);
-    const compare = await evaluate('document.getElementById("compare").innerText');
+    assert.match(await evaluate('document.getElementById("my-plans-btn").textContent'), /My Plans \(3\)/);
+    await evaluate('document.getElementById("my-plans-btn").click()');
+    await sleep(80);
+    const compare = await evaluate('document.getElementById("drawer-body").innerText');
     assert.match(compare, /Cigna EPO 1000/);
     assert.match(compare, /UHC PPO 2000/);
-
-    await send('Emulation.setEmulatedMedia', { media: 'print' }, sessionId);
-    await sleep(100);
-    await shot('print_proposal_v2.png', { x: 0, y: 0, width: 900, height: 1400, scale: 1 });
-    const pdf = await send('Page.printToPDF', {
-      printBackground: true,
-      paperWidth: 8.5,
-      paperHeight: 11,
-      marginTop: 0.5,
-      marginBottom: 0.5,
-      marginLeft: 0.5,
-      marginRight: 0.5,
-      preferCSSPageSize: true
-    }, sessionId);
-    const pdfPath = path.join(ARTIFACTS, 'proposal_sample_v2.pdf');
-    fs.writeFileSync(pdfPath, Buffer.from(pdf.data, 'base64'));
-    const pdfBytes = fs.readFileSync(pdfPath);
-    assert.equal(pdfBytes.subarray(0, 5).toString(), '%PDF-');
-    assert.ok(pdfBytes.length > 20000, 'proposal PDF was unexpectedly small');
-    await send('Emulation.setEmulatedMedia', { media: 'screen' }, sessionId);
+    assert.match(compare, /Cigna EPO 1750 HSA/);
+    assert.match(compare, /Excellent Value/);
+    assert.match(compare, /Top Rated Network/);
+    assert.match(compare, /Incl \$25 Monthly HSA/);
+    assert.match(compare, /Employee paycheck/);
+    assert.match(compare, /Out-of-pocket max/);
+    assert.match(compare, /Remove/);
+    await shot('my_plans_r2.png');
+    await savePdf('proposal_saved_plans_r2.pdf');
+    await evaluate('document.getElementById("drawer-close").click()');
+    await evaluate('document.getElementById("edit-btn").click()');
+    await waitFor(async () => !(await evaluate('document.getElementById("review-section").hidden')), 'edit answers');
+    const reviewText = await evaluate('document.getElementById("review-section").innerText');
+    assert.match(reviewText, /What state is your business located in/);
+    assert.match(reviewText, /When are you hoping to start/);
+    assert.equal(await evaluate('document.querySelector(\'#review-fields [data-review="employees"]\').value'), '10');
+    await shot('edit_answers_r2.png');
+    await evaluate('document.getElementById("review-cancel").click()');
+    await waitFor(async () => !(await evaluate('document.getElementById("results").hidden')), 'back to results');
 
     await setViewport(1280, 1100);
     await evaluate('document.documentElement.style.scrollBehavior = "auto"');
@@ -383,7 +433,7 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
       };
     })()`);
     assert.ok(leadGeom.nameTop > 0 && leadGeom.nameTop < 1000, 'lead form should scroll into view, top=' + leadGeom.nameTop);
-    await shot('lead_form_v2.png', { x: leadGeom.x, y: leadGeom.y, width: leadGeom.width, height: leadGeom.height, scale: 1 });
+    await shot('lead_form_r2.png', { x: leadGeom.x, y: leadGeom.y, width: leadGeom.width, height: leadGeom.height, scale: 1 });
     await evaluate(`
       document.getElementById('first-name').value = 'Ada';
       document.getElementById('email').value = 'ada@example.com';
@@ -409,7 +459,7 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
       };
     })()`);
     assert.ok(successGeom.top >= 0 && successGeom.top < 1000, 'success message should be in view, top=' + successGeom.top);
-    await shot('success_state_v2.png', { x: successGeom.x, y: successGeom.y, width: successGeom.width, height: successGeom.height, scale: 1 });
+    await shot('success_state_r2.png', { x: successGeom.x, y: successGeom.y, width: successGeom.width, height: successGeom.height, scale: 1 });
 
     const lead = JSON.parse(posts.find((post) => post.body.includes('"event":"lead_submitted"')).body);
     assert.deepEqual(Object.keys(lead), [
@@ -431,7 +481,8 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.equal(lead.contribution.percent, 50);
     assert.equal(lead.contribution.flatDollar, null);
     assert.equal(Object.hasOwn(lead.contribution, 'dependentPercent'), false);
-    assert.deepEqual(lead.selectedPlans.map((plan) => plan.name), ['Cigna EPO 1000', 'UHC PPO 2000']);
+    assert.deepEqual(lead.selectedPlans.map((plan) => plan.name), ['Cigna EPO 1000', 'UHC PPO 2000', 'Cigna EPO 1750 HSA']);
+    assert.deepEqual(lead.selectedPlans.map((plan) => plan.typeBadge), ['Excellent Value', 'Top Rated Network', 'Incl $25 Monthly HSA']);
     assert.deepEqual(Object.keys(lead.selectedPlans[0]), ['id', 'name', 'network', 'typeBadge', 'rates']);
     assert.equal(lead.utm_source, 'preview');
     assert.equal(lead.event, 'lead_submitted');

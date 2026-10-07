@@ -48,7 +48,7 @@
           <div id="progress-bar" class="progress-bar"></div>
         </div>
         <p id="progress-text" class="progress-text">Question 1 of 6</p>
-        <p class="assist">Your answers help model employer cost, employee payroll deductions, and participation fit.</p>
+        <p id="assist" class="assist">Your answers help model employer cost, employee payroll deductions, and participation fit.</p>
         <h2 id="question-heading">Loading plan options…</h2>
         <div id="question-control"></div>
         <p id="question-error" class="message message-error" role="alert" hidden></p>
@@ -58,13 +58,23 @@
         </div>
       </section>
 
+      <section id="review-section" class="panel question-panel" hidden aria-labelledby="review-heading">
+        <h2 id="review-heading">Edit your answers</h2>
+        <p>Update any answer, then return to the rates.</p>
+        <div id="review-fields"></div>
+        <p id="review-error" class="message message-error" role="alert" hidden></p>
+        <div class="question-actions">
+          <button type="button" id="review-cancel" class="btn btn-secondary">Back to rates</button>
+          <button type="button" id="review-save" class="btn btn-primary">See Real Rates Now</button>
+        </div>
+      </section>
+
       <section id="results" class="results" hidden>
         <div class="results-top">
           <p class="eyebrow">Group rates</p>
           <h2 id="results-heading">Your group</h2>
           <p id="results-summary" class="summary-line"></p>
           <p id="rates-as-of" class="as-of" hidden></p>
-          <p id="mix-summary" class="mix-summary"></p>
           <p id="participation-note" class="message" hidden></p>
         </div>
 
@@ -84,7 +94,8 @@
               <input id="mix-fam" data-mix="family" type="number" min="0" step="1" inputmode="numeric" />
             </label>
           </div>
-          <p id="mix-note" class="hint"></p>
+          <p id="mix-note" class="hint" role="status"></p>
+          <p class="tier-legend">Tiers: Employee, Employee + Spouse, Employee + Child, Family.</p>
         </section>
 
         <div class="toolbar">
@@ -104,6 +115,7 @@
             <button type="button" id="start-over-btn" class="btn btn-secondary">Start over</button>
             <button type="button" id="print-btn" class="btn btn-secondary">Print / Save as PDF</button>
           </div>
+          <p id="print-help" class="hint print-help">Prints every plan in the current list. Save plans to print just those.</p>
         </div>
 
         <div class="quote-layout">
@@ -127,10 +139,12 @@
               </div>
               <label class="slider-label" for="employer-contribution">Fine tune <span id="employer-percent-readout">50%</span></label>
               <input id="employer-contribution" type="range" min="50" max="100" step="1" value="50" aria-valuetext="Employer pays 50 percent of employee-only" />
+              <p class="hint">Employee-only starts at 50%, matching the current quote tool.</p>
             </div>
             <div class="contrib-line">
               <p id="dep-preset-label" class="contrib-label">Employer pays this much of the dependent portion</p>
               <div class="presets" role="group" aria-labelledby="dep-preset-label">
+                <button type="button" class="preset" data-dep="0">0%</button>
                 <button type="button" class="preset" data-dep="50">50%</button>
                 <button type="button" class="preset" data-dep="75">75%</button>
                 <button type="button" class="preset" data-dep="100">100%</button>
@@ -152,7 +166,7 @@
               <input id="flat-custom-amount" type="number" min="0" step="10" inputmode="numeric" placeholder="Custom amount" hidden />
             </label>
             <p id="flat-readout" class="readout">$300 per enrolled employee</p>
-            <p id="flat-note" class="hint">Flat dollar contributions apply per enrolled employee and are capped at the plan's monthly premium.</p>
+            <p id="flat-note" class="hint">One flat amount applies to every enrolled person, including dependents, and is capped at that plan’s monthly premium. The request sends this single amount.</p>
           </div>
 
           <label class="payroll-label" for="payroll-schedule">Employee payroll deduction schedule</label>
@@ -165,7 +179,6 @@
         </section>
 
         <div class="quote-main">
-        <section id="compare" class="compare" hidden aria-label="Saved plans side by side"></section>
         <p id="filter-empty" class="message" hidden>No plans match this carrier.</p>
 
         <section id="section-top" aria-labelledby="top-heading">
@@ -194,7 +207,7 @@
         </details>
 
         <section id="lead" class="panel lead" aria-labelledby="lead-heading">
-          <h3 id="lead-heading">Get more details about these plans and many more options on the open market.</h3>
+          <h3 id="lead-heading">Get these plan details and more options from Daniel.</h3>
           <p>Share your contact info for a quick, no-pressure conversation with Daniel about the best next steps for your company.</p>
           <form id="lead-form">
             <label for="first-name">First name
@@ -206,7 +219,7 @@
             <label for="phone">Best phone (optional)
               <input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="407-555-0123" />
             </label>
-            <button id="lead-submit" class="btn btn-primary" type="submit">Send to Daniel</button>
+            <button id="lead-submit" class="btn btn-primary" type="submit">Get my plan details</button>
           </form>
           <div id="lead-success" class="success" role="status" hidden></div>
           <p id="lead-error" class="message message-error" hidden>Something went wrong sending your request. Please call or text Daniel directly at 407-476-5076.</p>
@@ -226,8 +239,24 @@
       <span class="launcher-action">Adjust</span>
     </button>
     <div class="contact-bar">
+      <button type="button" id="my-plans-btn" class="btn btn-secondary" aria-expanded="false" aria-controls="plans-drawer">My Plans (0)</button>
       <p>Questions? Call or text Daniel <a href="tel:4074765076">407-476-5076</a></p>
       <button type="button" id="goto-lead" class="btn btn-primary">Get my plan details</button>
+    </div>
+  </div>
+
+  <div id="plans-drawer" class="drawer" hidden>
+    <button type="button" id="drawer-backdrop" class="backdrop">Close my plans</button>
+    <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawer-heading">
+      <div class="drawer-head">
+        <h2 id="drawer-heading">My Plans</h2>
+        <button type="button" id="drawer-close" class="btn btn-secondary">Close</button>
+      </div>
+      <div id="drawer-body"></div>
+      <div class="drawer-actions">
+        <button type="button" id="drawer-print" class="btn btn-secondary">Print these plans</button>
+        <button type="button" id="drawer-send" class="btn btn-primary">Send these to Daniel</button>
+      </div>
     </div>
   </div>
 

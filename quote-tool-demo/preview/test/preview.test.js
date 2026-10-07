@@ -597,6 +597,111 @@ test('carrier filter does not change the lead visiblePlans fields', () => {
   assert.ok(before.length > after.filter((plan) => /uhc|united/i.test(plan.name + plan.network)).length);
 });
 
+test('display names are normalized and badges stay exactly as written', () => {
+  const united = PLANS.find((plan) => plan.id === 'uhc-ppo-3000-hsa');
+  const epo = PLANS.find((plan) => plan.id === 'cigna-epo-1000');
+  assert.equal(united.name, 'United Healthcare PPO 3000 HSA');
+  assert.equal(math.displayName(united), 'UHC PPO 3000 HSA');
+  assert.equal(math.displayName(epo), 'Cigna EPO 1000');
+  assert.equal(epo.typeBadge, 'Excellent Value');
+  const model = preview.createModel({ plans: PLANS, pageUrl: PAGE, now: () => new Date(FIXED) });
+  reach(model, 10, 7);
+  const card = preview.planArticle(epo, model.getState());
+  assert.match(card, /Excellent Value/);
+  assert.match(card, /Save plan/);
+  assert.match(card, /View plan details/);
+  assert.match(card, /Employee \+ Spouse/);
+  const hsa = preview.planArticle(PLANS.find((plan) => plan.id === 'cigna-epo-1750-hsa'), model.getState());
+  assert.match(hsa, /Incl \$25 Monthly HSA/);
+  const low = preview.planArticle(PLANS.find((plan) => plan.id === 'phcs-visit-limit-1000'), model.getState());
+  assert.match(low, /not traditional major medical/i);
+  assert.match(low, /Lower Cost/);
+  model.toggleSaved('uhc-ppo-3000-hsa', true);
+  const saved = model.leadPayload({ firstName: 'Ada', email: 'ada@example.com', phone: '' }).selectedPlans[0];
+  assert.equal(saved.name, 'United Healthcare PPO 3000 HSA');
+  assert.equal(saved.typeBadge, 'Incl $25 Monthly HSA');
+  const sorted = math.sortPlans(PLANS.filter((plan) => math.carrierOf(plan) === 'UHC'), 'carrier', math.estimateSmartMix(7), {
+    model: 'percent', employerPercent: 50, dependentPercent: 0, flatAmount: 300, payPeriods: 26
+  }).map(math.displayName);
+  const ordered = sorted.slice().sort((a, b) => a.localeCompare(b));
+  assert.deepEqual(sorted, ordered);
+});
+
+test('enrollment mix cannot exceed eligible and a different total is called out', () => {
+  const model = preview.createModel({ plans: PLANS, pageUrl: PAGE, now: () => new Date(FIXED) });
+  reach(model, 10, 7);
+  const before = Object.assign({}, model.getState().mixUsed);
+  assert.equal(math.mixTotal(before), 7);
+  assert.equal(model.getState().mixNote, '');
+  model.setMixField('family', 9);
+  const blocked = model.getState();
+  assert.equal(blocked.mixOk, false);
+  assert.match(blocked.mixNote, /can’t be higher/);
+  assert.deepEqual(blocked.mixUsed, before);
+  const grossBefore = math.planTotals(PLANS[0], before, blocked.resolvedContribution).gross;
+  const grossAfter = math.planTotals(PLANS[0], blocked.mixUsed, blocked.resolvedContribution).gross;
+  assert.equal(grossAfter, grossBefore);
+  model.setMixField('family', 0);
+  const warned = model.getState();
+  assert.equal(warned.mixOk, true);
+  assert.equal(math.mixTotal(warned.mixUsed), 6);
+  assert.match(warned.mixNote, /about 7/);
+  assert.match(warned.summaryLine, /Estimates use a mix of 6/);
+});
+
+test('saved plans compare and print selection', () => {
+  const model = preview.createModel({ plans: PLANS, pageUrl: PAGE, now: () => new Date(FIXED) });
+  reach(model, 10, 7);
+  const all = model.plansForPrint('all');
+  assert.ok(all.length > 4);
+  assert.equal(model.plansForPrint('saved').length, 0);
+  assert.equal(model.plansForPrint('auto').length, all.length);
+  model.toggleSaved('cigna-epo-1000', true);
+  model.toggleSaved('UHC-PPO-2000-Deductible', true);
+  model.toggleSaved('cigna-epo-1750-hsa', true);
+  const saved = model.plansForPrint('saved').map((item) => item.plan.id);
+  assert.deepEqual(saved, model.plansForPrint('auto').map((item) => item.plan.id));
+  assert.equal(saved.length, 3);
+  assert.ok(model.plansForPrint('all').length > saved.length);
+  const state = model.getState();
+  const compare = preview.compareHtml(state);
+  assert.match(compare, /Excellent Value/);
+  assert.match(compare, /Top Rated Network/);
+  assert.match(compare, /Incl \$25 Monthly HSA/);
+  assert.match(compare, /Employee paycheck/);
+  assert.match(compare, /Out-of-pocket max/);
+  assert.match(compare, /data-remove="cigna-epo-1000"/);
+  model.setContribution({ model: 'flat', flatSelect: '300' });
+  const flatCompare = preview.compareHtml(model.getState());
+  assert.match(flatCompare, /Employer contribution \(flat\)/);
+  assert.match(flatCompare, /employee paycheck rows/);
+  const printed = preview.printHtml(model.getState());
+  assert.equal((printed.match(/Important information/g) || []).length, 1);
+  assert.match(printed, /Cigna EPO 1000/);
+  assert.doesNotMatch(printed, /United Healthcare PPO/);
+  const chunks = preview.printChunks(model.plansForPrint('all'));
+  assert.ok(chunks.every((chunk) => chunk.plans.length <= 4));
+  assert.ok(chunks.length > 1);
+});
+
+test('edit answers keeps the six answers on one screen', () => {
+  const model = preview.createModel({ plans: PLANS, pageUrl: PAGE, now: () => new Date(FIXED) });
+  reach(model, 10, 7, 'balanced', 'yes', 'later');
+  model.editAnswers();
+  assert.equal(model.getState().phase, 'review');
+  assert.equal(model.getState().answers.priority, 'balanced');
+  const blocked = model.applyReview({ employees: '6', enrolling: '7' });
+  assert.equal(blocked.ok, false);
+  assert.equal(model.getState().phase, 'review');
+  const updated = model.applyReview({ priority: 'hsa', timeline: '30' });
+  assert.equal(updated.ok, true);
+  assert.equal(model.getState().phase, 'results');
+  assert.equal(model.getState().answers.priority, 'hsa');
+  assert.equal(model.getState().answers.timeline, '30');
+  assert.equal(model.getState().answers.coverage, 'yes');
+  assert.equal(math.mixTotal(model.getState().mixUsed), 7);
+});
+
 test('rates-as-of label lives in the preview config, not plans.json', () => {
   const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../preview-config.json'), 'utf8'));
   assert.equal(config.ratesAsOfLabel, 'Rates as of October 2026');

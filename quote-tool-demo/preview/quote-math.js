@@ -15,6 +15,12 @@
   ];
   var CARRIER_PREFERENCE = ['Cigna', 'UHC', 'PHCS'];
   var TIER_KEYS = ['employeeOnly', 'employeeSpouse', 'employeeChildren', 'family'];
+  var TIER_LABELS = [
+    ['employeeOnly', 'Employee'],
+    ['employeeSpouse', 'Employee + Spouse'],
+    ['employeeChildren', 'Employee + Child'],
+    ['family', 'Family']
+  ];
 
   function money(n) {
     return '$' + Math.round(n).toLocaleString();
@@ -123,7 +129,7 @@
       if (sortMode === 'carrier') {
         var byCarrier = carrierOf(a).localeCompare(carrierOf(b));
         if (byCarrier !== 0) return byCarrier;
-        return String(a.name).localeCompare(String(b.name));
+        return displayName(a).localeCompare(displayName(b));
       }
       var grossA = calcGrossPremium(a.rates, mix);
       var grossB = calcGrossPremium(b.rates, mix);
@@ -245,15 +251,68 @@
     };
   }
 
-  function summaryLine(answers) {
+  function displayName(plan) {
+    return String((plan && plan.name) || '').replace(/^United\s*Healthcare\b/i, 'UHC');
+  }
+
+  function majorMedicalNote(plan) {
+    var notes = (plan && plan.notes) || [];
+    for (var i = 0; i < notes.length; i += 1) {
+      if (/not traditional major medical/i.test(notes[i])) {
+        return 'This is not traditional major medical coverage. Benefits are limited.';
+      }
+    }
+    return '';
+  }
+
+  function mixCheck(entered, enrolling, eligible) {
+    var total = mixTotal(entered);
+    var enrolled = Number(enrolling || 0);
+    var allowed = Number(eligible || 0);
+    if (allowed && total > allowed) {
+      return {
+        ok: false,
+        total: total,
+        message: 'This mix totals ' + total + '. It can\u2019t be higher than the ' + allowed + ' eligible employees.'
+      };
+    }
+    if (total > 0 && enrolled && total !== enrolled) {
+      return {
+        ok: true,
+        total: total,
+        message: 'This mix totals ' + total + '. You said about ' + enrolled + ' will enroll. Estimates below use this mix.'
+      };
+    }
+    return { ok: true, total: total, message: '' };
+  }
+
+  function summaryLine(answers, mixInfo) {
     var employees = Number(answers.employees || 0);
     var enrolling = Number(answers.enrolling || 0);
-    return (answers.state || 'Your state') + ' \u00b7 ' + employees + ' eligible employees \u00b7 about ' + enrolling + ' enrolling.';
+    var line = (answers.state || 'Your state') + ' \u00b7 ' + employees + ' eligible employees \u00b7 about ' + enrolling + ' enrolling.';
+    if (mixInfo && mixInfo.ok && mixInfo.total > 0 && mixInfo.total !== enrolling) {
+      line += ' Estimates use a mix of ' + mixInfo.total + '.';
+    }
+    return line;
+  }
+
+  function chunkPlans(list, size) {
+    var groups = [];
+    var count = size || 4;
+    for (var i = 0; i < (list || []).length; i += count) {
+      groups.push(list.slice(i, i + count));
+    }
+    return groups;
   }
 
   return {
     PAYROLL_OPTIONS: PAYROLL_OPTIONS,
     TIER_KEYS: TIER_KEYS,
+    TIER_LABELS: TIER_LABELS,
+    displayName: displayName,
+    majorMedicalNote: majorMedicalNote,
+    mixCheck: mixCheck,
+    chunkPlans: chunkPlans,
     money: money,
     estimateSmartMix: estimateSmartMix,
     calcGrossPremium: calcGrossPremium,
