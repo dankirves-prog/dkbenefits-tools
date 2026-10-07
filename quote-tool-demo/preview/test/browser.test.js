@@ -571,6 +571,7 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
       assert.match(printText, /Premium/);
       assert.match(printText, /EE Cost PPP/);
       assert.match(printText, /PPP = per pay period \(Bi-weekly, 26\)/);
+      assert.match(printText, /Notes and Limitations/);
       assert.doesNotMatch(printText, /Employee paycheck/);
       if (shotName) await shotPrintPreview(shotName);
       const pdf = await send('Page.printToPDF', {
@@ -695,7 +696,7 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.match(compare, /Remove/);
     await shot('my_plans_warning_r3.png');
     const savedPages = await savePdf('proposal_saved_plans_r3.pdf', 'proposal_print_saved.png');
-    assert.equal(savedPages, 1, 'saved-plans proposal should stay on one page');
+    assert.ok(savedPages >= 2, 'saved plans keep the proposal page and add a notes page, pages=' + savedPages);
     await evaluate('document.getElementById("drawer-close").click()');
     await evaluate('document.querySelector(\'[data-plan-id="phcs-visit-limit-1750-HSA"] .save-toggle\').click()');
     assert.match(await evaluate('document.getElementById("my-plans-btn").textContent'), /My Plans \(3\)/);
