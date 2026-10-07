@@ -34,31 +34,12 @@
     ['rx', 'RX summary']
   ];
 
-  var PREVIEW_BASE = '';
-  if (typeof document !== 'undefined' && document.currentScript && document.currentScript.src) {
-    PREVIEW_BASE = document.currentScript.src.replace(/[^/]*$/, '');
-  }
-
-  function previewAsset(file) {
-    if (!PREVIEW_BASE) return file;
-    return new URL(file, PREVIEW_BASE).href;
-  }
-
-  function onPreviewPath(pathname) {
-    return /\/preview(?:\/|$)/.test(String(pathname || ''));
-  }
-
-  function attributionSearch(search, pathname) {
+  function attributionSearch(search) {
     var parsed = QuoteActivity.parseUtms(search || '');
-    if (parsed && Object.keys(parsed).length > 0) {
-      var query = search || '';
-      if (query.charAt(0) !== '?') return '?' + query;
-      return query;
-    }
-    var path = pathname;
-    if (path == null && typeof location !== 'undefined') path = location.pathname;
-    if (onPreviewPath(path)) return '?utm_source=' + PREVIEW_UTM_SOURCE;
-    return search || '';
+    if (!parsed || Object.keys(parsed).length === 0) return '?utm_source=' + PREVIEW_UTM_SOURCE;
+    var query = search || '';
+    if (query.charAt(0) !== '?') return '?' + query;
+    return query;
   }
 
   function postActivityPayload(payload) {
@@ -641,7 +622,7 @@
       storage: QuoteActivity.createSafeWebStorage(),
       post: postActivityPayload
     });
-    tracker.captureLandingUtms(attributionSearch(win.location.search, win.location.pathname));
+    tracker.captureLandingUtms(attributionSearch(win.location.search));
 
     var questionSection = document.getElementById('question-section');
     var reviewSection = document.getElementById('review-section');
@@ -1200,11 +1181,11 @@
 
     wire();
     return Promise.all([
-      fetch(previewAsset('../plans.json'), { cache: 'no-store' }).then(function (response) {
+      fetch('../plans.json', { cache: 'no-store' }).then(function (response) {
         if (!response.ok) throw new Error('Failed to load plans.json (' + response.status + ')');
         return response.json();
       }),
-      fetch(previewAsset('preview-config.json'), { cache: 'no-store' }).then(function (response) {
+      fetch('preview-config.json', { cache: 'no-store' }).then(function (response) {
         if (!response.ok) throw new Error('config');
         return response.json();
       }).catch(function () { return {}; })
@@ -1232,8 +1213,6 @@
     PREVIEW_UTM_SOURCE: PREVIEW_UTM_SOURCE,
     QUESTIONS: QUESTIONS,
     attributionSearch: attributionSearch,
-    previewAsset: previewAsset,
-    onPreviewPath: onPreviewPath,
     createModel: createModel,
     validateStep: validateStep,
     postActivityPayload: postActivityPayload,
