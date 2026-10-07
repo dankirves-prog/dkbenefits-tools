@@ -609,7 +609,7 @@ input[type="range"] { width: 100%; accent-color: var(--navy); height: 32px; }
 @media (min-width: 1000px) {
   .results-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 300px;
+    grid-template-columns: minmax(0, 1fr) 480px;
     column-gap: 16px;
     align-items: start;
     margin-top: 12px;
@@ -636,8 +636,8 @@ input[type="range"] { width: 100%; accent-color: var(--navy); height: 32px; }
   .toolbar .chip, .toolbar .btn, .sort-field select { min-height: 36px; }
   .print-help { display: none; }
   .section-title { margin: 8px 0; }
-  #percent-fields, #flat-fields { grid-template-columns: 1fr; }
-  .mix-grid { grid-template-columns: 1fr 1fr; }
+  .mix-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .side-tools .tier-legend { margin-top: 6px; }
   .lead form { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; }
   .lead form .btn { grid-column: 1 / -1; }
   body.is-results .header-inner { min-height: 48px; padding: 4px 0; }
