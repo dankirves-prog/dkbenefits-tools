@@ -496,6 +496,12 @@
     return '<p class="badge">' + escapeHtml(plan.typeBadge) + '</p>';
   }
 
+  function hsaChipHtml(plan) {
+    var label = QuoteMath.hsaChipLabel(plan);
+    if (!label) return '';
+    return '<p class="hsa-tag">' + escapeHtml(label) + '</p>';
+  }
+
   function detailValue(plan, key) {
     return (plan.details && plan.details[key]) || '';
   }
@@ -547,6 +553,7 @@
       '<h3>' + escapeHtml(QuoteMath.displayName(plan)) + '</h3>' +
       '<p class="network">' + escapeHtml(plan.network || '') + '</p>' +
       badgeHtml(plan) +
+      hsaChipHtml(plan) +
       '</div><button type="button" class="btn btn-secondary save-toggle" data-plan-id="' + escapeHtml(plan.id) + '" aria-pressed="' + (saved ? 'true' : 'false') + '">' + (saved ? 'Saved \u2713' : 'Save plan') + '</button></header>' +
       (lowNote ? '<p class="low-callout">' + escapeHtml(lowNote) + '</p>' : '') +
       '<section class="group-cost"><h4>Your group\u2019s cost</h4><dl class="cost-grid">' +
@@ -644,7 +651,7 @@
       var callout = note ? '<p class="low-callout">' + escapeHtml(note) + '</p>' : '';
       var tier = interactive ? '' : printTierTable(plan, state, plans.length >= 6);
       var action = interactive ? '<button type="button" class="btn btn-secondary" data-remove="' + escapeHtml(plan.id) + '">Remove</button>' : '';
-      return '<th scope="col"><span class="compare-name">' + escapeHtml(QuoteMath.displayName(plan)) + '</span>' + badgeHtml(plan) +
+      return '<th scope="col"><span class="compare-name">' + escapeHtml(QuoteMath.displayName(plan)) + '</span>' + badgeHtml(plan) + hsaChipHtml(plan) +
         (interactive ? callout + action : tier + callout) +
         '</th>';
     }).join('');

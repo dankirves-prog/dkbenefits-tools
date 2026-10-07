@@ -450,6 +450,13 @@ function calculateEmployerCost(plan, mix, grossPremium) {
   return Math.min(employer, grossPremium);
 }
 
+function hsaChipLabel(plan) {
+  const tag = plan && plan.details && String(plan.details.hsaTag || '').trim();
+  if (tag) return tag;
+  if (plan && /\bHSA\b/i.test(plan.name || '')) return 'HSA compatible';
+  return '';
+}
+
 function renderPlanCard(plan, mix) {
   const grossPremium = calcGrossPremium(plan.rates, mix);
   const employer = calculateEmployerCost(plan, mix, grossPremium);
@@ -482,6 +489,7 @@ function renderPlanCard(plan, mix) {
             <input type="checkbox" class="plan-interest" data-plan-id="${plan.id}" ${selectedPlans.has(plan.id) ? 'checked' : ''} />
           </label>
           <span class="badge">${plan.typeBadge}</span>
+          ${hsaChipLabel(plan) ? `<span class="hsa-tag">${hsaChipLabel(plan)}</span>` : ''}
         </div>
       </div>
 

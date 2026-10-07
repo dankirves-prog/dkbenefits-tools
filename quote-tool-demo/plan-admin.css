@@ -31,6 +31,7 @@ h2, h3 { margin: 0 0 10px; color: var(--dk-blue-dark); }
 h3 { margin-top: 14px; }
 .preview-card { border: 1px solid var(--dk-border); border-radius: 8px; padding: 12px; background: #fcfdff; min-height: 280px; }
 .preview-card .badge { display: inline-block; background: #e7f0ff; border: 1px solid #bdd5ff; color: #073872; border-radius: 999px; padding: 2px 8px; font-size: 12px; margin-bottom: 8px; }
+.preview-card .hsa-tag { display: inline-block; max-width: 100%; background: #e5f6ea; color: #0d5c32; border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 700; margin: 0 0 8px; overflow-wrap: anywhere; }
 .validation ul, #validationList { margin: 10px 0 0; padding-left: 18px; }
 .validation li.error { color: #9d1919; }
 .validation li.ok { color: #166534; }

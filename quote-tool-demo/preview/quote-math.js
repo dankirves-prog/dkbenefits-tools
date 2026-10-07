@@ -255,6 +255,14 @@
     return String((plan && plan.name) || '').replace(/^United\s*Healthcare\b/i, 'UHC');
   }
 
+  function hsaChipLabel(plan) {
+    var tag = plan && plan.details && plan.details.hsaTag;
+    var custom = String(tag == null ? '' : tag).trim();
+    if (custom) return custom;
+    if (plan && /\bHSA\b/i.test(plan.name || '')) return 'HSA compatible';
+    return '';
+  }
+
   function majorMedicalNote(plan) {
     var notes = (plan && plan.notes) || [];
     for (var i = 0; i < notes.length; i += 1) {
@@ -390,6 +398,7 @@
     TIER_KEYS: TIER_KEYS,
     TIER_LABELS: TIER_LABELS,
     displayName: displayName,
+    hsaChipLabel: hsaChipLabel,
     majorMedicalNote: majorMedicalNote,
     planType: planType,
     parseWholeCount: parseWholeCount,
