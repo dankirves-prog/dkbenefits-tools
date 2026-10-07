@@ -92,13 +92,19 @@ test('partial group info reveals only the figures that can be computed', () => {
   const quote = model();
   const plan = PLANS.find((item) => item.id === 'cigna-epo-1000');
   quote.setEnrolling('7');
-  assert.equal(quote.getState().showGross, false);
-  applyMix(quote, FULL_MIX);
-  assert.equal(quote.getState().showEnrolling || quote.getState().enrolling, '7');
   let state = quote.getState();
   assert.equal(state.showGross, true);
+  assert.deepEqual(state.mixUsed, math.estimateSmartMix(7));
+  assert.equal(state.mixNote, 'Estimated mix, edit any number');
   assert.equal(state.showEmployer, false);
   assert.equal(state.showPaycheck, false);
+  const enrollingOnly = rates.printHtml(printState(quote, 'all'));
+  assert.match(enrollingOnly, /Total monthly premium/);
+  assert.match(enrollingOnly, /Enrollment mix: 4 employee only/);
+  assert.doesNotMatch(enrollingOnly, /EE Cost PPP|Employer monthly/);
+  applyMix(quote, FULL_MIX);
+  state = quote.getState();
+  assert.equal(state.enrolling, '7');
   const grossOnly = rates.planArticle(plan, state);
   const expectedGross = math.money(math.planTotals(plan, state.mixUsed, state.resolvedContribution).gross);
   assert.match(grossOnly, /Total monthly premium/);
@@ -136,6 +142,26 @@ test('partial group info reveals only the figures that can be computed', () => {
   assert.equal(state.showGross, false);
   assert.equal(state.showPaycheck, false);
   assert.doesNotMatch(rates.printHtml(printState(quote, 'all')), /EE Cost PPP|Total monthly premium/);
+});
+
+test('a hand-edited mix stays put until reset to the estimate', () => {
+  const quote = model();
+  quote.setEnrolling('7');
+  assert.equal(quote.setMixField('family', '2').ok, true);
+  quote.setEnrolling('9');
+  const held = quote.getState();
+  assert.equal(held.mix.family, '2');
+  assert.equal(held.mixManual, true);
+  assert.match(held.mixNote, /This mix totals/);
+  assert.equal(held.showGross, true);
+  quote.resetMix();
+  const reset = quote.getState();
+  assert.equal(reset.mixManual, false);
+  assert.deepEqual(reset.mixUsed, math.estimateSmartMix(9));
+  assert.equal(reset.mixNote, 'Estimated mix, edit any number');
+  quote.setEnrolling('');
+  assert.equal(quote.getState().showGross, false);
+  assert.equal(quote.getState().mix.employeeOnly, '');
 });
 
 test('save, compare, carrier filter, and print work before any group info', () => {
@@ -211,7 +237,7 @@ test('lead state is collected on the form and activity stays off unless live', (
   assert.equal(calls[1][1].answers.enrolling, '7');
   assert.equal(calls[1][1].answers.priority, '');
   assert.equal(calls[1][1].contribution.percent, 75);
-  assert.equal(calls[1][1].tierMix.employeeOnly, 0);
+  assert.deepEqual(calls[1][1].tierMix, math.estimateSmartMix(7));
   live.setPayCycle('26');
   live.setContribution({ employerPercent: 50 });
   assert.equal(calls.length, 2);
@@ -236,5 +262,5 @@ test('the page does not gate rates behind the questionnaire', () => {
   const source = fs.readFileSync(path.join(__dirname, '../rates-first.js'), 'utf8');
   assert.match(source, /live=1/);
   assert.match(source, /Demo mode, not sent/);
-  assert.doesNotMatch(source, /estimateSmartMix\(/);
+  assert.match(source, /QuoteMath\.estimateSmartMix\(/);
 });

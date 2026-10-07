@@ -310,6 +310,10 @@ test('rates-first demo shows rates immediately and prints with or without group 
       assert.doesNotMatch(blob, /EE Cost/);
       assert.doesNotMatch(blob, /Total monthly premium/);
       assert.doesNotMatch(blob, /Employer monthly/);
+    } else if (mode === 'enrolling') {
+      assert.match(blob, /Total monthly premium/);
+      assert.doesNotMatch(blob, /EE Cost/);
+      assert.doesNotMatch(blob, /Employer monthly/);
     } else {
       assert.match(blob, /EE Cost/);
       assert.match(blob, /\bPPP\b/);
@@ -436,8 +440,59 @@ test('rates-first demo shows rates immediately and prints with or without group 
     await openPage(PAGE);
     layout = await evaluate(layoutExpression());
     assertLanding(layout, false);
+    const place = await evaluate(`(() => {
+      const bar = document.querySelector('.rf-toolbar').getBoundingClientRect();
+      const panel = document.getElementById('customize-panel').getBoundingClientRect();
+      const card = document.querySelector('#top-plans .plan-card').getBoundingClientRect();
+      const cols = getComputedStyle(document.querySelector('#top-plans')).gridTemplateColumns.split(' ').filter(Boolean);
+      return {
+        bar: bar.bottom,
+        panelTop: panel.top,
+        panelBottom: panel.bottom,
+        panelWidth: panel.width,
+        cardTop: card.top,
+        cols: cols.length,
+        btn: getComputedStyle(document.getElementById('customize-btn')).display,
+        wrap: document.getElementById('quote-app').getBoundingClientRect().width
+      };
+    })()`);
+    assert.ok(place.panelTop >= place.bar - 2, 'customize panel is not under the toolbar');
+    assert.ok(place.cardTop >= place.panelBottom - 2, 'plan cards are not below the customize panel');
+    assert.ok(place.panelWidth > place.wrap * 0.9, 'customize panel is not full width');
+    assert.equal(place.cols, 2, 'desktop cards should be two-up');
+    assert.equal(place.btn, 'none', 'desktop hides the customize toggle while the panel is open');
     await evaluate(`window.scrollTo(0, 0)`);
     await shot('rf_desktop_landing.png');
+    await shot('rf2_desktop_landing.png');
+
+    await evaluate(`(() => {
+      const enrolling = document.getElementById('enrolling');
+      enrolling.value = '7';
+      enrolling.dispatchEvent(new Event('input', { bubbles: true }));
+    })()`);
+    await waitFor(async () => evaluate(`document.getElementById('mix-note').textContent.includes('Estimated mix') && document.querySelector('#top-plans .plan-card').innerText.includes('Total monthly premium')`), 'auto mix totals');
+    const estimated = await evaluate(`(() => ({
+      ee: document.getElementById('mix-ee').value,
+      es: document.getElementById('mix-es').value,
+      ec: document.getElementById('mix-ec').value,
+      fam: document.getElementById('mix-fam').value,
+      note: document.getElementById('mix-note').textContent,
+      card: document.querySelector('#top-plans .plan-card').innerText
+    }))()`);
+    assert.equal(estimated.ee, '4');
+    assert.equal(estimated.es, '1');
+    assert.equal(estimated.ec, '1');
+    assert.equal(estimated.fam, '1');
+    assert.match(estimated.note, /Estimated mix, edit any number/);
+    assert.match(estimated.card, /Total monthly premium/);
+    assert.doesNotMatch(estimated.card, /Per paycheck|Employer monthly contribution/);
+    await evaluate(`window.scrollTo(0, 0)`);
+    await shot('rf2_desktop_customize_open.png');
+    await clickPrint('print-all-btn');
+    const enrollingPrint = await printPdf('rf-print-enrolling-only.pdf');
+    assertPdf(enrollingPrint.file, enrollingPrint.sheets, enrollingPrint.notes, 'enrolling');
+    execFileSync('pdftoppm', ['-png', '-r', '80', '-f', '1', '-l', '1', enrollingPrint.file, path.join(ARTIFACTS, 'rf2_print_enrolling_only_page1')]);
+    fs.renameSync(path.join(ARTIFACTS, 'rf2_print_enrolling_only_page1-1.png'), path.join(ARTIFACTS, 'rf2_print_enrolling_only_page1.png'));
 
     await evaluate(`(() => {
       const set = (id, value) => {
@@ -476,8 +531,22 @@ test('rates-first demo shows rates immediately and prints with or without group 
     await setViewport(390, 844);
     await evaluate(`document.getElementById('clear-group').click()`);
     await evaluate(`window.scrollTo(0, 0)`);
-    await evaluate(`document.getElementById('customize-btn').click()`);
-    await waitFor(async () => evaluate(`document.body.classList.contains('is-customizing') && getComputedStyle(document.getElementById('customize-panel')).display !== 'none'`), 'customize panel');
+    await evaluate(`(() => {
+      const panel = document.getElementById('customize-panel');
+      if (getComputedStyle(panel).display === 'none') document.getElementById('customize-btn').click();
+    })()`);
+    await waitFor(async () => evaluate(`getComputedStyle(document.getElementById('customize-panel')).display !== 'none'`), 'customize panel');
+    await evaluate(`(() => {
+      const enrolling = document.getElementById('enrolling');
+      enrolling.value = '7';
+      enrolling.dispatchEvent(new Event('input', { bubbles: true }));
+    })()`);
+    await waitFor(async () => evaluate(`document.getElementById('mix-ee').value === '4' && document.querySelector('#top-plans .group-cost')`), 'mobile auto mix');
+    await evaluate(`(() => {
+      const mixTop = document.getElementById('mix-ee').getBoundingClientRect().top + window.scrollY;
+      window.scrollTo(0, Math.max(0, mixTop - 12));
+    })()`);
+    await shot('rf2_mobile_customize_open.png');
     await shot('rf_mobile_customize_panel.png');
     const panel = await evaluate(`(() => {
       const el = document.getElementById('customize-panel');
@@ -511,6 +580,7 @@ test('rates-first demo shows rates immediately and prints with or without group 
     assert.equal(posts.filter((post) => post.method === 'POST').length, 0);
     assert.equal(leaked, false);
 
+    await evaluate(`document.getElementById('clear-group').click()`);
     await evaluate(`window.scrollTo(0, 0)`);
     await clickPrint('print-all-btn');
     const allPrint = await printPdf('rf-print-all-noinfo.pdf');

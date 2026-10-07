@@ -7,8 +7,30 @@
 .trust { margin: 0 0 8px; color: var(--muted); font-size: 0.92rem; }
 .as-of { margin: 0 0 8px; color: var(--muted); font-size: 0.85rem; }
 .rf-toolbar { margin-top: 0; gap: 8px; }
-.rf-subhead { margin: 12px 0 6px; font-size: 0.95rem; }
-.rf-counts { margin-top: 10px; }
+.rf-subhead { margin: 0; font-size: 0.95rem; }
+.rf-counts { margin-top: 8px; }
+.rf-page .results-grid { display: block; }
+#customize-panel { display: none; margin: 8px 0 10px; }
+body.is-customizing #customize-panel { display: block; }
+.rf-customize .mix-panel { margin-top: 0; padding: 10px 12px; }
+.rf-head-actions { display: flex; align-items: center; gap: 8px; }
+.rf-link {
+  background: none;
+  border: 0;
+  padding: 0 2px;
+  min-height: 32px;
+  color: var(--navy);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.rf-mix-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 8px 0 6px; }
+.rf-pay h3, .rf-contrib h3 { margin: 8px 0 6px; font-size: 0.95rem; }
+.rf-customize .hint { margin: 4px 0; font-size: 0.84rem; }
+.rf-customize input[type="number"] { min-height: 36px; }
+.rf-customize .mode-btn, .rf-customize .preset, .rf-customize .btn { min-height: 36px; }
+#customize-hide { display: none; }
 .state-bubbles { border: 0; margin: 0 0 12px; padding: 0; }
 .state-bubbles legend { font-weight: 700; margin-bottom: 8px; }
 .skeleton .sk-line, .skeleton .sk-block {
@@ -24,11 +46,9 @@
 .lead form { display: grid; gap: 10px; }
 .lead-plan-list { margin: 8px 0; padding-left: 18px; }
 
-@media (max-width: 999px) {
-  .side-tools { display: none; }
-  body.is-customizing .side-tools { display: block; }
-  body.is-customizing #contrib-body,
-  body.is-customizing #mix-details { display: block !important; }
+@media (max-width: 1023px) {
+  #customize-panel .mix-grid { grid-template-columns: 1fr 1fr; }
+  #customize-panel #contrib-body { display: block; }
 }
 
 @media (max-width: 859px) {
@@ -54,7 +74,32 @@
   .rf-toolbar .chip, .rf-toolbar .btn { white-space: nowrap; }
 }
 
-@media (min-width: 1000px) {
+@media (min-width: 1024px) {
+  #customize-panel { display: block; }
+  body.rf-customize-closed #customize-panel { display: none; }
   #customize-btn { display: none; }
-  .side-tools { display: block; }
+  body.rf-customize-closed #customize-btn {
+    display: inline-flex;
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 0.8rem;
+  }
+  #customize-hide { display: inline-flex; }
+  .rf-customize-rows {
+    display: grid;
+    grid-template-columns: minmax(140px, 190px) minmax(140px, 190px) minmax(220px, 1.3fr) minmax(220px, 1.1fr);
+    gap: 8px 16px;
+    align-items: end;
+  }
+  .rf-counts { display: contents; margin: 0; }
+  .rf-mix-block { grid-column: 1 / -1; grid-row: 2; }
+  .rf-pay { grid-column: 3; grid-row: 1; }
+  .rf-contrib { grid-column: 4; grid-row: 1; }
+  .rf-pay h3, .rf-contrib h3, .rf-mix-head { margin-top: 0; }
+  #customize-panel .mix-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  #customize-panel #contrib-body,
+  #customize-panel #percent-fields,
+  #customize-panel #flat-fields { display: block; }
+  #customize-panel #percent-fields[hidden],
+  #customize-panel #flat-fields[hidden] { display: none; }
 }

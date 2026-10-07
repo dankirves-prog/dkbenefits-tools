@@ -75,6 +75,7 @@
     var enrolling = '';
     var mix = copyMix(EMPTY_MIX);
     var mixError = '';
+    var mixManual = false;
     var leadState = '';
     var contribution = {
       model: '',
@@ -105,9 +106,30 @@
         return { ok: false, total: total, message: 'This mix totals ' + total + '. It can’t be higher than the ' + allowed + ' eligible employees.' };
       }
       if (total > 0 && enrolled && total !== enrolled) {
-        return { ok: true, total: total, message: 'This mix totals ' + total + '. You entered ' + enrolled + ' enrolling. Totals use this mix.' };
+        return { ok: true, total: total, message: 'This mix totals ' + total + '. You said about ' + enrolled + ' will enroll. Estimates below use this mix.' };
+      }
+      if (!mixManual && enrolled) {
+        return { ok: true, total: total, message: 'Estimated mix, edit any number' };
       }
       return { ok: true, total: total, message: '' };
+    }
+
+    function writeMix(numbers) {
+      mix = {
+        employeeOnly: String(numbers.employeeOnly),
+        employeeSpouse: String(numbers.employeeSpouse),
+        employeeChildren: String(numbers.employeeChildren),
+        family: String(numbers.family)
+      };
+    }
+
+    function fillEstimate() {
+      var count = enrollingCount();
+      if (count == null) {
+        mix = copyMix(EMPTY_MIX);
+        return;
+      }
+      writeMix(QuoteMath.estimateSmartMix(count));
     }
 
     function hasValidMix() {
@@ -286,6 +308,7 @@
         mix: copyMix(mix),
         mixNote: status.message,
         mixOk: status.ok,
+        mixManual: mixManual,
         contribution: {
           model: contribution.model,
           employerPercent: contribution.employerPercent,
@@ -313,7 +336,10 @@
       var text = String(raw == null ? '' : raw).trim();
       if (text === '') {
         if (which === 'eligible') eligible = '';
-        else enrolling = '';
+        else {
+          enrolling = '';
+          if (!mixManual) fillEstimate();
+        }
         mixError = '';
         maybeNotifyRates();
         return { ok: true };
@@ -327,7 +353,10 @@
         return { ok: false, error: 'Eligible employees can’t be lower than the number you expect to enroll.' };
       }
       if (which === 'eligible') eligible = String(parsed.value);
-      else enrolling = String(parsed.value);
+      else {
+        enrolling = String(parsed.value);
+        if (!mixManual) fillEstimate();
+      }
       maybeNotifyRates();
       return { ok: true };
     }
@@ -360,6 +389,7 @@
       setEnrolling: function (raw) { return setCount('enrolling', raw); },
       setMixField: function (field, raw) {
         noteInteraction();
+        mixManual = true;
         var text = String(raw == null ? '' : raw).trim();
         if (text === '') {
           mix[field] = '';
@@ -393,11 +423,18 @@
         }
         maybeNotifyRates();
       },
+      resetMix: function () {
+        noteInteraction();
+        mixManual = false;
+        mixError = '';
+        fillEstimate();
+      },
       clearGroup: function () {
         eligible = '';
         enrolling = '';
         mix = copyMix(EMPTY_MIX);
         mixError = '';
+        mixManual = false;
         contribution.model = '';
         contribution.employerPercent = null;
         contribution.dependentPercent = null;
@@ -948,12 +985,35 @@
       $('my-plans-panel').hidden = true;
       $('my-plans-btn').setAttribute('aria-expanded', 'false');
     });
+    function desktopCustomize() {
+      return win.matchMedia('(min-width: 1024px)').matches;
+    }
+
+    function setCustomizeOpen(open) {
+      document.body.classList.toggle('is-customizing', !!open);
+      document.body.classList.toggle('rf-customize-closed', desktopCustomize() && !open);
+      $('customize-btn').setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    function syncCustomize() {
+      if (desktopCustomize()) {
+        if (!document.body.classList.contains('rf-customize-closed')) setCustomizeOpen(true);
+      } else {
+        document.body.classList.remove('rf-customize-closed');
+        setCustomizeOpen(false);
+      }
+    }
+
+    syncCustomize();
+    win.matchMedia('(min-width: 1024px)').addEventListener('change', syncCustomize);
+
     $('customize-btn').addEventListener('click', function () {
       model.noteInteraction();
-      document.body.classList.toggle('is-customizing');
-      var open = document.body.classList.contains('is-customizing');
-      $('customize-btn').setAttribute('aria-expanded', open ? 'true' : 'false');
-      if (open) $('customize-panel').scrollIntoView({ block: 'start' });
+      if (desktopCustomize()) setCustomizeOpen(true);
+      else setCustomizeOpen(!document.body.classList.contains('is-customizing'));
+    });
+    $('customize-hide').addEventListener('click', function () {
+      setCustomizeOpen(false);
     });
     $('contact-btn').addEventListener('click', openLead);
     $('drawer-send').addEventListener('click', openLead);
@@ -962,7 +1022,15 @@
       model.clearGroup();
       render();
     });
-    $('eligible').addEventListener('change', function () {
+    $('reset-mix').addEventListener('click', function () {
+      model.resetMix();
+      render();
+    });
+    function onField(el, fn) {
+      el.addEventListener('input', fn);
+      el.addEventListener('change', fn);
+    }
+    onField($('eligible'), function () {
       var result = model.setEligible($('eligible').value);
       $('mix-note').hidden = !!result.ok;
       if (!result.ok) {
@@ -973,7 +1041,7 @@
       }
       render();
     });
-    $('enrolling').addEventListener('change', function () {
+    onField($('enrolling'), function () {
       var result = model.setEnrolling($('enrolling').value);
       if (!result.ok) {
         $('mix-note').hidden = false;
@@ -984,7 +1052,7 @@
       render();
     });
     document.querySelectorAll('[data-mix]').forEach(function (input) {
-      input.addEventListener('change', function () {
+      onField(input, function () {
         var result = model.setMixField(input.getAttribute('data-mix'), input.value);
         if (!result.ok) {
           $('mix-note').hidden = false;
