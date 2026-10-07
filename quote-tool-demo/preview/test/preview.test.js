@@ -1031,6 +1031,7 @@ test('saved plans print in one table and visit-limit wording stays attached', ()
   assert.match(cardHtml, /<dt>Employer monthly contribution<\/dt>/);
   assert.doesNotMatch(cardHtml, /EE Cost PPP/);
   assert.match(savedHtml, /not traditional major medical/i);
+  assert.match(savedHtml, /class="coverage-warning"/);
   assert.match(savedHtml, /PHCS Visit Limit 1750 HSA/);
   assert.match(savedHtml, /<th scope="row">Plan type<\/th>/);
   assert.match(savedHtml, />Visit Limit</);
@@ -1116,6 +1117,12 @@ test('printed notes page follows the proposal and lists each selected plan in fu
   assert.match(css, /\.print-notes-table tr\s*\{[^}]*break-inside:\s*avoid/);
   assert.match(css, /\.print-notes-table th,\s*\.print-notes-table td\s*\{[^}]*font-size:\s*8pt/);
   assert.match(css, /\.print-notes-table th\s*\{[^}]*width:\s*18%/);
+  assert.match(css, /\.print-table td\.coverage-warning\s*\{[^}]*background:\s*#f7f4ea/);
+  assert.match(css, /\.print-table td\.coverage-warning\s*\{[^}]*font-weight:\s*700/);
+  assert.match(css, /\.print-notes-table \.coverage-warning\s*\{[^}]*background:\s*#f7f4ea/);
+  assert.match(css, /\.print-summary\s*\{[^}]*margin-bottom:\s*4pt/);
+  assert.match(css, /\.print-table tbody tr\.print-pricing:first-child th[^}]*padding-top:\s*4pt/);
+  assert.match(css, /\.print-table tr\.print-info-start th[^}]*padding-top:\s*4pt/);
   assert.doesNotMatch(css, /\.print-notes-[^{]*\{[^}]*font-size:\s*(?:[0-6](?:\.\d+)?|7(?:\.[0-4]\d*)?)pt/);
   const model = preview.createModel({ plans: PLANS, pageUrl: PAGE, now: () => new Date(FIXED) });
   reach(model, 10, 7);
@@ -1135,7 +1142,14 @@ test('printed notes page follows the proposal and lists each selected plan in fu
   assert.deepEqual(names, state.printPlans.map((item) => math.displayName(item.plan)));
   state.printPlans.forEach((item) => {
     assert.match(html, new RegExp('class="print-notes-carrier">' + math.carrierOf(item.plan) + '<'));
-    (item.plan.notes || []).forEach((line) => assert.ok(html.includes(preview.escapeHtml(line)), 'missing note ' + line));
+    (item.plan.notes || []).forEach((line) => {
+      if (/not traditional major medical/i.test(line)) {
+        assert.match(html, /<span class="coverage-warning">This is not traditional major medical coverage\.<\/span>/);
+        assert.ok(html.includes(preview.escapeHtml(line.replace(/This is not traditional major medical coverage\.\s*/i, ''))), 'missing note remainder ' + line);
+      } else {
+        assert.ok(html.includes(preview.escapeHtml(line)), 'missing note ' + line);
+      }
+    });
     (item.plan.limitedNotes || []).forEach((line) => assert.ok(html.includes(preview.escapeHtml(line)), 'missing limitation ' + line));
   });
   assert.match(html, /class="print-notes-label">Notes</);
