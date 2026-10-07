@@ -53,14 +53,24 @@
         </div>
       </div>
 
-      <div id="customize-panel" class="rf-customize">
+      <section id="my-plans-panel" class="panel my-plans" hidden aria-labelledby="drawer-heading">
+        <div class="drawer-head">
+          <h2 id="drawer-heading">My Plans</h2>
+          <button type="button" id="drawer-close" class="btn btn-secondary">Close</button>
+        </div>
+        <div id="drawer-body"></div>
+        <div class="drawer-actions">
+          <button type="button" id="drawer-print" class="btn btn-secondary">Print saved</button>
+          <button type="button" id="drawer-send" class="btn btn-primary">Send these to Daniel</button>
+        </div>
+      </section>
+
+      <div class="results-grid">
+        <div id="customize-panel" class="rf-customize side-tools">
         <section class="panel mix-panel" aria-labelledby="mix-heading">
           <div class="mix-head">
             <h2 id="mix-heading">Customize for your group</h2>
-            <div class="rf-head-actions">
-              <button type="button" id="customize-hide" class="rf-link">Hide</button>
-              <button type="button" id="clear-group" class="btn btn-secondary">Clear</button>
-            </div>
+            <button type="button" id="clear-group" class="btn btn-secondary">Clear</button>
           </div>
           <p class="hint">Optional. Monthly tier rates stay visible either way. Totals appear after you enter enrollment.</p>
           <div class="rf-customize-rows">
@@ -151,21 +161,8 @@
             </section>
           </div>
         </section>
-      </div>
-
-      <section id="my-plans-panel" class="panel my-plans" hidden aria-labelledby="drawer-heading">
-        <div class="drawer-head">
-          <h2 id="drawer-heading">My Plans</h2>
-          <button type="button" id="drawer-close" class="btn btn-secondary">Close</button>
         </div>
-        <div id="drawer-body"></div>
-        <div class="drawer-actions">
-          <button type="button" id="drawer-print" class="btn btn-secondary">Print saved</button>
-          <button type="button" id="drawer-send" class="btn btn-primary">Send these to Daniel</button>
-        </div>
-      </section>
 
-      <div class="results-grid">
         <div class="quote-main">
           <p id="filter-empty" class="message" hidden>No plans match this carrier.</p>
           <section id="section-top" aria-labelledby="top-heading">

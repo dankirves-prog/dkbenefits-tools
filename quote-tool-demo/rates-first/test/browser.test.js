@@ -394,6 +394,7 @@ test('rates-first demo shows rates immediately and prints with or without group 
     assert.ok(typeof layout.mark === 'number' && layout.mark < 5000, 'first card was slow or missing: ' + layout.mark);
     assertLanding(layout, true);
     await shot('rf_mobile390_landing.png');
+    await shot('rf3_mobile390_landing.png');
 
     await setViewport(360, 740);
     layout = await evaluate(layoutExpression());
@@ -436,7 +437,7 @@ test('rates-first demo shows rates immediately and prints with or without group 
       assert.ok(tool.top >= 0 && tool.bottom <= embedded.innerHeight && tool.height >= 28, tool.sel + ' is outside the 320 iframe ' + JSON.stringify(tool));
     });
 
-    await setViewport(1366, 768);
+    await setViewport(1440, 900);
     await openPage(PAGE);
     layout = await evaluate(layoutExpression());
     assertLanding(layout, false);
@@ -448,22 +449,32 @@ test('rates-first demo shows rates immediately and prints with or without group 
       return {
         bar: bar.bottom,
         panelTop: panel.top,
+        panelLeft: panel.left,
         panelBottom: panel.bottom,
         panelWidth: panel.width,
         cardTop: card.top,
+        cardBottom: card.bottom,
+        cardLeft: card.left,
+        cardRight: card.right,
         cols: cols.length,
         btn: getComputedStyle(document.getElementById('customize-btn')).display,
-        wrap: document.getElementById('quote-app').getBoundingClientRect().width
+        sticky: getComputedStyle(document.getElementById('customize-panel')).position,
+        wrap: document.getElementById('quote-app').getBoundingClientRect().width,
+        innerHeight: innerHeight
       };
     })()`);
-    assert.ok(place.panelTop >= place.bar - 2, 'customize panel is not under the toolbar');
-    assert.ok(place.cardTop >= place.panelBottom - 2, 'plan cards are not below the customize panel');
-    assert.ok(place.panelWidth > place.wrap * 0.9, 'customize panel is not full width');
+    assert.ok(place.panelTop >= place.bar - 2, 'customize panel starts above the toolbar');
+    assert.ok(place.panelLeft > place.cardRight - 2, 'customize panel is not beside the plan cards');
+    assert.ok(place.cardTop < place.panelBottom && place.panelTop < place.cardBottom, 'panel and first card do not share the landing screen');
+    assert.ok(place.cardTop < place.innerHeight - 72, 'first card is below the fold beside the panel');
+    assert.ok(place.panelWidth < place.wrap * 0.5, 'side panel is too wide: ' + place.panelWidth);
+    assert.ok(place.panelWidth >= 280, 'side panel is too narrow: ' + place.panelWidth);
+    assert.equal(place.sticky, 'sticky', 'side panel should stay in view while the cards scroll');
     assert.equal(place.cols, 2, 'desktop cards should be two-up');
-    assert.equal(place.btn, 'none', 'desktop hides the customize toggle while the panel is open');
+    assert.equal(place.btn, 'none', 'desktop hides the customize toggle');
     await evaluate(`window.scrollTo(0, 0)`);
     await shot('rf_desktop_landing.png');
-    await shot('rf2_desktop_landing.png');
+    await shot('rf3_desktop_1440_landing.png');
 
     await evaluate(`(() => {
       const enrolling = document.getElementById('enrolling');
@@ -527,6 +538,7 @@ test('rates-first demo shows rates immediately and prints with or without group 
     assert.equal(customized.pay, 'true');
     await evaluate(`window.scrollTo(0, 0)`);
     await shot('rf_desktop_customized.png');
+    await shot('rf3_desktop_1440_entered.png');
 
     await setViewport(390, 844);
     await evaluate(`document.getElementById('clear-group').click()`);
@@ -536,6 +548,22 @@ test('rates-first demo shows rates immediately and prints with or without group 
       if (getComputedStyle(panel).display === 'none') document.getElementById('customize-btn').click();
     })()`);
     await waitFor(async () => evaluate(`getComputedStyle(document.getElementById('customize-panel')).display !== 'none'`), 'customize panel');
+    const dropped = await evaluate(`(() => {
+      const button = document.getElementById('customize-btn').getBoundingClientRect();
+      const panel = document.getElementById('customize-panel').getBoundingClientRect();
+      const card = document.querySelector('#top-plans .plan-card').getBoundingClientRect();
+      return {
+        buttonBottom: button.bottom,
+        panelTop: panel.top,
+        panelBottom: panel.bottom,
+        cardTop: card.top,
+        display: getComputedStyle(document.getElementById('customize-panel')).display
+      };
+    })()`);
+    assert.notEqual(dropped.display, 'none');
+    assert.ok(dropped.panelTop >= dropped.buttonBottom - 4, 'customize box is not directly under the button');
+    assert.ok(dropped.cardTop >= dropped.panelBottom - 4, 'plan cards are not below the customize box');
+    await shot('rf3_mobile390_customize.png');
     await evaluate(`(() => {
       const enrolling = document.getElementById('enrolling');
       enrolling.value = '7';
@@ -626,6 +654,8 @@ test('rates-first demo shows rates immediately and prints with or without group 
     assertPdf(savedFull.file, 1, savedFull.notes, 'full');
     execFileSync('pdftoppm', ['-png', '-r', '80', '-f', '1', '-l', '1', savedFull.file, path.join(ARTIFACTS, 'rf_print_withinfo_page1')]);
     fs.renameSync(path.join(ARTIFACTS, 'rf_print_withinfo_page1-1.png'), path.join(ARTIFACTS, 'rf_print_withinfo_page1.png'));
+    execFileSync('pdftoppm', ['-png', '-r', '80', '-f', '1', '-l', '1', savedFull.file, path.join(ARTIFACTS, 'rf3_print_withdata_page1')]);
+    fs.renameSync(path.join(ARTIFACTS, 'rf3_print_withdata_page1-1.png'), path.join(ARTIFACTS, 'rf3_print_withdata_page1.png'));
     assert.equal(posts.filter((post) => post.method === 'POST').length, 0);
 
     await openPage(PAGE + '?live=1');

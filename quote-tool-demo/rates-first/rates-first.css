@@ -13,7 +13,6 @@
 #customize-panel { display: none; margin: 8px 0 10px; }
 body.is-customizing #customize-panel { display: block; }
 .rf-customize .mix-panel { margin-top: 0; padding: 10px 12px; }
-.rf-head-actions { display: flex; align-items: center; gap: 8px; }
 .rf-link {
   background: none;
   border: 0;
@@ -30,7 +29,6 @@ body.is-customizing #customize-panel { display: block; }
 .rf-customize .hint { margin: 4px 0; font-size: 0.84rem; }
 .rf-customize input[type="number"] { min-height: 36px; }
 .rf-customize .mode-btn, .rf-customize .preset, .rf-customize .btn { min-height: 36px; }
-#customize-hide { display: none; }
 .state-bubbles { border: 0; margin: 0 0 12px; padding: 0; }
 .state-bubbles legend { font-weight: 700; margin-bottom: 8px; }
 .skeleton .sk-line, .skeleton .sk-block {
@@ -75,28 +73,28 @@ body.is-customizing #customize-panel { display: block; }
 }
 
 @media (min-width: 1024px) {
-  #customize-panel { display: block; }
-  body.rf-customize-closed #customize-panel { display: none; }
-  #customize-btn { display: none; }
-  body.rf-customize-closed #customize-btn {
-    display: inline-flex;
-    min-height: 32px;
-    padding: 0 10px;
-    font-size: 0.8rem;
-  }
-  #customize-hide { display: inline-flex; }
-  .rf-customize-rows {
+  .rf-page .results-grid {
     display: grid;
-    grid-template-columns: minmax(140px, 190px) minmax(140px, 190px) minmax(220px, 1.3fr) minmax(220px, 1.1fr);
-    gap: 8px 16px;
-    align-items: end;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+    column-gap: 16px;
+    align-items: start;
+    margin-top: 8px;
   }
-  .rf-counts { display: contents; margin: 0; }
-  .rf-mix-block { grid-column: 1 / -1; grid-row: 2; }
-  .rf-pay { grid-column: 3; grid-row: 1; }
-  .rf-contrib { grid-column: 4; grid-row: 1; }
-  .rf-pay h3, .rf-contrib h3, .rf-mix-head { margin-top: 0; }
-  #customize-panel .mix-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .rf-page .quote-main { grid-column: 1; grid-row: 1; min-width: 0; }
+  #customize-panel {
+    display: block;
+    grid-column: 2;
+    grid-row: 1;
+    position: sticky;
+    top: 12px;
+    max-height: calc(100vh - 24px);
+    overflow: auto;
+    margin: 0;
+    min-width: 0;
+  }
+  #customize-btn { display: none; }
+  .rf-customize-rows { display: block; }
+  #customize-panel .mix-grid { grid-template-columns: 1fr 1fr; }
   #customize-panel #contrib-body,
   #customize-panel #percent-fields,
   #customize-panel #flat-fields { display: block; }
