@@ -49,6 +49,39 @@ const email = document.getElementById('email');
 const phone = document.getElementById('phone');
 const leadWebhookUrl = 'https://script.google.com/macros/s/AKfycby4-ZxTQfsAgIBO0JYSngccVoj5HRKtNshy6N2XlJhbxaEk2oW7b_xIRBGlcSq0CZ0z/exec';
 
+function postActivityPayload(payload) {
+  return fetch(leadWebhookUrl, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  }).then(async (response) => {
+    const responseText = await response.text();
+    let body = null;
+    try {
+      body = JSON.parse(responseText);
+    } catch (parseError) {
+      body = null;
+    }
+    if (!response.ok || (body && body.ok === false)) {
+      throw new Error(`Activity webhook failed with status ${response.status}: ${responseText}`);
+    }
+    return { ok: true, body };
+  });
+}
+
+const activityTracker = QuoteActivity.createQuoteActivityTracker({
+  storage: QuoteActivity.createSafeWebStorage(),
+  post: postActivityPayload
+});
+activityTracker.captureLandingUtms(window.location.search);
+
+function currentVisibleGroups() {
+  const groups = ['top', 'low'];
+  if (mecPlansWrap && !mecPlansWrap.classList.contains('hidden')) {
+    groups.push('mec');
+  }
+  return groups;
+}
+
 let plans = [];
 
 const questions = [
@@ -531,6 +564,10 @@ function renderResults() {
   });
 
   updateHeroAside('results');
+  activityTracker.onRatesRendered({
+    plans,
+    visibleGroups: currentVisibleGroups()
+  });
 }
 
 function resetLeadForm() {
@@ -580,6 +617,7 @@ function startOver() {
 }
 
 nextBtn.addEventListener('click', () => {
+  activityTracker.onQuoteStarted();
   readAnswer();
   if (!validateCurrent()) {
     alert('Please answer this question before continuing.');
@@ -610,6 +648,7 @@ backBtn.addEventListener('click', () => {
 });
 
 heroStartBtn.addEventListener('click', () => {
+  activityTracker.onQuoteStarted();
   setHeroCompact(true);
   scrollToElement(funnelSection);
 });
@@ -654,6 +693,12 @@ sortOptions.addEventListener('change', () => {
 toggleMecBtn.addEventListener('click', () => {
   mecPlansWrap.classList.toggle('hidden');
   toggleMecBtn.textContent = mecPlansWrap.classList.contains('hidden') ? 'Show MEC Section' : 'Hide MEC Section';
+  if (!resultsSection.classList.contains('hidden')) {
+    activityTracker.onRatesRendered({
+      plans,
+      visibleGroups: currentVisibleGroups()
+    });
+  }
 });
 
 leadForm.addEventListener('submit', async (event) => {
@@ -663,7 +708,7 @@ leadForm.addEventListener('submit', async (event) => {
     return;
   }
   const tierMix = getCurrentTierMix();
-  const leadPayload = {
+  const leadPayload = activityTracker.decorateLeadPayload({
     firstName: firstName.value.trim(),
     email: email.value.trim(),
     phone: phone.value.trim(),
@@ -678,7 +723,7 @@ leadForm.addEventListener('submit', async (event) => {
     visiblePlans: getVisiblePlans(),
     submittedAt: new Date().toISOString(),
     pageUrl: window.location.href
-  };
+  });
   console.log('DK Benefits lead payload:', leadPayload);
   leadError.classList.add('hidden');
 
@@ -710,6 +755,7 @@ updateModelUI();
     renderQuestion();
   } catch (error) {
     console.error('Plan load error:', error);
+    activityTracker.onRatesRendered({ plans: null, error });
     questionHost.innerHTML = `<article class="question active"><h3>We're having trouble loading plan options right now.</h3><p>Please refresh and try again, or call/text Daniel at 407-476-5076.</p><p class="subtle">Technical detail: ${error.message}</p></article>`;
   }
 })();
