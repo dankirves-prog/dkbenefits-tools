@@ -1162,7 +1162,7 @@ test('printed notes page follows the proposal and lists each selected plan in fu
   allState.printPlans = model.plansForPrint('all');
   const allHtml = preview.printHtml(allState);
   const sections = allHtml.split('class="print-notes-page"').slice(1);
-  assert.ok(sections.length >= 2 && sections.length <= 3, 'print-all notes should use two or three pages, got ' + sections.length);
+  assert.equal(sections.length, 2, 'print-all notes should use two pages');
   assert.match(sections[0], /<h2>Notes and Limitations<\/h2>/);
   assert.doesNotMatch(sections[0], /Notes and Limitations \(continued\)/);
   sections.slice(1).forEach((section) => {

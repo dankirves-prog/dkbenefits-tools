@@ -435,7 +435,7 @@ test('printed proposals keep Important information on the last plan page', { tim
 
       const allFile = await printIframe(launch.id + '-all.pdf');
       const allPages = assertProposal(allFile, 3, launch.id + ' print-all');
-      assert.ok(allPages.length - 3 >= 1 && allPages.length - 3 <= 3, launch.id + ' print-all notes pages ' + (allPages.length - 3));
+      assert.equal(allPages.length - 3, 2, launch.id + ' print-all notes pages');
       assert.match(allPages[0], /Premium/);
       assert.match(allPages[0], /EE Cost PPP/);
       assert.doesNotMatch(allPages[0], /Important information/);
