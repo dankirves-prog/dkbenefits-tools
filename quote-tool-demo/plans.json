@@ -420,7 +420,7 @@
     "group": "top",
     "name": "Cigna PPO 8300 HSA",
     "network": "Utilizes Cigna PPO network",
-    "typeBadge": "HSA Friendly",
+    "typeBadge": "Incl $25 Monthly HSA",
     "rates": {
       "employeeOnly": 609,
       "employeeSpouse": 989,
@@ -452,7 +452,7 @@
     "group": "top",
     "name": "United Healthcare PPO 8300 HSA",
     "network": "Utilizes UHC Choice Plus PPO network",
-    "typeBadge": "HSA Friendly",
+    "typeBadge": "Incl $25 Monthly HSA",
     "rates": {
       "employeeOnly": 649,
       "employeeSpouse": 1049,
@@ -484,7 +484,7 @@
     "group": "top",
     "name": "PHCS PPO 8300 HSA",
     "network": "Utilizes PHCS PPO network",
-    "typeBadge": "HSA Friendly",
+    "typeBadge": "Incl $25 Monthly HSA",
     "rates": {
       "employeeOnly": 549,
       "employeeSpouse": 939,

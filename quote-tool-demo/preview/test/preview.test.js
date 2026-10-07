@@ -797,6 +797,16 @@ test('display names are normalized and badges stay exactly as written', () => {
   assert.match(card, /Employee \+ Spouse/);
   const hsa = preview.planArticle(PLANS.find((plan) => plan.id === 'cigna-epo-1750-hsa'), model.getState());
   assert.match(hsa, /Incl \$25 Monthly HSA/);
+  ['cigna-ppo-8300-hsa', 'UHC-ppo-8300-hsa', 'phcs-ppo-8300-hsa'].forEach((id) => {
+    const plan = PLANS.find((item) => item.id === id);
+    const rates = { ...plan.rates };
+    assert.equal(plan.typeBadge, 'Incl $25 Monthly HSA');
+    assert.match(preview.planArticle(plan, model.getState()), /class="badge">Incl \$25 Monthly HSA</);
+    assert.deepEqual(plan.rates, rates);
+  });
+  ['cigna-ppo-3500-hsa', 'uhc-ppo-3500-hsa', 'phcs-ppo-3500-hsa'].forEach((id) => {
+    assert.equal(PLANS.find((item) => item.id === id).typeBadge, 'HSA Friendly');
+  });
   const low = preview.planArticle(PLANS.find((plan) => plan.id === 'phcs-visit-limit-1000'), model.getState());
   assert.match(low, /not traditional major medical/i);
   assert.match(low, /Lower Cost/);
@@ -1032,6 +1042,48 @@ test('saved plans print in one table and visit-limit wording stays attached', ()
   const allChunks = preview.printChunks(allState.printPlans);
   assert.equal(allChunks.length, Math.ceil(allState.printPlans.length / 6));
   assert.ok(allChunks.every((chunk) => chunk.plans.length <= 6));
+});
+
+test('saved plans paginate at six per page like print-all', () => {
+  const ids = PLANS.map((plan) => plan.id);
+  const cases = [
+    [1, 1],
+    [6, 1],
+    [7, 2],
+    [9, 2],
+    [12, 2],
+    [13, 3],
+    [18, 3]
+  ];
+  cases.forEach(([count, pages]) => {
+    const model = preview.createModel({ plans: PLANS, pageUrl: PAGE, now: () => new Date(FIXED) });
+    reach(model, 10, 7);
+    ids.slice(0, count).forEach((id) => model.toggleSaved(id, true));
+    const state = model.getState();
+    state.printLayout = 'saved';
+    state.printPlans = model.plansForPrint('saved');
+    assert.equal(state.printPlans.length, count, count + ' saved plans');
+    const html = preview.printHtml(state);
+    const sheets = html.match(/<section class="print-sheet/g) || [];
+    assert.equal(sheets.length, pages, count + ' saved plans should make ' + pages + ' sheets');
+    assert.equal((html.match(/print-next/g) || []).length, pages - 1);
+    const headerAt = html.indexOf('print-header');
+    const summaryAt = html.indexOf('Group rate proposal');
+    const firstSheet = html.indexOf('print-sheet');
+    const lastSheet = html.lastIndexOf('print-sheet');
+    const disclaimerAt = html.indexOf('print-disclaimer');
+    assert.ok(headerAt >= 0 && headerAt < firstSheet, 'header stays before the first sheet');
+    assert.ok(summaryAt > headerAt && summaryAt < firstSheet, 'summary stays on the first page');
+    assert.ok(disclaimerAt > lastSheet, 'Important information follows the last plan sheet');
+    const pieces = html.split(/<section class="print-sheet/).slice(1);
+    pieces.forEach((piece, index) => {
+      const plansOnSheet = (piece.match(/class="print-tier/g) || []).length;
+      assert.ok(plansOnSheet >= 1 && plansOnSheet <= 6, count + ' saved, sheet ' + (index + 1) + ' has ' + plansOnSheet);
+    });
+    const sizes = pieces.map((piece) => (piece.match(/class="print-tier/g) || []).length);
+    if (count > 6) assert.equal(sizes[0], 6, 'first sheet stays full at six');
+    assert.equal(sizes.reduce((sum, size) => sum + size, 0), count);
+  });
 });
 
 test('custom flat amount starts at the current amount and visitor copy stays plain', () => {
