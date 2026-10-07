@@ -144,13 +144,22 @@
       return payload;
     }
 
-    function postOnce(storageKey, eventName) {
+    function buildActivityPayload(eventName, details) {
+      var payload = buildUsagePayload(eventName);
+      if (!details) return payload;
+      Object.keys(details).forEach(function (key) {
+        payload[key] = details[key];
+      });
+      return payload;
+    }
+
+    function postOnce(storageKey, eventName, details) {
       if (storage.getItem(storageKey) === '1') {
         return Promise.resolve({ skipped: true, reason: 'already_recorded' });
       }
       if (pending[eventName]) return pending[eventName];
       pending[eventName] = Promise.resolve()
-        .then(function () { return post(buildUsagePayload(eventName)); })
+        .then(function () { return post(buildActivityPayload(eventName, details)); })
         .then(function (result) {
           if (!result || result.ok !== true) {
             throw new Error('activity request failed');
@@ -164,8 +173,8 @@
       return pending[eventName];
     }
 
-    function onQuoteStarted() {
-      return postOnce(STARTED_KEY, 'quote_started').catch(function (error) {
+    function onQuoteStarted(details) {
+      return postOnce(STARTED_KEY, 'quote_started', details).catch(function (error) {
         return { sent: false, error: error };
       });
     }
@@ -178,7 +187,7 @@
       if (classification.status !== 'ok') {
         return Promise.resolve({ skipped: true, classification: classification });
       }
-      return postOnce(RATES_KEY, 'rates_displayed')
+      return postOnce(RATES_KEY, 'rates_displayed', input && input.details)
         .then(function (outcome) {
           outcome.classification = classification;
           return outcome;

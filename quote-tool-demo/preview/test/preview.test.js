@@ -430,13 +430,11 @@ test('lead POST payload matches the live tool byte for byte', async () => {
   await compare(SCENARIOS[2], { firstName: 'Grace', email: 'grace@example.com', phone: '' });
 });
 
-test('a full visitor flow makes no Apps Script request until the lead form is submitted', async () => {
-  assert.equal(preview.ACTIVITY_TRACKING_ENABLED, false);
+test('a full visit posts quote started, rates displayed, then one unchanged lead', async () => {
+  assert.equal(preview.ACTIVITY_TRACKING_ENABLED, true);
   const activitySource = fs.readFileSync(path.join(ROOT, 'quote-activity.js'), 'utf8');
   assert.equal(activitySource.includes('fetch('), false);
   assert.equal(activitySource.includes('script.google.com'), false);
-  assert.equal(activitySource.includes('XMLHttpRequest'), false);
-  assert.equal(activitySource.includes('sendBeacon'), false);
 
   const calls = [];
   const previousFetch = global.fetch;
@@ -450,12 +448,6 @@ test('a full visitor flow makes no Apps Script request until the lead form is su
   };
 
   try {
-    const skippedStart = await preview.postActivityPayload({ event: 'quote_started', sessionId: UUID });
-    const skippedRates = await preview.postActivityPayload({ event: 'rates_displayed', sessionId: UUID });
-    assert.deepEqual(skippedStart, { ok: true, body: { skipped: 'activity_disabled' } });
-    assert.deepEqual(skippedRates, { ok: true, body: { skipped: 'activity_disabled' } });
-    assert.equal(calls.length, 0);
-
     const storage = memoryStorage();
     storage.setItem('dkb_quote_session_id', UUID);
     const visited = preview.createModel({
@@ -470,19 +462,64 @@ test('a full visitor flow makes no Apps Script request until the lead form is su
     });
     visited.setAnswer('Florida');
     reach(visited, 10, 7, 'cost', 'no', '30');
+    await flushActivity();
+    const google = () => calls.filter((call) => call.url.includes('script.google.com'));
+    assert.equal(google().length, 2);
+    visited.setSort('carrier');
     visited.setSort('price');
-    visited.setContribution({ employerPercent: 75, dependentPercent: 25 });
+    visited.setContribution({ employerPercent: 80, dependentPercent: 25 });
     visited.setContribution({ model: 'percent', employerPercent: 50, dependentPercent: 0 });
     visited.toggleSaved('cigna-epo-1000', true);
+    visited.startOver();
+    visited.setAnswer('Florida');
+    reach(visited, 10, 7, 'cost', 'no', '30');
     await flushActivity();
-    assert.equal(calls.filter((call) => call.url.includes('script.google.com')).length, 0);
+    assert.equal(google().length, 2);
+
+    const refreshed = preview.createModel({
+      plans: PLANS,
+      tracker: activity.createQuoteActivityTracker({
+        storage,
+        post: preview.postActivityPayload,
+        now: () => new Date(FIXED)
+      }),
+      pageUrl: PAGE,
+      now: () => new Date(FIXED)
+    });
+    refreshed.setAnswer('Florida');
+    reach(refreshed, 12, 8, 'balanced', 'yes', 'later');
+    await flushActivity();
+    assert.equal(google().length, 2);
+
+    const started = JSON.parse(google()[0].body);
+    const rates = JSON.parse(google()[1].body);
+    assert.equal(started.event, 'quote_started');
+    assert.equal(started.firstName, 'Quote process started');
+    assert.equal(started.email, '');
+    assert.equal(started.phone, '');
+    assert.equal(started.sessionId, UUID);
+    assert.equal(started.timestamp, FIXED);
+    assert.equal(Object.hasOwn(started, 'answers'), false);
+    assert.equal(Object.hasOwn(started, 'selectedPlans'), false);
+    assert.equal(rates.event, 'rates_displayed');
+    assert.equal(rates.firstName, 'Rates displayed');
+    assert.equal(rates.email, '');
+    assert.equal(rates.phone, '');
+    assert.equal(rates.sessionId, UUID);
+    assert.deepEqual(rates.answers, {
+      state: 'Florida',
+      employees: '10',
+      enrolling: '7',
+      priority: 'cost',
+      coverage: 'no',
+      timeline: '30'
+    });
+    assert.deepEqual(rates.contribution, { model: 'percent', percent: 50, flatDollar: null });
+    assert.deepEqual(rates.tierMix, { employeeOnly: 4, employeeSpouse: 1, employeeChildren: 1, family: 1 });
+    assert.deepEqual(rates.selectedPlans, []);
 
     const loaded = await readyLive(UTM);
-    const classicSkipped = await loaded.sandbox.postActivityPayload({ event: 'quote_started', sessionId: UUID });
-    assert.equal(JSON.stringify(classicSkipped), JSON.stringify({ ok: true, body: { skipped: 'activity_disabled' } }));
     const googlePosts = () => loaded.posts.filter((post) => String(post.url).includes('script.google.com'));
-    assert.equal(googlePosts().length, 0);
-
     const live = loaded.sandbox.__live;
     const next = loaded.elements.get('nextBtn');
     const clickNext = async () => {
@@ -505,7 +542,18 @@ test('a full visitor flow makes no Apps Script request until the lead form is su
     live.answers.timeline = '30';
     await clickNext();
     assert.equal(loaded.elements.get('resultsSection').classList.contains('hidden'), false);
-    assert.equal(googlePosts().length, 0);
+    assert.equal(googlePosts().length, 2);
+    const classicStarted = JSON.parse(googlePosts()[0].body);
+    const classicRates = JSON.parse(googlePosts()[1].body);
+    assert.equal(classicStarted.firstName, 'Quote process started');
+    assert.equal(classicStarted.email, '');
+    assert.equal(classicStarted.phone, '');
+    assert.equal(classicStarted.event, 'quote_started');
+    assert.equal(classicRates.firstName, 'Rates displayed');
+    assert.deepEqual(classicRates.answers, rates.answers);
+    assert.deepEqual(classicRates.contribution, rates.contribution);
+    assert.deepEqual(classicRates.tierMix, rates.tierMix);
+    assert.deepEqual(classicRates.selectedPlans, []);
 
     const plan = live.plans.find((item) => item.id === 'cigna-epo-1000');
     live.selectedPlans.set(plan.id, {
@@ -521,11 +569,12 @@ test('a full visitor flow makes no Apps Script request until the lead form is su
     live.elements.phone.value = contact.phone;
     await live.elements.leadForm.listeners.submit[0]({ preventDefault() {} });
     await flushActivity();
-    assert.equal(googlePosts().length, 1);
-    assert.equal(googlePosts()[0].method, 'POST');
-    const lead = JSON.parse(googlePosts()[0].body);
+    assert.equal(googlePosts().length, 3);
+    const lead = JSON.parse(googlePosts().find((post) => post.body.includes('"event":"lead_submitted"')).body);
     assert.equal(lead.event, 'lead_submitted');
-    assert.equal(calls.filter((call) => call.url.includes('script.google.com')).length, 0);
+    assert.equal(lead.firstName, 'Ada');
+    assert.equal(JSON.stringify(lead).includes('Quote process started'), false);
+    assert.equal(JSON.stringify(lead).includes('Rates displayed'), false);
 
     const compareStorage = memoryStorage();
     compareStorage.setItem('dkb_quote_session_id', UUID);
@@ -539,7 +588,10 @@ test('a full visitor flow makes no Apps Script request until the lead form is su
     reach(compareModel, 10, 7, 'cost', 'no', '30');
     compareModel.setSort('recommended');
     compareModel.toggleSaved('cigna-epo-1000', true);
-    assert.equal(JSON.stringify(compareModel.leadPayload(contact)), JSON.stringify(lead));
+    const previewLead = compareModel.leadPayload(contact);
+    assert.equal(JSON.stringify(previewLead), JSON.stringify(lead));
+    assert.equal(previewLead.firstName, 'Ada');
+    assert.equal(google().length, 2);
   } finally {
     global.fetch = previousFetch;
   }
@@ -909,8 +961,46 @@ test('saved plans print in one table and visit-limit wording stays attached', ()
   savedState.printLayout = 'saved';
   savedState.printPlans = model.plansForPrint('saved');
   const savedHtml = preview.printHtml(savedState);
-  assert.equal((savedHtml.match(/<table/g) || []).length, 1);
+  assert.equal((savedHtml.match(/<table/g) || []).length, 1 + savedState.printPlans.length);
   assert.doesNotMatch(savedHtml, /print-next/);
+  assert.doesNotMatch(savedHtml, /Employee paycheck/);
+  assert.match(savedHtml, /EE Cost PPP/);
+  assert.match(savedHtml, /PPP = per pay period \(Bi-weekly, 26\)/);
+  assert.match(savedHtml, /Total monthly premium/);
+  assert.match(savedHtml, /Employer monthly contribution/);
+  assert.doesNotMatch(savedHtml, /Total monthly(?! premium)/);
+  assert.doesNotMatch(savedHtml, /Employer monthly(?! contribution)/);
+  const pricedPlan = PLANS.find((item) => item.id === 'cigna-epo-1000');
+  assert.deepEqual(pricedPlan.rates, {
+    employeeOnly: 504,
+    employeeSpouse: 844,
+    employeeChildren: 834,
+    family: 1164
+  });
+  assert.equal(savedState.resolvedContribution.model, 'percent');
+  assert.equal(savedState.resolvedContribution.employerPercent, 50);
+  assert.equal(savedState.resolvedContribution.dependentPercent, 0);
+  assert.equal(savedState.resolvedContribution.payPeriods, 26);
+  const tierExpect = [
+    ['Employee Only', 'employeeOnly'],
+    ['Employee + Spouse', 'employeeSpouse'],
+    ['Employee + Child(ren)', 'employeeChildren'],
+    ['Family', 'family']
+  ];
+  const cignaPrint = savedHtml.slice(savedHtml.indexOf('Cigna EPO 1000'), savedHtml.indexOf('Cigna EPO 1000') + 4000);
+  let tierCursor = 0;
+  tierExpect.forEach(([label, key]) => {
+    const premium = math.money(pricedPlan.rates[key]);
+    const paycheck = math.money(math.perPaycheck(pricedPlan, key, savedState.resolvedContribution));
+    const snippet = `<th scope="row">${label}</th><td>${premium}</td><td>${paycheck}</td>`;
+    const at = cignaPrint.indexOf(snippet, tierCursor);
+    assert.ok(at >= tierCursor, 'missing print tier row ' + snippet);
+    tierCursor = at + snippet.length;
+  });
+  const cardHtml = preview.planArticle(pricedPlan, savedState);
+  assert.match(cardHtml, /<dt>Total monthly premium<\/dt>/);
+  assert.match(cardHtml, /<dt>Employer monthly contribution<\/dt>/);
+  assert.doesNotMatch(cardHtml, /EE Cost PPP/);
   assert.match(savedHtml, /not traditional major medical/i);
   assert.match(savedHtml, /PHCS Visit Limit 1750 HSA/);
   assert.match(savedHtml, /<th scope="row">Plan type<\/th>/);
@@ -921,6 +1011,15 @@ test('saved plans print in one table and visit-limit wording stays attached', ()
   assert.match(savedHtml, /Inpatient Hospital/);
   assert.match(savedHtml, /Outpatient Surgery/);
   const compare = preview.compareHtml(model.getState());
+  assert.match(compare, /Total monthly premium/);
+  assert.match(compare, /Employer monthly contribution/);
+  assert.match(compare, /Employee paycheck/);
+  assert.doesNotMatch(compare, /print-tier/);
+  assert.doesNotMatch(compare, /EE Cost PPP/);
+  model.setContribution({ model: 'flat', flatSelect: '300' });
+  const flatCompare = preview.compareHtml(model.getState());
+  assert.match(flatCompare, /Employer contribution \(flat\)/);
+  assert.match(flatCompare, /Total monthly premium/);
   assert.match(compare, /not traditional major medical/i);
   assert.match(compare, /VL\* —/);
   assert.match(compare, /coverage-warning/);

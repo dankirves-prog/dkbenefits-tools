@@ -48,7 +48,7 @@ const firstName = document.getElementById('firstName');
 const email = document.getElementById('email');
 const phone = document.getElementById('phone');
 const leadWebhookUrl = 'https://script.google.com/macros/s/AKfycby4-ZxTQfsAgIBO0JYSngccVoj5HRKtNshy6N2XlJhbxaEk2oW7b_xIRBGlcSq0CZ0z/exec';
-const ACTIVITY_TRACKING_ENABLED = false;
+const ACTIVITY_TRACKING_ENABLED = true;
 
 function postActivityPayload(payload) {
   if (!ACTIVITY_TRACKING_ENABLED) {
@@ -77,6 +77,32 @@ const activityTracker = QuoteActivity.createQuoteActivityTracker({
   post: postActivityPayload
 });
 activityTracker.captureLandingUtms(window.location.search);
+
+function quoteStartedDetails() {
+  return { firstName: 'Quote process started', email: '', phone: '' };
+}
+
+function ratesDisplayedDetails() {
+  const tierMix = getCurrentTierMix();
+  return {
+    firstName: 'Rates displayed',
+    email: '',
+    phone: '',
+    answers: { ...answers },
+    tierMix: {
+      employeeOnly: tierMix.employeeOnly,
+      employeeSpouse: tierMix.employeeSpouse,
+      employeeChildren: tierMix.employeeChildren,
+      family: tierMix.family
+    },
+    contribution: {
+      model: contributionModel,
+      percent: contributionModel === 'percent' ? Number(employerContribution.value) : null,
+      flatDollar: contributionModel === 'flat' ? getFlatAmount() : null
+    },
+    selectedPlans: []
+  };
+}
 
 function currentVisibleGroups() {
   const groups = ['top', 'low'];
@@ -572,7 +598,8 @@ function renderResults() {
   updateHeroAside('results');
   activityTracker.onRatesRendered({
     plans,
-    visibleGroups: currentVisibleGroups()
+    visibleGroups: currentVisibleGroups(),
+    details: ratesDisplayedDetails()
   });
 }
 
@@ -623,7 +650,7 @@ function startOver() {
 }
 
 nextBtn.addEventListener('click', () => {
-  activityTracker.onQuoteStarted();
+  activityTracker.onQuoteStarted(quoteStartedDetails());
   readAnswer();
   if (!validateCurrent()) {
     alert('Please answer this question before continuing.');
@@ -654,7 +681,7 @@ backBtn.addEventListener('click', () => {
 });
 
 heroStartBtn.addEventListener('click', () => {
-  activityTracker.onQuoteStarted();
+  activityTracker.onQuoteStarted(quoteStartedDetails());
   setHeroCompact(true);
   scrollToElement(funnelSection);
 });
@@ -702,7 +729,8 @@ toggleMecBtn.addEventListener('click', () => {
   if (!resultsSection.classList.contains('hidden')) {
     activityTracker.onRatesRendered({
       plans,
-      visibleGroups: currentVisibleGroups()
+      visibleGroups: currentVisibleGroups(),
+      details: ratesDisplayedDetails()
     });
   }
 });
