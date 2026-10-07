@@ -10,7 +10,7 @@
   if (root) root.QuotePreview = api;
 })(typeof window !== 'undefined' ? window : globalThis, function (QuoteActivity, QuoteMath) {
   var WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby4-ZxTQfsAgIBO0JYSngccVoj5HRKtNshy6N2XlJhbxaEk2oW7b_xIRBGlcSq0CZ0z/exec';
-  var ACTIVITY_TRACKING_ENABLED = false;
+  var ACTIVITY_TRACKING_ENABLED = true;
   var PREVIEW_UTM_SOURCE = 'preview';
   var QUESTIONS = [
     { key: 'state', title: 'What state is your business located in?', kind: 'choice', options: [{ label: 'Florida', value: 'Florida' }, { label: 'Georgia', value: 'Georgia' }] },
@@ -195,9 +195,48 @@
       return groups;
     }
 
+    function quoteStartedDetails() {
+      return { firstName: 'Quote process started', email: '', phone: '' };
+    }
+
+    function ratesDisplayedDetails() {
+      var resolved = resolvedContribution();
+      var tierMix = usedMix();
+      var shaped = QuoteMath.buildLeadPayload({
+        firstName: 'Rates displayed',
+        email: '',
+        phone: '',
+        answers: answers,
+        tierMix: tierMix,
+        contribution: resolved,
+        selectedPlans: [],
+        visiblePlans: [],
+        submittedAt: '',
+        pageUrl: ''
+      });
+      return {
+        firstName: shaped.firstName,
+        email: shaped.email,
+        phone: shaped.phone,
+        answers: shaped.answers,
+        contribution: shaped.contribution,
+        tierMix: {
+          employeeOnly: shaped.tierMix.employeeOnly,
+          employeeSpouse: shaped.tierMix.employeeSpouse,
+          employeeChildren: shaped.tierMix.employeeChildren,
+          family: shaped.tierMix.family
+        },
+        selectedPlans: []
+      };
+    }
+
     function notifyRates() {
       if (!tracker || phase !== 'results') return;
-      tracker.onRatesRendered({ plans: plans, visibleGroups: visibleGroups() });
+      tracker.onRatesRendered({
+        plans: plans,
+        visibleGroups: visibleGroups(),
+        details: ratesDisplayedDetails()
+      });
     }
 
     function plansInGroup(groupId, options) {
@@ -298,7 +337,7 @@
           return { ok: false, error: message };
         }
         error = '';
-        if (tracker) tracker.onQuoteStarted();
+        if (tracker) tracker.onQuoteStarted(quoteStartedDetails());
         if (step === QUESTIONS.length - 1) {
           enterResults();
           return { ok: true, phase: 'results' };
@@ -512,7 +551,7 @@
       (lowNote ? '<p class="low-callout">' + escapeHtml(lowNote) + '</p>' : '') +
       '<section class="group-cost"><h4>Your group\u2019s cost</h4><dl class="cost-grid">' +
       '<div><dt>Total monthly premium</dt><dd>' + QuoteMath.money(totals.gross) + '</dd></div>' +
-      '<div><dt>Employer monthly</dt><dd>' + QuoteMath.money(totals.employer) + '</dd></div>' +
+      '<div><dt>Employer monthly contribution</dt><dd>' + QuoteMath.money(totals.employer) + '</dd></div>' +
       '<div class="cost-ee"><dt>Employee per paycheck</dt><dd>' + QuoteMath.money(paycheck.employeeOnly) + '</dd></div>' +
       '</dl><p class="hint">Employee per paycheck shown here is employee-only, ' + escapeHtml(state.payrollLabel) + '.</p></section>' +
       '<table class="tier-table"><caption>Monthly rate and employee cost per paycheck</caption><thead><tr><th scope="col">Tier</th><th scope="col">Monthly rate</th><th scope="col">Per paycheck</th></tr></thead><tbody>' +
@@ -530,18 +569,47 @@
     return '<p class="abbrev-legend">' + items.map(function (item) { return escapeHtml(item); }).join('<br>') + '</p>';
   }
 
-  function comparisonRows(state, plans) {
+  var PRINT_TIER_ROWS = [
+    ['employeeOnly', 'Employee Only'],
+    ['employeeSpouse', 'Employee + Spouse'],
+    ['employeeChildren', 'Employee + Child(ren)'],
+    ['family', 'Family']
+  ];
+
+  function payrollCaption(contribution) {
+    var periods = String((contribution && contribution.payPeriods) || 26);
+    var label = 'Bi-weekly';
+    QuoteMath.PAYROLL_OPTIONS.forEach(function (option) {
+      if (option.value === periods) label = option.label;
+    });
+    return 'PPP = per pay period (' + label + ', ' + periods + ')';
+  }
+
+  function printTierTable(plan, state) {
+    var contribution = state.resolvedContribution;
+    var rows = PRINT_TIER_ROWS.map(function (tier) {
+      return '<tr><th scope="row">' + tier[1] + '</th><td>' +
+        QuoteMath.money(plan.rates[tier[0]]) + '</td><td>' +
+        QuoteMath.money(QuoteMath.perPaycheck(plan, tier[0], contribution)) + '</td></tr>';
+    }).join('');
+    return '<table class="print-tier"><colgroup><col style="width:44%"><col style="width:28%"><col style="width:28%"></colgroup><thead><tr><th scope="col"></th><th scope="col">Premium</th><th scope="col">EE Cost PPP</th></tr></thead><tbody>' +
+      rows + '</tbody></table>';
+  }
+
+  function comparisonRows(state, plans, includePaycheck) {
     var flat = state.resolvedContribution && state.resolvedContribution.model === 'flat';
     var rows = [
       ['Plan type', function (plan) { return QuoteMath.planType(plan); }, false],
       ['Network', function (plan) { return plan.network || ''; }, false],
       ['Badge', function (plan) { return plan.typeBadge || ''; }, false],
-      ['Total monthly', function (plan, totals) { return QuoteMath.money(totals.gross); }, false],
-      [flat ? 'Employer contribution (flat)' : 'Employer monthly', function (plan, totals) { return QuoteMath.money(totals.employer); }, false]
+      ['Total monthly premium', function (plan, totals) { return QuoteMath.money(totals.gross); }, false],
+      [flat ? 'Employer contribution (flat)' : 'Employer monthly contribution', function (plan, totals) { return QuoteMath.money(totals.employer); }, false]
     ];
-    QuoteMath.TIER_LABELS.forEach(function (tier) {
-      rows.push(['Employee paycheck \u2014 ' + tier[1], function (plan, totals) { return QuoteMath.money(totals.paycheck[tier[0]]); }, true]);
-    });
+    if (includePaycheck !== false) {
+      QuoteMath.TIER_LABELS.forEach(function (tier) {
+        rows.push(['Employee paycheck \u2014 ' + tier[1], function (plan, totals) { return QuoteMath.money(totals.paycheck[tier[0]]); }, true]);
+      });
+    }
     [
       ['deductible', 'Deductible'],
       ['oopMax', 'Out-of-pocket max'],
@@ -564,7 +632,7 @@
   }
 
   function comparisonTable(plans, state, interactive) {
-    var rows = comparisonRows(state, plans);
+    var rows = comparisonRows(state, plans, interactive);
     var share = plans.length ? (84 / plans.length).toFixed(3) : '84';
     var cols = '<col style="width:16%">';
     plans.forEach(function () { cols += '<col style="width:' + share + '%">'; });
@@ -572,7 +640,7 @@
       var note = QuoteMath.majorMedicalNote(plan);
       return '<th scope="col"><span class="compare-name">' + escapeHtml(QuoteMath.displayName(plan)) + '</span>' + badgeHtml(plan) +
         (note ? '<p class="low-callout">' + escapeHtml(note) + '</p>' : '') +
-        (interactive ? '<button type="button" class="btn btn-secondary" data-remove="' + escapeHtml(plan.id) + '">Remove</button>' : '') +
+        (interactive ? '<button type="button" class="btn btn-secondary" data-remove="' + escapeHtml(plan.id) + '">Remove</button>' : printTierTable(plan, state)) +
         '</th>';
     }).join('');
     var body = rows.map(function (row) {
@@ -628,7 +696,7 @@
       (state.ratesAsOfLabel ? ' ' + escapeHtml(state.ratesAsOfLabel) + '.' : '') +
       ' Enrollment mix: ' + escapeHtml(state.mixSummary) + '.</p>' +
       '<p>' + escapeHtml(state.contributionSummary) + ' ' + which + '</p>' +
-      '<p>Tiers: Employee, Employee + Spouse, Employee + Child, Family.</p></section>' +
+      '<p class="print-ppp">' + escapeHtml(payrollCaption(state.resolvedContribution)) + '</p></section>' +
       tables +
       '<section class="print-disclaimer"><h2>Important information</h2>' +
       '<p>Rates shown are based on current published pricing and the answers provided. Final eligibility, participation, underwriting, plan availability, effective dates, and carrier/program approval may change pricing or options. Benefits are governed by official plan documents.</p>' +

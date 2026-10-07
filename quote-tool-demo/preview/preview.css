@@ -357,7 +357,7 @@ input[type="range"] { width: 100%; accent-color: var(--navy); height: 32px; }
 .cost-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; }
 .cost-grid div { background: var(--wash); border-radius: 10px; padding: 8px 10px; }
 .cost-grid .cost-ee { grid-column: 1 / -1; background: #f4f7fb; }
-.cost-grid dt { margin: 0; color: var(--muted); font-size: 0.75rem; font-weight: 700; }
+.cost-grid dt { margin: 0; color: var(--muted); font-size: 0.75rem; font-weight: 700; line-height: 1.25; overflow-wrap: break-word; }
 .cost-grid dd { margin: 2px 0 0; font-size: 1.25rem; font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; }
 .tier-table, .key-benefits { width: 100%; border-collapse: collapse; margin-top: 12px; font-variant-numeric: tabular-nums; }
 .tier-table caption { caption-side: top; text-align: left; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); padding-bottom: 4px; }
@@ -691,6 +691,13 @@ input[type="range"] { width: 100%; accent-color: var(--navy); height: 32px; }
   .print-table .badge { display: inline-block; margin: 2px 0 0; padding: 1px 5px; font-size: 7pt; }
   .print-table .low-callout { margin: 2px 0 0; padding: 2px 4px; font-size: 7pt; }
   .print-table .abbrev-legend, .print-root .abbrev-legend { margin: 3px 0 0; font-size: 7pt; color: #3e5168; }
+  .print-ppp { margin: 1px 0 0; font-size: 7pt; color: #3e5168; }
+  .print-table .print-tier { width: 100%; margin-top: 3px; border-collapse: collapse; table-layout: fixed; }
+  .print-table .print-tier th, .print-table .print-tier td { padding: 0 2px; border-bottom: 1px solid #d5deea; font-size: 6.5pt; font-weight: 400; line-height: 1.15; text-align: left; }
+  .print-table .print-tier thead th { font-weight: 700; text-align: right; }
+  .print-table .print-tier thead th:first-child { text-align: left; }
+  .print-table .print-tier th[scope="row"] { text-align: left; font-weight: 600; color: #3e5168; white-space: normal; }
+  .print-table .print-tier td { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .print-disclaimer { margin-top: 8px; font-size: 7.5pt; color: #3e5168; }
   .print-disclaimer h2 { font-size: 9pt; color: #122033; margin: 0 0 2px; }
 }

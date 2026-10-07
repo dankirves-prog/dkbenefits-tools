@@ -276,8 +276,12 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     await waitFor(async () => !(await evaluate('document.getElementById("results").hidden')), 'zero-rate results');
     await sleep(250);
     assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 0);
-    assert.equal(posts.filter((post) => post.body.includes('"event":"quote_started"')).length, 0);
-    assert.equal(posts.length, 0);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"quote_started"')).length, 1);
+    assert.equal(posts.length, 1);
+    const zeroStarted = JSON.parse(posts[0].body);
+    assert.equal(zeroStarted.firstName, 'Quote process started');
+    assert.equal(zeroStarted.email, '');
+    assert.equal(zeroStarted.phone, '');
 
     plansMode = 'live';
     await evaluate('sessionStorage.clear()');
@@ -335,6 +339,10 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.match(card, /\$269/);
     assert.match(card, /\$421/);
     assert.match(card, /Excellent Value/);
+    assert.match(card, /Total monthly premium/);
+    assert.match(card, /Employer monthly contribution/);
+    assert.doesNotMatch(card, /Total monthly(?! premium)/);
+    assert.doesNotMatch(card, /Employer monthly(?! contribution)/);
     assert.match(card, /Save plan/);
     assert.match(card, /View plan details/);
     const lowText = await evaluate('document.querySelector("#low-plans [data-plan-id=\\"phcs-visit-limit-1000\\"]").innerText');
@@ -350,9 +358,25 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     const lowInSection = await evaluate('!!document.querySelector("#low-plans [data-plan-id=\\"phcs-visit-limit-1000\\"]")');
     assert.equal(lowInFeatured, false);
     assert.equal(lowInSection, true);
-    assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 0);
-    assert.equal(posts.filter((post) => post.body.includes('"event":"quote_started"')).length, 0);
-    assert.equal(posts.length, 0);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 1);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"quote_started"')).length, 1);
+    assert.equal(posts.length, 2);
+    const shownRates = JSON.parse(posts.find((post) => post.body.includes('"event":"rates_displayed"')).body);
+    assert.equal(shownRates.firstName, 'Rates displayed');
+    assert.equal(shownRates.email, '');
+    assert.equal(shownRates.phone, '');
+    assert.deepEqual(shownRates.answers, {
+      state: 'Florida',
+      employees: '10',
+      enrolling: '7',
+      priority: 'balanced',
+      coverage: 'yes',
+      timeline: 'later'
+    });
+    assert.deepEqual(shownRates.contribution, { model: 'percent', percent: 50, flatDollar: null });
+    assert.deepEqual(shownRates.tierMix, { employeeOnly: 4, employeeSpouse: 1, employeeChildren: 1, family: 1 });
+    assert.deepEqual(shownRates.selectedPlans, []);
+    assert.equal(shownRates.utm_source, 'preview');
 
     await setViewport(1440, 1100);
     const columns = await evaluate('getComputedStyle(document.querySelector("#top-plans")).gridTemplateColumns');
@@ -362,6 +386,13 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     const cardTop = await evaluate('document.querySelector("#top-plans .plan-card").getBoundingClientRect().top');
     assert.ok(cardTop > 0 && cardTop < 500, 'first plan card should be visible, top=' + cardTop);
     await shot('desktop_cards_r2.png');
+    const desktopCard = await evaluate(`(() => {
+      const card = document.querySelector('[data-plan-id="cigna-epo-1000"]');
+      card.scrollIntoView({ behavior: 'instant', block: 'start' });
+      const box = card.getBoundingClientRect();
+      return { x: Math.max(0, box.left), y: Math.max(0, box.top + window.scrollY), width: Math.ceil(box.width), height: Math.ceil(box.height), scale: 1 };
+    })()`);
+    await shot('desktop_card_labels.png', desktopCard);
     await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"] .details-toggle\').click()');
     await sleep(40);
     assert.equal(await evaluate('document.getElementById("details-cigna-epo-1000").hidden'), false);
@@ -378,9 +409,45 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     })()`);
     await shot('expanded_card_r2.png', { x: expanded.x, y: expanded.y, width: expanded.width, height: expanded.height, scale: 1 });
 
-    async function savePdf(filename) {
-      await send('Emulation.setEmulatedMedia', { media: 'print' }, sessionId);
+    function pdfPageCount(bytes) {
+      const matches = bytes.toString('latin1').match(/\/Type\s*\/Page(?!s)/g);
+      return matches ? matches.length : 0;
+    }
+
+    async function shotPrintPreview(name) {
+      const size = await evaluate('({ w: innerWidth, h: innerHeight })');
+      await setViewport(1056, 816);
       await sleep(80);
+      const clip = await evaluate(`(() => {
+        const root = document.getElementById('print-root');
+        const box = root.getBoundingClientRect();
+        return {
+          x: 0,
+          y: Math.max(0, box.top + window.scrollY),
+          width: 1056,
+          height: Math.min(816, Math.max(400, Math.ceil(box.height))),
+          scale: 1
+        };
+      })()`);
+      await shot(name, clip);
+      await setViewport(size.w, size.h);
+    }
+
+    async function savePdf(filename, shotName) {
+      await send('Emulation.setEmulatedMedia', { media: 'print' }, sessionId);
+      await sleep(120);
+      const printText = await evaluate('document.getElementById("print-root").innerText');
+      assert.match(printText, /Total monthly premium/);
+      assert.match(printText, /Employer monthly contribution|Employer contribution \(flat\)/);
+      assert.match(printText, /Employee Only/);
+      assert.match(printText, /Employee \+ Spouse/);
+      assert.match(printText, /Employee \+ Child\(ren\)/);
+      assert.match(printText, /Family/);
+      assert.match(printText, /Premium/);
+      assert.match(printText, /EE Cost PPP/);
+      assert.match(printText, /PPP = per pay period \(Bi-weekly, 26\)/);
+      assert.doesNotMatch(printText, /Employee paycheck/);
+      if (shotName) await shotPrintPreview(shotName);
       const pdf = await send('Page.printToPDF', {
         printBackground: true,
         landscape: true,
@@ -392,8 +459,10 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
       const bytes = fs.readFileSync(pdfPath);
       assert.equal(bytes.subarray(0, 5).toString(), '%PDF-');
       assert.ok(bytes.length > 20000, filename + ' was unexpectedly small');
+      return pdfPageCount(bytes);
     }
-    await savePdf('proposal_all_plans_r3.pdf');
+    const allPages = await savePdf('proposal_all_plans_r3.pdf', 'proposal_print_all_page1.png');
+    assert.ok(allPages >= 2, 'print-all should keep paginating, pages=' + allPages);
 
     await evaluate('document.getElementById("sort-mode").value = "carrier"; document.getElementById("sort-mode").dispatchEvent(new Event("change", { bubbles: true }));');
     await evaluate('document.querySelector(\'[data-carrier="Cigna"]\').click()');
@@ -404,8 +473,9 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.equal(filteredUhc, null);
     const updated = await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"]\').innerText');
     assert.match(updated, /\$4,193/);
-    assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 0);
-    assert.equal(posts.length, 0);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 1);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"quote_started"')).length, 1);
+    assert.equal(posts.length, 2);
 
     await evaluate('document.querySelector(\'[data-carrier="All"]\').click()');
     await evaluate('document.getElementById("sort-mode").value = "price"; document.getElementById("sort-mode").dispatchEvent(new Event("change", { bubbles: true }));');
@@ -490,6 +560,8 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.match(compare, /Plan type/);
     assert.match(compare, /Visit Limit/);
     assert.match(compare, /VL\*/);
+    assert.match(compare, /Total monthly premium/);
+    assert.match(compare, /Employer monthly contribution/);
     assert.match(compare, /Employee paycheck/);
     assert.match(compare, /Out-of-pocket max/);
     assert.match(compare, /Inpatient Hospital/);
@@ -497,7 +569,8 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.match(compare, /limit 2 ICU \+ 2 non-ICU admissions\/yr/);
     assert.match(compare, /Remove/);
     await shot('my_plans_warning_r3.png');
-    await savePdf('proposal_saved_plans_r3.pdf');
+    const savedPages = await savePdf('proposal_saved_plans_r3.pdf', 'proposal_print_saved.png');
+    assert.equal(savedPages, 1, 'saved-plans proposal should stay on one page');
     await evaluate('document.getElementById("drawer-close").click()');
     await evaluate('document.querySelector(\'[data-plan-id="phcs-visit-limit-1750-HSA"] .save-toggle\').click()');
     assert.match(await evaluate('document.getElementById("my-plans-btn").textContent'), /My Plans \(3\)/);
@@ -535,7 +608,7 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.ok(leadGeom.nameTop > 0 && leadGeom.nameTop < 1000, 'lead form should scroll into view, top=' + leadGeom.nameTop);
     assert.match(await evaluate('document.getElementById("lead-saved-note").textContent'), /3 saved plans will be included/);
     await shot('lead_form_r3.png', { x: leadGeom.x, y: leadGeom.y, width: leadGeom.width, height: leadGeom.height, scale: 1 });
-    assert.equal(posts.length, 0, 'visitor flow must not call Apps Script before the lead form is submitted');
+    assert.equal(posts.length, 2, 'quote started and rates displayed post once before the lead form');
     await evaluate(`
       document.getElementById('first-name').value = 'Ada';
       document.getElementById('email').value = 'ada@example.com';
@@ -588,9 +661,12 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.deepEqual(Object.keys(lead.selectedPlans[0]), ['id', 'name', 'network', 'typeBadge', 'rates']);
     assert.equal(lead.utm_source, 'preview');
     assert.equal(lead.event, 'lead_submitted');
-    assert.equal(posts.filter((post) => post.url.includes(WEBHOOK)).length, 1);
-    assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 0);
-    assert.equal(posts.filter((post) => post.body.includes('"event":"quote_started"')).length, 0);
+    assert.equal(posts.filter((post) => post.url.includes(WEBHOOK)).length, 3);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"lead_submitted"')).length, 1);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 1);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"quote_started"')).length, 1);
+    assert.equal(JSON.stringify(lead).includes('Quote process started'), false);
+    assert.equal(JSON.stringify(lead).includes('Rates displayed'), false);
     assert.match(await evaluate('document.getElementById("lead-saved-note").textContent'), /3 saved plans will be included/);
 
     await evaluate('document.getElementById("start-over-btn").click()');
@@ -642,8 +718,8 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     await evaluate('document.querySelector(\'[data-value="30"]\').click()');
     await waitFor(async () => !(await evaluate('document.getElementById("results").hidden')), 'results after refresh');
     await sleep(300);
-    assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 0);
-    assert.equal(posts.filter((post) => post.body.includes('"event":"quote_started"')).length, 0);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 1);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"quote_started"')).length, 1);
     assert.equal(posts.length, beforeReload);
     assert.equal(leaked, false);
     assert.ok(posts.every((post) => post.url.includes(WEBHOOK)));
@@ -695,9 +771,16 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     await waitFor(async () => !(await evaluate('document.getElementById("results").hidden')), 'live results');
     await sleep(250);
     const livePosts = posts.slice(beforeLive);
-    assert.equal(livePosts.length, 0);
-    assert.equal(livePosts.filter((post) => post.body.includes('"event":"quote_started"')).length, 0);
-    assert.equal(livePosts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 0);
+    assert.equal(livePosts.length, 2);
+    assert.equal(livePosts.filter((post) => post.body.includes('"event":"quote_started"')).length, 1);
+    assert.equal(livePosts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 1);
+    const liveStarted = JSON.parse(livePosts.find((post) => post.body.includes('"event":"quote_started"')).body);
+    const liveRates = JSON.parse(livePosts.find((post) => post.body.includes('"event":"rates_displayed"')).body);
+    assert.equal(liveStarted.firstName, 'Quote process started');
+    assert.equal(liveRates.firstName, 'Rates displayed');
+    assert.equal(Object.hasOwn(liveStarted, 'utm_source'), false);
+    assert.equal(Object.hasOwn(liveRates, 'utm_source'), false);
+    assert.deepEqual(liveRates.selectedPlans, []);
     assert.equal(await evaluate('document.getElementById("load-error").hidden'), true);
     assert.match(await evaluate('document.getElementById("results-summary").textContent'), /Florida/);
 
@@ -867,10 +950,31 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     await sleep(200);
     await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"] .save-toggle\').click()');
     await evaluate('document.getElementById("goto-lead").click()');
+    let capturedMobileCard = false;
     for (const width of widths) {
       await setContentWidth(width, 800);
       await sleep(40);
       await assertNoOverflow('results ' + width);
+      if (width === 320 && !capturedMobileCard) {
+        capturedMobileCard = true;
+        const mobileCardText = await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"]\').innerText');
+        assert.match(mobileCardText, /Total monthly premium/);
+        assert.match(mobileCardText, /Employer monthly contribution/);
+        const mobileFit = await evaluate(`(() => {
+          const root = document.documentElement;
+          const card = document.querySelector('[data-plan-id="cigna-epo-1000"]');
+          card.scrollIntoView({ behavior: 'instant', block: 'center' });
+          const box = card.getBoundingClientRect();
+          return {
+            scroll: root.scrollWidth,
+            client: root.clientWidth,
+            clip: { x: Math.max(0, box.left), y: Math.max(0, box.top + window.scrollY), width: Math.ceil(box.width), height: Math.ceil(box.height), scale: 1 }
+          };
+        })()`);
+        assert.ok(mobileFit.scroll <= mobileFit.client + 1, '320 card page overflow ' + mobileFit.scroll);
+        assert.ok(mobileFit.clip.width <= 320, 'card wider than 320: ' + mobileFit.clip.width);
+        await shot('mobile_card_labels.png', mobileFit.clip);
+      }
       await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"] .details-toggle\').click()');
       await sleep(30);
       await assertNoOverflow('expanded card ' + width);
