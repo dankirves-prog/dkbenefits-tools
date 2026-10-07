@@ -34,6 +34,16 @@ function quoted(amount) {
 
 const DEFAULT_CIGNA = cignaTotals(50, 0);
 const FULL_SHARE_CIGNA = cignaTotals(100, 50);
+
+function cignaEmployeePay(payPeriods) {
+  return math.money(math.perPaycheck(CIGNA_1000, 'employeeOnly', {
+    model: 'percent',
+    employerPercent: 50,
+    dependentPercent: 0,
+    flatAmount: 300,
+    payPeriods
+  }));
+}
 const ARTIFACTS = '/opt/cursor/artifacts';
 const PORT = 8765;
 const DEBUG_PORT = 9333;
@@ -377,6 +387,62 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.match(lowText, /Lower Cost/);
     assert.match(lowText, /VL\* —/);
     assert.match(lowText, /10 visits per year/);
+    const payState = await evaluate(`(() => {
+      const mix = document.querySelector('.mix-panel').getBoundingClientRect();
+      const pay = document.querySelector('.pay-cycle').getBoundingClientRect();
+      const contrib = document.getElementById('contrib').getBoundingClientRect();
+      const cardBox = document.querySelector('#top-plans .plan-card').getBoundingClientRect();
+      const radios = [...document.querySelectorAll('#pay-cycle-options [role="radio"]')];
+      return {
+        scrollY: window.scrollY,
+        height: window.innerHeight,
+        mixTop: mix.top,
+        payTop: pay.top,
+        contribTop: contrib.top,
+        contribBottom: contrib.bottom,
+        cardTop: cardBox.top,
+        labels: radios.map((button) => button.textContent),
+        values: radios.map((button) => button.getAttribute('data-pay')),
+        checked: radios.filter((button) => button.getAttribute('aria-checked') === 'true').map((button) => button.getAttribute('data-pay')),
+        tabs: radios.map((button) => button.tabIndex),
+        group: document.getElementById('pay-cycle-options').getAttribute('role'),
+        classes: document.getElementById('pay-cycle-options').className,
+        buttonClass: radios[0].className,
+        select: !!document.getElementById('payroll-schedule')
+      };
+    })()`);
+    assert.equal(payState.scrollY, 0);
+    assert.equal(payState.group, 'radiogroup');
+    assert.equal(payState.classes, 'mode-switch');
+    assert.equal(payState.buttonClass, 'mode-btn');
+    assert.deepEqual(payState.values, ['26', '52', '24', '12']);
+    assert.deepEqual(payState.labels, ['Bi-weekly', 'Weekly', 'Semi-monthly', 'Monthly']);
+    assert.deepEqual(payState.checked, ['26']);
+    assert.deepEqual(payState.tabs, [0, -1, -1, -1]);
+    assert.equal(payState.select, false);
+    assert.ok(payState.mixTop >= 0 && payState.mixTop < payState.payTop && payState.payTop < payState.contribTop);
+    assert.ok(payState.contribBottom <= payState.height + 1, 'side column should fit, contribution ends at ' + payState.contribBottom + ' of ' + payState.height);
+    assert.ok(payState.cardTop >= 0 && payState.cardTop < payState.height, 'first cards should share the desktop screen, top=' + payState.cardTop);
+    await shot('paycycle_desktop.png');
+    await evaluate(`(() => {
+      const group = document.getElementById('pay-cycle-options');
+      group.querySelector('[data-pay="26"]').focus();
+      group.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    })()`);
+    await sleep(40);
+    assert.equal(await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"] .cost-ee dd\').textContent'), cignaEmployeePay(52));
+    assert.equal(await evaluate('document.querySelector(\'[data-pay="52"]\').getAttribute("aria-checked")'), 'true');
+    assert.equal(await evaluate('document.querySelector(\'[data-pay="26"]\').getAttribute("aria-checked")'), 'false');
+    assert.match(await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"]\').innerText'), /employee-only, weekly/);
+    await evaluate('document.querySelector(\'[data-pay="12"]\').click()');
+    await sleep(40);
+    assert.equal(await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"] .cost-ee dd\').textContent'), cignaEmployeePay(12));
+    await evaluate('document.querySelector(\'[data-pay="24"]\').click()');
+    await sleep(40);
+    assert.equal(await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"] .cost-ee dd\').textContent'), cignaEmployeePay(24));
+    await evaluate('document.querySelector(\'[data-pay="26"]\').click()');
+    await sleep(40);
+    assert.equal(await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"] .cost-ee dd\').textContent'), DEFAULT_CIGNA.employeeOnly);
     assert.equal(await evaluate('getComputedStyle(document.querySelector(".skip")).display'), 'none');
     assert.match(await evaluate('document.querySelector("#percent-fields .hint").textContent'), /Most carriers require the employer to pay at least 50%/);
     assert.doesNotMatch(await evaluate('document.getElementById("flat-note").textContent'), /including dependents|request sends/i);
@@ -715,6 +781,8 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.equal(lead.contribution.percent, 50);
     assert.equal(lead.contribution.flatDollar, null);
     assert.equal(Object.hasOwn(lead.contribution, 'dependentPercent'), false);
+    assert.equal(Object.hasOwn(lead.contribution, 'payPeriods'), false);
+    assert.deepEqual(Object.keys(lead.contribution).sort(), ['flatDollar', 'model', 'percent']);
     assert.deepEqual(lead.selectedPlans.map((plan) => plan.name), ['Cigna EPO 1000', 'UHC PPO 2000', 'Cigna EPO 1750 HSA']);
     assert.deepEqual(lead.selectedPlans.map((plan) => plan.typeBadge), ['Excellent Value', 'Top Rated Network', 'Incl $25 Monthly HSA']);
     assert.deepEqual(Object.keys(lead.selectedPlans[0]), ['id', 'name', 'network', 'typeBadge', 'rates']);
@@ -901,6 +969,47 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.match(await frameEval(`doc.getElementById('results-actions').innerText`), /Call or text Daniel/);
     const overflowX = await frameEval(`doc.documentElement.scrollWidth <= win.innerWidth + 1`);
     assert.equal(overflowX, true);
+    const mobilePay = await frameEval(`(() => {
+      const mix = doc.querySelector('.mix-panel').getBoundingClientRect();
+      const pay = doc.querySelector('.pay-cycle').getBoundingClientRect();
+      const contrib = doc.getElementById('contrib').getBoundingClientRect();
+      const root = doc.documentElement;
+      return {
+        mixTop: mix.top,
+        payTop: pay.top,
+        contribTop: contrib.top,
+        contribBottom: contrib.bottom,
+        payRight: Math.ceil(pay.right),
+        client: root.clientWidth,
+        scroll: Math.max(root.scrollWidth, doc.body.scrollWidth),
+        checked: doc.querySelector('#pay-cycle-options [aria-checked="true"]').textContent,
+        pinned: [...doc.querySelectorAll('body *')].some((el) => {
+          const pos = win.getComputedStyle(el).position;
+          return pos === 'fixed' || pos === 'sticky';
+        })
+      };
+    })()`);
+    assert.equal(mobilePay.checked, 'Bi-weekly');
+    assert.ok(mobilePay.mixTop < mobilePay.payTop && mobilePay.payTop < mobilePay.contribTop);
+    assert.ok(mobilePay.payRight <= mobilePay.client + 1, 'pay cycle wider than 320: ' + mobilePay.payRight);
+    assert.ok(mobilePay.scroll <= mobilePay.client + 1, '320 page overflow ' + mobilePay.scroll);
+    assert.equal(mobilePay.pinned, false);
+    const frameBox = await evaluate(`(() => {
+      const box = document.getElementById('tool').getBoundingClientRect();
+      return { left: box.left, top: box.top, width: box.width };
+    })()`);
+    await shot('paycycle_mobile320.png', {
+      x: Math.max(0, frameBox.left),
+      y: Math.max(0, frameBox.top + mobilePay.mixTop),
+      width: Math.ceil(frameBox.width),
+      height: Math.ceil(mobilePay.contribBottom - mobilePay.mixTop),
+      scale: 1
+    });
+    await frameEval(`doc.querySelector('[data-pay="52"]').click()`);
+    await sleep(40);
+    assert.equal(await frameEval(`doc.querySelector('[data-plan-id="cigna-epo-1000"] .cost-ee dd').textContent`), cignaEmployeePay(52));
+    await frameEval(`doc.querySelector('[data-pay="26"]').click()`);
+    await sleep(40);
     await shot('wix_mobile_results.png');
     await frameEval(`doc.getElementById('goto-lead').click()`);
     await sleep(80);

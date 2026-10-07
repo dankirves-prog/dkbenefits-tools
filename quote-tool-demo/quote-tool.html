@@ -129,6 +129,16 @@
           </div>
         </section>
 
+        <section class="panel pay-cycle" aria-labelledby="pay-cycle-heading">
+          <h3 id="pay-cycle-heading">Employee pay cycle</h3>
+          <div id="pay-cycle-options" class="mode-switch" role="radiogroup" aria-labelledby="pay-cycle-heading">
+            <button type="button" class="mode-btn" role="radio" data-pay="26" aria-checked="true" tabindex="0">Bi-weekly</button>
+            <button type="button" class="mode-btn" role="radio" data-pay="52" aria-checked="false" tabindex="-1">Weekly</button>
+            <button type="button" class="mode-btn" role="radio" data-pay="24" aria-checked="false" tabindex="-1">Semi-monthly</button>
+            <button type="button" class="mode-btn" role="radio" data-pay="12" aria-checked="false" tabindex="-1">Monthly</button>
+          </div>
+        </section>
+
         <section id="contrib" class="panel contrib" aria-labelledby="contrib-heading">
           <div class="contrib-head">
             <h3 id="contrib-heading">Contribution</h3>
@@ -180,14 +190,6 @@
             <p id="flat-readout" class="readout">$300 per enrolled employee</p>
             <p id="flat-note" class="hint">Flat amount per enrolled employee, per month. It is capped at that plan’s monthly premium.</p>
           </div>
-
-          <label class="payroll-label" for="payroll-schedule">Employee payroll deduction schedule</label>
-          <select id="payroll-schedule">
-            <option value="26" selected>Bi-weekly</option>
-            <option value="52">Weekly</option>
-            <option value="24">Semi-monthly</option>
-            <option value="12">Monthly</option>
-          </select>
           </div>
         </section>
         </div>

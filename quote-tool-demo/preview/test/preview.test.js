@@ -1086,6 +1086,56 @@ test('saved plans paginate at six per page like print-all', () => {
   });
 });
 
+test('pay cycle bubbles keep the schedule values and paycheck math', () => {
+  const pages = [
+    fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8'),
+    fs.readFileSync(path.join(ROOT, 'quote-tool.html'), 'utf8')
+  ];
+  pages.forEach((page) => {
+    assert.doesNotMatch(page, /payroll-schedule/);
+    assert.doesNotMatch(page, /Employee payroll deduction schedule/);
+    const mixAt = page.indexOf('id="mix-heading"');
+    const payAt = page.indexOf('id="pay-cycle-heading"');
+    const contribAt = page.indexOf('id="contrib-heading"');
+    assert.ok(mixAt > 0 && mixAt < payAt && payAt < contribAt, 'order is enrollment mix, pay cycle, contribution');
+    assert.match(page, /id="pay-cycle-options" class="mode-switch" role="radiogroup" aria-labelledby="pay-cycle-heading"/);
+    math.PAYROLL_OPTIONS.forEach((option, index) => {
+      const button = 'class="mode-btn" role="radio" data-pay="' + option.value + '"';
+      assert.match(page, new RegExp(button + '[^>]*>' + option.label + '</button>'));
+      if (index === 0) assert.match(page, new RegExp('data-pay="' + option.value + '" aria-checked="true"'));
+    });
+  });
+  const plan = PLANS.find((item) => item.id === 'cigna-epo-1000');
+  const seen = new Set();
+  math.PAYROLL_OPTIONS.forEach((option) => {
+    const model = preview.createModel({ plans: PLANS, pageUrl: PAGE, now: () => new Date(FIXED) });
+    reach(model, 10, 7);
+    assert.equal(model.getState().contribution.payPeriods, 26);
+    model.setContribution({ payPeriods: Number(option.value) });
+    const state = model.getState();
+    assert.equal(state.resolvedContribution.payPeriods, Number(option.value));
+    const paycheck = math.perPaycheck(plan, 'employeeOnly', state.resolvedContribution);
+    const employer = plan.rates.employeeOnly * (state.resolvedContribution.employerPercent / 100);
+    assert.equal(paycheck, Math.max(0, (plan.rates.employeeOnly - employer) * 12 / Number(option.value)));
+    seen.add(math.money(paycheck));
+    const card = preview.planArticle(plan, state);
+    assert.match(card, new RegExp(math.money(paycheck).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.match(card, new RegExp('employee-only, ' + option.label.toLowerCase()));
+    state.printPlans = model.plansForPrint('all').slice(0, 1);
+    const printed = preview.printHtml(state);
+    assert.match(printed, new RegExp('PPP = per pay period \\(' + option.label + ', ' + option.value + '\\)'));
+    assert.match(printed, /EE Cost PPP/);
+    const lead = model.leadPayload({ firstName: 'Ada', email: 'ada@example.com', phone: '' });
+    assert.deepEqual(Object.keys(lead.contribution).sort(), ['flatDollar', 'model', 'percent']);
+    assert.equal(lead.contribution.model, 'percent');
+    assert.equal(lead.contribution.percent, 50);
+    assert.equal(lead.contribution.flatDollar, null);
+    assert.equal(Object.hasOwn(lead.contribution, 'payPeriods'), false);
+    assert.equal(Object.hasOwn(lead, 'payPeriods'), false);
+  });
+  assert.equal(seen.size, math.PAYROLL_OPTIONS.length);
+});
+
 test('custom flat amount starts at the current amount and visitor copy stays plain', () => {
   const page = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
   assert.match(page, /Most carriers require the employer to pay at least 50% of employee-only coverage/);

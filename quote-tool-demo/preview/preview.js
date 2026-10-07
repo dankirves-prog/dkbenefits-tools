@@ -871,7 +871,11 @@
       custom.value = contribution.flatCustom || '';
       var flatAmount = QuoteMath.resolveFlatAmount(contribution.flatSelect, contribution.flatCustom);
       $('flat-readout').textContent = QuoteMath.money(flatAmount) + ' per enrolled employee';
-      $('payroll-schedule').value = String(contribution.payPeriods);
+      document.querySelectorAll('[data-pay]').forEach(function (button) {
+        var on = String(button.getAttribute('data-pay')) === String(contribution.payPeriods);
+        button.setAttribute('aria-checked', on ? 'true' : 'false');
+        button.tabIndex = on ? 0 : -1;
+      });
     }
 
     function syncMixInputs() {
@@ -1291,9 +1295,38 @@
         model.setContribution({ flatCustom: $('flat-custom-amount').value });
         renderDynamic();
       });
-      $('payroll-schedule').addEventListener('change', function () {
-        model.setContribution({ payPeriods: Number($('payroll-schedule').value) });
+      var payCycle = $('pay-cycle-options');
+      function choosePayCycle(button) {
+        if (!button || !model) return;
+        model.setContribution({ payPeriods: Number(button.getAttribute('data-pay')) });
         renderDynamic();
+        var selected = payCycle.querySelector('[data-pay][aria-checked="true"]');
+        if (selected) selected.focus({ preventScroll: true });
+      }
+      payCycle.addEventListener('click', function (event) {
+        var button = event.target.closest('[data-pay]');
+        if (!button) return;
+        choosePayCycle(button);
+      });
+      payCycle.addEventListener('keydown', function (event) {
+        var buttons = Array.prototype.slice.call(payCycle.querySelectorAll('[data-pay]'));
+        if (!buttons.length) return;
+        var current = buttons.indexOf(document.activeElement);
+        if (current < 0) {
+          current = buttons.findIndex(function (button) { return button.getAttribute('aria-checked') === 'true'; });
+        }
+        if (current < 0) current = 0;
+        if (event.key === ' ' || event.key === 'Spacebar') {
+          event.preventDefault();
+          choosePayCycle(buttons[current]);
+          return;
+        }
+        var forward = event.key === 'ArrowRight' || event.key === 'ArrowDown';
+        var backward = event.key === 'ArrowLeft' || event.key === 'ArrowUp';
+        if (!forward && !backward) return;
+        event.preventDefault();
+        var next = (current + (forward ? 1 : -1) + buttons.length) % buttons.length;
+        choosePayCycle(buttons[next]);
       });
       ['mix-ee', 'mix-es', 'mix-ec', 'mix-fam'].forEach(function (id) {
         $(id).addEventListener('input', function () {
