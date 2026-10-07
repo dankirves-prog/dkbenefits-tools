@@ -1118,8 +1118,7 @@
   }
 
   if (typeof window !== 'undefined' && window.document && window.document.getElementById('quote-app')) {
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
-    else mount();
+    mount();
   }
 
   return {

@@ -298,7 +298,8 @@ test('rates-first demo shows rates immediately and prints with or without group 
     const notes = pages.slice(expectedSheets);
     const last = proposal[proposal.length - 1];
     assert.match(last, /Important information/);
-    assert.match(last, /Employee Only/);
+    assert.match(last, /Premium/);
+    assert.match(last, /Family/);
     proposal.forEach((text) => assert.doesNotMatch(text, /Notes and Limitations/));
     notes.forEach((text, index) => {
       assert.match(text, /Notes and Limitations/);
@@ -306,13 +307,14 @@ test('rates-first demo shows rates immediately and prints with or without group 
     });
     const blob = proposal.join('\n');
     if (mode === 'plain') {
-      assert.doesNotMatch(blob, /EE Cost PPP/);
+      assert.doesNotMatch(blob, /EE Cost/);
       assert.doesNotMatch(blob, /Total monthly premium/);
-      assert.doesNotMatch(blob, /Employer monthly contribution/);
+      assert.doesNotMatch(blob, /Employer monthly/);
     } else {
-      assert.match(blob, /EE Cost PPP/);
-      assert.match(last, /Total monthly premium/);
-      assert.match(last, /Employer monthly contribution/);
+      assert.match(blob, /EE Cost/);
+      assert.match(blob, /\bPPP\b/);
+      assert.match(blob, /Total monthly premium/);
+      assert.match(blob, /Employer monthly/);
     }
     report.pages.push({ file: path.basename(file), pages: info.pages, proposal: expectedSheets, notes: expectedNotes, size: info.size, mode });
   }
