@@ -115,6 +115,27 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     }, sessionId);
   }
 
+  async function pressKey(key) {
+    const enter = key === 'Enter';
+    const code = enter ? 'Enter' : 'Space';
+    const virtual = enter ? 13 : 32;
+    await send('Input.dispatchKeyEvent', {
+      type: 'keyDown',
+      key: enter ? 'Enter' : ' ',
+      code,
+      windowsVirtualKeyCode: virtual,
+      nativeVirtualKeyCode: virtual,
+      text: enter ? '\r' : ' '
+    }, sessionId);
+    await send('Input.dispatchKeyEvent', {
+      type: 'keyUp',
+      key: enter ? 'Enter' : ' ',
+      code,
+      windowsVirtualKeyCode: virtual,
+      nativeVirtualKeyCode: virtual
+    }, sessionId);
+  }
+
   async function openPreview() {
     posts.length = 0;
     await send('Page.navigate', { url: PREVIEW_URL }, sessionId);
@@ -229,7 +250,9 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     plansMode = 'zero';
     await evaluate('sessionStorage.clear()');
     await openPreview();
-    await evaluate('document.getElementById("next-btn").click()');
+    assert.equal(await evaluate('document.getElementById("next-btn").hidden'), true);
+    assert.equal(await evaluate('document.getElementById("back-btn").hidden'), false);
+    await evaluate('document.querySelector(\'[data-value="Florida"]\').click()');
     await waitFor(async () => (await evaluate('document.getElementById("question-heading").textContent')).includes('benefits eligible'), 'eligible question');
     await evaluate('document.getElementById("q-number").value = "10"; document.getElementById("next-btn").click();');
     await waitFor(async () => (await evaluate('document.getElementById("question-heading").textContent')).includes('expect to enroll'), 'enrolling question');
@@ -257,20 +280,34 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     const choiceHeight = await evaluate('document.querySelector(".choice").getBoundingClientRect().height');
     assert.ok(choiceHeight >= 60, 'choice options should be large tap targets');
     assert.equal(await evaluate('document.getElementById("assist").hidden'), false);
-    await shot('desktop_question_r2.png');
+    assert.equal(await evaluate('document.getElementById("next-btn").hidden'), true);
+    assert.equal(await evaluate('document.getElementById("back-btn").hidden'), false);
+    await shot('question_choice_r3.png');
 
-    await evaluate('document.querySelector(\'[data-value="Florida"]\').click()');
+    await evaluate('document.querySelector(\'[data-value="Florida"]\').focus()');
+    await pressKey('Enter');
     await waitFor(async () => (await evaluate('document.getElementById("question-heading").textContent')).includes('benefits eligible'), 'eligible after Florida');
     assert.equal(await evaluate('document.getElementById("assist").hidden'), true);
+    assert.equal(await evaluate('document.getElementById("next-btn").hidden'), false);
+    assert.equal(await evaluate('document.getElementById("next-btn").textContent'), 'Continue');
+    await shot('question_number_r3.png');
     await evaluate('document.getElementById("q-number").value = "10"; document.getElementById("next-btn").click();');
     await waitFor(async () => (await evaluate('document.getElementById("question-heading").textContent')).includes('expect to enroll'), 'enrolling');
-    await evaluate('document.getElementById("q-number").value = "7"; document.getElementById("next-btn").click();');
+    assert.equal(await evaluate('document.getElementById("next-btn").hidden'), false);
+    await evaluate('const input = document.getElementById("q-number"); input.value = "7"; input.focus();');
+    await pressKey('Enter');
     await waitFor(async () => (await evaluate('document.getElementById("question-heading").textContent')).includes('What matters most'), 'priority');
-    await evaluate('document.querySelector(\'[data-value="balanced"]\').click()');
+    assert.equal(await evaluate('document.getElementById("next-btn").hidden'), true);
+    assert.equal(await evaluate('document.getElementById("back-btn").disabled'), false);
+    await evaluate('document.querySelector(\'[data-value="balanced"]\').focus()');
+    await pressKey(' ');
     await waitFor(async () => (await evaluate('document.getElementById("question-heading").textContent')).includes('group health plan'), 'coverage');
+    assert.equal(await evaluate('document.getElementById("next-btn").hidden'), true);
     await evaluate('document.querySelector(\'[data-value="yes"]\').click()');
     await waitFor(async () => (await evaluate('document.getElementById("question-heading").textContent')).includes('hoping to start'), 'timeline');
-    await evaluate('document.querySelector(\'[data-value="later"]\').click()');
+    assert.equal(await evaluate('document.getElementById("next-btn").hidden'), true);
+    await evaluate('document.querySelector(\'[data-value="later"]\').focus()');
+    await pressKey('Enter');
     await waitFor(async () => !(await evaluate('document.getElementById("results").hidden')), 'results');
     await evaluate('document.fonts && document.fonts.ready');
     await sleep(200);

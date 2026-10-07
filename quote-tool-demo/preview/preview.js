@@ -622,7 +622,9 @@
       $('progress-bar').style.width = (((state.step + 1) / QUESTIONS.length) * 100) + '%';
       $('question-heading').textContent = question.title;
       $('back-btn').disabled = state.step === 0;
-      $('next-btn').disabled = false;
+      var typed = question.kind !== 'choice';
+      $('next-btn').hidden = !typed;
+      $('next-btn').disabled = !typed;
       $('next-btn').textContent = state.step === QUESTIONS.length - 1 ? 'See Real Rates Now' : 'Continue';
       var errorEl = $('question-error');
       errorEl.hidden = !state.error;
@@ -862,22 +864,38 @@
       $('contrib-backdrop').hidden = true;
     }
 
+    var choiceFromKey = false;
+
+    function chooseOption(choice) {
+      model.setAnswer(choice.dataset.value);
+      if (model.getState().step === QUESTIONS.length - 1) goNext();
+      else {
+        renderQuestion();
+        scheduleAdvance();
+      }
+    }
+
     function wire() {
       $('question-control').addEventListener('click', function (event) {
-        var choice = event.target.closest('[data-value]');
+        var choice = event.target.closest('.choice[data-value]');
         if (!choice) return;
-        model.setAnswer(choice.dataset.value);
-        if (model.getState().step === QUESTIONS.length - 1) goNext();
-        else {
-          renderQuestion();
-          scheduleAdvance();
-        }
+        if (choiceFromKey) return;
+        chooseOption(choice);
       });
       $('question-control').addEventListener('keydown', function (event) {
         if (event.key === 'Enter' && event.target.id === 'q-number') {
           event.preventDefault();
           goNext();
+          return;
         }
+        if (event.repeat) return;
+        if (event.key !== 'Enter' && event.key !== ' ' && event.key !== 'Spacebar') return;
+        var choice = event.target.closest && event.target.closest('.choice[data-value]');
+        if (!choice) return;
+        event.preventDefault();
+        choiceFromKey = true;
+        chooseOption(choice);
+        setTimeout(function () { choiceFromKey = false; }, 0);
       });
       $('next-btn').addEventListener('click', goNext);
       $('back-btn').addEventListener('click', function () {
