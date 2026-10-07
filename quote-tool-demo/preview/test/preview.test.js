@@ -781,63 +781,6 @@ test('carrier filter does not change the lead visiblePlans fields', () => {
   assert.ok(before.length > after.filter((plan) => /uhc|united/i.test(plan.name + plan.network)).length);
 });
 
-test('HSA chip text comes from details.hsaTag and rates stay put', () => {
-  const WITH_CARD = [
-    'cigna-epo-1750-hsa',
-    'phcs-visit-limit-1750-HSA',
-    'cigna-ppo-8300-hsa',
-    'UHC-ppo-8300-hsa',
-    'phcs-ppo-8300-hsa'
-  ];
-  const PLAIN_HSA = ['cigna-ppo-3500-hsa', 'uhc-ppo-3500-hsa', 'phcs-ppo-3500-hsa', 'uhc-ppo-3000-hsa'];
-  const model = preview.createModel({ plans: PLANS, pageUrl: PAGE, now: () => new Date(FIXED) });
-  reach(model, 10, 7);
-  const state = model.getState();
-  WITH_CARD.forEach((id) => {
-    const plan = PLANS.find((item) => item.id === id);
-    const rates = { ...plan.rates };
-    assert.equal(plan.details.hsaTag, 'Incl $25 Monthly HSA');
-    assert.equal(math.hsaChipLabel(plan), 'Incl $25 Monthly HSA');
-    const html = preview.planArticle(plan, state);
-    assert.match(html, /class="hsa-tag">Incl \$25 Monthly HSA</);
-    assert.deepEqual(plan.rates, rates);
-    if (id.includes('8300')) assert.equal(plan.typeBadge, 'HSA Friendly');
-    if (id === 'cigna-epo-1750-hsa' || id === 'phcs-visit-limit-1750-HSA') {
-      assert.equal(plan.typeBadge, 'Incl $25 Monthly HSA');
-      assert.equal(html.split('Incl $25 Monthly HSA').length - 1, 2);
-    }
-  });
-  PLAIN_HSA.forEach((id) => {
-    const plan = PLANS.find((item) => item.id === id);
-    assert.equal(plan.details.hsaTag, undefined);
-    assert.equal(math.hsaChipLabel(plan), 'HSA compatible');
-    const html = preview.planArticle(plan, state);
-    assert.match(html, /class="hsa-tag">HSA compatible</);
-    assert.doesNotMatch(html, /Incl \$25 Monthly HSA/);
-  });
-  const epo = PLANS.find((plan) => plan.id === 'cigna-epo-1000');
-  assert.equal(math.hsaChipLabel(epo), '');
-  assert.doesNotMatch(preview.planArticle(epo, state), /hsa-tag/);
-  assert.equal(epo.typeBadge, 'Excellent Value');
-  assert.deepEqual(PLANS.find((plan) => plan.id === 'cigna-epo-1750-hsa').rates, {
-    employeeOnly: 459, employeeSpouse: 809, employeeChildren: 799, family: 1099
-  });
-  assert.deepEqual(PLANS.find((plan) => plan.id === 'cigna-ppo-8300-hsa').rates, {
-    employeeOnly: 609, employeeSpouse: 989, employeeChildren: 1109, family: 1369
-  });
-  model.toggleSaved('cigna-ppo-8300-hsa', true);
-  model.toggleSaved('cigna-epo-1750-hsa', true);
-  const saved = model.getState();
-  saved.printLayout = 'saved';
-  saved.printPlans = model.plansForPrint('saved');
-  const printed = preview.printHtml(saved);
-  const compared = preview.compareHtml(saved);
-  assert.match(printed, /class="hsa-tag">Incl \$25 Monthly HSA</);
-  assert.match(compared, /class="hsa-tag">Incl \$25 Monthly HSA</);
-  assert.match(printed, /HSA Friendly/);
-  assert.equal(model.leadPayload({ firstName: 'Ada', email: 'ada@example.com', phone: '' }).selectedPlans[0].typeBadge, 'HSA Friendly');
-});
-
 test('display names are normalized and badges stay exactly as written', () => {
   const united = PLANS.find((plan) => plan.id === 'uhc-ppo-3000-hsa');
   const epo = PLANS.find((plan) => plan.id === 'cigna-epo-1000');

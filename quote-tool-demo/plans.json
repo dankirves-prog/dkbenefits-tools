@@ -84,8 +84,7 @@
       "emergencyRoom": "$1,000 copay after deductible",
       "inpatientHospital": "$2,500 copay per admission after deductible",
       "outpatientSurgery": "$2,500 copay per surgery after deductible",
-      "rx": "Generic $0 after deductible",
-      "hsaTag": "Incl $25 Monthly HSA"
+      "rx": "Generic $0 after deductible"
     },
     "notes": [
       "HSA compatible HDHP Health Plan. Deductible must be met before copays except preventive $0 and telemedicine $0. $25/mo HSA Card included."
@@ -437,8 +436,7 @@
       "emergencyRoom": "After deductible, plan pays 100%",
       "inpatientHospital": "After deductible, plan pays 100%",
       "outpatientSurgery": "After deductible, plan pays 100%",
-      "rx": "After deductible, plan pays 100%; eligible preventive generics may be $0",
-      "hsaTag": "Incl $25 Monthly HSA"
+      "rx": "After deductible, plan pays 100%; eligible preventive generics may be $0"
     },
     "notes": [
       "HSA Compatible HDHP Health Plan. Best fit for groups prioritizing lower fixed premiums and HSA design. Plan pays 100% after deductible, only preventive services have first dollar coverage. $25/mo HSA card included. $0 Telemedicine."
@@ -470,8 +468,7 @@
       "emergencyRoom": "After deductible, plan pays 100%",
       "inpatientHospital": "After deductible, plan pays 100%",
       "outpatientSurgery": "After deductible, plan pays 100%",
-      "rx": "After deductible, plan pays 100%; eligible preventive generics may be $0",
-      "hsaTag": "Incl $25 Monthly HSA"
+      "rx": "After deductible, plan pays 100%; eligible preventive generics may be $0"
     },
     "notes": [
       "HSA Compatible HDHP Health Plan. Best fit for groups prioritizing lower fixed premiums and HSA design. Plan pays 100% after deductible, only preventive services have first dollar coverage. $25/mo HSA card included. $0 Telemedicine."
@@ -503,8 +500,7 @@
       "emergencyRoom": "After deductible, plan pays 100%",
       "inpatientHospital": "After deductible, plan pays 100%",
       "outpatientSurgery": "After deductible, plan pays 100%",
-      "rx": "After deductible, plan pays 100%; eligible preventive generics may be $0",
-      "hsaTag": "Incl $25 Monthly HSA"
+      "rx": "After deductible, plan pays 100%; eligible preventive generics may be $0"
     },
     "notes": [
       "HSA Compatible HDHP Health Plan. Best fit for groups prioritizing lower fixed premiums and HSA design. Plan pays 100% after deductible, only preventive services have first dollar coverage. $25/mo HSA Card included. $0 Telemedicine."
@@ -574,8 +570,7 @@
       "emergencyRoom": "$250 copay after deductible; ERVL*",
       "inpatientHospital": "$1,000 copay per admission after deductible; limit 2 ICU + 2 non-ICU admissions/yr",
       "outpatientSurgery": "$250 copay per surgery after deductible; limit 3 surgeries/yr",
-      "rx": "$0 Generic",
-      "hsaTag": "Incl $25 Monthly HSA"
+      "rx": "$0 Generic"
     },
     "notes": [
       "This is not traditional major medical coverage. It may be useful in the right situation, but benefits are limited. $0 Telemedicine. Patient Assistance Program available for Brand Rx."

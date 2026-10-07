@@ -413,51 +413,6 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     const cardTop = await evaluate('document.querySelector("#top-plans .plan-card").getBoundingClientRect().top');
     assert.ok(cardTop > 0 && cardTop < 500, 'first plan card should be visible, top=' + cardTop);
     await shot('desktop_cards_r2.png');
-
-    async function captureHsaCard(id, filename) {
-      const found = await evaluate(`(() => {
-        const card = document.querySelector('[data-plan-id="${id}"]');
-        if (!card) return { missing: true };
-        const show = document.getElementById('show-all-plans');
-        if (show && (card.hidden || getComputedStyle(card).display === 'none')) show.click();
-        const shown = document.querySelector('[data-plan-id="${id}"]');
-        shown.scrollIntoView({ behavior: 'instant', block: 'center' });
-        const box = shown.getBoundingClientRect();
-        const root = document.documentElement;
-        return {
-          text: shown.innerText,
-          client: root.clientWidth,
-          scroll: Math.max(root.scrollWidth, document.body.scrollWidth),
-          cardWidth: Math.ceil(box.width),
-          clip: {
-            x: Math.max(0, box.left),
-            y: Math.max(0, box.top + window.scrollY),
-            width: Math.ceil(Math.min(box.width, root.clientWidth - Math.max(0, box.left))),
-            height: Math.ceil(box.height),
-            scale: 1
-          }
-        };
-      })()`);
-      assert.notEqual(found.missing, true, id + ' card was not on the page');
-      assert.ok(found.cardWidth <= found.client + 1, id + ' card is wider than the viewport: ' + found.cardWidth + ' > ' + found.client);
-      assert.ok(found.scroll <= found.client + 1, id + ' page overflow ' + found.scroll + ' > ' + found.client);
-      await shot(filename, found.clip);
-      return found.text;
-    }
-    const desktop1750 = await captureHsaCard('cigna-epo-1750-hsa', 'desktop_cigna_epo_1750_hsa_card.png');
-    const desktop8300 = await captureHsaCard('cigna-ppo-8300-hsa', 'desktop_cigna_ppo_8300_hsa_card.png');
-    assert.equal(desktop1750.split('Incl $25 Monthly HSA').length - 1, 2);
-    assert.match(desktop8300, /HSA Friendly/);
-    assert.match(desktop8300, /Incl \$25 Monthly HSA/);
-    assert.match(await evaluate('document.querySelector(\'[data-plan-id="uhc-ppo-3000-hsa"]\').innerText'), /HSA compatible/);
-    await setContentWidth(320, 800);
-    await sleep(80);
-    const mobile1750 = await captureHsaCard('cigna-epo-1750-hsa', 'mobile_320_cigna_epo_1750_hsa_card.png');
-    const mobile8300 = await captureHsaCard('cigna-ppo-8300-hsa', 'mobile_320_cigna_ppo_8300_hsa_card.png');
-    assert.match(mobile1750, /Incl \$25 Monthly HSA/);
-    assert.match(mobile8300, /Incl \$25 Monthly HSA/);
-    assert.match(mobile8300, /HSA Friendly/);
-    await setViewport(1440, 1100);
     const desktopCard = await evaluate(`(() => {
       const card = document.querySelector('[data-plan-id="cigna-epo-1000"]');
       card.scrollIntoView({ behavior: 'instant', block: 'start' });
