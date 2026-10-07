@@ -670,6 +670,10 @@ test('saved plans compare and print selection', () => {
   assert.match(compare, /Incl \$25 Monthly HSA/);
   assert.match(compare, /Employee paycheck/);
   assert.match(compare, /Out-of-pocket max/);
+  assert.match(compare, /Inpatient Hospital/);
+  assert.match(compare, /\$2,500 copay per admission after deductible/);
+  assert.match(compare, /Outpatient Surgery/);
+  assert.match(compare, /\$2,500 copay per surgery after deductible/);
   assert.match(compare, /data-remove="cigna-epo-1000"/);
   model.setContribution({ model: 'flat', flatSelect: '300' });
   const flatCompare = preview.compareHtml(model.getState());
@@ -678,6 +682,8 @@ test('saved plans compare and print selection', () => {
   const printed = preview.printHtml(model.getState());
   assert.equal((printed.match(/Important information/g) || []).length, 1);
   assert.match(printed, /Cigna EPO 1000/);
+  assert.match(printed, /Inpatient Hospital/);
+  assert.match(printed, /Outpatient Surgery/);
   assert.doesNotMatch(printed, /United Healthcare PPO/);
   const chunks = preview.printChunks(model.plansForPrint('all'));
   assert.ok(chunks.every((chunk) => chunk.plans.length <= 6));
@@ -757,6 +763,11 @@ test('saved plans print in one table and visit-limit wording stays attached', ()
   assert.match(card, /PHCS Visit Limit 1750 HSA/);
   assert.match(card, /not traditional major medical/i);
   assert.match(card, /VL\* —/);
+  assert.match(card, /Labs, X-rays and imaging are each limited to 3 per year/);
+  assert.match(card, /Inpatient Hospital/);
+  assert.match(card, /limit 2 ICU \+ 2 non-ICU admissions\/yr/);
+  assert.match(card, /Outpatient Surgery/);
+  assert.match(card, /limit 3 surgeries\/yr/);
   assert.equal((card.match(/<dt>Deductible<\/dt>/g) || []).length, 1);
   assert.equal((card.match(/<dt>Out-of-pocket max<\/dt>/g) || []).length, 1);
   model.toggleSaved('cigna-epo-1000', true);
@@ -775,6 +786,8 @@ test('saved plans print in one table and visit-limit wording stays attached', ()
   assert.match(savedHtml, /<th scope="row">Badge<\/th>/);
   assert.match(savedHtml, /Incl \$25 Monthly HSA/);
   assert.match(savedHtml, /VL\* —/);
+  assert.match(savedHtml, /Inpatient Hospital/);
+  assert.match(savedHtml, /Outpatient Surgery/);
   const compare = preview.compareHtml(model.getState());
   assert.match(compare, /not traditional major medical/i);
   assert.match(compare, /VL\* —/);
@@ -824,6 +837,22 @@ test('edit answers keeps the six answers on one screen', () => {
   assert.equal(model.getState().answers.timeline, '30');
   assert.equal(model.getState().answers.coverage, 'yes');
   assert.equal(math.mixTotal(model.getState().mixUsed), 7);
+});
+
+test('preview layout does not pin controls to the screen', () => {
+  const js = fs.readFileSync(path.join(__dirname, '../preview.js'), 'utf8');
+  const css = fs.readFileSync(path.join(__dirname, '../preview.css'), 'utf8');
+  const page = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  assert.equal(js.includes('scrollIntoView'), false);
+  assert.equal(css.includes('position: fixed'), false);
+  assert.equal(css.includes('position: sticky'), false);
+  assert.equal(css.includes('100vh'), false);
+  assert.match(page, /id="results-actions"/);
+  assert.match(page, /class="header-phone"/);
+  assert.equal((page.match(/Questions\? Call or text Daniel/g) || []).length, 1);
+  assert.equal(js.includes('cta-strip'), false);
+  assert.doesNotMatch(page, /id="dock"/);
+  assert.doesNotMatch(page, /id="plans-drawer"/);
 });
 
 test('rates-as-of label lives in the preview config, not plans.json', () => {
