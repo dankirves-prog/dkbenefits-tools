@@ -680,8 +680,132 @@ test('saved plans compare and print selection', () => {
   assert.match(printed, /Cigna EPO 1000/);
   assert.doesNotMatch(printed, /United Healthcare PPO/);
   const chunks = preview.printChunks(model.plansForPrint('all'));
-  assert.ok(chunks.every((chunk) => chunk.plans.length <= 4));
+  assert.ok(chunks.every((chunk) => chunk.plans.length <= 6));
   assert.ok(chunks.length > 1);
+  assert.match(compare, /<th scope="row">Plan type<\/th><td>EPO<\/td>/);
+  assert.match(compare, /<th scope="row">Badge<\/th><td>Excellent Value<\/td>/);
+});
+
+test('invalid counts are rejected and edit drafts survive a validation error', () => {
+  const model = preview.createModel({ plans: PLANS, pageUrl: PAGE, now: () => new Date(FIXED) });
+  assert.equal(model.next().ok, true);
+  assert.equal(model.next('10.5').ok, false);
+  assert.match(model.getState().error, /Decimals/);
+  assert.equal(model.getState().step, 1);
+  assert.equal(model.next('-4').ok, false);
+  assert.match(model.getState().error, /at least 1/);
+  assert.equal(model.next('0').ok, false);
+  assert.equal(model.next('12').ok, true);
+  assert.equal(model.next('3.2').ok, false);
+  assert.equal(model.getState().step, 2);
+  assert.equal(model.next('8').ok, true);
+  model.setAnswer('balanced');
+  assert.equal(model.next().ok, true);
+  model.setAnswer('yes');
+  assert.equal(model.next().ok, true);
+  model.setAnswer('later');
+  assert.equal(model.next().ok, true);
+  const priced = model.getState();
+  const gross = math.planTotals(PLANS[0], priced.mixUsed, priced.resolvedContribution).gross;
+  assert.equal(model.setMixField('family', '1.5').ok, false);
+  assert.match(model.getState().mixNote, /Decimals/);
+  assert.equal(model.setMixField('employeeOnly', '-2').ok, false);
+  assert.match(model.getState().mixNote, /0 or more/);
+  assert.deepEqual(model.getState().mixUsed, priced.mixUsed);
+  assert.equal(math.planTotals(PLANS[0], model.getState().mixUsed, model.getState().resolvedContribution).gross, gross);
+  model.setMixField('family', 1);
+  model.editAnswers();
+  const blocked = model.applyReview({ state: 'Georgia', employees: '3', enrolling: '8' });
+  assert.equal(blocked.ok, false);
+  assert.match(blocked.error, /eligible/i);
+  assert.equal(model.getState().answers.state, 'Florida');
+  assert.equal(model.getState().answers.employees, '12');
+  assert.equal(model.getState().reviewDraft.state, 'Georgia');
+  assert.equal(model.getState().reviewDraft.employees, '3');
+  assert.equal(model.getState().reviewDraft.enrolling, '8');
+  const fixed = model.applyReview({
+    state: 'Georgia',
+    employees: '3',
+    enrolling: '2',
+    priority: 'balanced',
+    coverage: 'yes',
+    timeline: 'later'
+  });
+  assert.equal(fixed.ok, true);
+  assert.equal(model.getState().reviewDraft, null);
+  assert.equal(model.getState().answers.state, 'Georgia');
+  assert.equal(model.getState().answers.employees, '3');
+  assert.equal(model.getState().answers.enrolling, '2');
+  assert.match(model.getState().summaryLine, /Georgia/);
+  assert.match(model.getState().summaryLine, /3 eligible/);
+  assert.doesNotMatch(model.getState().summaryLine, /Florida/);
+  assert.doesNotMatch(model.getState().summaryLine, /12 eligible/);
+});
+
+test('saved plans print in one table and visit-limit wording stays attached', () => {
+  const visit = PLANS.find((plan) => plan.id === 'phcs-visit-limit-1750-HSA');
+  assert.equal(visit.name, 'PHCS Visit Limit 1750 HSA');
+  assert.equal(math.planType(visit), 'Visit Limit');
+  const legend = math.visitLimitLegend(visit).join(' ');
+  assert.match(legend, /VL\* —/);
+  assert.match(legend, /10 visits per year/);
+  assert.match(legend, /ERVL\* —/);
+  assert.match(legend, /accident-related/);
+  const model = preview.createModel({ plans: PLANS, pageUrl: PAGE, now: () => new Date(FIXED) });
+  reach(model, 10, 7);
+  const card = preview.planArticle(visit, model.getState());
+  assert.match(card, /PHCS Visit Limit 1750 HSA/);
+  assert.match(card, /not traditional major medical/i);
+  assert.match(card, /VL\* —/);
+  assert.equal((card.match(/<dt>Deductible<\/dt>/g) || []).length, 1);
+  assert.equal((card.match(/<dt>Out-of-pocket max<\/dt>/g) || []).length, 1);
+  model.toggleSaved('cigna-epo-1000', true);
+  model.toggleSaved('UHC-PPO-2000-Deductible', true);
+  model.toggleSaved('phcs-visit-limit-1750-HSA', true);
+  const savedState = model.getState();
+  savedState.printLayout = 'saved';
+  savedState.printPlans = model.plansForPrint('saved');
+  const savedHtml = preview.printHtml(savedState);
+  assert.equal((savedHtml.match(/<table/g) || []).length, 1);
+  assert.doesNotMatch(savedHtml, /print-next/);
+  assert.match(savedHtml, /not traditional major medical/i);
+  assert.match(savedHtml, /PHCS Visit Limit 1750 HSA/);
+  assert.match(savedHtml, /<th scope="row">Plan type<\/th>/);
+  assert.match(savedHtml, />Visit Limit</);
+  assert.match(savedHtml, /<th scope="row">Badge<\/th>/);
+  assert.match(savedHtml, /Incl \$25 Monthly HSA/);
+  assert.match(savedHtml, /VL\* —/);
+  const compare = preview.compareHtml(model.getState());
+  assert.match(compare, /not traditional major medical/i);
+  assert.match(compare, /VL\* —/);
+  assert.match(compare, /coverage-warning/);
+  const allState = model.getState();
+  allState.printLayout = 'all';
+  allState.printPlans = model.plansForPrint('all');
+  const allHtml = preview.printHtml(allState);
+  assert.match(allHtml, /<colgroup>/);
+  assert.match(allHtml, /not traditional major medical/i);
+  const allChunks = preview.printChunks(allState.printPlans);
+  assert.equal(allChunks.length, Math.ceil(allState.printPlans.length / 6));
+  assert.ok(allChunks.every((chunk) => chunk.plans.length <= 6));
+});
+
+test('custom flat amount starts at the current amount and visitor copy stays plain', () => {
+  const page = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  assert.match(page, /Most carriers require the employer to pay at least 50% of employee-only coverage/);
+  assert.doesNotMatch(page, /matching the current quote tool/);
+  assert.match(page, /Flat amount per enrolled employee, per month/);
+  assert.doesNotMatch(page, /The request sends this single amount/);
+  assert.doesNotMatch(page, /including dependents/);
+  const model = preview.createModel({ plans: PLANS, pageUrl: PAGE, now: () => new Date(FIXED) });
+  reach(model, 10, 7);
+  model.setContribution({ flatSelect: 'custom' });
+  assert.equal(model.getState().contribution.flatCustom, '300');
+  assert.equal(model.getState().resolvedContribution.flatAmount, 300);
+  model.setContribution({ flatSelect: '400' });
+  model.setContribution({ flatSelect: 'custom', flatCustom: '' });
+  assert.equal(model.getState().contribution.flatCustom, '400');
+  assert.equal(model.getState().resolvedContribution.flatAmount, 400);
 });
 
 test('edit answers keeps the six answers on one screen', () => {

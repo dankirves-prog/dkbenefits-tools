@@ -80,16 +80,23 @@
     };
   }
 
+  function countLabel(question) {
+    return question.key === 'employees' ? 'eligible employees' : 'people enrolling';
+  }
+
   function validateStep(answers, step) {
     var question = QUESTIONS[step];
     var value = answers[question.key];
     if (question.kind === 'number') {
-      var amount = Number(value);
-      if (!value || !Number.isFinite(amount) || amount <= 0) return 'Enter a number greater than zero.';
-      if (question.key === 'enrolling' && answers.employees && amount > Number(answers.employees)) {
+      var parsed = QuoteMath.parseWholeCount(value, { min: 1, label: countLabel(question) });
+      if (!parsed.ok) return parsed.message;
+      var amount = parsed.value;
+      var eligible = QuoteMath.parseWholeCount(answers.employees, { min: 1, label: 'eligible employees' });
+      var enrolling = QuoteMath.parseWholeCount(answers.enrolling, { min: 1, label: 'people enrolling' });
+      if (question.key === 'enrolling' && eligible.ok && amount > eligible.value) {
         return 'Enrollment can\u2019t be higher than the number of eligible employees. Update one of these numbers to continue.';
       }
-      if (question.key === 'employees' && answers.enrolling && Number(answers.enrolling) > amount) {
+      if (question.key === 'employees' && enrolling.ok && enrolling.value > amount) {
         return 'Eligible employees can\u2019t be lower than the number you expect to enroll.';
       }
       return '';
@@ -117,6 +124,7 @@
     var carrier = 'All';
     var mecOpen = false;
     var saved = new Map();
+    var reviewDraft = null;
 
     function resolvedContribution() {
       return {
@@ -242,7 +250,8 @@
         printPlans: phase === 'results' ? plansForPrint('auto') : [],
         ratesAsOfLabel: ratesAsOfLabel,
         contributionSummary: QuoteMath.contributionSummary(resolved),
-        payrollLabel: QuoteMath.payrollLabel(resolved.payPeriods)
+        payrollLabel: QuoteMath.payrollLabel(resolved.payPeriods),
+        reviewDraft: reviewDraft
       };
     }
 
@@ -280,10 +289,12 @@
       editAnswers: function () {
         phase = 'review';
         error = '';
+        reviewDraft = null;
       },
       cancelReview: function () {
         phase = 'results';
         error = '';
+        reviewDraft = null;
       },
       applyReview: function (nextAnswers) {
         var draft = Object.assign({}, answers, nextAnswers || {});
@@ -294,11 +305,13 @@
           var message = validateStep(draft, index);
           if (message) {
             error = message;
+            reviewDraft = draft;
             return { ok: false, error: message, step: index };
           }
         }
         var enrollingChanged = String(answers.enrolling) !== String(draft.enrolling);
         answers = draft;
+        reviewDraft = null;
         error = '';
         if (enrollingChanged || !QuoteMath.mixCheck(mix, Number(answers.enrolling || 0), Number(answers.employees || 0)).ok) {
           resetMixToEnrolling();
@@ -324,14 +337,31 @@
         saved = new Map();
       },
       setContribution: function (partial) {
-        Object.assign(contribution, partial);
+        var next = Object.assign({}, partial);
+        if (next.flatSelect === 'custom') {
+          var incoming = next.flatCustom != null ? String(next.flatCustom).trim() : String(contribution.flatCustom || '').trim();
+          if (!/^\d+$/.test(incoming) || Number(incoming) <= 0) {
+            var prior = contribution.flatSelect !== 'custom' && /^\d+$/.test(String(contribution.flatSelect))
+              ? String(contribution.flatSelect)
+              : '300';
+            next.flatCustom = prior;
+          }
+        }
+        Object.assign(contribution, next);
         if (phase === 'results') notifyRates();
       },
       setMixField: function (field, value) {
-        var next = copyMix(mix);
-        next[field] = Math.max(0, Number(value || 0));
-        commitMix(next);
+        var tier = QuoteMath.TIER_LABELS.filter(function (item) { return item[0] === field; })[0];
+        var parsed = QuoteMath.parseWholeCount(value, { min: 0, label: tier ? tier[1] : 'this tier' });
+        if (!parsed.ok) {
+          mixStatus = { ok: false, total: QuoteMath.mixTotal(appliedMix), message: parsed.message };
+          return { ok: false, error: parsed.message };
+        }
+        var nextMix = copyMix(mix);
+        nextMix[field] = parsed.value;
+        commitMix(nextMix);
         if (phase === 'results') notifyRates();
+        return { ok: true };
       },
       plansForPrint: plansForPrint,
       setSort: function (mode) {
@@ -440,9 +470,12 @@
     ].map(function (row) {
       return '<div><dt>' + row[1] + '</dt><dd>' + escapeHtml(detailValue(plan, row[0])) + '</dd></div>';
     }).join('');
-    var fullDetails = DETAIL_ROWS.map(function (row) {
+    var fullDetails = DETAIL_ROWS.filter(function (row) {
+      return row[0] !== 'deductible' && row[0] !== 'oopMax';
+    }).map(function (row) {
       return '<div class="detail-row"><dt>' + row[1] + '</dt><dd>' + escapeHtml(detailValue(plan, row[0])) + '</dd></div>';
     }).join('');
+    var legend = legendHtml([plan]);
     return '<article class="plan-card" data-plan-id="' + escapeHtml(plan.id) + '">' +
       '<header class="plan-head"><div><p class="carrier">' + escapeHtml(QuoteMath.carrierOf(plan)) + '</p>' +
       '<h3>' + escapeHtml(QuoteMath.displayName(plan)) + '</h3>' +
@@ -458,16 +491,24 @@
       '<table class="tier-table"><caption>Monthly rate and employee cost per paycheck</caption><thead><tr><th scope="col">Tier</th><th scope="col">Monthly rate</th><th scope="col">Per paycheck</th></tr></thead><tbody>' +
       tierRows + '</tbody></table>' +
       '<section class="key-benefits"><h4>Key benefits</h4><dl class="key-grid">' + keyRows + '</dl></section>' +
+      legend +
       '<button type="button" class="btn btn-secondary details-toggle" aria-expanded="false" aria-controls="' + detailsId + '">View plan details</button>' +
       '<div id="' + detailsId + '" class="plan-more" hidden><div class="details">' + fullDetails + '</div>' + notesBlock(plan) + '</div>' +
       '</article>';
   }
 
-  function comparisonRows(state) {
+  function legendHtml(plans) {
+    var items = QuoteMath.visitLimitLegend(plans);
+    if (!items.length) return '';
+    return '<p class="abbrev-legend">' + items.map(function (item) { return escapeHtml(item); }).join('<br>') + '</p>';
+  }
+
+  function comparisonRows(state, plans) {
     var flat = state.resolvedContribution && state.resolvedContribution.model === 'flat';
     var rows = [
-      ['Plan type', function (plan) { return plan.typeBadge || ''; }, false],
+      ['Plan type', function (plan) { return QuoteMath.planType(plan); }, false],
       ['Network', function (plan) { return plan.network || ''; }, false],
+      ['Badge', function (plan) { return plan.typeBadge || ''; }, false],
       ['Total monthly', function (plan, totals) { return QuoteMath.money(totals.gross); }, false],
       [flat ? 'Employer contribution (flat)' : 'Employer monthly', function (plan, totals) { return QuoteMath.money(totals.employer); }, false]
     ];
@@ -485,24 +526,35 @@
     ].forEach(function (row) {
       rows.push([row[1], function (plan) { return detailValue(plan, row[0]); }, false]);
     });
+    if ((plans || []).some(function (plan) { return QuoteMath.majorMedicalNote(plan); })) {
+      rows.splice(3, 0, ['Coverage note', function (plan) { return QuoteMath.majorMedicalNote(plan); }, false]);
+    }
     return rows;
   }
 
   function comparisonTable(plans, state, interactive) {
-    var rows = comparisonRows(state);
+    var rows = comparisonRows(state, plans);
+    var share = plans.length ? (84 / plans.length).toFixed(3) : '84';
+    var cols = '<col style="width:16%">';
+    plans.forEach(function () { cols += '<col style="width:' + share + '%">'; });
     var head = plans.map(function (plan) {
+      var note = QuoteMath.majorMedicalNote(plan);
       return '<th scope="col"><span class="compare-name">' + escapeHtml(QuoteMath.displayName(plan)) + '</span>' + badgeHtml(plan) +
+        (note ? '<p class="low-callout">' + escapeHtml(note) + '</p>' : '') +
         (interactive ? '<button type="button" class="btn btn-secondary" data-remove="' + escapeHtml(plan.id) + '">Remove</button>' : '') +
         '</th>';
     }).join('');
     var body = rows.map(function (row) {
       var cells = plans.map(function (plan) {
         var totals = QuoteMath.planTotals(plan, state.mixUsed, state.resolvedContribution);
-        return '<td>' + escapeHtml(row[1](plan, totals)) + '</td>';
+        var text = row[1](plan, totals);
+        var warning = row[0] === 'Coverage note' && text;
+        return '<td' + (warning ? ' class="coverage-warning"' : '') + '>' + escapeHtml(text) + '</td>';
       }).join('');
       return '<tr class="' + (row[2] ? 'compare-emph' : '') + '"><th scope="row">' + escapeHtml(row[0]) + '</th>' + cells + '</tr>';
     }).join('');
-    return '<table class="' + (interactive ? 'compare-table' : 'print-table') + '"><thead><tr><th scope="col">Compare</th>' + head + '</tr></thead><tbody>' + body + '</tbody></table>';
+    var tableClass = interactive ? 'compare-table' : 'print-table';
+    return '<table class="' + tableClass + '"><colgroup>' + cols + '</colgroup><thead><tr><th scope="col">Compare</th>' + head + '</tr></thead><tbody>' + body + '</tbody></table>' + legendHtml(plans);
   }
 
   function compareHtml(state) {
@@ -513,31 +565,28 @@
     return note + '<div class="compare-wrap">' + comparisonTable(list, state, true) + '</div>';
   }
 
-  function printChunks(items) {
+  function printChunks(items, options) {
+    var perPage = options && options.perPage ? options.perPage : 6;
     var chunks = [];
-    var section = '';
     var bucket = [];
-    function flush() {
-      if (!bucket.length) return;
-      chunks.push({ section: section, plans: bucket.slice() });
-      bucket = [];
-    }
     (items || []).forEach(function (item) {
-      if (item.section !== section) {
-        flush();
-        section = item.section;
-      }
       bucket.push(item.plan);
-      if (bucket.length === 4) flush();
+      if (bucket.length === perPage) {
+        chunks.push({ plans: bucket.slice() });
+        bucket = [];
+      }
     });
-    flush();
+    if (bucket.length) chunks.push({ plans: bucket.slice() });
     return chunks;
   }
 
   function printHtml(state) {
-    var chunks = printChunks(state.printPlans || []);
+    var items = state.printPlans || [];
+    var savedLayout = state.printLayout === 'saved' || (state.printLayout !== 'all' && state.saved && state.saved.length > 0);
+    var perPage = savedLayout ? Math.max(items.length, 1) : 6;
+    var chunks = printChunks(items, { perPage: perPage });
     var tables = chunks.map(function (chunk, index) {
-      return '<section class="' + (index ? 'print-block print-next' : 'print-first') + '"><h2 class="print-section">' + escapeHtml(chunk.section) + '</h2>' +
+      return '<section class="print-sheet' + (index ? ' print-next' : ' print-first') + '">' +
         comparisonTable(chunk.plans, state, false) + '</section>';
     }).join('');
     var which = state.saved.length ? 'Saved plans only.' : 'All plans in the current sort and carrier filter.';
@@ -595,8 +644,7 @@
       intro.hidden = true;
       loadError.hidden = false;
       loadError.innerHTML = '<h2>We\u2019re having trouble loading plan options right now.</h2>' +
-        '<p>Please refresh and try again, or call/text Daniel at <a href="tel:4074765076">407-476-5076</a>.</p>' +
-        '<p class="hint">Technical detail: ' + escapeHtml(error && error.message ? error.message : error) + '</p>';
+        '<p>Please refresh and try again, or call/text Daniel at <a href="tel:4074765076">407-476-5076</a>.</p>';
     }
 
     function scrollTo(el) {
@@ -614,7 +662,7 @@
       if (reviewSection) reviewSection.hidden = true;
       results.hidden = true;
       dock.hidden = true;
-      document.body.classList.remove('is-results');
+      document.body.classList.remove('is-results', 'is-review');
       $('assist').hidden = state.step !== 0;
       $('progress-text').textContent = 'Question ' + (state.step + 1) + ' of ' + QUESTIONS.length;
       $('progress').setAttribute('aria-valuenow', String(state.step + 1));
@@ -720,6 +768,12 @@
           : 'No plans match this carrier.';
       }
       $('my-plans-btn').textContent = 'My Plans (' + state.saved.length + ')';
+      var savedNote = $('lead-saved-note');
+      if (savedNote) {
+        savedNote.textContent = state.saved.length
+          ? 'Your ' + state.saved.length + ' saved plan' + (state.saved.length === 1 ? '' : 's') + ' will be included with this request.'
+          : 'Save any plans you want included, and Daniel will receive them with this request.';
+      }
       $('print-help').textContent = state.saved.length
         ? 'Printing will include the ' + state.saved.length + ' saved plan' + (state.saved.length === 1 ? '' : 's') + ' only. Clear saved plans to print the full list.'
         : 'Prints every plan in the current list. Save plans to print just those.';
@@ -749,6 +803,7 @@
       results.hidden = false;
       dock.hidden = false;
       document.body.classList.add('is-results');
+      document.body.classList.remove('is-review');
       closeContrib();
       syncMixInputs();
       renderChips();
@@ -764,9 +819,11 @@
       results.hidden = true;
       dock.hidden = true;
       document.body.classList.remove('is-results');
+      document.body.classList.add('is-review');
       closeContrib();
+      var source = state.reviewDraft || state.answers;
       var fields = QUESTIONS.map(function (question) {
-        var current = state.answers[question.key] || '';
+        var current = source[question.key] || '';
         var control = question.kind === 'number'
           ? '<input data-review="' + question.key + '" type="number" min="1" step="1" inputmode="numeric" value="' + escapeHtml(current) + '" aria-label="' + escapeHtml(question.title) + '" />'
           : '<div class="choices">' + question.options.map(function (option) {
@@ -814,10 +871,17 @@
       $('my-plans-btn').setAttribute('aria-expanded', 'false');
     }
 
+    function layoutFor(mode, state) {
+      if (mode === 'all') return 'all';
+      if (mode === 'saved') return 'saved';
+      return state.saved.length ? 'saved' : 'all';
+    }
+
     function printPlans(mode) {
       printMode = mode;
       var state = model.getState();
-      state.printPlans = model.plansForPrint(mode);
+      state.printLayout = layoutFor(mode, state);
+      state.printPlans = model.plansForPrint(mode === 'auto' ? state.printLayout : mode);
       $('print-root').innerHTML = printHtml(state);
       win.print();
     }
@@ -930,8 +994,9 @@
         }
         showResults(true);
       });
-      $('start-over-btn').addEventListener('click', function () {
+      function resetQuote() {
         model.startOver();
+        $('start-over-confirm').hidden = true;
         $('lead-form').hidden = false;
         $('lead-form').reset();
         $('lead-success').hidden = true;
@@ -941,7 +1006,20 @@
         closeDrawer();
         renderQuestion();
         scrollTo(intro);
+      }
+      $('start-over-btn').addEventListener('click', function () {
+        var count = model.getState().saved.length;
+        $('start-over-message').textContent = count
+          ? 'Start over? This clears your answers and your ' + count + ' saved plan' + (count === 1 ? '' : 's') + '.'
+          : 'Start over? This clears your answers.';
+        $('start-over-confirm').hidden = false;
+        $('start-over-no').focus();
       });
+      $('start-over-no').addEventListener('click', function () {
+        $('start-over-confirm').hidden = true;
+        $('start-over-btn').focus();
+      });
+      $('start-over-yes').addEventListener('click', resetQuote);
       $('print-btn').addEventListener('click', function () {
         printPlans('auto');
       });
@@ -951,7 +1029,9 @@
       win.addEventListener('beforeprint', function () {
         if (model && model.getState().phase === 'results') {
           var state = model.getState();
-          state.printPlans = model.plansForPrint(printMode);
+          var layout = layoutFor(printMode, state);
+          state.printLayout = layout;
+          state.printPlans = model.plansForPrint(layout === 'saved' ? 'saved' : 'all');
           $('print-root').innerHTML = printHtml(state);
         }
       });

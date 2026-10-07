@@ -333,6 +333,12 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     const lowText = await evaluate('document.querySelector("#low-plans [data-plan-id=\\"phcs-visit-limit-1000\\"]").innerText');
     assert.match(lowText, /not traditional major medical/i);
     assert.match(lowText, /Lower Cost/);
+    assert.match(lowText, /VL\* —/);
+    assert.match(lowText, /10 visits per year/);
+    assert.equal(await evaluate('getComputedStyle(document.querySelector(".skip")).display'), 'none');
+    assert.match(await evaluate('document.querySelector("#percent-fields .hint").textContent'), /Most carriers require the employer to pay at least 50%/);
+    assert.doesNotMatch(await evaluate('document.getElementById("flat-note").textContent'), /including dependents|request sends/i);
+    assert.match(await evaluate('document.getElementById("flat-note").textContent'), /per enrolled employee, per month/);
     const lowInFeatured = await evaluate('!!document.querySelector("#top-plans [data-plan-id=\\"phcs-visit-limit-1000\\"]")');
     const lowInSection = await evaluate('!!document.querySelector("#low-plans [data-plan-id=\\"phcs-visit-limit-1000\\"]")');
     assert.equal(lowInFeatured, false);
@@ -375,7 +381,7 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
       assert.equal(bytes.subarray(0, 5).toString(), '%PDF-');
       assert.ok(bytes.length > 20000, filename + ' was unexpectedly small');
     }
-    await savePdf('proposal_all_plans_r2.pdf');
+    await savePdf('proposal_all_plans_r3.pdf');
 
     await evaluate('document.getElementById("sort-mode").value = "carrier"; document.getElementById("sort-mode").dispatchEvent(new Event("change", { bubbles: true }));');
     await evaluate('document.querySelector(\'[data-carrier="Cigna"]\').click()');
@@ -412,7 +418,18 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.match(mixError, /higher than the 10 eligible/);
     const still = await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"]\').innerText');
     assert.match(still, /\$4,858/);
+    await evaluate('document.getElementById("mix-fam").value = "1.5"; document.getElementById("mix-fam").dispatchEvent(new Event("input", { bubbles: true }));');
+    await sleep(40);
+    const decimalNote = await evaluate('document.getElementById("mix-note").innerText');
+    assert.match(decimalNote, /Decimals/);
+    assert.match(await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"]\').innerText'), /\$4,858/);
+    await evaluate('document.getElementById("mix-ee").scrollIntoView({ behavior: "instant", block: "center" })');
+    await shot('validation_mix_r3.png');
     await evaluate('document.getElementById("mix-fam").value = "1"; document.getElementById("mix-fam").dispatchEvent(new Event("input", { bubbles: true }));');
+    await evaluate('document.getElementById("mix-ee").value = "-3"; document.getElementById("mix-ee").dispatchEvent(new Event("input", { bubbles: true }));');
+    assert.match(await evaluate('document.getElementById("mix-note").innerText'), /0 or more/);
+    assert.match(await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"]\').innerText'), /\$4,858/);
+    await evaluate('document.getElementById("mix-ee").value = "4"; document.getElementById("mix-ee").dispatchEvent(new Event("input", { bubbles: true }));');
 
     await evaluate('document.getElementById("contrib-launcher").click()');
     await sleep(100);
@@ -424,30 +441,41 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"] .save-toggle\').click()');
     await evaluate('document.querySelector(\'[data-plan-id="UHC-PPO-2000-Deductible"] .save-toggle\').click()');
     await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1750-hsa"] .save-toggle\').click()');
+    await evaluate('document.querySelector(\'[data-plan-id="phcs-visit-limit-1750-HSA"] .save-toggle\').click()');
     await sleep(50);
-    assert.match(await evaluate('document.getElementById("my-plans-btn").textContent'), /My Plans \(3\)/);
+    assert.match(await evaluate('document.getElementById("my-plans-btn").textContent'), /My Plans \(4\)/);
     await evaluate('document.getElementById("my-plans-btn").click()');
     await sleep(80);
     const compare = await evaluate('document.getElementById("drawer-body").innerText');
     assert.match(compare, /Cigna EPO 1000/);
     assert.match(compare, /UHC PPO 2000/);
     assert.match(compare, /Cigna EPO 1750 HSA/);
+    assert.match(compare, /PHCS Visit Limit 1750 HSA/);
     assert.match(compare, /Excellent Value/);
     assert.match(compare, /Top Rated Network/);
     assert.match(compare, /Incl \$25 Monthly HSA/);
+    assert.match(compare, /not traditional major medical/i);
+    assert.match(compare, /Plan type/);
+    assert.match(compare, /Visit Limit/);
+    assert.match(compare, /VL\*/);
     assert.match(compare, /Employee paycheck/);
     assert.match(compare, /Out-of-pocket max/);
     assert.match(compare, /Remove/);
-    await shot('my_plans_r2.png');
-    await savePdf('proposal_saved_plans_r2.pdf');
+    await shot('my_plans_warning_r3.png');
+    await savePdf('proposal_saved_plans_r3.pdf');
     await evaluate('document.getElementById("drawer-close").click()');
+    await evaluate('document.querySelector(\'[data-plan-id="phcs-visit-limit-1750-HSA"] .save-toggle\').click()');
+    assert.match(await evaluate('document.getElementById("my-plans-btn").textContent'), /My Plans \(3\)/);
     await evaluate('document.getElementById("edit-btn").click()');
     await waitFor(async () => !(await evaluate('document.getElementById("review-section").hidden')), 'edit answers');
     const reviewText = await evaluate('document.getElementById("review-section").innerText');
     assert.match(reviewText, /What state is your business located in/);
     assert.match(reviewText, /When are you hoping to start/);
     assert.equal(await evaluate('document.querySelector(\'#review-fields [data-review="employees"]\').value'), '10');
-    await shot('edit_answers_r2.png');
+    const selectedFlorida = await evaluate('getComputedStyle(document.querySelector(\'#review-fields [data-value="Florida"]\')).backgroundColor');
+    const idleGeorgia = await evaluate('getComputedStyle(document.querySelector(\'#review-fields [data-value="Georgia"]\')).backgroundColor');
+    assert.notEqual(selectedFlorida, idleGeorgia);
+    await shot('edit_answers_r3.png');
     await evaluate('document.getElementById("review-cancel").click()');
     await waitFor(async () => !(await evaluate('document.getElementById("results").hidden')), 'back to results');
 
@@ -470,7 +498,8 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
       };
     })()`);
     assert.ok(leadGeom.nameTop > 0 && leadGeom.nameTop < 1000, 'lead form should scroll into view, top=' + leadGeom.nameTop);
-    await shot('lead_form_r2.png', { x: leadGeom.x, y: leadGeom.y, width: leadGeom.width, height: leadGeom.height, scale: 1 });
+    assert.match(await evaluate('document.getElementById("lead-saved-note").textContent'), /3 saved plans will be included/);
+    await shot('lead_form_r3.png', { x: leadGeom.x, y: leadGeom.y, width: leadGeom.width, height: leadGeom.height, scale: 1 });
     await evaluate(`
       document.getElementById('first-name').value = 'Ada';
       document.getElementById('email').value = 'ada@example.com';
@@ -524,6 +553,40 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.equal(lead.utm_source, 'preview');
     assert.equal(lead.event, 'lead_submitted');
     assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 1);
+    assert.match(await evaluate('document.getElementById("lead-saved-note").textContent'), /3 saved plans will be included/);
+
+    await evaluate('document.getElementById("start-over-btn").click()');
+    assert.equal(await evaluate('document.getElementById("start-over-confirm").hidden'), false);
+    assert.match(await evaluate('document.getElementById("start-over-message").textContent'), /3 saved plans/);
+    await evaluate('document.getElementById("start-over-no").click()');
+    assert.equal(await evaluate('document.getElementById("results").hidden'), false);
+    assert.match(await evaluate('document.getElementById("my-plans-btn").textContent'), /My Plans \(3\)/);
+
+    await evaluate('document.getElementById("edit-btn").click()');
+    await waitFor(async () => !(await evaluate('document.getElementById("review-section").hidden')), 'edit answers after validation setup');
+    await evaluate(`
+      document.querySelector('#review-fields [data-value="Georgia"]').click();
+      document.querySelector('#review-fields [data-review="employees"]').value = '3';
+      document.querySelector('#review-fields [data-review="enrolling"]').value = '8';
+      document.getElementById('review-save').click();
+    `);
+    await waitFor(async () => (await evaluate('document.getElementById("review-error").textContent')).length > 0, 'review validation error');
+    assert.match(await evaluate('document.getElementById("review-error").textContent'), /eligible/i);
+    assert.equal(await evaluate('document.querySelector(\'#review-fields [data-review="employees"]\').value'), '3');
+    assert.equal(await evaluate('document.querySelector(\'#review-fields [data-review="enrolling"]\').value'), '8');
+    assert.equal(await evaluate('document.querySelector(\'#review-fields [data-value="Georgia"]\').getAttribute("aria-pressed")'), 'true');
+    assert.equal(await evaluate('document.querySelector(\'#review-fields [data-value="Florida"]\').getAttribute("aria-pressed")'), 'false');
+    await shot('edit_validation_r3.png');
+    await evaluate(`
+      document.querySelector('#review-fields [data-review="enrolling"]').value = '2';
+      document.getElementById('review-save').click();
+    `);
+    await waitFor(async () => !(await evaluate('document.getElementById("results").hidden')), 'results after corrected edit');
+    const corrected = await evaluate('document.getElementById("results-summary").textContent');
+    assert.match(corrected, /Georgia/);
+    assert.match(corrected, /3 eligible/);
+    assert.doesNotMatch(corrected, /Florida/);
+    assert.doesNotMatch(corrected, /12 eligible/);
 
     const beforeReload = posts.length;
     await send('Page.reload', {}, sessionId);

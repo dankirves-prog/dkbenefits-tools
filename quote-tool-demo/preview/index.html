@@ -116,6 +116,13 @@
             <button type="button" id="print-btn" class="btn btn-secondary">Print / Save as PDF</button>
           </div>
           <p id="print-help" class="hint print-help">Prints every plan in the current list. Save plans to print just those.</p>
+          <div id="start-over-confirm" class="confirm-panel" hidden>
+            <p id="start-over-message">Start over? This clears your answers.</p>
+            <div class="confirm-actions">
+              <button type="button" id="start-over-yes" class="btn btn-primary">Yes, start over</button>
+              <button type="button" id="start-over-no" class="btn btn-secondary">Keep working</button>
+            </div>
+          </div>
         </div>
 
         <div class="quote-layout">
@@ -139,7 +146,7 @@
               </div>
               <label class="slider-label" for="employer-contribution">Fine tune <span id="employer-percent-readout">50%</span></label>
               <input id="employer-contribution" type="range" min="50" max="100" step="1" value="50" aria-valuetext="Employer pays 50 percent of employee-only" />
-              <p class="hint">Employee-only starts at 50%, matching the current quote tool.</p>
+              <p class="hint">Most carriers require the employer to pay at least 50% of employee-only coverage.</p>
             </div>
             <div class="contrib-line">
               <p id="dep-preset-label" class="contrib-label">Employer pays this much of the dependent portion</p>
@@ -166,7 +173,7 @@
               <input id="flat-custom-amount" type="number" min="0" step="10" inputmode="numeric" placeholder="Custom amount" hidden />
             </label>
             <p id="flat-readout" class="readout">$300 per enrolled employee</p>
-            <p id="flat-note" class="hint">One flat amount applies to every enrolled person, including dependents, and is capped at that plan’s monthly premium. The request sends this single amount.</p>
+            <p id="flat-note" class="hint">Flat amount per enrolled employee, per month. It is capped at that plan’s monthly premium.</p>
           </div>
 
           <label class="payroll-label" for="payroll-schedule">Employee payroll deduction schedule</label>
@@ -209,6 +216,7 @@
         <section id="lead" class="panel lead" aria-labelledby="lead-heading">
           <h3 id="lead-heading">Get these plan details and more options from Daniel.</h3>
           <p>Share your contact info for a quick, no-pressure conversation with Daniel about the best next steps for your company.</p>
+          <p id="lead-saved-note" class="hint">Save any plans you want included, and Daniel will receive them with this request.</p>
           <form id="lead-form">
             <label for="first-name">First name
               <input id="first-name" name="firstName" type="text" autocomplete="given-name" required placeholder="First name" />

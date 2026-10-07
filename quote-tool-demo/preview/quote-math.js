@@ -265,6 +265,86 @@
     return '';
   }
 
+  function planType(plan) {
+    var name = String((plan && plan.name) || '');
+    if (/visit\s*limit/i.test(name)) return 'Visit Limit';
+    if (/\bPPO\b/i.test(name)) return 'PPO';
+    if (/\bEPO\b/i.test(name)) return 'EPO';
+    if (/\bHMO\b/i.test(name)) return 'HMO';
+    return 'Plan';
+  }
+
+  function parseWholeCount(raw, options) {
+    var settings = options || {};
+    var min = settings.min == null ? 0 : Number(settings.min);
+    var label = settings.label || 'this number';
+    var text = String(raw == null ? '' : raw).trim();
+    if (text === '') {
+      return {
+        ok: false,
+        message: min >= 1
+          ? 'Enter a whole number of at least 1 for ' + label + '.'
+          : 'Enter 0 or a whole number for ' + label + '.'
+      };
+    }
+    if (text.charAt(0) === '-') {
+      return {
+        ok: false,
+        message: min >= 1
+          ? 'Enter a whole number of at least 1 for ' + label + '. Negatives aren\u2019t counted.'
+          : 'Enter 0 or more for ' + label + '. Negatives aren\u2019t counted.'
+      };
+    }
+    if (/[.]/.test(text)) {
+      return { ok: false, message: 'Enter a whole number for ' + label + '. Decimals aren\u2019t used.' };
+    }
+    if (!/^\d+$/.test(text)) {
+      return { ok: false, message: 'Enter a whole number for ' + label + '.' };
+    }
+    var value = Number(text);
+    if (!Number.isInteger(value) || value < min) {
+      return {
+        ok: false,
+        message: min >= 1
+          ? 'Enter a whole number of at least 1 for ' + label + '.'
+          : 'Enter 0 or a whole number for ' + label + '.'
+      };
+    }
+    return { ok: true, value: value };
+  }
+
+  function legendLine(raw, code) {
+    if (!raw) return code === 'ERVL' ? 'ERVL = emergency room visit limit' : 'VL = visit limit';
+    var rest = String(raw).replace(/^(ERVL|VL)\*\s*/i, '').replace(/^\*\s*/, '').trim();
+    return code + '* \u2014 ' + rest;
+  }
+
+  function visitLimitLegend(plans) {
+    var list = Array.isArray(plans) ? plans : [plans];
+    var vlLine = '';
+    var ervlLine = '';
+    var needsVl = false;
+    var needsErvl = false;
+    list.forEach(function (plan) {
+      if (!plan) return;
+      var details = plan.details || {};
+      var detailText = Object.keys(details).map(function (key) { return details[key]; }).join(' ');
+      var notes = [].concat(plan.notes || [], plan.limitedNotes || []);
+      var blob = detailText + ' ' + notes.join(' ');
+      if (/(^|[^A-Z])VL\*/.test(blob)) needsVl = true;
+      if (/ERVL\*/.test(blob)) needsErvl = true;
+      notes.forEach(function (line) {
+        var text = String(line || '').trim();
+        if (!vlLine && /^VL\*/i.test(text)) vlLine = text;
+        if (!ervlLine && /^ERVL\*/i.test(text)) ervlLine = text;
+      });
+    });
+    var items = [];
+    if (needsVl) items.push(legendLine(vlLine, 'VL'));
+    if (needsErvl) items.push(legendLine(ervlLine, 'ERVL'));
+    return items;
+  }
+
   function mixCheck(entered, enrolling, eligible) {
     var total = mixTotal(entered);
     var enrolled = Number(enrolling || 0);
@@ -311,6 +391,9 @@
     TIER_LABELS: TIER_LABELS,
     displayName: displayName,
     majorMedicalNote: majorMedicalNote,
+    planType: planType,
+    parseWholeCount: parseWholeCount,
+    visitLimitLegend: visitLimitLegend,
     mixCheck: mixCheck,
     chunkPlans: chunkPlans,
     money: money,
