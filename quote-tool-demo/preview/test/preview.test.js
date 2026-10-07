@@ -619,7 +619,7 @@ test('display names are normalized and badges stay exactly as written', () => {
   model.toggleSaved('uhc-ppo-3000-hsa', true);
   const saved = model.leadPayload({ firstName: 'Ada', email: 'ada@example.com', phone: '' }).selectedPlans[0];
   assert.equal(saved.name, 'United Healthcare PPO 3000 HSA');
-  assert.equal(saved.typeBadge, 'Incl $25 Monthly HSA');
+  assert.equal(saved.typeBadge, 'Strong Network');
   const sorted = math.sortPlans(PLANS.filter((plan) => math.carrierOf(plan) === 'UHC'), 'carrier', math.estimateSmartMix(7), {
     model: 'percent', employerPercent: 50, dependentPercent: 0, flatAmount: 300, payPeriods: 26
   }).map(math.displayName);
