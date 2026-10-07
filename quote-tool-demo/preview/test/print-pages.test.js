@@ -12,10 +12,10 @@ const DEBUG_PORT = 9346;
 const ORIGIN = `http://127.0.0.1:${PORT}`;
 const WEBHOOK = 'script.google.com';
 const PLAN_IDS = [
-  'phcs-visit-limit-1750-HSA',
-  'cigna-epo-1000',
+  'cigna-ppo-8300-hsa',
+  'cigna-epo-1750-hsa',
   'UHC-PPO-2000-Deductible',
-  'cigna-epo-1750-hsa'
+  'phcs-visit-limit-1750-HSA'
 ];
 const DISCLAIMER_HTML = [
   'Important information',
@@ -341,7 +341,7 @@ test('printed proposals keep Important information on the last plan page', { tim
       assert.match(allPages[0], /Premium/);
       assert.match(allPages[0], /EE Cost PPP/);
       assert.doesNotMatch(allPages[0], /Important information/);
-      if (launch.id === 'iframe-desktop') renderPage(allFile, 3, 'print-all-last-page.png');
+      if (launch.id === 'iframe-desktop') renderPage(allFile, 3, 'print_all_last_page.png');
 
       for (let count = 1; count <= PLAN_IDS.length; count += 1) {
         const id = PLAN_IDS[count - 1];
@@ -358,7 +358,11 @@ test('printed proposals keep Important information on the last plan page', { tim
         assert.match(pages[0], /Outpatient Surgery/);
         assert.match(pages[0], /EE Cost PPP/);
         assert.match(pages[0], /Saved plans only/);
-        if (launch.id === 'iframe-desktop' && count === 4) renderPage(file, 1, '4-saved-plans-page-1.png');
+        if (launch.id === 'iframe-desktop' && count === 4) {
+          assert.match(pages[0], /Cigna PPO 8300/);
+          assert.match(pages[0], /Incl \$25 Monthly HSA/);
+          renderPage(file, 1, 'print_saved_4plans.png');
+        }
       }
     }
 

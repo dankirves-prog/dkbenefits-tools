@@ -420,6 +420,38 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
       return { x: Math.max(0, box.left), y: Math.max(0, box.top + window.scrollY), width: Math.ceil(box.width), height: Math.ceil(box.height), scale: 1 };
     })()`);
     await shot('desktop_card_labels.png', desktopCard);
+
+    async function shotPlanCard(id, filename) {
+      const found = await evaluate(`(() => {
+        let card = document.querySelector('[data-plan-id="${id}"]');
+        if (!card) return { missing: true };
+        const show = document.getElementById('show-all-plans');
+        if (show && (card.hidden || getComputedStyle(card).display === 'none')) show.click();
+        card = document.querySelector('[data-plan-id="${id}"]');
+        card.scrollIntoView({ behavior: 'instant', block: 'center' });
+        const box = card.getBoundingClientRect();
+        const root = document.documentElement;
+        return {
+          text: card.innerText,
+          client: root.clientWidth,
+          scroll: Math.max(root.scrollWidth, document.body.scrollWidth),
+          cardWidth: Math.ceil(box.width),
+          clip: {
+            x: Math.max(0, box.left),
+            y: Math.max(0, box.top + window.scrollY),
+            width: Math.ceil(Math.min(box.width, root.clientWidth - Math.max(0, box.left))),
+            height: Math.ceil(box.height),
+            scale: 1
+          }
+        };
+      })()`);
+      assert.notEqual(found.missing, true, id + ' card missing');
+      assert.match(found.text, /Incl \$25 Monthly HSA/);
+      assert.ok(found.cardWidth <= found.client + 1, id + ' card wider than the viewport: ' + found.cardWidth);
+      assert.ok(found.scroll <= found.client + 1, id + ' page overflow ' + found.scroll + ' > ' + found.client);
+      await shot(filename, found.clip);
+    }
+    await shotPlanCard('cigna-ppo-8300-hsa', 'card_8300_desktop.png');
     await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"] .details-toggle\').click()');
     await sleep(40);
     assert.equal(await evaluate('document.getElementById("details-cigna-epo-1000").hidden'), false);
@@ -1001,6 +1033,7 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
         assert.ok(mobileFit.scroll <= mobileFit.client + 1, '320 card page overflow ' + mobileFit.scroll);
         assert.ok(mobileFit.clip.width <= 320, 'card wider than 320: ' + mobileFit.clip.width);
         await shot('mobile_card_labels.png', mobileFit.clip);
+        await shotPlanCard('cigna-ppo-8300-hsa', 'card_8300_mobile320.png');
       }
       await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"] .details-toggle\').click()');
       await sleep(30);

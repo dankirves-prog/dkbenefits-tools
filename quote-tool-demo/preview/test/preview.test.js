@@ -797,6 +797,16 @@ test('display names are normalized and badges stay exactly as written', () => {
   assert.match(card, /Employee \+ Spouse/);
   const hsa = preview.planArticle(PLANS.find((plan) => plan.id === 'cigna-epo-1750-hsa'), model.getState());
   assert.match(hsa, /Incl \$25 Monthly HSA/);
+  ['cigna-ppo-8300-hsa', 'UHC-ppo-8300-hsa', 'phcs-ppo-8300-hsa'].forEach((id) => {
+    const plan = PLANS.find((item) => item.id === id);
+    const rates = { ...plan.rates };
+    assert.equal(plan.typeBadge, 'Incl $25 Monthly HSA');
+    assert.match(preview.planArticle(plan, model.getState()), /class="badge">Incl \$25 Monthly HSA</);
+    assert.deepEqual(plan.rates, rates);
+  });
+  ['cigna-ppo-3500-hsa', 'uhc-ppo-3500-hsa', 'phcs-ppo-3500-hsa'].forEach((id) => {
+    assert.equal(PLANS.find((item) => item.id === id).typeBadge, 'HSA Friendly');
+  });
   const low = preview.planArticle(PLANS.find((plan) => plan.id === 'phcs-visit-limit-1000'), model.getState());
   assert.match(low, /not traditional major medical/i);
   assert.match(low, /Lower Cost/);
