@@ -219,6 +219,7 @@ test('printed proposals keep Important information on the last plan page', { tim
     });
     assert.ok(html.indexOf('print-header') < html.indexOf('print-sheet'), filename + ' header is not on page 1');
     assert.ok(html.lastIndexOf('print-disclaimer') > html.lastIndexOf('print-sheet'), filename + ' disclaimer is not after the plans');
+    assert.ok(html.lastIndexOf('print-notes-page') > html.lastIndexOf('print-disclaimer'), filename + ' notes page is not after Important information');
     const created = await send('Target.createTarget', { url: 'about:blank' });
     const attached = await send('Target.attachToTarget', { targetId: created.targetId, flatten: true });
     const printSession = attached.sessionId;
@@ -308,24 +309,40 @@ test('printed proposals keep Important information on the last plan page', { tim
     }
   }
 
-  function assertProposal(file, expectedPages, label) {
+  function assertProposal(file, expectedProposalPages, label) {
     const info = pdfInfo(file);
-    assert.equal(info.pages, expectedPages, label + ' page count');
     assert.match(info.size, /792(\.\d+)? x 612(\.\d+)? pts/, label + ' should be US Letter landscape, got ' + info.size);
     const pages = [];
     for (let page = 1; page <= info.pages; page += 1) pages.push(flat(pageText(file, page)));
-    const last = pages[pages.length - 1];
-    assert.match(last, /Important information/, label + ' last page lost the disclaimer');
-    assert.equal(hasPlanContent(last), true, label + ' last page is disclaimer-only spillover');
-    pages.forEach((text, index) => {
+    assert.ok(pages.length > expectedProposalPages, label + ' is missing the notes page, total ' + pages.length);
+    const proposal = pages.slice(0, expectedProposalPages);
+    const notes = pages.slice(expectedProposalPages);
+    const proposalLast = proposal[proposal.length - 1];
+    assert.match(proposalLast, /Important information/, label + ' proposal section lost the disclaimer');
+    assert.equal(hasPlanContent(proposalLast), true, label + ' proposal section ends on a disclaimer-only page');
+    proposal.forEach((text, index) => {
+      assert.doesNotMatch(text, /Notes and Limitations/, label + ' proposal page ' + (index + 1) + ' includes the notes page');
       if (/Important information/.test(text)) {
         assert.equal(hasPlanContent(text), true, label + ' page ' + (index + 1) + ' holds only the disclaimer');
       }
     });
-    DISCLAIMER_PDF.forEach((sentence) => {
-      assert.ok(last.includes(sentence), label + ' dropped disclaimer wording: ' + sentence);
+    notes.forEach((text, index) => {
+      assert.match(text, /Notes and Limitations/, label + ' notes page ' + (index + 1) + ' lost its title');
+      assert.doesNotMatch(text, /Important information/, label + ' notes page ' + (index + 1) + ' repeated the disclaimer');
+      if (index === 0) assert.doesNotMatch(text, /Notes and Limitations \(continued\)/, label + ' first notes page was marked continued');
+      else assert.match(text, /Notes and Limitations \(continued\)/, label + ' later notes page is missing the continued title');
     });
-    counts.push({ label, pages: info.pages, size: info.size, spill: false });
+    DISCLAIMER_PDF.forEach((sentence) => {
+      assert.ok(proposalLast.includes(sentence), label + ' dropped disclaimer wording: ' + sentence);
+    });
+    counts.push({
+      label,
+      proposalPages: expectedProposalPages,
+      notesPages: notes.length,
+      totalPages: info.pages,
+      size: info.size,
+      spill: false
+    });
     return pages;
   }
 
@@ -413,7 +430,10 @@ test('printed proposals keep Important information on the last plan page', { tim
       assert.match(allPages[0], /Premium/);
       assert.match(allPages[0], /EE Cost PPP/);
       assert.doesNotMatch(allPages[0], /Important information/);
-      if (launch.id === 'iframe-desktop') renderPage(allFile, 3, 'print_all_last_page.png');
+      if (launch.id === 'iframe-desktop') {
+        renderPage(allFile, 3, 'print_all_last_page.png');
+        renderPage(allFile, allPages.length, 'notes_page_printall_last.png');
+      }
 
       for (let count = 1; count <= PLAN_IDS.length; count += 1) {
         const id = PLAN_IDS[count - 1];
@@ -450,7 +470,11 @@ test('printed proposals keep Important information on the last plan page', { tim
           assert.match(pages[0], /Plan type/);
           assert.match(pages[0], /Coverage note/);
           assert.match(pages[0], /Important information/);
+          assert.match(pages[expectedPages], /Notes and Limitations/);
+          assert.match(pages.join(' '), /Labs, X-rays and imaging are each limited to 3 per year/);
+          assert.match(pages.join(' '), /Patient Assistance Programs available for Brand Rx/);
           renderPage(file, 1, 'print_totals_6plans.png');
+          renderPage(file, expectedPages + 1, 'notes_page_6plans.png');
         }
         if (launch.id === 'iframe-desktop' && count === 7) {
           renderPage(file, 1, 'print_saved_7_page1.png');

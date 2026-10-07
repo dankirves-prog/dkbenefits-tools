@@ -971,7 +971,9 @@ test('saved plans print in one table and visit-limit wording stays attached', ()
   savedState.printLayout = 'saved';
   savedState.printPlans = model.plansForPrint('saved');
   const savedHtml = preview.printHtml(savedState);
-  assert.equal((savedHtml.match(/<table/g) || []).length, 1 + savedState.printPlans.length);
+  const notesTables = (savedHtml.match(/class="print-notes-table"/g) || []).length;
+  assert.ok(notesTables >= 1, 'saved proposal keeps a notes page');
+  assert.equal((savedHtml.match(/<table/g) || []).length, 1 + savedState.printPlans.length + notesTables);
   assert.doesNotMatch(savedHtml, /print-next/);
   assert.doesNotMatch(savedHtml, /Employee paycheck/);
   assert.match(savedHtml, /EE Cost PPP/);
@@ -1095,6 +1097,8 @@ test('saved plans paginate at six per page like print-all', () => {
     assert.ok(headerAt >= 0 && headerAt < firstSheet, 'header stays before the first sheet');
     assert.ok(summaryAt > headerAt && summaryAt < firstSheet, 'summary stays on the first page');
     assert.ok(disclaimerAt > lastSheet, 'Important information follows the last plan sheet');
+    const notesAt = html.indexOf('print-notes-page');
+    assert.ok(notesAt > disclaimerAt, count + ' notes page follows Important information');
     const pieces = html.split(/<section class="print-sheet/).slice(1);
     pieces.forEach((piece, index) => {
       const plansOnSheet = (piece.match(/class="print-tier/g) || []).length;
@@ -1104,6 +1108,65 @@ test('saved plans paginate at six per page like print-all', () => {
     if (count > 6) assert.equal(sizes[0], 6, 'first sheet stays full at six');
     assert.equal(sizes.reduce((sum, size) => sum + size, 0), count);
   });
+});
+
+test('printed notes page follows the proposal and lists each selected plan in full', () => {
+  const css = fs.readFileSync(path.join(__dirname, '../preview.css'), 'utf8');
+  assert.match(css, /\.print-notes-page\s*\{[^}]*break-before:\s*page/);
+  assert.match(css, /\.print-notes-table tr\s*\{[^}]*break-inside:\s*avoid/);
+  const model = preview.createModel({ plans: PLANS, pageUrl: PAGE, now: () => new Date(FIXED) });
+  reach(model, 10, 7);
+  ['cigna-ppo-8300-hsa', 'cigna-epo-1750-hsa', 'UHC-PPO-2000-Deductible', 'phcs-visit-limit-1750-HSA', 'cigna-epo-1000', 'uhc-ppo-3000-hsa'].forEach((id) => {
+    model.toggleSaved(id, true);
+  });
+  const state = model.getState();
+  state.printLayout = 'saved';
+  state.printPlans = model.plansForPrint('saved');
+  const html = preview.printHtml(state);
+  const disclaimerAt = html.indexOf('print-disclaimer');
+  const notesAt = html.indexOf('class="print-notes-page"');
+  assert.ok(disclaimerAt > html.lastIndexOf('print-sheet'), 'Important information still ends the proposal');
+  assert.ok(notesAt > disclaimerAt, 'notes page is after Important information');
+  assert.match(html.slice(notesAt, notesAt + 500), /<h2>Notes and Limitations<\/h2>/);
+  const names = [...html.matchAll(/class="print-notes-name">([^<]+)</g)].map((match) => match[1]);
+  assert.deepEqual(names, state.printPlans.map((item) => math.displayName(item.plan)));
+  state.printPlans.forEach((item) => {
+    assert.match(html, new RegExp('class="print-notes-carrier">' + math.carrierOf(item.plan) + '<'));
+    (item.plan.notes || []).forEach((line) => assert.ok(html.includes(preview.escapeHtml(line)), 'missing note ' + line));
+    (item.plan.limitedNotes || []).forEach((line) => assert.ok(html.includes(preview.escapeHtml(line)), 'missing limitation ' + line));
+  });
+  assert.match(html, /class="print-notes-label">Notes</);
+  assert.match(html, /class="print-notes-label">Limitations</);
+  const allState = model.getState();
+  allState.printLayout = 'all';
+  allState.printPlans = model.plansForPrint('all');
+  const allHtml = preview.printHtml(allState);
+  const sections = allHtml.split('class="print-notes-page"').slice(1);
+  assert.ok(sections.length >= 2, 'print-all notes should continue onto another page');
+  assert.match(sections[0], /<h2>Notes and Limitations<\/h2>/);
+  assert.doesNotMatch(sections[0], /Notes and Limitations \(continued\)/);
+  sections.slice(1).forEach((section) => {
+    assert.match(section, /<h2>Notes and Limitations \(continued\)<\/h2>/);
+  });
+  const allNames = [...allHtml.matchAll(/class="print-notes-name">([^<]+)</g)].map((match) => match[1]);
+  assert.deepEqual(allNames, allState.printPlans.map((item) => math.displayName(item.plan)));
+  const bare = Object.assign({}, PLANS[0], { notes: [], limitedNotes: [] });
+  const emptyState = model.getState();
+  emptyState.printLayout = 'saved';
+  emptyState.printPlans = [{ plan: bare }];
+  emptyState.saved = [{ id: bare.id }];
+  const emptyHtml = preview.printHtml(emptyState);
+  assert.match(emptyHtml, /print-disclaimer/);
+  assert.doesNotMatch(emptyHtml, /print-notes-page/);
+  const notesOnly = Object.assign({}, PLANS[0], { notes: ['Preventive care stays available.'], limitedNotes: [] });
+  const notesState = model.getState();
+  notesState.printLayout = 'saved';
+  notesState.printPlans = [{ plan: notesOnly }];
+  notesState.saved = [{ id: notesOnly.id }];
+  const notesOnlyHtml = preview.printHtml(notesState);
+  assert.match(notesOnlyHtml, /class="print-notes-label">Notes</);
+  assert.match(notesOnlyHtml, /Preventive care stays available\./);
+  assert.doesNotMatch(notesOnlyHtml, /class="print-notes-label">Limitations</);
 });
 
 test('pay cycle bubbles keep the schedule values and paycheck math', () => {

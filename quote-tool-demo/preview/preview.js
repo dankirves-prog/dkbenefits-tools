@@ -719,6 +719,90 @@
     return chunks;
   }
 
+  function filledNoteLines(list) {
+    return (list || []).map(function (line) { return String(line || '').trim(); }).filter(Boolean);
+  }
+
+  function planHasPrintNotes(plan) {
+    return filledNoteLines(plan && plan.notes).length > 0 || filledNoteLines(plan && plan.limitedNotes).length > 0;
+  }
+
+  function notesRowUnits(plan) {
+    var charsPerLine = 84;
+    function linesFor(text) {
+      return Math.max(1, Math.ceil(String(text).length / charsPerLine));
+    }
+    var notes = filledNoteLines(plan.notes);
+    var limits = filledNoteLines(plan.limitedNotes);
+    var lines = 0;
+    if (notes.length) {
+      lines += 1;
+      notes.forEach(function (line) { lines += linesFor(line); });
+    }
+    if (limits.length) {
+      lines += 1;
+      limits.forEach(function (line) { lines += linesFor(line); });
+    }
+    var name = QuoteMath.carrierOf(plan) + ' ' + QuoteMath.displayName(plan);
+    var left = Math.max(1, Math.ceil(name.length / 26)) + (plan.typeBadge ? 1 : 0);
+    return Math.max(left, lines, 1);
+  }
+
+  function notesPageGroups(plans) {
+    var budget = 34;
+    var pages = [];
+    var bucket = [];
+    var used = 0;
+    plans.forEach(function (plan) {
+      var units = notesRowUnits(plan);
+      if (bucket.length && used + units > budget) {
+        pages.push(bucket);
+        bucket = [];
+        used = 0;
+      }
+      bucket.push(plan);
+      used += units;
+    });
+    if (bucket.length) pages.push(bucket);
+    return pages;
+  }
+
+  function printNotesSection(plans, continued) {
+    var rows = plans.map(function (plan) {
+      var notes = filledNoteLines(plan.notes);
+      var limits = filledNoteLines(plan.limitedNotes);
+      var body = '';
+      if (notes.length) {
+        body += '<p class="print-notes-label">Notes</p>' + notes.map(function (line) {
+          return '<p>' + escapeHtml(line) + '</p>';
+        }).join('');
+      }
+      if (limits.length) {
+        body += '<p class="print-notes-label">Limitations</p>' + limits.map(function (line) {
+          return '<p>' + escapeHtml(line) + '</p>';
+        }).join('');
+      }
+      return '<tr><th scope="row"><span class="print-notes-carrier">' + escapeHtml(QuoteMath.carrierOf(plan)) + '</span>' +
+        '<span class="print-notes-name">' + escapeHtml(QuoteMath.displayName(plan)) + '</span>' +
+        badgeHtml(plan) +
+        '</th><td>' + body + '</td></tr>';
+    }).join('');
+    var title = continued ? 'Notes and Limitations (continued)' : 'Notes and Limitations';
+    return '<section class="print-notes-page"><header class="print-notes-head"><p class="print-brand">DK Benefits</p>' +
+      '<p>Daniel Kirves · Call/Text 407-476-5076 · dan@dkbenefits.net</p></header>' +
+      '<h2>' + escapeHtml(title) + '</h2>' +
+      '<table class="print-notes-table"><colgroup><col style="width:28%"><col style="width:72%"></colgroup><tbody>' +
+      rows + '</tbody></table></section>';
+  }
+
+  function printNotesHtml(items) {
+    var plans = (items || []).map(function (item) { return item.plan || item; }).filter(Boolean);
+    if (!plans.some(planHasPrintNotes)) return '';
+    return notesPageGroups(plans).map(function (page, index) {
+      return printNotesSection(page, index > 0);
+    }).join('');
+  }
+
   function printHtml(state) {
     var items = state.printPlans || [];
     var chunks = printChunks(items, { perPage: 6 });
@@ -739,7 +823,8 @@
       '<section class="print-disclaimer"><h2>Important information</h2>' +
       '<p>Rates shown are based on current published pricing and the answers provided. Final eligibility, participation, underwriting, plan availability, effective dates, and carrier/program approval may change pricing or options. Benefits are governed by official plan documents.</p>' +
       '<p>Plan availability may vary by state. If your business is outside Florida or Georgia, Daniel can let you know whether DK Benefits can assist directly or connect you with an appropriate resource.</p>' +
-      '<p>Use of this tool does not create a broker-client relationship or guarantee coverage.</p></section>';
+      '<p>Use of this tool does not create a broker-client relationship or guarantee coverage.</p></section>' +
+      printNotesHtml(items);
   }
 
   function launcherLabel(state) {
