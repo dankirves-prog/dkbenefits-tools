@@ -276,7 +276,8 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     await waitFor(async () => !(await evaluate('document.getElementById("results").hidden')), 'zero-rate results');
     await sleep(250);
     assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 0);
-    assert.equal(posts.filter((post) => post.body.includes('"event":"quote_started"')).length, 1);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"quote_started"')).length, 0);
+    assert.equal(posts.length, 0);
 
     plansMode = 'live';
     await evaluate('sessionStorage.clear()');
@@ -349,10 +350,9 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     const lowInSection = await evaluate('!!document.querySelector("#low-plans [data-plan-id=\\"phcs-visit-limit-1000\\"]")');
     assert.equal(lowInFeatured, false);
     assert.equal(lowInSection, true);
-    assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 1);
-    assert.equal(posts.filter((post) => post.body.includes('"event":"quote_started"')).length, 1);
-    const ratesPost = JSON.parse(posts.find((post) => post.body.includes('"event":"rates_displayed"')).body);
-    assert.equal(ratesPost.utm_source, 'preview');
+    assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 0);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"quote_started"')).length, 0);
+    assert.equal(posts.length, 0);
 
     await setViewport(1440, 1100);
     const columns = await evaluate('getComputedStyle(document.querySelector("#top-plans")).gridTemplateColumns');
@@ -404,7 +404,8 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.equal(filteredUhc, null);
     const updated = await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"]\').innerText');
     assert.match(updated, /\$4,193/);
-    assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 1);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 0);
+    assert.equal(posts.length, 0);
 
     await evaluate('document.querySelector(\'[data-carrier="All"]\').click()');
     await evaluate('document.getElementById("sort-mode").value = "price"; document.getElementById("sort-mode").dispatchEvent(new Event("change", { bubbles: true }));');
@@ -534,6 +535,7 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.ok(leadGeom.nameTop > 0 && leadGeom.nameTop < 1000, 'lead form should scroll into view, top=' + leadGeom.nameTop);
     assert.match(await evaluate('document.getElementById("lead-saved-note").textContent'), /3 saved plans will be included/);
     await shot('lead_form_r3.png', { x: leadGeom.x, y: leadGeom.y, width: leadGeom.width, height: leadGeom.height, scale: 1 });
+    assert.equal(posts.length, 0, 'visitor flow must not call Apps Script before the lead form is submitted');
     await evaluate(`
       document.getElementById('first-name').value = 'Ada';
       document.getElementById('email').value = 'ada@example.com';
@@ -586,7 +588,9 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     assert.deepEqual(Object.keys(lead.selectedPlans[0]), ['id', 'name', 'network', 'typeBadge', 'rates']);
     assert.equal(lead.utm_source, 'preview');
     assert.equal(lead.event, 'lead_submitted');
-    assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 1);
+    assert.equal(posts.filter((post) => post.url.includes(WEBHOOK)).length, 1);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 0);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"quote_started"')).length, 0);
     assert.match(await evaluate('document.getElementById("lead-saved-note").textContent'), /3 saved plans will be included/);
 
     await evaluate('document.getElementById("start-over-btn").click()');
@@ -638,8 +642,8 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     await evaluate('document.querySelector(\'[data-value="30"]\').click()');
     await waitFor(async () => !(await evaluate('document.getElementById("results").hidden')), 'results after refresh');
     await sleep(300);
-    assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 1);
-    assert.equal(posts.filter((post) => post.body.includes('"event":"quote_started"')).length, 1);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 0);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"quote_started"')).length, 0);
     assert.equal(posts.length, beforeReload);
     assert.equal(leaked, false);
     assert.ok(posts.every((post) => post.url.includes(WEBHOOK)));
@@ -691,9 +695,9 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     await waitFor(async () => !(await evaluate('document.getElementById("results").hidden')), 'live results');
     await sleep(250);
     const livePosts = posts.slice(beforeLive);
-    assert.equal(livePosts.filter((post) => post.body.includes('"event":"quote_started"')).length, 1);
-    assert.equal(livePosts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 1);
-    assert.ok(livePosts.every((post) => !post.body.includes('utm_source')));
+    assert.equal(livePosts.length, 0);
+    assert.equal(livePosts.filter((post) => post.body.includes('"event":"quote_started"')).length, 0);
+    assert.equal(livePosts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 0);
     assert.equal(await evaluate('document.getElementById("load-error").hidden'), true);
     assert.match(await evaluate('document.getElementById("results-summary").textContent'), /Florida/);
 
