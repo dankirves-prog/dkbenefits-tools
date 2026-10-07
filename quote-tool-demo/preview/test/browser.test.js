@@ -441,7 +441,8 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
         x: Math.max(0, box.x),
         y: Math.max(0, box.y + window.scrollY),
         width: Math.ceil(box.width),
-        height: Math.ceil(box.height)
+        height: Math.ceil(box.height),
+        scale: 1
       };
     })()`);
     await shot('mobile_results_no_strip.png', plansClip);
