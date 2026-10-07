@@ -6,10 +6,10 @@
     "network": "Utilizes Cigna network",
     "typeBadge": "Excellent Value",
     "rates": {
-      "employeeOnly": 504,
-      "employeeSpouse": 844,
-      "employeeChildren": 834,
-      "family": 1164
+      "employeeOnly": 509,
+      "employeeSpouse": 849,
+      "employeeChildren": 839,
+      "family": 1169
     },
     "details": {
       "deductible": "$1,000",
@@ -38,10 +38,10 @@
     "network": "Utilizes UHC Choice Plus network",
     "typeBadge": "Top Rated Network",
     "rates": {
-      "employeeOnly": 594,
-      "employeeSpouse": 994,
-      "employeeChildren": 984,
-      "family": 1334
+      "employeeOnly": 599,
+      "employeeSpouse": 999,
+      "employeeChildren": 989,
+      "family": 1349
     },
     "details": {
       "deductible": "$2,000",
@@ -70,10 +70,10 @@
     "network": "Utilizes Cigna network",
     "typeBadge": "Incl $25 Monthly HSA",
     "rates": {
-      "employeeOnly": 454,
-      "employeeSpouse": 804,
-      "employeeChildren": 794,
-      "family": 1094
+      "employeeOnly": 459,
+      "employeeSpouse": 809,
+      "employeeChildren": 799,
+      "family": 1099
     },
     "details": {
       "deductible": "$1,750",
@@ -102,10 +102,10 @@
     "network": "Utilizes UHC Choice Plus network",
     "typeBadge": "Strong Network",
     "rates": {
-      "employeeOnly": 534,
-      "employeeSpouse": 934,
-      "employeeChildren": 924,
-      "family": 1304
+      "employeeOnly": 539,
+      "employeeSpouse": 939,
+      "employeeChildren": 929,
+      "family": 1309
     },
     "details": {
       "deductible": "$3,000",
@@ -134,10 +134,10 @@
     "network": "Utilizes Cigna PPO network",
     "typeBadge": "Strong Network",
     "rates": {
-      "employeeOnly": 774,
-      "employeeSpouse": 1504,
-      "employeeChildren": 1394,
-      "family": 1989
+      "employeeOnly": 779,
+      "employeeSpouse": 1509,
+      "employeeChildren": 1399,
+      "family": 1994
     },
     "details": {
       "deductible": "$4,500",
@@ -166,10 +166,10 @@
     "network": "Utilizes UHC Choice Plus PPO network",
     "typeBadge": "Strong Network",
     "rates": {
-      "employeeOnly": 804,
-      "employeeSpouse": 1554,
-      "employeeChildren": 1424,
-      "family": 2064
+      "employeeOnly": 809,
+      "employeeSpouse": 1559,
+      "employeeChildren": 1429,
+      "family": 2069
     },
     "details": {
       "deductible": "$4,500",
@@ -198,10 +198,10 @@
     "network": "Utilizes PHCS PPO network",
     "typeBadge": "Rich Benefits",
     "rates": {
-      "employeeOnly": 702,
-      "employeeSpouse": 1464,
-      "employeeChildren": 1309,
-      "family": 1934
+      "employeeOnly": 707,
+      "employeeSpouse": 1469,
+      "employeeChildren": 1314,
+      "family": 1939
     },
     "details": {
       "deductible": "$4,500",
@@ -230,10 +230,10 @@
     "network": "Utilizes Cigna PPO network",
     "typeBadge": "Strong Network",
     "rates": {
-      "employeeOnly": 879,
-      "employeeSpouse": 1574,
-      "employeeChildren": 1544,
-      "family": 2264
+      "employeeOnly": 884,
+      "employeeSpouse": 1579,
+      "employeeChildren": 1549,
+      "family": 2269
     },
     "details": {
       "deductible": "$3,500",
@@ -262,10 +262,10 @@
     "network": "Utilizes UHC Choice Plus PPO network",
     "typeBadge": "Strong Network",
     "rates": {
-      "employeeOnly": 914,
-      "employeeSpouse": 1634,
-      "employeeChildren": 1604,
-      "family": 2354
+      "employeeOnly": 919,
+      "employeeSpouse": 1639,
+      "employeeChildren": 1609,
+      "family": 2359
     },
     "details": {
       "deductible": "$3,500",
@@ -294,10 +294,10 @@
     "network": "Utilizes PHCS PPO network",
     "typeBadge": "Rich Benefits",
     "rates": {
-      "employeeOnly": 809,
-      "employeeSpouse": 1527,
-      "employeeChildren": 1494,
-      "family": 2214
+      "employeeOnly": 814,
+      "employeeSpouse": 1532,
+      "employeeChildren": 1499,
+      "family": 2219
     },
     "details": {
       "deductible": "$3,500",
@@ -326,10 +326,10 @@
     "network": "Utilizes Cigna PPO network",
     "typeBadge": "HSA Friendly",
     "rates": {
-      "employeeOnly": 724,
-      "employeeSpouse": 1404,
-      "employeeChildren": 1274,
-      "family": 1944
+      "employeeOnly": 729,
+      "employeeSpouse": 1409,
+      "employeeChildren": 1279,
+      "family": 1949
     },
     "details": {
       "deductible": "$3,500",
@@ -358,10 +358,10 @@
     "network": "Utilizes UHC Choice Plus PPO network",
     "typeBadge": "HSA Friendly",
     "rates": {
-      "employeeOnly": 764,
-      "employeeSpouse": 1464,
-      "employeeChildren": 1334,
-      "family": 2024
+      "employeeOnly": 769,
+      "employeeSpouse": 1469,
+      "employeeChildren": 1339,
+      "family": 2029
     },
     "details": {
       "deductible": "$3,500",
@@ -390,10 +390,10 @@
     "network": "Utilizes PHCS PPO network",
     "typeBadge": "HSA Friendly",
     "rates": {
-      "employeeOnly": 664,
-      "employeeSpouse": 1354,
-      "employeeChildren": 1214,
-      "family": 1884
+      "employeeOnly": 669,
+      "employeeSpouse": 1359,
+      "employeeChildren": 1219,
+      "family": 1889
     },
     "details": {
       "deductible": "$3,500",
@@ -422,10 +422,10 @@
     "network": "Utilizes Cigna PPO network",
     "typeBadge": "HSA Friendly",
     "rates": {
-      "employeeOnly": 604,
-      "employeeSpouse": 984,
-      "employeeChildren": 1104,
-      "family": 1364
+      "employeeOnly": 609,
+      "employeeSpouse": 989,
+      "employeeChildren": 1109,
+      "family": 1369
     },
     "details": {
       "deductible": "$8,300",
@@ -454,10 +454,10 @@
     "network": "Utilizes UHC Choice Plus PPO network",
     "typeBadge": "HSA Friendly",
     "rates": {
-      "employeeOnly": 644,
-      "employeeSpouse": 1044,
-      "employeeChildren": 1164,
-      "family": 1444
+      "employeeOnly": 649,
+      "employeeSpouse": 1049,
+      "employeeChildren": 1169,
+      "family": 1449
     },
     "details": {
       "deductible": "$8,300",
@@ -486,10 +486,10 @@
     "network": "Utilizes PHCS PPO network",
     "typeBadge": "HSA Friendly",
     "rates": {
-      "employeeOnly": 544,
-      "employeeSpouse": 934,
-      "employeeChildren": 1054,
-      "family": 1314
+      "employeeOnly": 549,
+      "employeeSpouse": 939,
+      "employeeChildren": 1059,
+      "family": 1319
     },
     "details": {
       "deductible": "$8,300",
@@ -518,10 +518,10 @@
     "network": "Utilizes PHCS network",
     "typeBadge": "Lower Cost",
     "rates": {
-      "employeeOnly": 414,
-      "employeeSpouse": 744,
-      "employeeChildren": 734,
-      "family": 1044
+      "employeeOnly": 419,
+      "employeeSpouse": 749,
+      "employeeChildren": 739,
+      "family": 1049
     },
     "details": {
       "deductible": "$1,000 for covered services",
@@ -556,10 +556,10 @@
     "network": "Utilizes PHCS network",
     "typeBadge": "Incl $25 Monthly HSA",
     "rates": {
-      "employeeOnly": 374,
-      "employeeSpouse": 704,
-      "employeeChildren": 694,
-      "family": 974
+      "employeeOnly": 379,
+      "employeeSpouse": 709,
+      "employeeChildren": 699,
+      "family": 979
     },
     "details": {
       "deductible": "$1,750 for covered services",

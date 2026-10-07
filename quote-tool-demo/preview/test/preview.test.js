@@ -972,10 +972,10 @@ test('saved plans print in one table and visit-limit wording stays attached', ()
   assert.doesNotMatch(savedHtml, /Employer monthly(?! contribution)/);
   const pricedPlan = PLANS.find((item) => item.id === 'cigna-epo-1000');
   assert.deepEqual(pricedPlan.rates, {
-    employeeOnly: 504,
-    employeeSpouse: 844,
-    employeeChildren: 834,
-    family: 1164
+    employeeOnly: 509,
+    employeeSpouse: 849,
+    employeeChildren: 839,
+    family: 1169
   });
   assert.equal(savedState.resolvedContribution.model, 'percent');
   assert.equal(savedState.resolvedContribution.employerPercent, 50);
