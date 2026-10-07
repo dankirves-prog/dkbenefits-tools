@@ -489,6 +489,8 @@ function renderPlanCard(plan, mix) {
           <li><span>Specialist</span><strong>${plan.details.specialist}</strong></li>
           <li><span>Urgent Care</span><strong>${plan.details.urgentCare}</strong></li>
           ${plan.details.emergencyRoom ? `<li><span>Emergency Room</span><strong>${plan.details.emergencyRoom}</strong></li>` : ''}
+          ${plan.details.inpatientHospital ? `<li><span>Inpatient Hospital</span><strong>${plan.details.inpatientHospital}</strong></li>` : ''}
+          ${plan.details.outpatientSurgery ? `<li><span>Outpatient Surgery</span><strong>${plan.details.outpatientSurgery}</strong></li>` : ''}
           <li><span>RX Summary</span><strong>${plan.details.rx}</strong></li>
         </ul>
       </div>
