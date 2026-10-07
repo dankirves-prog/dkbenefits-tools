@@ -18,7 +18,9 @@
       "specialist": "$50 copay after deductible",
       "urgentCare": "$50 copay after deductible",
       "emergencyRoom": "$1,000 copay after deductible",
-      "rx": "Generic $0 after deductible"
+      "inpatientHospital": "$2,500 copay per admission after deductible",
+      "outpatientSurgery": "$2,500 copay per surgery after deductible",
+      "rx": "$0 copay"
     },
     "notes": [
       "Deductible must be met before copays except preventive $0 and telemedicine $0."
@@ -46,9 +48,11 @@
       "oopMax": "$8,500",
       "pcp": "$50 copay after deductible",
       "specialist": "$50 copay after deductible",
-      "urgentCare": "$50 copay after deductible",
+      "urgentCare": "$100 copay after deductible",
       "emergencyRoom": "$1,000 copay after deductible",
-      "rx": "Generic $0 after deductible"
+      "inpatientHospital": "$2,500 copay per admission after deductible",
+      "outpatientSurgery": "$2,500 copay per surgery after deductible",
+      "rx": "$0 copay"
     },
     "notes": [
       "Deductible must be met before copays except preventive $0 and telemedicine $0. Out of Network Deductible and Max is double with 50% coinsurance."
@@ -66,10 +70,10 @@
     "network": "Utilizes Cigna network",
     "typeBadge": "Incl $25 Monthly HSA",
     "rates": {
-      "employeeOnly": 429,
-      "employeeSpouse": 754,
-      "employeeChildren": 744,
-      "family": 1024
+      "employeeOnly": 454,
+      "employeeSpouse": 804,
+      "employeeChildren": 794,
+      "family": 1094
     },
     "details": {
       "deductible": "$1,750",
@@ -78,6 +82,8 @@
       "specialist": "$50 copay after deductible",
       "urgentCare": "$50 copay after deductible",
       "emergencyRoom": "$1,000 copay after deductible",
+      "inpatientHospital": "$2,500 copay per admission after deductible",
+      "outpatientSurgery": "$2,500 copay per surgery after deductible",
       "rx": "Generic $0 after deductible"
     },
     "notes": [
@@ -106,8 +112,10 @@
       "oopMax": "$8,500",
       "pcp": "$50 copay after deductible",
       "specialist": "$50 copay after deductible",
-      "urgentCare": "$50 copay after deductible",
+      "urgentCare": "$100 copay after deductible",
       "emergencyRoom": "$1,000 copay after deductible",
+      "inpatientHospital": "$2,500 copay per admission after deductible",
+      "outpatientSurgery": "$2,500 copay per surgery after deductible",
       "rx": "Generic $0 after deductible"
     },
     "notes": [
@@ -133,12 +141,14 @@
     },
     "details": {
       "deductible": "$4,500",
-      "oopMax": "$9,100",
+      "oopMax": "$9,000",
       "pcp": "$40",
       "specialist": "$75",
       "urgentCare": "$90",
       "emergencyRoom": "After deductible, member pays 30%",
-      "rx": "$20 / $65 / $95"
+      "inpatientHospital": "After deductible, member pays 30%",
+      "outpatientSurgery": "After deductible, member pays 30%",
+      "rx": "$20 / $65 / $95 / $200"
     },
     "notes": [
       "Balanced PPO option with stronger copay predictability. Facility services are covered at 30% coinsurance after deductible. $0 Telemedicine."
@@ -163,12 +173,14 @@
     },
     "details": {
       "deductible": "$4,500",
-      "oopMax": "$9,100",
+      "oopMax": "$9,000",
       "pcp": "$40",
       "specialist": "$75",
       "urgentCare": "$90",
       "emergencyRoom": "After deductible, member pays 30%",
-      "rx": "$20 / $65 / $95"
+      "inpatientHospital": "After deductible, member pays 30%",
+      "outpatientSurgery": "After deductible, member pays 30%",
+      "rx": "$20 / $65 / $95 / $200"
     },
     "notes": [
       "Balanced PPO option with stronger copay predictability. Facility services are covered at 30% coinsurance after deductible. $0 Telemedicine."
@@ -193,12 +205,14 @@
     },
     "details": {
       "deductible": "$4,500",
-      "oopMax": "$9,100",
+      "oopMax": "$9,000",
       "pcp": "$40",
       "specialist": "$75",
       "urgentCare": "$90",
       "emergencyRoom": "After deductible, member pays 30%",
-      "rx": "$20 / $65 / $95"
+      "inpatientHospital": "After deductible, member pays 30%",
+      "outpatientSurgery": "After deductible, member pays 30%",
+      "rx": "$20 / $65 / $95 / $200"
     },
     "notes": [
       "Balanced PPO option with stronger copay predictability. Facility services are covered at 30% coinsurance after deductible. $0 Telemedicine."
@@ -228,7 +242,9 @@
       "specialist": "$75",
       "urgentCare": "$90",
       "emergencyRoom": "After deductible, member pays 20%",
-      "rx": "$20 / $65 / $95"
+      "inpatientHospital": "After deductible, member pays 20%",
+      "outpatientSurgery": "After deductible, member pays 20%",
+      "rx": "$20 / $65 / $95 / $200"
     },
     "notes": [
       "Balanced PPO option with stronger copay predictability. Facility services are covered at 20% coinsurance after deductible. $0 Telemedicine."
@@ -258,7 +274,9 @@
       "specialist": "$75",
       "urgentCare": "$90",
       "emergencyRoom": "After deductible, member pays 20%",
-      "rx": "$20 / $65 / $95"
+      "inpatientHospital": "After deductible, member pays 20%",
+      "outpatientSurgery": "After deductible, member pays 20%",
+      "rx": "$20 / $65 / $95 / $200"
     },
     "notes": [
       "Balanced PPO option with stronger copay predictability. Facility services are covered at 20% coinsurance after deductible. $0 Telemedicine."
@@ -288,7 +306,9 @@
       "specialist": "$75",
       "urgentCare": "$90",
       "emergencyRoom": "After deductible, member pays 20%",
-      "rx": "$20 / $65 / $95"
+      "inpatientHospital": "After deductible, member pays 20%",
+      "outpatientSurgery": "After deductible, member pays 20%",
+      "rx": "$20 / $65 / $95 / $200"
     },
     "notes": [
       "Balanced PPO option with stronger copay predictability. Facility services are covered at 20% coinsurance after deductible. $0 Telemedicine."
@@ -318,6 +338,8 @@
       "specialist": "After deductible, plan pays 70%",
       "urgentCare": "After deductible, plan pays 70%",
       "emergencyRoom": "After deductible, plan pays 70%",
+      "inpatientHospital": "After deductible, plan pays 70%",
+      "outpatientSurgery": "After deductible, plan pays 70%",
       "rx": "After deductible, plan pays 70%; eligible preventive generics may be $0"
     },
     "notes": [
@@ -348,6 +370,8 @@
       "specialist": "After deductible, plan pays 70%",
       "urgentCare": "After deductible, plan pays 70%",
       "emergencyRoom": "After deductible, plan pays 70%",
+      "inpatientHospital": "After deductible, plan pays 70%",
+      "outpatientSurgery": "After deductible, plan pays 70%",
       "rx": "After deductible, plan pays 70%; eligible preventive generics may be $0"
     },
     "notes": [
@@ -378,6 +402,8 @@
       "specialist": "After deductible, plan pays 70%",
       "urgentCare": "After deductible, plan pays 70%",
       "emergencyRoom": "After deductible, plan pays 70%",
+      "inpatientHospital": "After deductible, plan pays 70%",
+      "outpatientSurgery": "After deductible, plan pays 70%",
       "rx": "After deductible, plan pays 70%; eligible preventive generics may be $0"
     },
     "notes": [
@@ -408,6 +434,8 @@
       "specialist": "After deductible, plan pays 100%",
       "urgentCare": "After deductible, plan pays 100%",
       "emergencyRoom": "After deductible, plan pays 100%",
+      "inpatientHospital": "After deductible, plan pays 100%",
+      "outpatientSurgery": "After deductible, plan pays 100%",
       "rx": "After deductible, plan pays 100%; eligible preventive generics may be $0"
     },
     "notes": [
@@ -438,6 +466,8 @@
       "specialist": "After deductible, plan pays 100%",
       "urgentCare": "After deductible, plan pays 100%",
       "emergencyRoom": "After deductible, plan pays 100%",
+      "inpatientHospital": "After deductible, plan pays 100%",
+      "outpatientSurgery": "After deductible, plan pays 100%",
       "rx": "After deductible, plan pays 100%; eligible preventive generics may be $0"
     },
     "notes": [
@@ -459,7 +489,7 @@
       "employeeOnly": 544,
       "employeeSpouse": 934,
       "employeeChildren": 1054,
-      "family": 1364
+      "family": 1314
     },
     "details": {
       "deductible": "$8,300",
@@ -468,6 +498,8 @@
       "specialist": "After deductible, plan pays 100%",
       "urgentCare": "After deductible, plan pays 100%",
       "emergencyRoom": "After deductible, plan pays 100%",
+      "inpatientHospital": "After deductible, plan pays 100%",
+      "outpatientSurgery": "After deductible, plan pays 100%",
       "rx": "After deductible, plan pays 100%; eligible preventive generics may be $0"
     },
     "notes": [
@@ -498,6 +530,8 @@
       "specialist": "$50 after deductible; VL*",
       "urgentCare": "$50 after deductible; VL*",
       "emergencyRoom": "$250 copay after deductible; ERVL*",
+      "inpatientHospital": "$1,000 copay per admission after deductible; limit 2 ICU + 2 non-ICU admissions/yr",
+      "outpatientSurgery": "$250 copay per surgery after deductible; limit 3 surgeries/yr",
       "rx": "$0 Generic"
     },
     "notes": [
@@ -509,7 +543,8 @@
       "ERVL* *2 visits per year accident-related & 2 visits per year sickness-related",
       "Rx is limited to Generic only, PAP available for Brand.",
       "Outpatient Surgery is limited to 3 surgeries per year at $250 copay after deductible.",
-      "Hospitalization is limited to 2 per year ICU and 2 non-ICU at $1000 copay after deductible."
+      "Hospitalization is limited to 2 per year ICU and 2 non-ICU at $1000 copay after deductible.",
+      "Labs, X-rays and imaging are each limited to 3 per year."
     ],
     "status": "active",
     "ratesValidUntil": "2026-12-31"
@@ -533,6 +568,8 @@
       "specialist": "$50 after deductible; VL*",
       "urgentCare": "$50 after deductible; VL*",
       "emergencyRoom": "$250 copay after deductible; ERVL*",
+      "inpatientHospital": "$1,000 copay per admission after deductible; limit 2 ICU + 2 non-ICU admissions/yr",
+      "outpatientSurgery": "$250 copay per surgery after deductible; limit 3 surgeries/yr",
       "rx": "$0 Generic"
     },
     "notes": [
@@ -545,7 +582,8 @@
       "ERVL* *2 visits per year accident-related & 2 visits per year sickness-related",
       "Rx is limited to Generic only, PAP available for Brand.",
       "Outpatient Surgery is limited to 3 surgeries per year at $250 copay after deductible.",
-      "Hospitalization is limited to 2 per year ICU and 2 non-ICU at $1000 copay after deductible."
+      "Hospitalization is limited to 2 per year ICU and 2 non-ICU at $1000 copay after deductible.",
+      "Labs, X-rays and imaging are each limited to 3 per year."
     ],
     "status": "active",
     "ratesValidUntil": "2026-12-31"
