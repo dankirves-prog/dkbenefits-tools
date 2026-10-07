@@ -306,6 +306,14 @@ input, select {
   padding: .3rem 0;
   font-size: .84rem;
 }
+.benefit-list li span,
+.benefit-list li strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.benefit-list li strong {
+  text-align: right;
+}
 .limit-note {
   margin-top: .35rem;
   border-left: 3px solid #9bb9f6;
