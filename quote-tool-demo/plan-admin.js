@@ -70,6 +70,8 @@ function selectPlan(index) {
   planForm.elements['details.specialist'].value = p.details.specialist || '';
   planForm.elements['details.urgentCare'].value = p.details.urgentCare || '';
   planForm.elements['details.emergencyRoom'].value = p.details.emergencyRoom || '';
+  planForm.elements['details.inpatientHospital'].value = p.details.inpatientHospital || '';
+  planForm.elements['details.outpatientSurgery'].value = p.details.outpatientSurgery || '';
   planForm.elements['details.rx'].value = p.details.rx || '';
 
   planForm.elements['notes'].value = toLines(p.notes);
@@ -106,6 +108,8 @@ function applyFormToSelected() {
   p.details.specialist = planForm.elements['details.specialist'].value.trim();
   p.details.urgentCare = planForm.elements['details.urgentCare'].value.trim();
   p.details.emergencyRoom = planForm.elements['details.emergencyRoom'].value.trim();
+  p.details.inpatientHospital = planForm.elements['details.inpatientHospital'].value.trim();
+  p.details.outpatientSurgery = planForm.elements['details.outpatientSurgery'].value.trim();
   p.details.rx = planForm.elements['details.rx'].value.trim();
 
   p.notes = fromLines(planForm.elements['notes'].value);
@@ -126,6 +130,8 @@ function renderPreview() {
     <p><strong>Network:</strong> ${p.network || '-'}</p>
     <p><strong>Rates:</strong> EE ${r.employeeOnly ?? '-'} | ES ${r.employeeSpouse ?? '-'} | EC ${r.employeeChildren ?? '-'} | FAM ${r.family ?? '-'}</p>
     <p><strong>Benefits:</strong> Deductible ${d.deductible || '-'} · OOP ${d.oopMax || '-'} · PCP ${d.pcp || '-'}</p>
+    <p><strong>Inpatient Hospital:</strong> ${d.inpatientHospital || '-'}</p>
+    <p><strong>Outpatient Surgery:</strong> ${d.outpatientSurgery || '-'}</p>
     <p><strong>Notes:</strong></p>
     <ul>${(p.notes || []).map((n) => `<li>${n}</li>`).join('') || '<li>None</li>'}</ul>
   `;
@@ -142,7 +148,7 @@ function blankPlan() {
     ratesValidUntil: '',
     allowedStates: [],
     rates: { employeeOnly: 0, employeeSpouse: 0, employeeChildren: 0, family: 0 },
-    details: { deductible: '', oopMax: '', pcp: '', specialist: '', urgentCare: '', emergencyRoom: '', rx: '' },
+    details: { deductible: '', oopMax: '', pcp: '', specialist: '', urgentCare: '', emergencyRoom: '', inpatientHospital: '', outpatientSurgery: '', rx: '' },
     notes: [],
     limitedNotes: []
   };
