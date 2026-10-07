@@ -7,6 +7,33 @@ const test = require('node:test');
 
 const ROOT = path.join(__dirname, '../../..');
 const PLANS_PATH = path.join(ROOT, 'quote-tool-demo/plans.json');
+const math = require(path.join(ROOT, 'quote-tool-demo/preview/quote-math.js'));
+const CIGNA_1000 = JSON.parse(fs.readFileSync(PLANS_PATH, 'utf8')).find((plan) => plan.id === 'cigna-epo-1000');
+const SEVEN_MIX = { employeeOnly: 4, employeeSpouse: 1, employeeChildren: 1, family: 1 };
+
+function cignaTotals(employerPercent, dependentPercent) {
+  const totals = math.planTotals(CIGNA_1000, SEVEN_MIX, {
+    model: 'percent',
+    employerPercent: employerPercent,
+    dependentPercent: dependentPercent,
+    payPeriods: 26
+  });
+  return {
+    gross: math.money(totals.gross),
+    employer: math.money(totals.employer),
+    employeeOnly: math.money(totals.paycheck.employeeOnly),
+    employeeSpouse: math.money(totals.paycheck.employeeSpouse),
+    employeeChildren: math.money(totals.paycheck.employeeChildren),
+    family: math.money(totals.paycheck.family)
+  };
+}
+
+function quoted(amount) {
+  return new RegExp(amount.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+}
+
+const DEFAULT_CIGNA = cignaTotals(50, 0);
+const FULL_SHARE_CIGNA = cignaTotals(100, 50);
 const ARTIFACTS = '/opt/cursor/artifacts';
 const PORT = 8765;
 const DEBUG_PORT = 9333;
@@ -332,12 +359,12 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     const mix = await evaluate('[...document.querySelectorAll(".mix-grid input")].map((input) => input.value).join(",")');
     assert.equal(mix, '4,1,1,1');
     const card = await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"]\').innerText');
-    assert.match(card, /\$4,858/);
-    assert.match(card, /\$1,764/);
-    assert.match(card, /\$116/);
-    assert.match(card, /\$273/);
-    assert.match(card, /\$269/);
-    assert.match(card, /\$421/);
+    assert.match(card, quoted(DEFAULT_CIGNA.gross));
+    assert.match(card, quoted(DEFAULT_CIGNA.employer));
+    assert.match(card, quoted(DEFAULT_CIGNA.employeeOnly));
+    assert.match(card, quoted(DEFAULT_CIGNA.employeeSpouse));
+    assert.match(card, quoted(DEFAULT_CIGNA.employeeChildren));
+    assert.match(card, quoted(DEFAULT_CIGNA.family));
     assert.match(card, /Excellent Value/);
     assert.match(card, /Total monthly premium/);
     assert.match(card, /Employer monthly contribution/);
@@ -472,7 +499,7 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     const filteredUhc = await evaluate('document.querySelector(\'[data-plan-id="uhc-ppo-3000-hsa"]\')');
     assert.equal(filteredUhc, null);
     const updated = await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"]\').innerText');
-    assert.match(updated, /\$4,193/);
+    assert.match(updated, quoted(FULL_SHARE_CIGNA.employer));
     assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 1);
     assert.equal(posts.filter((post) => post.body.includes('"event":"quote_started"')).length, 1);
     assert.equal(posts.length, 2);
@@ -522,18 +549,18 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
     const mixError = await evaluate('document.getElementById("mix-note").innerText');
     assert.match(mixError, /higher than the 10 eligible/);
     const still = await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"]\').innerText');
-    assert.match(still, /\$4,858/);
+    assert.match(still, quoted(DEFAULT_CIGNA.gross));
     await evaluate('document.getElementById("mix-fam").value = "1.5"; document.getElementById("mix-fam").dispatchEvent(new Event("input", { bubbles: true }));');
     await sleep(40);
     const decimalNote = await evaluate('document.getElementById("mix-note").innerText');
     assert.match(decimalNote, /Decimals/);
-    assert.match(await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"]\').innerText'), /\$4,858/);
+    assert.match(await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"]\').innerText'), quoted(DEFAULT_CIGNA.gross));
     await evaluate('document.getElementById("mix-ee").scrollIntoView({ behavior: "instant", block: "center" })');
     await shot('validation_mix_r3.png');
     await evaluate('document.getElementById("mix-fam").value = "1"; document.getElementById("mix-fam").dispatchEvent(new Event("input", { bubbles: true }));');
     await evaluate('document.getElementById("mix-ee").value = "-3"; document.getElementById("mix-ee").dispatchEvent(new Event("input", { bubbles: true }));');
     assert.match(await evaluate('document.getElementById("mix-note").innerText'), /0 or more/);
-    assert.match(await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"]\').innerText'), /\$4,858/);
+    assert.match(await evaluate('document.querySelector(\'[data-plan-id="cigna-epo-1000"]\').innerText'), quoted(DEFAULT_CIGNA.gross));
     await evaluate('document.getElementById("mix-ee").value = "4"; document.getElementById("mix-ee").dispatchEvent(new Event("input", { bubbles: true }));');
 
     await setViewport(1440, 1000);

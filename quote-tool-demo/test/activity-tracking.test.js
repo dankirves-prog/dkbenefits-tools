@@ -238,7 +238,7 @@ function leadFixture(extra) {
       name: 'Cigna EPO 1000',
       network: 'Utilizes Cigna network',
       typeBadge: 'Excellent Value',
-      rates: { employeeOnly: 504, employeeSpouse: 844, employeeChildren: 834, family: 1164 }
+      rates: Object.assign({}, plans.find((plan) => plan.id === 'cigna-epo-1000').rates)
     }]
   }, extra || {});
 }
