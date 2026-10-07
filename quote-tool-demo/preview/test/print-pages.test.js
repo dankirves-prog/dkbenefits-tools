@@ -401,7 +401,10 @@ test('printed proposals keep Important information on the last plan page', { tim
           assert.match(pages[0], /Cigna PPO 8300/);
           assert.match(pages[0], /Visit Limit/);
           assert.match(pages[0], /Total monthly premium/);
-          assert.match(pages[0], /Employer monthly contribution/);
+          assert.match(pages[0], /Employer monthly/);
+          assert.match(pages[0], /Plan type/);
+          assert.match(pages[0], /Coverage note/);
+          assert.match(pages[0], /Important information/);
           renderPage(file, 1, 'print_totals_6plans.png');
         }
         if (launch.id === 'iframe-desktop' && count === 7) {
