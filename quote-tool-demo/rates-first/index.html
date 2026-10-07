@@ -53,6 +53,106 @@
         </div>
       </div>
 
+      <div id="customize-panel" class="rf-customize">
+        <section class="panel mix-panel" aria-labelledby="mix-heading">
+          <div class="mix-head">
+            <h2 id="mix-heading">Customize for your group</h2>
+            <div class="rf-head-actions">
+              <button type="button" id="customize-hide" class="rf-link">Hide</button>
+              <button type="button" id="clear-group" class="btn btn-secondary">Clear</button>
+            </div>
+          </div>
+          <p class="hint">Optional. Monthly tier rates stay visible either way. Totals appear after you enter enrollment.</p>
+          <div class="rf-customize-rows">
+            <div class="mix-grid rf-counts">
+              <label for="eligible">Eligible employees
+                <input id="eligible" type="number" min="1" step="1" inputmode="numeric" placeholder="Eligible" autocomplete="off" />
+              </label>
+              <label for="enrolling">Enrolling
+                <input id="enrolling" type="number" min="1" step="1" inputmode="numeric" placeholder="Enrolling" autocomplete="off" />
+              </label>
+            </div>
+            <div class="rf-mix-block">
+              <div class="rf-mix-head">
+                <h3 class="rf-subhead">Enrollment mix</h3>
+                <button type="button" id="reset-mix" class="rf-link">Reset to estimate</button>
+              </div>
+              <div class="mix-grid">
+                <label for="mix-ee">Employee only
+                  <input id="mix-ee" data-mix="employeeOnly" type="number" min="0" step="1" inputmode="numeric" placeholder="0" autocomplete="off" />
+                </label>
+                <label for="mix-es">Employee + spouse
+                  <input id="mix-es" data-mix="employeeSpouse" type="number" min="0" step="1" inputmode="numeric" placeholder="0" autocomplete="off" />
+                </label>
+                <label for="mix-ec">Employee + child
+                  <input id="mix-ec" data-mix="employeeChildren" type="number" min="0" step="1" inputmode="numeric" placeholder="0" autocomplete="off" />
+                </label>
+                <label for="mix-fam">Family
+                  <input id="mix-fam" data-mix="family" type="number" min="0" step="1" inputmode="numeric" placeholder="0" autocomplete="off" />
+                </label>
+              </div>
+              <p id="mix-note" class="hint" role="status"></p>
+              <p id="participation-note" class="message" hidden></p>
+            </div>
+            <section class="rf-pay" aria-labelledby="pay-cycle-heading">
+              <h3 id="pay-cycle-heading">Employee pay cycle</h3>
+              <div id="pay-cycle-options" class="mode-switch" role="radiogroup" aria-labelledby="pay-cycle-heading">
+                <button type="button" class="mode-btn" role="radio" data-pay="26" aria-checked="false" tabindex="0">Bi-weekly</button>
+                <button type="button" class="mode-btn" role="radio" data-pay="52" aria-checked="false" tabindex="-1">Weekly</button>
+                <button type="button" class="mode-btn" role="radio" data-pay="24" aria-checked="false" tabindex="-1">Semi-monthly</button>
+                <button type="button" class="mode-btn" role="radio" data-pay="12" aria-checked="false" tabindex="-1">Monthly</button>
+              </div>
+            </section>
+            <section id="contrib" class="rf-contrib contrib is-open" aria-labelledby="contrib-heading">
+              <h3 id="contrib-heading">Contribution</h3>
+              <div id="contrib-body">
+                <div class="mode-switch" role="group" aria-label="Contribution type">
+                  <button type="button" id="model-percent" class="mode-btn" aria-pressed="false">% of premium</button>
+                  <button type="button" id="model-flat" class="mode-btn" aria-pressed="false">Flat dollar</button>
+                </div>
+                <div id="percent-fields" hidden>
+                  <div class="contrib-line">
+                    <p id="ee-preset-label" class="contrib-label">Employer pays this much of employee-only</p>
+                    <div class="presets" role="group" aria-labelledby="ee-preset-label">
+                      <button type="button" class="preset" data-ee="50">50%</button>
+                      <button type="button" class="preset" data-ee="75">75%</button>
+                      <button type="button" class="preset" data-ee="100">100%</button>
+                    </div>
+                    <label class="slider-label" for="employer-contribution">Fine tune <span id="employer-percent-readout">—</span></label>
+                    <input id="employer-contribution" type="range" min="50" max="100" step="1" value="50" disabled />
+                  </div>
+                  <div class="contrib-line">
+                    <p id="dep-preset-label" class="contrib-label">Employer pays this much of the dependent portion</p>
+                    <div class="presets" role="group" aria-labelledby="dep-preset-label">
+                      <button type="button" class="preset" data-dep="0">0%</button>
+                      <button type="button" class="preset" data-dep="50">50%</button>
+                      <button type="button" class="preset" data-dep="75">75%</button>
+                      <button type="button" class="preset" data-dep="100">100%</button>
+                    </div>
+                    <label class="slider-label" for="dependent-contribution">Fine tune <span id="dependent-percent-readout">—</span></label>
+                    <input id="dependent-contribution" type="range" min="0" max="100" step="1" value="0" disabled />
+                    <p class="hint">If you set employee-only and skip this, the dependent portion stays at 0%.</p>
+                  </div>
+                </div>
+                <div id="flat-fields" hidden>
+                  <p id="flat-preset-label" class="contrib-label">Flat monthly amount per enrolled employee</p>
+                  <div class="presets" role="group" aria-labelledby="flat-preset-label">
+                    <button type="button" class="preset" data-flat="200">$200</button>
+                    <button type="button" class="preset" data-flat="300">$300</button>
+                    <button type="button" class="preset" data-flat="400">$400</button>
+                    <button type="button" class="preset" data-flat="custom">Custom</button>
+                  </div>
+                  <label class="custom-flat" for="flat-custom-amount">Custom amount
+                    <input id="flat-custom-amount" type="number" min="1" step="1" inputmode="numeric" placeholder="Custom amount" hidden />
+                  </label>
+                  <p id="flat-readout" class="readout"></p>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+      </div>
+
       <section id="my-plans-panel" class="panel my-plans" hidden aria-labelledby="drawer-heading">
         <div class="drawer-head">
           <h2 id="drawer-heading">My Plans</h2>
@@ -93,98 +193,6 @@
             <p>DK Benefits LLC owns and operates this tool.</p>
             <p>DK Benefits LLC Florida Agency License #L109331. Daniel Kirves Florida Resident Agent License #W588866. Georgia Agent License #3366904.</p>
           </details>
-        </div>
-
-        <div id="customize-panel" class="side-tools">
-          <section class="panel mix-panel" aria-labelledby="mix-heading">
-            <div class="mix-head">
-              <h2 id="mix-heading">Customize for your group</h2>
-              <button type="button" id="clear-group" class="btn btn-secondary">Clear</button>
-            </div>
-            <p class="hint">Optional. Monthly tier rates stay visible either way. Totals appear after you enter enrollment.</p>
-            <div class="mix-grid rf-counts">
-              <label for="eligible">Eligible employees
-                <input id="eligible" type="number" min="1" step="1" inputmode="numeric" placeholder="Eligible" autocomplete="off" />
-              </label>
-              <label for="enrolling">Enrolling
-                <input id="enrolling" type="number" min="1" step="1" inputmode="numeric" placeholder="Enrolling" autocomplete="off" />
-              </label>
-            </div>
-            <h3 class="rf-subhead">Enrollment mix</h3>
-            <div class="mix-grid">
-              <label for="mix-ee">Employee only
-                <input id="mix-ee" data-mix="employeeOnly" type="number" min="0" step="1" inputmode="numeric" placeholder="0" autocomplete="off" />
-              </label>
-              <label for="mix-es">Employee + spouse
-                <input id="mix-es" data-mix="employeeSpouse" type="number" min="0" step="1" inputmode="numeric" placeholder="0" autocomplete="off" />
-              </label>
-              <label for="mix-ec">Employee + child
-                <input id="mix-ec" data-mix="employeeChildren" type="number" min="0" step="1" inputmode="numeric" placeholder="0" autocomplete="off" />
-              </label>
-              <label for="mix-fam">Family
-                <input id="mix-fam" data-mix="family" type="number" min="0" step="1" inputmode="numeric" placeholder="0" autocomplete="off" />
-              </label>
-            </div>
-            <p id="mix-note" class="hint" role="status"></p>
-            <p id="participation-note" class="message" hidden></p>
-          </section>
-
-          <section class="panel pay-cycle" aria-labelledby="pay-cycle-heading">
-            <h3 id="pay-cycle-heading">Employee pay cycle</h3>
-            <div id="pay-cycle-options" class="mode-switch" role="radiogroup" aria-labelledby="pay-cycle-heading">
-              <button type="button" class="mode-btn" role="radio" data-pay="26" aria-checked="false" tabindex="0">Bi-weekly</button>
-              <button type="button" class="mode-btn" role="radio" data-pay="52" aria-checked="false" tabindex="-1">Weekly</button>
-              <button type="button" class="mode-btn" role="radio" data-pay="24" aria-checked="false" tabindex="-1">Semi-monthly</button>
-              <button type="button" class="mode-btn" role="radio" data-pay="12" aria-checked="false" tabindex="-1">Monthly</button>
-            </div>
-          </section>
-
-          <section id="contrib" class="panel contrib is-open" aria-labelledby="contrib-heading">
-            <h3 id="contrib-heading">Contribution</h3>
-            <div id="contrib-body">
-              <div class="mode-switch" role="group" aria-label="Contribution type">
-                <button type="button" id="model-percent" class="mode-btn" aria-pressed="false">% of premium</button>
-                <button type="button" id="model-flat" class="mode-btn" aria-pressed="false">Flat dollar</button>
-              </div>
-              <div id="percent-fields" hidden>
-                <div class="contrib-line">
-                  <p id="ee-preset-label" class="contrib-label">Employer pays this much of employee-only</p>
-                  <div class="presets" role="group" aria-labelledby="ee-preset-label">
-                    <button type="button" class="preset" data-ee="50">50%</button>
-                    <button type="button" class="preset" data-ee="75">75%</button>
-                    <button type="button" class="preset" data-ee="100">100%</button>
-                  </div>
-                  <label class="slider-label" for="employer-contribution">Fine tune <span id="employer-percent-readout">—</span></label>
-                  <input id="employer-contribution" type="range" min="50" max="100" step="1" value="50" disabled />
-                </div>
-                <div class="contrib-line">
-                  <p id="dep-preset-label" class="contrib-label">Employer pays this much of the dependent portion</p>
-                  <div class="presets" role="group" aria-labelledby="dep-preset-label">
-                    <button type="button" class="preset" data-dep="0">0%</button>
-                    <button type="button" class="preset" data-dep="50">50%</button>
-                    <button type="button" class="preset" data-dep="75">75%</button>
-                    <button type="button" class="preset" data-dep="100">100%</button>
-                  </div>
-                  <label class="slider-label" for="dependent-contribution">Fine tune <span id="dependent-percent-readout">—</span></label>
-                  <input id="dependent-contribution" type="range" min="0" max="100" step="1" value="0" disabled />
-                  <p class="hint">If you set employee-only and skip this, the dependent portion stays at 0%.</p>
-                </div>
-              </div>
-              <div id="flat-fields" hidden>
-                <p id="flat-preset-label" class="contrib-label">Flat monthly amount per enrolled employee</p>
-                <div class="presets" role="group" aria-labelledby="flat-preset-label">
-                  <button type="button" class="preset" data-flat="200">$200</button>
-                  <button type="button" class="preset" data-flat="300">$300</button>
-                  <button type="button" class="preset" data-flat="400">$400</button>
-                  <button type="button" class="preset" data-flat="custom">Custom</button>
-                </div>
-                <label class="custom-flat" for="flat-custom-amount">Custom amount
-                  <input id="flat-custom-amount" type="number" min="1" step="1" inputmode="numeric" placeholder="Custom amount" hidden />
-                </label>
-                <p id="flat-readout" class="readout"></p>
-              </div>
-            </div>
-          </section>
         </div>
       </div>
 
