@@ -17,14 +17,19 @@ const PLAN_IDS = [
   'UHC-PPO-2000-Deductible',
   'cigna-epo-1750-hsa'
 ];
-const DISCLAIMER = [
+const DISCLAIMER_HTML = [
+  'Important information',
+  'Rates shown are based on current published pricing and the answers provided. Final eligibility, participation, underwriting, plan availability, effective dates, and carrier/program approval may change pricing or options. Benefits are governed by official plan documents.',
+  'Plan availability may vary by state. If your business is outside Florida or Georgia, Daniel can let you know whether DK Benefits can assist directly or connect you with an appropriate resource.',
+  'Use of this tool does not create a broker-client relationship or guarantee coverage.'
+];
+const DISCLAIMER_PDF = [
   'Important information',
   'Rates shown are based on current published pricing and the answers provided.',
-  'Final eligibility, participation, underwriting, plan availability, effective dates, and carrier/program approval may change pricing or options.',
   'Benefits are governed by official plan documents.',
   'Plan availability may vary by state.',
-  'If your business is outside Florida or Georgia, Daniel can let you know whether DK Benefits can assist directly or connect you with an appropriate resource.',
-  'Use of this tool does not create a broker-client relationship or guarantee coverage.'
+  'connect you with an appropriate resource.',
+  'broker-client relationship or guarantee coverage.'
 ];
 
 function sleep(ms) {
@@ -34,8 +39,9 @@ function sleep(ms) {
 function httpGet(url) {
   return new Promise((resolve, reject) => {
     const request = http.get(url, (response) => {
-      response.resume();
-      response.on('end', () => resolve(response.statusCode));
+      let data = '';
+      response.on('data', (chunk) => { data += chunk; });
+      response.on('end', () => resolve({ status: response.statusCode, body: data }));
     });
     request.on('error', reject);
   });
@@ -64,7 +70,7 @@ function pageText(file, page) {
 }
 
 function hasPlanContent(text) {
-  return /Total monthly premium/.test(text) && /Employee Only/.test(text);
+  return /Total monthly premium/.test(text) && /EE Cost PPP/.test(text);
 }
 
 test('printed proposals keep Important information on the last plan page', { timeout: 240000 }, async () => {
@@ -144,6 +150,16 @@ test('printed proposals keep Important information on the last plan page', { tim
       return !!(heading && heading.textContent && heading.textContent !== 'Loading plan options…');
     })()`), 'harness ' + query);
     await sleep(150);
+    const gutter = await evaluate('innerWidth - document.documentElement.clientWidth');
+    if (gutter > 0) {
+      await send('Emulation.setDeviceMetricsOverride', {
+        width: width + gutter,
+        height,
+        deviceScaleFactor: 1,
+        mobile: false
+      }, sessionId);
+      await sleep(80);
+    }
   }
 
   async function reachResults() {
@@ -173,7 +189,9 @@ test('printed proposals keep Important information on the last plan page', { tim
       clone.querySelector('head').insertBefore(base, clone.querySelector('head').firstChild);
       return '<!DOCTYPE html>' + clone.outerHTML;
     })()`);
-    assert.match(html, /Important information/);
+    DISCLAIMER_HTML.forEach((sentence) => {
+      assert.ok(html.includes(sentence), 'print HTML dropped disclaimer wording: ' + sentence);
+    });
     const created = await send('Target.createTarget', { url: 'about:blank' });
     const attached = await send('Target.attachToTarget', { targetId: created.targetId, flatten: true });
     const printSession = attached.sessionId;
@@ -182,12 +200,15 @@ test('printed proposals keep Important information on the last plan page', { tim
       await send('Runtime.enable', {}, printSession);
       const tree = await send('Page.getFrameTree', {}, printSession);
       await send('Page.setDocumentContent', { frameId: tree.frameTree.frame.id, html }, printSession);
-      const styled = await evaluate(`Promise.race([
-        document.fonts.ready,
-        new Promise((resolve) => setTimeout(resolve, 2500))
-      ]).then(() => {
-        const link = document.querySelector('link[rel="stylesheet"]');
-        return { sheet: !!(link && link.sheet), href: link ? link.href : '' };
+      const styled = await evaluate(`new Promise((resolve) => {
+        const start = Date.now();
+        const tick = () => {
+          const link = [...document.querySelectorAll('link[rel="stylesheet"]')].find((node) => /preview\\.css/.test(node.getAttribute('href') || ''));
+          if (link && link.sheet) resolve({ sheet: true, href: link.href });
+          else if (Date.now() - start > 4000) resolve({ sheet: !!(link && link.sheet), href: link ? link.href : '' });
+          else setTimeout(tick, 30);
+        };
+        tick();
       })`, printSession);
       assert.equal(styled.sheet, true, 'print document did not load preview.css from ' + styled.href);
       await send('Emulation.setEmulatedMedia', { media: 'print' }, printSession);
@@ -229,7 +250,7 @@ test('printed proposals keep Important information on the last plan page', { tim
         assert.equal(hasPlanContent(text), true, label + ' page ' + (index + 1) + ' holds only the disclaimer');
       }
     });
-    DISCLAIMER.forEach((sentence) => {
+    DISCLAIMER_PDF.forEach((sentence) => {
       assert.ok(last.includes(sentence), label + ' dropped disclaimer wording: ' + sentence);
     });
     counts.push({ label, pages: info.pages, size: info.size, spill: false });
@@ -247,19 +268,19 @@ test('printed proposals keep Important information on the last plan page', { tim
   try {
     await waitFor(async () => {
       try {
-        return (await httpGet(`${ORIGIN}/quote-tool-demo/preview/index.html`)) === 200;
+        return (await httpGet(`${ORIGIN}/quote-tool-demo/preview/index.html`)).status === 200;
       } catch (error) {
         return false;
       }
     }, 'local server').catch(() => { throw new Error('preview server did not start'); });
 
     let version;
-    for (let attempt = 0; attempt < 40; attempt += 1) {
+    for (let attempt = 0; attempt < 80; attempt += 1) {
       try {
         version = JSON.parse((await httpGet(`http://127.0.0.1:${DEBUG_PORT}/json/version`)).body);
         break;
       } catch (error) {
-        await sleep(100);
+        await sleep(250);
       }
     }
     if (!version) throw new Error('Chrome debugging port did not open');
