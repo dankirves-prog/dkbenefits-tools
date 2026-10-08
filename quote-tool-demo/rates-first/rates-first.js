@@ -263,6 +263,12 @@
       };
     }
 
+    function toolbarPrint() {
+      if (saved.size > 0) return { mode: 'saved', label: 'Print selected (' + saved.size + ')' };
+      if (carrier !== 'All') return { mode: 'all', label: 'Print ' + carrier };
+      return { mode: 'all', label: 'Print all' };
+    }
+
     function plansForPrint(mode) {
       var list = [];
       GROUP_META.forEach(function (group) {
@@ -329,6 +335,7 @@
         summaryLine: summaryLine(),
         ratesAsOfLabel: ratesAsOfLabel,
         carriers: ['All'].concat(QuoteMath.listCarriers(plans)),
+        toolbarPrint: toolbarPrint(),
         participation: QuoteMath.participationNote(eligibleCount() || 0, enrollingCount() || 0)
       };
     }
@@ -899,6 +906,7 @@
       var any = state.sections.groups.some(function (group) { return group.id !== 'mec' && group.plans.length; });
       $('filter-empty').hidden = any;
       $('my-plans-btn').textContent = 'My Plans (' + state.saved.length + ')';
+      $('print-all-btn').textContent = state.toolbarPrint.label;
       var asOf = $('rates-as-of');
       asOf.hidden = !state.ratesAsOfLabel;
       asOf.textContent = state.ratesAsOfLabel || '';
@@ -994,7 +1002,7 @@
       model.setSort($('sort-mode').value);
       render();
     });
-    $('print-all-btn').addEventListener('click', function () { printMode('all'); });
+    $('print-all-btn').addEventListener('click', function () { printMode(model.getState().toolbarPrint.mode); });
     $('drawer-print').addEventListener('click', function () { printMode('saved'); });
     $('my-plans-btn').addEventListener('click', function () {
       var panel = $('my-plans-panel');
