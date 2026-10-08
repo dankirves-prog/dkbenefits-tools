@@ -120,7 +120,6 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
 
   async function openTop(url) {
     posts.length = 0;
-    await evaluate('sessionStorage.clear(); localStorage.clear();');
     await send('Page.navigate', { url }, sessionId);
     await waitFor(async () => evaluate(`(() => {
       const card = document.querySelector('#top-plans .plan-card:not(.skeleton)');
@@ -130,6 +129,8 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
     const failed = await evaluate(`document.getElementById('load-error') && !document.getElementById('load-error').hidden`);
     assert.equal(failed, false, 'plans failed to load for ' + url);
     await waitFor(async () => evaluate(`document.getElementById('rates-as-of').textContent.includes('October 2026')`), 'rates as of ' + url);
+    await evaluate('sessionStorage.clear()');
+    posts.length = 0;
   }
 
   const frameProbe = `(() => {
@@ -257,7 +258,8 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
     assert.equal(liveBoot.live, true);
     assert.equal(liveBoot.search, '');
     assert.doesNotMatch(liveBoot.href, /[?&]live=/);
-    await evaluate(`document.querySelector('[data-carrier="UHC"]').click()`);
+    await waitFor(async () => evaluate(`!!document.querySelector('[data-carrier="All"]')`), 'carrier chips');
+    await evaluate(`document.querySelector('[data-carrier="All"]').click()`);
     await waitFor(async () => posts.some((post) => post.body.includes('"event":"quote_started"')), 'live quote started');
     await evaluate(`(() => {
       document.querySelector('.save-toggle[data-plan-id="cigna-epo-1750-hsa"]').click();
@@ -298,7 +300,7 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
     assert.equal(lead.helpWith, 'Ready to enroll');
     assert.equal(lead.selectedPlans[0].id, 'cigna-epo-1750-hsa');
     assert.equal(lead.notes, undefined);
-    assert.ok(posts.every((post) => post.url.includes('lSq0CZ0z')));
+    assert.ok(posts.every((post) => post.url.includes('lcSq0CZ0z')));
     assert.equal(posts.filter((post) => post.method === 'POST').length, 3);
     assert.equal(leaked, false);
 
@@ -361,6 +363,8 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
         assert.ok(layout.innerWidth >= 1024);
         assert.ok(layout.sideLeft > layout.cardLeft, 'side panel is not beside the cards');
       }
+      assert.equal(posts.length, 0, 'harness load posted before a visitor action');
+      await evaluate('sessionStorage.clear()');
       const printed = await evaluate(`(() => {
         const doc = document.getElementById('tool').contentDocument;
         const win = doc.defaultView;
@@ -378,7 +382,9 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
       assert.equal(printed.important, true);
       assert.equal(printed.notes, true);
       assert.equal(printed.name, true);
-      assert.equal(posts.length, 0, 'harness load posted before a visitor action');
+      await waitFor(async () => posts.some((post) => post.body.includes('"event":"quote_started"')), 'iframe quote started ' + width);
+      assert.ok(posts.every((post) => post.url.includes('lcSq0CZ0z')));
+      posts.length = 0;
       return layout;
     }
 

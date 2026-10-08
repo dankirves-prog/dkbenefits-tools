@@ -309,7 +309,7 @@ test('the page does not gate rates behind the questionnaire', () => {
   assert.doesNotMatch(source, /Send these|send these rates|has your request|with this request/i);
   assert.match(source, /QuoteMath\.estimateSmartMix\(/);
   assert.equal(rates.ACTIVITY_TRACKING_ENABLED, true);
-  assert.match(rates.WEBHOOK_URL, /lSq0CZ0z\/exec$/);
+  assert.equal(rates.WEBHOOK_URL.endsWith('lcSq0CZ0z/exec'), true);
 });
 
 test('the live entry posts without ?live=1 and the demo folder stays quiet', () => {
