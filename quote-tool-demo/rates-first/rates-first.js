@@ -4,6 +4,15 @@
   if (root) root.RatesFirst = api;
 })(typeof window !== 'undefined' ? window : globalThis, function () {
   var WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby4-ZxTQfsAgIBO0JYSngccVoj5HRKtNshy6N2XlJhbxaEk2oW7b_xIRBGlcSq0CZ0z/exec';
+  var ACTIVITY_TRACKING_ENABLED = true;
+
+  function shouldPostLive(win) {
+    var search = '';
+    try { search = (win && win.location && win.location.search) || ''; } catch (error) { search = ''; }
+    if (/(?:^|[?&])live=0(?:&|$)/.test(search)) return false;
+    if (/(?:^|[?&])live=1(?:&|$)/.test(search)) return true;
+    return !!(win && win.__rfLive === true);
+  }
   var GROUP_META = [
     { id: 'top', title: 'Featured Plan Options' },
     { id: 'low', title: 'Lower Cost Options' },
@@ -797,9 +806,9 @@
   function mount(doc) {
     var document = doc || window.document;
     var win = (doc && doc.defaultView) || window;
-    var live = /(?:^|[?&])live=1(?:&|$)/.test(win.location.search);
+    var live = shouldPostLive(win);
     var tracker = null;
-    if (live && win.QuoteActivity) {
+    if (live && ACTIVITY_TRACKING_ENABLED && win.QuoteActivity) {
       tracker = win.QuoteActivity.createQuoteActivityTracker({
         storage: win.QuoteActivity.createSafeWebStorage(),
         post: function (payload) {
@@ -1203,7 +1212,7 @@
         pageUrl: win.location.href
       });
       render();
-      fetch('../preview/preview-config.json', { cache: 'no-store' }).then(function (response) {
+      fetch(win.__rfConfigUrl || '../preview/preview-config.json', { cache: 'no-store' }).then(function (response) {
         if (!response.ok) return {};
         return response.json();
       }).then(function (config) {
@@ -1220,6 +1229,8 @@
 
   return {
     WEBHOOK_URL: WEBHOOK_URL,
+    ACTIVITY_TRACKING_ENABLED: ACTIVITY_TRACKING_ENABLED,
+    shouldPostLive: shouldPostLive,
     createModel: createModel,
     printHtml: printHtml,
     printChunks: printChunks,

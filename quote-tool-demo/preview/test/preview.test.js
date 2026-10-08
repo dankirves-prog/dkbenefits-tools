@@ -1206,7 +1206,7 @@ test('printed notes page follows the proposal and lists each selected plan in fu
 test('pay cycle bubbles keep the schedule values and paycheck math', () => {
   const pages = [
     fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8'),
-    fs.readFileSync(path.join(ROOT, 'quote-tool.html'), 'utf8')
+    fs.readFileSync(path.join(ROOT, 'preview-legacy/index.html'), 'utf8')
   ];
   pages.forEach((page) => {
     assert.doesNotMatch(page, /payroll-schedule/);
@@ -1303,10 +1303,10 @@ test('preview layout does not pin controls to the screen', () => {
   assert.match(page, /Back to plans/);
   assert.match(page, /class="results-grid"/);
   assert.equal((page.match(/Questions\? Call or text Daniel/g) || []).length, 1);
-  const live = fs.readFileSync(path.join(ROOT, 'quote-tool.html'), 'utf8');
-  assert.match(live, /Get your plan details from Daniel/);
-  assert.match(live, /preview\/preview\.css/);
-  assert.match(live, /preview\/preview\.js/);
+  const legacy = fs.readFileSync(path.join(ROOT, 'preview-legacy/index.html'), 'utf8');
+  assert.match(legacy, /Get your plan details from Daniel/);
+  assert.match(legacy, /preview\/preview\.css/);
+  assert.match(legacy, /preview\/preview\.js/);
   assert.match(css, /results-grid/);
   assert.equal(css.includes('position: sticky'), false);
   assert.equal(js.includes('cta-strip'), false);

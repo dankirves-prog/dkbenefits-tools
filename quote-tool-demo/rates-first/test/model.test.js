@@ -308,4 +308,28 @@ test('the page does not gate rates behind the questionnaire', () => {
   assert.match(source, /Thanks! Daniel will reach out soon\./);
   assert.doesNotMatch(source, /Send these|send these rates|has your request|with this request/i);
   assert.match(source, /QuoteMath\.estimateSmartMix\(/);
+  assert.equal(rates.ACTIVITY_TRACKING_ENABLED, true);
+  assert.match(rates.WEBHOOK_URL, /lSq0CZ0z\/exec$/);
+});
+
+test('the live entry posts without ?live=1 and the demo folder stays quiet', () => {
+  assert.equal(rates.shouldPostLive({ __rfLive: true, location: { search: '' } }), true);
+  assert.equal(rates.shouldPostLive({ location: { search: '' } }), false);
+  assert.equal(rates.shouldPostLive({ location: { search: '?utm_source=google' } }), false);
+  assert.equal(rates.shouldPostLive({ location: { search: '?live=1' } }), true);
+  assert.equal(rates.shouldPostLive({ __rfLive: true, location: { search: '?utm_source=google&live=1' } }), true);
+  assert.equal(rates.shouldPostLive({ __rfLive: true, location: { search: '?live=0' } }), false);
+  assert.equal(rates.shouldPostLive({ __rfLive: true, location: { search: '?live=0&utm_source=google' } }), false);
+  assert.equal(rates.shouldPostLive({ location: { search: '?live=0' } }), false);
+  const livePage = fs.readFileSync(path.join(__dirname, '../../quote-tool.html'), 'utf8');
+  const demoPage = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  assert.match(livePage, /window\.__rfLive\s*=\s*true/);
+  assert.match(livePage, /fetch\('plans\.json'/);
+  assert.match(livePage, /__rfConfigUrl\s*=\s*'preview\/preview-config\.json'/);
+  assert.match(livePage, /src="rates-first\/rates-first\.js"/);
+  assert.match(livePage, /src="quote-activity\.js"/);
+  assert.doesNotMatch(livePage, /utm_source=preview|noindex/);
+  assert.doesNotMatch(demoPage, /__rfLive/);
+  assert.match(demoPage, /fetch\('\.\.\/plans\.json'/);
+  assert.match(demoPage, /noindex/);
 });
