@@ -861,7 +861,7 @@ test('preview page matches live rates, posts once, and renders the proposal', { 
 
     await evaluate('sessionStorage.clear()');
     const beforeLive = posts.length;
-    await send('Page.navigate', { url: `${ORIGIN}/quote-tool-demo/quote-tool.html` }, sessionId);
+    await send('Page.navigate', { url: `${ORIGIN}/quote-tool-demo/preview-legacy/index.html` }, sessionId);
     await waitFor(async () => String(await evaluate('document.getElementById("question-heading") && document.getElementById("question-heading").textContent')).includes('What state'), 'live question');
     const liveCheck = await evaluate(`(() => {
       const scripts = [...document.scripts].map((script) => script.getAttribute('src') || '').join(' ');

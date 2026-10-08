@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Live quote embed harness</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #f4f4f4; font-family: Arial, sans-serif; }
+    .wix-header {
+      height: 122px;
+      box-sizing: border-box;
+      background: #0f2f57;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      font-weight: 700;
+    }
+    iframe {
+      display: block;
+      width: 100%;
+      height: calc(100vh - 122px);
+      border: 0;
+      background: #fff;
+    }
+  </style>
+</head>
+<body>
+  <header class="wix-header" id="wix-header">Wix header</header>
+  <iframe id="tool" title="DK Benefits Quote Tool" src="../../quote-tool.html"></iframe>
+</body>
+</html>

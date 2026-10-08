@@ -662,6 +662,7 @@ test('the merged script is the paste-ready file and the page still posts the fie
 
   const page = fs.readFileSync(path.join(__dirname, '../quote-tool.js'), 'utf8');
   const classic = fs.readFileSync(path.join(__dirname, '../quote-tool-classic.html'), 'utf8');
+  const legacy = fs.readFileSync(path.join(__dirname, '../preview-legacy/index.html'), 'utf8');
   const live = fs.readFileSync(path.join(__dirname, '../quote-tool.html'), 'utf8');
   const previewJs = fs.readFileSync(path.join(__dirname, '../preview/preview.js'), 'utf8');
   assert.equal(page.includes('firstName: firstName.value.trim()'), true);
@@ -674,12 +675,17 @@ test('the merged script is the paste-ready file and the page still posts the fie
   assert.equal(page.includes('activityTracker.decorateLeadPayload('), true);
   assert.equal(classic.indexOf('quote-activity.js') < classic.indexOf('quote-tool.js'), true);
   assert.equal(classic.includes('quote-tool.css'), true);
+  assert.equal(legacy.includes('quote-activity.js'), true);
+  assert.equal(legacy.includes('preview/preview.js'), true);
+  assert.equal(legacy.includes('preview/preview.css'), true);
+  assert.equal(legacy.includes('preview/quote-math.js'), true);
+  assert.equal(legacy.includes('utm_source=preview'), false);
+  assert.equal(legacy.includes('quote-tool.js'), false);
+  assert.equal(legacy.includes('100vh'), false);
+  assert.equal(live.includes('__rfLive'), true);
+  assert.equal(live.includes('rates-first/rates-first.js'), true);
   assert.equal(live.includes('quote-activity.js'), true);
-  assert.equal(live.includes('preview/preview.js'), true);
-  assert.equal(live.includes('preview/preview.css'), true);
-  assert.equal(live.includes('preview/quote-math.js'), true);
   assert.equal(live.includes('utm_source=preview'), false);
-  assert.equal(live.includes('quote-tool.js'), false);
-  assert.equal(live.includes('100vh'), false);
+  assert.equal(live.includes('AKfycby4-ZxTQfsAgIBO0JYSngccVoj5HRKtNshy6N2XlJhbxaEk2oW7b_xIRBGlcSq0CZ0z'), false);
   assert.equal(previewJs.includes('https://script.google.com/macros/s/AKfycby4-ZxTQfsAgIBO0JYSngccVoj5HRKtNshy6N2XlJhbxaEk2oW7b_xIRBGlcSq0CZ0z/exec'), true);
 });
