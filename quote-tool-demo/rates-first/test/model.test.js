@@ -269,7 +269,9 @@ test('the page does not gate rates behind the questionnaire', () => {
   assert.match(page, /data-state="Georgia"/);
   assert.match(page, /data-state="Other"/);
   assert.match(page, /id="contact-btn"[^>]*>Let's Talk</);
+  assert.match(page, /id="lead-submit"[^>]*>Let's Talk</);
   assert.match(page, /id="drawer-send"[^>]*>Let's Talk</);
+  assert.doesNotMatch(page, /Send these|send these rates/i);
   assert.match(page, /id="lead-heading">Let's Talk</);
   assert.match(page, /Questions, more options, or ready to enroll\? Daniel will reach out personally\./);
   assert.match(page, /data-help="Talk through these plans"/);
@@ -281,5 +283,7 @@ test('the page does not gate rates behind the questionnaire', () => {
   const source = fs.readFileSync(path.join(__dirname, '../rates-first.js'), 'utf8');
   assert.match(source, /live=1/);
   assert.match(source, /Demo mode, not sent/);
+  assert.match(source, /Thanks! Daniel will reach out soon\./);
+  assert.doesNotMatch(source, /Send these|send these rates|has your request|with this request/i);
   assert.match(source, /QuoteMath\.estimateSmartMix\(/);
 });

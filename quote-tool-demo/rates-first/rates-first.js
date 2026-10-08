@@ -909,8 +909,8 @@
       $('drawer-body').innerHTML = compareHtml(Object.assign({}, state, { savedFull: full }));
       $('drawer-print').disabled = !state.saved.length;
       $('lead-saved-note').textContent = state.saved.length
-        ? 'Your ' + state.saved.length + ' saved plan' + (state.saved.length === 1 ? '' : 's') + ' will be included with this request.'
-        : 'All plans shown will be included with this request.';
+        ? 'Your ' + state.saved.length + ' saved plan' + (state.saved.length === 1 ? '' : 's') + ' will be included.'
+        : 'All plans shown will be included.';
       $('lead-plan-list').innerHTML = state.saved.length
         ? state.saved.map(function (plan) { return '<li>' + escapeHtml(plan.name) + '</li>'; }).join('')
         : '<li>All plans currently shown</li>';
@@ -1174,10 +1174,10 @@
         if (!response.ok) throw new Error('request failed');
         $('lead-form').hidden = true;
         success.hidden = false;
-        success.innerHTML = '<h3>Sent</h3><p>Daniel has your request.</p>';
+        success.innerHTML = '<h3>Thanks! Daniel will reach out soon.</h3>';
       }).catch(function () {
         $('lead-error').hidden = false;
-        $('lead-error').textContent = 'Something went wrong sending your request. Please call or text Daniel directly at 407-476-5076.';
+        $('lead-error').textContent = 'Something went wrong. Please call or text Daniel directly at 407-476-5076.';
       });
     });
     win.addEventListener('beforeprint', function () {
