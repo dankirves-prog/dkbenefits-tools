@@ -374,7 +374,7 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
     })()`);
     await sleep(250);
     assert.equal(posts.filter((post) => post.body.includes('"event":"group_size"')).length, 0);
-    await sleep(1600);
+    await sleep(3400);
     await waitFor(async () => posts.some((post) => post.body.includes('"event":"group_size"')), 'live group size');
     await evaluate(`(() => {
       const eligible = document.getElementById('eligible');
@@ -396,7 +396,7 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
     })()`);
     await sleep(250);
     assert.equal(posts.filter((post) => post.body.includes('"event":"contribution_identified"')).length, 0);
-    await sleep(1600);
+    await sleep(3400);
     await waitFor(async () => posts.some((post) => post.body.includes('"event":"contribution_identified"')), 'live contribution');
     await evaluate(`(() => {
       const flat = document.getElementById('flat-custom-amount');
@@ -439,6 +439,56 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
     assert.equal(posts.filter((post) => post.method === 'POST').length, 4);
     assert.equal(leaked, false);
 
+    async function typePartialCount(fieldId, presetId) {
+      await openTop(LIVE);
+      await evaluate(`(() => {
+        const field = document.getElementById(${JSON.stringify(fieldId)});
+        const proto = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+        ['mix-ee', 'mix-es', 'mix-ec', 'mix-fam'].forEach((id) => {
+          const input = document.getElementById(id);
+          Object.defineProperty(input, 'value', {
+            configurable: true,
+            get() { return proto.get.call(this); },
+            set(next) {
+              proto.set.call(this, next);
+              const active = document.activeElement;
+              if (active && (active.id === 'enrolling' || active.id === 'eligible')) {
+                active.dispatchEvent(new Event('change', { bubbles: true }));
+                active.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+              }
+            }
+          });
+        });
+        const typeInto = (input, value) => {
+          input.focus();
+          input.value = value;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        };
+        if (${presetId ? 'true' : 'false'}) typeInto(document.getElementById(${JSON.stringify(presetId || '')}), '50');
+        typeInto(field, '4');
+        typeInto(field, '40');
+        return true;
+      })()`);
+      await sleep(400);
+      assert.equal(posts.filter((post) => post.body.includes('"event":"group_size"')).length, 0, fieldId + ' sent a partial group size');
+      await sleep(3200);
+      await waitFor(async () => posts.some((post) => post.body.includes('"event":"group_size"')), fieldId + ' group size');
+      const groups = posts.filter((post) => post.body.includes('"event":"group_size"')).map((post) => JSON.parse(post.body));
+      assert.equal(groups.length, 1, fieldId + ' group events ' + groups.length);
+      assert.ok(posts.every((post) => post.url.includes('lcSq0CZ0z')));
+      return groups[0];
+    }
+
+    const enrollingOnly = await typePartialCount('enrolling');
+    assert.equal(enrollingOnly.answers.employees, '');
+    assert.equal(enrollingOnly.answers.enrolling, '40');
+    const enrollingWithEligible = await typePartialCount('enrolling', 'eligible');
+    assert.equal(enrollingWithEligible.answers.employees, '50');
+    assert.equal(enrollingWithEligible.answers.enrolling, '40');
+    const eligibleOnly = await typePartialCount('eligible');
+    assert.equal(eligibleOnly.answers.employees, '40');
+    assert.equal(eligibleOnly.answers.enrolling, '');
+
     await openTop(DEMO);
     await evaluate(`(() => {
       document.querySelector('[data-carrier="Cigna"]').click();
@@ -462,7 +512,7 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
       document.getElementById('lead-form').requestSubmit();
     })()`);
     await waitFor(async () => evaluate(`document.getElementById('lead-success').textContent.includes('Demo mode, not sent')`), 'demo confirmation');
-    await sleep(1700);
+    await sleep(3600);
     assert.equal(posts.length, 0, 'demo folder posted without ?live=1');
 
     async function assertHarness(width, height, phone) {

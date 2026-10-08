@@ -520,6 +520,87 @@ test('invalid enrolling clears calculated output and group size sends only a set
   assert.equal(typed.calls.filter((call) => call[0] === 'contribution').length, 1);
 });
 
+test('typing 4 then 0 settles once as 40 for enrolling and eligible', () => {
+  assert.equal(rates.SETTLE_MS, 3000);
+
+  function liveModel() {
+    const log = activityCalls();
+    const delays = [];
+    const quote = model({
+      tracker: log.tracker,
+      live: true,
+      schedule(fn, ms) {
+        delays.push(ms);
+        return log.clock.schedule(fn);
+      },
+      cancel: log.clock.cancel
+    });
+    return { log, delays, quote };
+  }
+
+  const enrollingOnly = liveModel();
+  enrollingOnly.quote.setEnrolling('4');
+  enrollingOnly.quote.setEnrolling('40');
+  assert.equal(enrollingOnly.log.calls.filter((call) => call[0] === 'group').length, 0);
+  assert.equal(enrollingOnly.log.clock.pending(), 1);
+  assert.deepEqual(enrollingOnly.delays, [3000, 3000]);
+  enrollingOnly.log.clock.flush();
+  assert.equal(enrollingOnly.log.calls.filter((call) => call[0] === 'group').length, 1);
+  assert.equal(enrollingOnly.log.calls.find((call) => call[0] === 'group')[1].answers.employees, '');
+  assert.equal(enrollingOnly.log.calls.find((call) => call[0] === 'group')[1].answers.enrolling, '40');
+  assert.deepEqual(enrollingOnly.log.calls.find((call) => call[0] === 'group')[1].tierMix, math.estimateSmartMix(40));
+
+  const withEligible = liveModel();
+  withEligible.quote.setEligible('50');
+  withEligible.quote.setEnrolling('4');
+  withEligible.quote.setEnrolling('40');
+  assert.equal(withEligible.log.calls.filter((call) => call[0] === 'group').length, 0);
+  withEligible.log.clock.flush();
+  const both = withEligible.log.calls.find((call) => call[0] === 'group')[1];
+  assert.equal(withEligible.log.calls.filter((call) => call[0] === 'group').length, 1);
+  assert.equal(both.answers.employees, '50');
+  assert.equal(both.answers.enrolling, '40');
+
+  const eligibleOnly = liveModel();
+  eligibleOnly.quote.setEligible('4');
+  eligibleOnly.quote.setEligible('40');
+  assert.equal(eligibleOnly.log.calls.filter((call) => call[0] === 'group').length, 0);
+  assert.deepEqual(eligibleOnly.delays, [3000, 3000]);
+  eligibleOnly.log.clock.flush();
+  const eligibleGroup = eligibleOnly.log.calls.find((call) => call[0] === 'group')[1];
+  assert.equal(eligibleOnly.log.calls.filter((call) => call[0] === 'group').length, 1);
+  assert.equal(eligibleGroup.answers.employees, '40');
+  assert.equal(eligibleGroup.answers.enrolling, '');
+  assert.equal(Object.hasOwn(eligibleGroup, 'tierMix'), false);
+
+  const crossed = liveModel();
+  crossed.quote.setEligible('10');
+  crossed.quote.setEnrolling('4');
+  crossed.quote.setEnrolling('40');
+  crossed.log.clock.flush();
+  const rejected = crossed.log.calls.find((call) => call[0] === 'group')[1];
+  assert.equal(crossed.log.calls.filter((call) => call[0] === 'group').length, 1);
+  assert.equal(rejected.answers.employees, '10');
+  assert.equal(rejected.answers.enrolling, '');
+
+  const blurred = liveModel();
+  blurred.quote.setEnrolling('40');
+  blurred.quote.settleGroupSize();
+  assert.equal(blurred.log.calls.filter((call) => call[0] === 'group').length, 1);
+  assert.equal(blurred.log.calls.find((call) => call[0] === 'group')[1].answers.enrolling, '40');
+  assert.equal(blurred.log.clock.pending(), 0);
+
+  const flat = liveModel();
+  flat.quote.setCustomFlatText('4');
+  flat.quote.setCustomFlatText('40');
+  flat.quote.setCustomFlatText('400');
+  assert.equal(flat.log.calls.filter((call) => call[0] === 'contribution').length, 0);
+  assert.deepEqual(flat.delays, [3000, 3000, 3000]);
+  flat.log.clock.flush();
+  assert.equal(flat.log.calls.filter((call) => call[0] === 'contribution').length, 1);
+  assert.equal(flat.log.calls.find((call) => call[0] === 'contribution')[1].contribution.flatDollar, 400);
+});
+
 test('the page does not gate rates behind the questionnaire', () => {
   const page = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
   assert.match(page, /Group health rates for small businesses/);

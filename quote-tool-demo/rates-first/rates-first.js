@@ -5,7 +5,7 @@
 })(typeof window !== 'undefined' ? window : globalThis, function () {
   var WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby4-ZxTQfsAgIBO0JYSngccVoj5HRKtNshy6N2XlJhbxaEk2oW7b_xIRBGlcSq0CZ0z/exec';
   var ACTIVITY_TRACKING_ENABLED = true;
-  var SETTLE_MS = 1500;
+  var SETTLE_MS = 3000;
 
   function shouldPostLive(win) {
     var search = '';
@@ -1108,16 +1108,34 @@
         : '<li>All plans currently shown</li>';
     }
 
-    function render() {
-      var state = model.getState();
-      if (!$('carrier-filters').children.length || $('carrier-filters').getAttribute('data-carrier') !== state.carrier) {
-        renderCarriers(state);
-        $('carrier-filters').setAttribute('data-carrier', state.carrier);
+    // Enrolling's smart-mix paint writes the other inputs and rebuilds the cards
+    // inside the keystroke. That can fire change/blur on the field still being
+    // typed, which must not flush Group size or mark the estimate as hand-edited.
+    var blockCountSettle = 0;
+
+    function render(guardSettle) {
+      var typing = document.activeElement;
+      var keepTyping = typing && (typing.id === 'eligible' || typing.id === 'enrolling' || typing.id === 'flat-custom-amount');
+      if (guardSettle) blockCountSettle += 1;
+      try {
+        var state = model.getState();
+        if (!$('carrier-filters').children.length || $('carrier-filters').getAttribute('data-carrier') !== state.carrier) {
+          renderCarriers(state);
+          $('carrier-filters').setAttribute('data-carrier', state.carrier);
+        }
+        $('sort-mode').value = state.sortMode;
+        renderCustomize(state);
+        renderPlans(state);
+        renderSaved(state);
+      } finally {
+        if (keepTyping && typing.isConnected && document.activeElement !== typing) {
+          var now = document.activeElement;
+          if (!now || now === document.body || now === document.documentElement) {
+            typing.focus({ preventScroll: true });
+          }
+        }
+        if (guardSettle) win.setTimeout(function () { blockCountSettle -= 1; }, 50);
       }
-      $('sort-mode').value = state.sortMode;
-      renderCustomize(state);
-      renderPlans(state);
-      renderSaved(state);
     }
 
     var pendingPrint = 'all';
@@ -1250,9 +1268,10 @@
     }
     function bindCount(el, read) {
       function apply(settle) {
+        if (settle && blockCountSettle > 0) return;
         read(el.value);
         if (settle) model.settleGroupSize();
-        render();
+        render(true);
       }
       el.addEventListener('input', function () { apply(false); });
       el.addEventListener('change', function () { apply(true); });
@@ -1262,6 +1281,7 @@
     bindCount($('enrolling'), function (value) { return model.setEnrolling(value); });
     document.querySelectorAll('[data-mix]').forEach(function (input) {
       onField(input, function () {
+        if (blockCountSettle > 0) return;
         model.setMixField(input.getAttribute('data-mix'), input.value);
         render();
       });
@@ -1331,8 +1351,8 @@
     });
     function onCustomFlat(settle) {
       model.setCustomFlatText($('flat-custom-amount').value);
-      if (settle) model.settleContribution();
-      render();
+      if (settle && blockCountSettle === 0) model.settleContribution();
+      render(true);
     }
     $('flat-custom-amount').addEventListener('input', function () { onCustomFlat(false); });
     $('flat-custom-amount').addEventListener('change', function () { onCustomFlat(true); });
