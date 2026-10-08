@@ -1,5 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('fs');
+const path = require('path');
 const { loadBrowserScripts, baseInput, ASOF } = require('./helpers');
 
 const { S128Model } = loadBrowserScripts();
@@ -217,6 +219,51 @@ test('each review flag can be raised', function () {
 test('Georgia and Florida are not out-of-market flags by themselves', function () {
   assert.equal(check({ state: 'GA', city: 'Savannah', zip: '31401' }).review.required, false);
   assert.equal(check().review.required, false);
+});
+
+test('payroll processing notice accepts only whole days from 0 to 30', function () {
+  const salary = {
+    funding_mode: 'salary_reduction_only',
+    employer_annual_grant: '',
+    cafeteria_plan_name: 'Northwind Cafeteria Plan',
+    cafeteria_amendment_date: '2027-01-01',
+    has_existing_125_plan: 'yes'
+  };
+  assert.equal(check(Object.assign({}, salary, { election_cutoff_days: '0' })).plan.election_cutoff_days, 0);
+  assert.equal(check(Object.assign({}, salary, { election_cutoff_days: '30' })).plan.election_cutoff_days, 30);
+  ['31', '45', '12.5', '30 days', '-1'].forEach(function (value) {
+    const result = check(Object.assign({}, salary, { election_cutoff_days: value }));
+    assert.ok(fields(result).includes('election_cutoff_days'), value);
+    assert.notEqual(result.plan.election_cutoff_days, Number(value));
+    assert.ok(result.errors.some(function (err) {
+      return err.field === 'election_cutoff_days' && /whole number|0 to 30/.test(err.message);
+    }), JSON.stringify(result.errors));
+  });
+});
+
+test('sample formats are hint lines, not field placeholders', function () {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const placeholders = [];
+  html.replace(/placeholder="([^"]*)"/g, function (_, value) {
+    placeholders.push(value);
+    return _;
+  });
+  assert.ok(placeholders.length > 0);
+  placeholders.forEach(function (value) {
+    assert.doesNotMatch(value, /e\.g\./i, value);
+  });
+  const cutoff = html.match(/<input id="election_cutoff_days"[^>]*>/)[0];
+  assert.doesNotMatch(cutoff, /placeholder/);
+  assert.match(cutoff, /min="0"/);
+  assert.match(cutoff, /max="30"/);
+  assert.match(cutoff, /aria-describedby="hint_election_cutoff_example hint_election_cutoff_days"/);
+  assert.match(html, /id="hint_employer_ein">e\.g\. 12-3456789</);
+  assert.match(html, /id="hint_zip">e\.g\. 32801</);
+  assert.match(html, /id="hint_contact_email">e\.g\. name@company\.com</);
+  assert.match(html, /id="hint_contact_phone">e\.g\. \(407\) 555-0123</);
+  assert.match(html, /id="hint_fixed_annual_cap">e\.g\. 1,000</);
+  assert.match(html, /id="hint_election_cutoff_example">e\.g\. 5</);
+  assert.match(html, /id="employer_ein"[^>]*aria-describedby="hint_employer_ein"/);
 });
 
 test('server wrapper accepts plan and lead objects', function () {

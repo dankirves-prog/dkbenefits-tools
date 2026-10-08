@@ -468,3 +468,62 @@ test('EIN and phone format while typing, and the v0.5 screens show the default, 
   await page.screenshot({ path: path.join(artifactDir, 'download-note.png'), fullPage: true });
   await page.close();
 });
+
+test('examples sit below the fields, and payroll notice cannot be typed above 30', async function () {
+  const page = await openPage(1440);
+  const placeholders = await page.$$eval('input, textarea', function (nodes) {
+    return nodes.map(function (node) { return node.getAttribute('placeholder') || ''; });
+  });
+  placeholders.forEach(function (value) {
+    assert.doesNotMatch(value, /e\.g\./i);
+  });
+  assert.equal(await page.$eval('#employer_ein', function (el) { return el.getAttribute('aria-describedby'); }), 'hint_employer_ein');
+  assert.equal(await page.$eval('#hint_employer_ein', function (el) { return el.textContent; }), 'e.g. 12-3456789');
+  assert.equal(await page.$eval('#hint_contact_email', function (el) { return el.textContent; }), 'e.g. name@company.com');
+  assert.match(await page.$eval('#contactEmailHint', function (el) { return el.textContent; }), /emailed to this address/);
+  await page.screenshot({ path: path.join(artifactDir, 'hints-step1-1440.png'), fullPage: true });
+  await page.setViewport({ width: 390, height: 844 });
+  await page.screenshot({ path: path.join(artifactDir, 'hints-step1-390.png'), fullPage: true });
+  await page.setViewport({ width: 1440, height: 900 });
+  await fillCompany(page);
+  await page.click('#btnNext');
+  await fillDesign(page, 'salary_reduction_only');
+  await page.click('#btnNext');
+  assert.match(await page.$eval('#stepTitle', function (el) { return el.textContent; }), /Administration/);
+  const cutoff = await page.$eval('#election_cutoff_days', function (el) {
+    return {
+      placeholder: el.getAttribute('placeholder'),
+      min: el.getAttribute('min'),
+      max: el.getAttribute('max'),
+      described: el.getAttribute('aria-describedby')
+    };
+  });
+  assert.equal(cutoff.placeholder, null);
+  assert.equal(cutoff.min, '0');
+  assert.equal(cutoff.max, '30');
+  assert.equal(cutoff.described, 'hint_election_cutoff_example hint_election_cutoff_days');
+  assert.equal(await page.$eval('#hint_election_cutoff_example', function (el) { return el.textContent; }), 'e.g. 5');
+  assert.equal(await page.$eval('#election_cutoff_days', function (el) { return el.value; }), '');
+  await page.$eval('#election_cutoff_days', function (el) { el.scrollIntoView({ block: 'center', behavior: 'auto' }); });
+  await page.screenshot({ path: path.join(artifactDir, 'hints-payroll-1440.png') });
+  await page.setViewport({ width: 390, height: 844 });
+  await page.$eval('#election_cutoff_days', function (el) { el.scrollIntoView({ block: 'center', behavior: 'auto' }); });
+  await page.screenshot({ path: path.join(artifactDir, 'hints-payroll-390.png') });
+  await page.setViewport({ width: 1440, height: 900 });
+  await setField(page, 'election_cutoff_days', '45');
+  assert.equal(await page.$eval('#election_cutoff_days', function (el) { return el.value; }), '0');
+  assert.match(await page.$eval('#err_election_cutoff_days', function (el) { return el.textContent; }), /0 to 30/);
+  await setField(page, 'election_cutoff_days', '12.5');
+  assert.equal(await page.$eval('#election_cutoff_days', function (el) { return el.value; }), '12');
+  assert.match(await page.$eval('#err_election_cutoff_days', function (el) { return el.textContent; }), /whole number/);
+  await setField(page, 'election_cutoff_days', '30');
+  assert.equal(await page.$eval('#election_cutoff_days', function (el) { return el.value; }), '30');
+  assert.equal(await page.$eval('#err_election_cutoff_days', function (el) { return el.textContent; }), '');
+  await setField(page, 'election_cutoff_days', '0');
+  assert.equal(await page.$eval('#election_cutoff_days', function (el) { return el.value; }), '0');
+  await page.focus('#election_cutoff_days');
+  await page.keyboard.type('a');
+  assert.equal(await page.$eval('#election_cutoff_days', function (el) { return el.value; }), '0');
+  assert.match(await page.$eval('#err_election_cutoff_days', function (el) { return el.textContent; }), /whole number/);
+  await page.close();
+});

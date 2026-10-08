@@ -45,8 +45,8 @@
           </div>
           <div class="field">
             <label for="employer_ein">Employer EIN<span class="tip-slot" data-tip="employer_ein"></span></label>
-            <input id="employer_ein" name="employer_ein" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. 12-3456789" required>
-            <p class="hint">e.g. 12-3456789</p>
+            <input id="employer_ein" name="employer_ein" type="text" inputmode="numeric" autocomplete="off" aria-describedby="hint_employer_ein" required>
+            <p class="hint" id="hint_employer_ein">e.g. 12-3456789</p>
             <p class="field-error" id="err_employer_ein" role="alert"></p>
           </div>
           <div class="field">
@@ -73,8 +73,8 @@
           </div>
           <div class="field">
             <label for="zip">ZIP code<span class="tip-slot" data-tip="zip"></span></label>
-            <input id="zip" name="zip" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="e.g. 32801" required>
-            <p class="hint">e.g. 32801</p>
+            <input id="zip" name="zip" type="text" inputmode="numeric" autocomplete="postal-code" aria-describedby="hint_zip" required>
+            <p class="hint" id="hint_zip">e.g. 32801</p>
             <p class="field-error" id="err_zip" role="alert"></p>
           </div>
           <div class="field">
@@ -89,14 +89,15 @@
           </div>
           <div class="field">
             <label for="contact_email">Email<span class="tip-slot" data-tip="contact_email"></span></label>
-            <input id="contact_email" name="contact_email" type="email" autocomplete="email" placeholder="e.g. name@company.com" required>
+            <input id="contact_email" name="contact_email" type="email" autocomplete="email" aria-describedby="hint_contact_email contactEmailHint" required>
+            <p class="hint" id="hint_contact_email">e.g. name@company.com</p>
             <p class="hint" id="contactEmailHint">A copy of the sample documents is emailed to this address.</p>
             <p class="field-error" id="err_contact_email" role="alert"></p>
           </div>
           <div class="field">
             <label for="contact_phone">Phone<span class="tip-slot" data-tip="contact_phone"></span></label>
-            <input id="contact_phone" name="contact_phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="e.g. (407) 555-0123" required>
-            <p class="hint">e.g. (407) 555-0123</p>
+            <input id="contact_phone" name="contact_phone" type="tel" inputmode="tel" autocomplete="tel" aria-describedby="hint_contact_phone" required>
+            <p class="hint" id="hint_contact_phone">e.g. (407) 555-0123</p>
             <p class="field-error" id="err_contact_phone" role="alert"></p>
           </div>
         </div>
@@ -118,8 +119,8 @@
         <div class="only-grant">
           <div class="field">
             <label for="employer_annual_grant">Annual employer grant per employee<span class="tip-slot" data-tip="employer_annual_grant"></span></label>
-            <input id="employer_annual_grant" name="employer_annual_grant" type="text" inputmode="numeric" placeholder="e.g. 1,000">
-            <p class="hint">Whole dollars, e.g. 1,000. The same amount for each eligible employee, once per calendar year.</p>
+            <input id="employer_annual_grant" name="employer_annual_grant" type="text" inputmode="numeric" aria-describedby="hint_employer_annual_grant">
+            <p class="hint" id="hint_employer_annual_grant">Whole dollars, e.g. 1,000. The same amount for each eligible employee, once per calendar year.</p>
             <p class="field-error" id="err_employer_annual_grant" role="alert"></p>
           </div>
           <fieldset>
@@ -142,7 +143,8 @@
         </fieldset>
         <div class="field only-fixed hidden">
           <label for="fixed_annual_cap">Fixed annual cap<span class="tip-slot" data-tip="fixed_annual_cap"></span></label>
-          <input id="fixed_annual_cap" name="fixed_annual_cap" type="text" inputmode="numeric" placeholder="e.g. 1,000">
+          <input id="fixed_annual_cap" name="fixed_annual_cap" type="text" inputmode="numeric" aria-describedby="hint_fixed_annual_cap">
+          <p class="hint" id="hint_fixed_annual_cap">e.g. 1,000</p>
           <p class="field-error" id="err_fixed_annual_cap" role="alert"></p>
         </div>
         <p class="note capacity hidden" id="capacityNote" aria-live="polite"></p>
@@ -164,14 +166,14 @@
         <div class="grid">
           <div class="field">
             <label for="waiting_days">Waiting period (calendar days)<span class="tip-slot" data-tip="waiting_days"></span></label>
-            <input id="waiting_days" name="waiting_days" type="text" inputmode="numeric" value="0">
-            <p class="hint">Whole days only, from 0 to 365. Use 0 if employees are eligible on hire.</p>
+            <input id="waiting_days" name="waiting_days" type="text" inputmode="numeric" value="0" aria-describedby="hint_waiting_days">
+            <p class="hint" id="hint_waiting_days">Whole days only, from 0 to 365. Use 0 if employees are eligible on hire.</p>
             <p class="field-error" id="err_waiting_days" role="alert"></p>
           </div>
           <div class="field">
             <label for="effective_date">Program effective date<span class="tip-slot" data-tip="effective_date"></span></label>
-            <input id="effective_date" name="effective_date" type="date" required>
-            <p class="hint">e.g. 01/01/2027. On or after July 4, 2026. The signature date is not filled in.</p>
+            <input id="effective_date" name="effective_date" type="date" aria-describedby="hint_effective_date" required>
+            <p class="hint" id="hint_effective_date">e.g. 01/01/2027. On or after July 4, 2026. The signature date is not filled in.</p>
             <p class="field-error" id="err_effective_date" role="alert"></p>
           </div>
           <div class="field span-2">
@@ -181,8 +183,8 @@
           </div>
           <div class="field span-2">
             <label for="participating_employers">Additional participating employers<span class="tip-slot" data-tip="participating_employers"></span></label>
-            <textarea id="participating_employers" name="participating_employers" placeholder="Leave blank if this employer is the only one. One legal name per line."></textarea>
-            <p class="hint">Related employers under Section 414 are treated as one employer.</p>
+            <textarea id="participating_employers" name="participating_employers" aria-describedby="hint_participating_employers" placeholder="Leave blank if this employer is the only one. One legal name per line."></textarea>
+            <p class="hint" id="hint_participating_employers">Related employers under Section 414 are treated as one employer.</p>
             <p class="field-error" id="err_participating_employers" role="alert"></p>
           </div>
           <div class="field">
@@ -278,14 +280,15 @@
             </div>
             <div class="field only-cafeteria">
               <label for="cafeteria_amendment_date">Amendment effective date<span class="tip-slot" data-tip="cafeteria_amendment_date"></span></label>
-              <input id="cafeteria_amendment_date" name="cafeteria_amendment_date" type="date">
-              <p class="hint">e.g. 01/01/2027. Today or a later date. The amendment cannot reach back.</p>
+              <input id="cafeteria_amendment_date" name="cafeteria_amendment_date" type="date" aria-describedby="hint_cafeteria_amendment_date">
+              <p class="hint" id="hint_cafeteria_amendment_date">e.g. 01/01/2027. Today or a later date. The amendment cannot reach back.</p>
               <p class="field-error" id="err_cafeteria_amendment_date" role="alert"></p>
             </div>
             <div class="field">
               <label for="election_cutoff_days">Payroll processing notice (days)<span class="tip-slot" data-tip="election_cutoff_days"></span></label>
-              <input id="election_cutoff_days" name="election_cutoff_days" type="text" inputmode="numeric" placeholder="5">
-              <p class="hint">How many days before payday an election change must be in. Use 0 to 30. Changes must still be available at least monthly.</p>
+              <input id="election_cutoff_days" name="election_cutoff_days" type="text" inputmode="numeric" min="0" max="30" aria-describedby="hint_election_cutoff_example hint_election_cutoff_days">
+              <p class="hint" id="hint_election_cutoff_example">e.g. 5</p>
+              <p class="hint" id="hint_election_cutoff_days">How many days before payday an election change must be in. Use 0 to 30. Changes must still be available at least monthly.</p>
               <p class="field-error" id="err_election_cutoff_days" role="alert"></p>
             </div>
           </div>
