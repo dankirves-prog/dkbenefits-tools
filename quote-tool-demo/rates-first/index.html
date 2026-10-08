@@ -49,7 +49,7 @@
           <button type="button" id="my-plans-btn" class="btn btn-secondary" aria-expanded="false" aria-controls="my-plans-panel">My Plans (0)</button>
           <button type="button" id="print-all-btn" class="btn btn-secondary">Print all</button>
           <button type="button" id="customize-btn" class="btn btn-secondary" aria-expanded="false" aria-controls="customize-panel">Customize for your group</button>
-          <button type="button" id="contact-btn" class="btn btn-primary">Send these to Daniel</button>
+          <button type="button" id="contact-btn" class="btn btn-primary">Let's Talk</button>
         </div>
       </div>
 
@@ -61,7 +61,7 @@
         <div id="drawer-body"></div>
         <div class="drawer-actions">
           <button type="button" id="drawer-print" class="btn btn-secondary">Print saved</button>
-          <button type="button" id="drawer-send" class="btn btn-primary">Send these to Daniel</button>
+          <button type="button" id="drawer-send" class="btn btn-primary">Let's Talk</button>
         </div>
       </section>
 
@@ -193,12 +193,11 @@
         </div>
       </div>
 
-      <section id="lead" class="panel lead" hidden aria-labelledby="lead-heading">
+      <section id="lead" class="panel lead" aria-labelledby="lead-heading">
         <div class="lead-head">
-          <h2 id="lead-heading">Send these rates to Daniel</h2>
-          <button type="button" id="lead-back" class="btn btn-secondary">Back to plans</button>
+          <h2 id="lead-heading">Let's Talk</h2>
         </div>
-        <p id="lead-next">Daniel will follow up about the plans listed here. Printing stays free and does not need this form.</p>
+        <p id="lead-next">Questions, more options, or ready to enroll? Daniel will reach out personally.</p>
         <p id="lead-saved-note" class="hint"></p>
         <ul id="lead-plan-list" class="lead-plan-list"></ul>
         <form id="lead-form">
@@ -208,6 +207,15 @@
               <button type="button" class="mode-btn" role="radio" data-state="Florida" aria-checked="false">Florida</button>
               <button type="button" class="mode-btn" role="radio" data-state="Georgia" aria-checked="false">Georgia</button>
               <button type="button" class="mode-btn" role="radio" data-state="Other" aria-checked="false">Other</button>
+            </div>
+          </fieldset>
+          <fieldset class="state-bubbles">
+            <legend>What can we help with?</legend>
+            <div class="mode-switch" role="radiogroup" aria-label="What can we help with?">
+              <button type="button" class="mode-btn" role="radio" data-help="Talk through these plans" aria-checked="false">Talk through these plans</button>
+              <button type="button" class="mode-btn" role="radio" data-help="See more plan options" aria-checked="false">See more plan options</button>
+              <button type="button" class="mode-btn" role="radio" data-help="Ready to enroll" aria-checked="false">Ready to enroll</button>
+              <button type="button" class="mode-btn" role="radio" data-help="Just learning more" aria-checked="false">Just learning more</button>
             </div>
           </fieldset>
           <p id="lead-error" class="message message-error" hidden></p>

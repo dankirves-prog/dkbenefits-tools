@@ -194,6 +194,9 @@ test('rates-first demo shows rates immediately and prints with or without group 
         payPressed: [...document.querySelectorAll('[data-pay]')].filter((el) => el.getAttribute('aria-checked') === 'true').length,
         contribPressed: [...document.querySelectorAll('#model-percent, #model-flat, [data-ee], [data-dep], [data-flat]')].filter((el) => el.getAttribute('aria-pressed') === 'true').length,
         sideDisplay: getComputedStyle(document.getElementById('customize-panel')).display,
+        leadHidden: document.getElementById('lead').hidden,
+        leadTop: document.getElementById('lead').getBoundingClientRect().top,
+        talk: document.getElementById('contact-btn').textContent.trim(),
         mark: mark ? mark.startTime : null
       };
     })()`;
@@ -227,6 +230,9 @@ test('rates-first demo shows rates immediately and prints with or without group 
     });
     if (phone) assert.equal(layout.sideDisplay, 'none');
     else assert.notEqual(layout.sideDisplay, 'none');
+    assert.equal(layout.leadHidden, false, 'contact card should be open on landing');
+    assert.ok(layout.leadTop > layout.cardBottom - 2, 'contact card should sit below the first plan card');
+    assert.equal(layout.talk, "Let's Talk");
   }
 
   async function clickPrint(id) {
@@ -394,7 +400,7 @@ test('rates-first demo shows rates immediately and prints with or without group 
     assert.ok(typeof layout.mark === 'number' && layout.mark < 5000, 'first card was slow or missing: ' + layout.mark);
     assertLanding(layout, true);
     await shot('rf_mobile390_landing.png');
-    await shot('rf3_mobile390_landing.png');
+    await shot('rf4_mobile390_landing.png');
 
     await setViewport(360, 740);
     layout = await evaluate(layoutExpression());
@@ -474,7 +480,7 @@ test('rates-first demo shows rates immediately and prints with or without group 
     assert.equal(place.btn, 'none', 'desktop hides the customize toggle');
     await evaluate(`window.scrollTo(0, 0)`);
     await shot('rf_desktop_landing.png');
-    await shot('rf3_desktop_1440_landing.png');
+    await shot('rf4_desktop_1440_landing.png');
 
     await evaluate(`(() => {
       const enrolling = document.getElementById('enrolling');
@@ -586,20 +592,51 @@ test('rates-first demo shows rates immediately and prints with or without group 
     assert.ok(panel.top < 844, 'customize panel is not on screen');
 
     await evaluate(`document.getElementById('contact-btn').click()`);
-    await waitFor(async () => evaluate(`document.getElementById('lead').hidden === false`), 'lead form');
+    await waitFor(async () => evaluate(`document.activeElement && document.activeElement.id === 'first-name'`), 'first field focused');
     const lead = await evaluate(`(() => {
       const states = [...document.querySelectorAll('[data-state]')].map((el) => ({
         label: el.textContent.trim(),
         checked: el.getAttribute('aria-checked')
       }));
+      const help = [...document.querySelectorAll('[data-help]')].map((el) => el.getAttribute('aria-checked'));
       const rect = document.getElementById('lead').getBoundingClientRect();
-      return { states, top: rect.top };
+      const low = document.getElementById('section-low').getBoundingClientRect();
+      return {
+        states,
+        help,
+        top: rect.top,
+        hidden: document.getElementById('lead').hidden,
+        heading: document.getElementById('lead-heading').textContent,
+        line: document.getElementById('lead-next').textContent,
+        afterPlans: rect.top >= low.top
+      };
     })()`);
+    assert.equal(lead.hidden, false);
+    assert.equal(lead.heading, "Let's Talk");
+    assert.equal(lead.line, 'Questions, more options, or ready to enroll? Daniel will reach out personally.');
+    assert.equal(lead.afterPlans, true);
     assert.deepEqual(lead.states.map((item) => item.label), ['Florida', 'Georgia', 'Other']);
     assert.ok(lead.states.every((item) => item.checked === 'false'));
+    assert.ok(lead.help.every((checked) => checked === 'false'));
     await shot('rf_lead_form_state.png');
     await evaluate(`(() => {
+      document.querySelector('[data-help="Talk through these plans"]').click();
       document.querySelector('[data-state="Florida"]').click();
+      document.getElementById('lead').scrollIntoView({ block: 'start' });
+    })()`);
+    await waitFor(async () => {
+      const top = await evaluate(`document.getElementById('lead').getBoundingClientRect().top`);
+      return top >= -4 && top < 40;
+    }, 'mobile contact card');
+    await shot('rf4_mobile390_contact_card.png');
+    await setViewport(1440, 900);
+    await evaluate(`document.getElementById('lead').scrollIntoView({ block: 'start' })`);
+    await waitFor(async () => {
+      const top = await evaluate(`document.getElementById('lead').getBoundingClientRect().top`);
+      return top >= -4 && top < 40;
+    }, 'desktop contact card');
+    await shot('rf4_desktop_contact_card.png');
+    await evaluate(`(() => {
       document.getElementById('first-name').value = 'Pat';
       document.getElementById('email').value = 'pat@example.com';
       document.getElementById('lead-form').requestSubmit();
@@ -680,6 +717,7 @@ test('rates-first demo shows rates immediately and prints with or without group 
     assert.equal(displayed.contribution.percent, 50);
     assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 1);
     await evaluate(`(() => {
+      document.querySelector('[data-help="Ready to enroll"]').click();
       document.querySelector('[data-state="Georgia"]').click();
       document.getElementById('contact-btn').click();
       document.getElementById('first-name').value = 'Pat';
@@ -689,6 +727,10 @@ test('rates-first demo shows rates immediately and prints with or without group 
     await waitFor(async () => posts.some((post) => post.body.includes('"event":"lead_submitted"')), 'lead');
     const leadPost = JSON.parse(posts.find((post) => post.body.includes('"event":"lead_submitted"')).body);
     assert.equal(leadPost.answers.state, 'Georgia');
+    assert.equal(leadPost.helpWith, 'Ready to enroll');
+    assert.equal(leadPost.notes, undefined);
+    assert.equal(leadPost.comments, undefined);
+    assert.ok(Array.isArray(leadPost.selectedPlans));
     assert.equal(leaked, false);
     assert.ok(posts.every((post) => post.url.includes('script.google.com') || post.url.includes('script.googleusercontent.com')));
     fs.writeFileSync(path.join(ARTIFACTS, 'rf-report.json'), JSON.stringify(report, null, 2));

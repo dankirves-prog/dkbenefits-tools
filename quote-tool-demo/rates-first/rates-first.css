@@ -40,8 +40,13 @@ body.is-customizing #customize-panel { display: block; }
 .skeleton .sk-block { height: 72px; }
 .tier-table.is-rates-only { margin-top: 8px; }
 .my-plans { margin: 8px 0; }
-.lead { margin-top: 12px; }
-.lead form { display: grid; gap: 10px; }
+.lead { margin-top: 16px; scroll-margin-top: 12px; }
+.lead-head h2 { margin: 0 0 4px; font-size: 1.25rem; }
+#lead-next { margin: 0 0 12px; }
+.lead form { display: grid; gap: 12px; }
+.lead form .state-bubbles,
+.lead form #lead-error,
+.lead form .btn { grid-column: 1 / -1; }
 .lead-plan-list { margin: 8px 0; padding-left: 18px; }
 
 @media (max-width: 1023px) {
