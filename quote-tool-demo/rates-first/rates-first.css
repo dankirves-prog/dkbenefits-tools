@@ -113,14 +113,29 @@ body.is-customizing #customize-panel { display: block; }
   .rf-page .header-inner { min-height: 32px; padding: 1px 0; }
   .rf-page .header-phone { min-height: 28px; padding: 2px 8px; font-size: 0.75rem; }
   .rf-page .brand-name { font-size: 0.92rem; }
-  .rf-page .intro { padding: 2px 0 0; }
-  .rf-page .intro h1 { font-size: 1rem; line-height: 1.15; margin: 1px 0; }
+  .rf-page .intro {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 8px;
+    row-gap: 1px;
+    padding: 2px 0 0;
+  }
+  .rf-page .intro h1 {
+    flex: 1 0 100%;
+    font-size: 1rem;
+    line-height: 1.15;
+    margin: 1px 0;
+  }
   .rf-page .intro .trust,
   .rf-page .intro .as-of {
-    display: inline !important;
-    margin: 0 8px 0 0;
-    font-size: 0.72rem;
+    display: inline-block !important;
+    width: auto;
+    max-width: 100%;
+    margin: 0;
+    font-size: 0.68rem;
     line-height: 1.25;
+    white-space: nowrap;
   }
   .rf-toolbar {
     display: flex;
