@@ -75,6 +75,7 @@ body.is-customizing #customize-panel { display: block; }
   .sort-field { display: flex; align-items: center; gap: 8px; }
   .sort-field label { display: flex; align-items: center; gap: 8px; margin: 0; }
   .rf-toolbar .chip, .rf-toolbar .btn { white-space: nowrap; }
+  #print-all-btn { font-size: 0.75rem; padding: 0 8px; }
 }
 
 @media (min-width: 1024px) {

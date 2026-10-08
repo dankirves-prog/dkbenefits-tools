@@ -194,6 +194,7 @@ test('rates-first demo shows rates immediately and prints with or without group 
         payPressed: [...document.querySelectorAll('[data-pay]')].filter((el) => el.getAttribute('aria-checked') === 'true').length,
         contribPressed: [...document.querySelectorAll('#model-percent, #model-flat, [data-ee], [data-dep], [data-flat]')].filter((el) => el.getAttribute('aria-pressed') === 'true').length,
         sideDisplay: getComputedStyle(document.getElementById('customize-panel')).display,
+        printLabel: document.getElementById('print-all-btn').textContent.trim(),
         leadHidden: document.getElementById('lead').hidden,
         leadTop: document.getElementById('lead').getBoundingClientRect().top,
         talk: document.getElementById('contact-btn').textContent.trim(),
@@ -233,6 +234,7 @@ test('rates-first demo shows rates immediately and prints with or without group 
     assert.equal(layout.leadHidden, false, 'contact card should be open on landing');
     assert.ok(layout.leadTop > layout.cardBottom - 2, 'contact card should sit below the first plan card');
     assert.equal(layout.talk, "Let's Talk");
+    assert.equal(layout.printLabel, 'Print all');
   }
 
   async function clickPrint(id) {
@@ -673,6 +675,71 @@ test('rates-first demo shows rates immediately and prints with or without group 
     assertPdf(allPrint.file, allPrint.sheets, allPrint.notes, 'plain');
     execFileSync('pdftoppm', ['-png', '-r', '80', '-f', '1', '-l', '1', allPrint.file, path.join(ARTIFACTS, 'rf_print_noinfo_page1')]);
     fs.renameSync(path.join(ARTIFACTS, 'rf_print_noinfo_page1-1.png'), path.join(ARTIFACTS, 'rf_print_noinfo_page1.png'));
+
+    await evaluate(`document.querySelector('[data-carrier="Cigna"]').click()`);
+    await waitFor(async () => evaluate(`document.getElementById('print-all-btn').textContent.trim() === 'Print Cigna'`), 'print cigna label');
+    await evaluate(`window.scrollTo(0, 0)`);
+    await shot('rf5_desktop_print_carrier.png');
+    await clickPrint('print-all-btn');
+    const carrierNames = await evaluate(`[...document.querySelectorAll('#print-root .compare-name')].map((el) => el.textContent.trim())`);
+    assert.ok(carrierNames.length >= 1, 'carrier print included no plans');
+    carrierNames.forEach((name) => assert.match(name, /Cigna/, name + ' is outside the Cigna filter'));
+    assert.equal(await evaluate(`document.getElementById('drawer-print').textContent.trim()`), 'Print saved');
+
+    await evaluate(`document.querySelector('[data-carrier="All"]').click()`);
+    for (const id of ['cigna-epo-1750-hsa', 'UHC-PPO-2000-Deductible', 'phcs-visit-limit-1750-HSA']) {
+      await evaluate(`document.querySelector('.save-toggle[data-plan-id="${id}"]').click()`);
+    }
+    await evaluate(`document.querySelector('[data-carrier="Cigna"]').click()`);
+    await waitFor(async () => evaluate(`document.getElementById('print-all-btn').textContent.trim() === 'Print selected (3)'`), 'print selected label');
+    await evaluate(`window.scrollTo(0, 0)`);
+    await shot('rf5_desktop_print_selected.png');
+    await clickPrint('print-all-btn');
+    const selectedNames = await evaluate(`[...document.querySelectorAll('#print-root .compare-name')].map((el) => el.textContent.trim())`);
+    assert.deepEqual(selectedNames.slice().sort(), ['Cigna EPO 1750 HSA', 'PHCS Visit Limit 1750 HSA', 'UHC PPO 2000'].sort());
+
+    await setViewport(390, 844);
+    await evaluate(`window.scrollTo(0, 0)`);
+    await shot('rf5_mobile390_print_selected.png');
+
+    await evaluate(`document.querySelector('[data-carrier="All"]').click()`);
+    while (await evaluate(`document.querySelectorAll('.save-toggle[aria-pressed="true"]').length < 12`)) {
+      await evaluate(`document.querySelector('.save-toggle[aria-pressed="false"]').click()`);
+    }
+    async function assertLongPrintLabel(width, height) {
+      await setViewport(width, height);
+      await evaluate(`window.scrollTo(0, 0)`);
+      const fit = await evaluate(`(() => {
+        const btn = document.getElementById('print-all-btn');
+        const card = document.querySelector('#top-plans .plan-card');
+        const btnRect = btn.getBoundingClientRect();
+        const cardRect = card.getBoundingClientRect();
+        return {
+          label: btn.textContent.trim(),
+          btnTop: btnRect.top,
+          btnBottom: btnRect.bottom,
+          btnHeight: btnRect.height,
+          btnOverflow: btn.scrollWidth > btn.clientWidth + 1,
+          cardTop: cardRect.top,
+          innerHeight,
+          scrollWidth: document.documentElement.scrollWidth,
+          clientWidth: document.documentElement.clientWidth
+        };
+      })()`);
+      assert.equal(fit.label, 'Print selected (12)');
+      assert.equal(fit.btnOverflow, false, width + ' print label wraps inside the button');
+      assert.ok(fit.btnTop >= -1 && fit.btnBottom <= fit.innerHeight + 1 && fit.btnHeight >= 28, width + ' print button is off screen');
+      assert.ok(fit.cardTop >= 0 && fit.cardTop < fit.innerHeight - 72, width + ' first card was pushed off, top ' + fit.cardTop);
+      assert.ok(fit.scrollWidth <= fit.clientWidth + 1, width + ' toolbar overflow ' + fit.scrollWidth);
+    }
+    await assertLongPrintLabel(390, 844);
+    await assertLongPrintLabel(360, 740);
+
+    while (await evaluate(`!!document.querySelector('.save-toggle[aria-pressed="true"]')`)) {
+      await evaluate(`document.querySelector('.save-toggle[aria-pressed="true"]').click()`);
+    }
+    await evaluate(`document.querySelector('[data-carrier="All"]').click()`);
+    await waitFor(async () => evaluate(`document.getElementById('print-all-btn').textContent.trim() === 'Print all'`), 'print label reset');
 
     for (const id of SAVED_IDS) {
       await evaluate(`document.querySelector('.save-toggle[data-plan-id="${id}"]').click()`);
