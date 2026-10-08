@@ -1,0 +1,12 @@
+{
+  "name": "dkb-section128",
+  "private": true,
+  "description": "Static Section 128 draft generator. Tests use Node and puppeteer-core against the system Chrome.",
+  "scripts": {
+    "test:unit": "node --test test/model.test.js test/docgen.test.js test/apps-script.test.js",
+    "test:browser": "node --test test/browser.test.js"
+  },
+  "devDependencies": {
+    "puppeteer-core": "24.15.0"
+  }
+}

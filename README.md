@@ -20,6 +20,12 @@ http://localhost:8000/compliance-assessment.html
 http://localhost:8000/compliance-assessment-embed.html
 ```
 
+## Section 128 Trump Account Program Draft
+
+- `section128/` — guided draft generator for a Section 128 employer plan, hosted at `https://dankirves-prog.github.io/dkbenefits-tools/section128/`
+- The page builds the Word and PDF drafts in the browser. Email starts only after `section128/config.js` has the dedicated Apps Script URL. Deploy steps are in `section128/apps-script/README.md`.
+- Research notes: `section128/research/RESEARCH_RECORD.md`
+
 ## Section 125 Plan Tool
 
 - `section125.html` — Section 125 cafeteria plan wizard, hosted on GitHub Pages at `https://dankirves-prog.github.io/dkbenefits-tools/section125.html`

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Section 128 Trump Account Program Draft | DK Benefits</title>
+  <meta name="description" content="Prepare a draft Section 128 Trump Account contribution program for your company. Draft for review. DK Benefits LLC.">
+  <link rel="stylesheet" href="section128.css">
+</head>
+<body>
+  <a class="skip" href="#stepTitle">Skip to the form</a>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <p class="brand">DK Benefits LLC</p>
+      <h1>Section 128 Trump Account contribution program</h1>
+      <p>Answer a few questions and download a draft employer plan for your company. Daniel Kirves reviews the lead. This draft does not establish the program.</p>
+    </div>
+  </header>
+  <div class="draft-banner">
+    <div class="draft-banner-inner">
+      <strong>Draft for review.</strong> Final Section 128 regulations are not out yet. This page does not provide IRS approval, attorney approval, or a guarantee of compliance. Downloading the file does not adopt the program. The signature and date stay blank for the employer to sign.
+    </div>
+  </div>
+
+  <main class="wrap">
+    <nav class="progress" aria-label="Steps">
+      <ol class="progress-list" id="progressList"></ol>
+    </nav>
+    <div id="savedBanner" class="saved-banner hidden"></div>
+
+    <form id="wizard" novalidate>
+      <div class="hp-wrap" aria-hidden="true">
+        <label for="company_website">Company website</label>
+        <input id="company_website" name="company_website" type="text" tabindex="-1" autocomplete="off">
+      </div>
+
+      <section class="card" data-step="1" aria-labelledby="stepTitle">
+        <h2 id="stepTitle">Company and contact</h2>
+        <p class="lede">Use the employer’s legal name. This contact is how Daniel follows up, and where your copy is sent once email delivery is connected.</p>
+        <div class="grid">
+          <div class="field span-2">
+            <label for="employer_name">Employer legal name</label>
+            <input id="employer_name" name="employer_name" type="text" autocomplete="organization" required>
+            <p class="field-error" id="err_employer_name" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="employer_ein">Employer EIN</label>
+            <input id="employer_ein" name="employer_ein" type="text" inputmode="numeric" autocomplete="off" placeholder="12-3456789" required>
+            <p class="field-error" id="err_employer_ein" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="total_employee_count">Total employees</label>
+            <input id="total_employee_count" name="total_employee_count" type="text" inputmode="numeric" required>
+            <p class="field-error" id="err_total_employee_count" role="alert"></p>
+          </div>
+          <div class="field span-2">
+            <label for="street">Street address</label>
+            <input id="street" name="street" type="text" autocomplete="street-address" required>
+            <p class="field-error" id="err_street" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="city">City</label>
+            <input id="city" name="city" type="text" autocomplete="address-level2" required>
+            <p class="field-error" id="err_city" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="state">State</label>
+            <select id="state" name="state" autocomplete="address-level1" required>
+              <option value="">Choose a state</option>
+            </select>
+            <p class="field-error" id="err_state" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="zip">ZIP code</label>
+            <input id="zip" name="zip" type="text" inputmode="numeric" autocomplete="postal-code" required>
+            <p class="field-error" id="err_zip" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="contact_name">Your name</label>
+            <input id="contact_name" name="contact_name" type="text" autocomplete="name" required>
+            <p class="field-error" id="err_contact_name" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="contact_title">Your title</label>
+            <input id="contact_title" name="contact_title" type="text" autocomplete="organization-title" required>
+            <p class="field-error" id="err_contact_title" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="contact_email">Email</label>
+            <input id="contact_email" name="contact_email" type="email" autocomplete="email" required>
+            <p class="hint">Your draft copy is sent here when email delivery is connected.</p>
+            <p class="field-error" id="err_contact_email" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="contact_phone">Phone</label>
+            <input id="contact_phone" name="contact_phone" type="tel" autocomplete="tel" required>
+            <p class="field-error" id="err_contact_phone" role="alert"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card hidden" data-step="2">
+        <h2>Benefit design and eligibility</h2>
+        <p class="lede">Choose one funding method. This draft uses a uniform annual flat grant, salary reduction, or both. Matching contributions are not included.</p>
+        <fieldset>
+          <legend class="choice-legend">Funding method</legend>
+          <div class="choices" role="radiogroup" aria-label="Funding method">
+            <label class="choice"><input type="radio" name="funding_mode" value="employer_only"><span>Employer grant only<small>The company pays the same annual amount for each eligible employee.</small></span></label>
+            <label class="choice"><input type="radio" name="funding_mode" value="salary_reduction_only"><span>Salary reduction only<small>Employees set aside pay for a dependent’s account. This does not reduce Social Security or Medicare tax.</small></span></label>
+            <label class="choice"><input type="radio" name="funding_mode" value="combined"><span>Employer grant and salary reduction<small>The grant is reserved first. Employees may use the remaining room.</small></span></label>
+          </div>
+          <p class="field-error" id="err_funding_mode" role="alert"></p>
+        </fieldset>
+
+        <div class="only-grant">
+          <div class="field">
+            <label for="employer_annual_grant">Annual employer grant per employee</label>
+            <input id="employer_annual_grant" name="employer_annual_grant" type="text" inputmode="numeric" placeholder="1000">
+            <p class="hint">Whole dollars. The same amount for each eligible employee, once per calendar year.</p>
+            <p class="field-error" id="err_employer_annual_grant" role="alert"></p>
+          </div>
+          <fieldset>
+            <legend class="choice-legend">Who can receive the employer grant?</legend>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="allow_employee_account" value="no"><span>Eligible dependent accounts only<small>The usual design.</small></span></label>
+              <label class="choice"><input type="radio" name="allow_employee_account" value="yes"><span>Dependent accounts and an eligible employee’s own account<small>Daniel reviews this choice. Extra Department of Labor conditions apply.</small></span></label>
+            </div>
+            <p class="field-error" id="err_allow_employee_account" role="alert"></p>
+          </fieldset>
+        </div>
+
+        <fieldset>
+          <legend class="choice-legend">Annual total cap per employee</legend>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="annual_cap_mode" value="statutory"><span>Section 128 statutory limit<small>$2,500 for 2026 and 2027. Later years follow the published adjustment. This draft does not guess unpublished amounts.</small></span></label>
+            <label class="choice"><input type="radio" name="annual_cap_mode" value="fixed"><span>A lower fixed cap<small>The company chooses a whole-dollar cap that does not rise on its own.</small></span></label>
+          </div>
+          <p class="field-error" id="err_annual_cap_mode" role="alert"></p>
+        </fieldset>
+        <div class="field only-fixed hidden">
+          <label for="fixed_annual_cap">Fixed annual cap</label>
+          <input id="fixed_annual_cap" name="fixed_annual_cap" type="text" inputmode="numeric" placeholder="1500">
+          <p class="field-error" id="err_fixed_annual_cap" role="alert"></p>
+        </div>
+        <p class="note capacity hidden" id="capacityNote" aria-live="polite"></p>
+
+        <fieldset>
+          <legend class="choice-legend">Eligible employee class</legend>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="eligibility_class_choice" value="all"><span>All common-law employees</span></label>
+            <label class="choice"><input type="radio" name="eligibility_class_choice" value="other"><span>Another objective class<small>For example, full-time employees. Do not list people by name.</small></span></label>
+          </div>
+          <p class="field-error" id="err_eligibility_class" role="alert"></p>
+        </fieldset>
+        <div class="field only-other hidden">
+          <label for="eligibility_class_other">Describe the class</label>
+          <input id="eligibility_class_other" name="eligibility_class_other" type="text">
+          <p class="field-error" id="err_eligibility_class_other" role="alert"></p>
+        </div>
+
+        <div class="grid">
+          <div class="field">
+            <label for="waiting_days">Waiting period (calendar days)</label>
+            <input id="waiting_days" name="waiting_days" type="text" inputmode="numeric" value="0">
+            <p class="hint">Use 0 if employees are eligible on hire. Maximum 365.</p>
+            <p class="field-error" id="err_waiting_days" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="effective_date">Program effective date</label>
+            <input id="effective_date" name="effective_date" type="date" required>
+            <p class="hint">On or after July 4, 2026. The signature date is not filled in.</p>
+            <p class="field-error" id="err_effective_date" role="alert"></p>
+          </div>
+          <div class="field span-2">
+            <label for="plan_name">Program name</label>
+            <input id="plan_name" name="plan_name" type="text" required>
+            <p class="field-error" id="err_plan_name" role="alert"></p>
+          </div>
+          <div class="field span-2">
+            <label for="participating_employers">Additional participating employers</label>
+            <textarea id="participating_employers" name="participating_employers" placeholder="Leave blank if this employer is the only one. One legal name per line."></textarea>
+            <p class="hint">Any added employer is flagged for controlled-group review.</p>
+            <p class="field-error" id="err_participating_employers" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="entity_type">Entity type</label>
+            <select id="entity_type" name="entity_type" required>
+              <option value="">Choose one</option>
+              <option value="c_corp">C corporation</option>
+              <option value="s_corp">S corporation</option>
+              <option value="llc_partnership">LLC or partnership</option>
+              <option value="sole_prop">Sole proprietorship</option>
+              <option value="nonprofit">Nonprofit</option>
+              <option value="other">Other</option>
+            </select>
+            <p class="field-error" id="err_entity_type" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="related_businesses">Related businesses in the group?</label>
+            <select id="related_businesses" name="related_businesses" required>
+              <option value="">Choose one</option>
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+              <option value="unsure">Not sure</option>
+            </select>
+            <p class="field-error" id="err_related_businesses" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="owners_or_family_want_to_participate">Will an owner or an owner’s family member participate?</label>
+            <select id="owners_or_family_want_to_participate" name="owners_or_family_want_to_participate" required>
+              <option value="">Choose one</option>
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+            <p class="field-error" id="err_owners_or_family_want_to_participate" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="collectively_bargained_employees">Any collectively bargained employees?</label>
+            <select id="collectively_bargained_employees" name="collectively_bargained_employees" required>
+              <option value="">Choose one</option>
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+            <p class="field-error" id="err_collectively_bargained_employees" role="alert"></p>
+          </div>
+          <div class="field span-2 only-salary">
+            <label for="has_existing_125_plan">Is a Section 125 cafeteria plan already in place?</label>
+            <select id="has_existing_125_plan" name="has_existing_125_plan">
+              <option value="">Choose one</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+              <option value="unsure">Not sure</option>
+            </select>
+            <p class="hint">Salary reduction has to run through that plan. If you need a cafeteria plan draft, use the <a href="https://www.dkbenefits.net/section125plantool">Section 125 plan tool</a>.</p>
+            <p class="field-error" id="err_has_existing_125_plan" role="alert"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card hidden" data-step="3">
+        <h2>Administration</h2>
+        <p class="lede">The administrator runs day-to-day records. The representative’s name is printed for the signature block. Nobody is treated as having signed.</p>
+        <div class="grid">
+          <div class="field">
+            <label for="administrator_name">Administrator name or role</label>
+            <input id="administrator_name" name="administrator_name" type="text" required>
+            <p class="field-error" id="err_administrator_name" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="administrator_contact">Administrator email or phone</label>
+            <input id="administrator_contact" name="administrator_contact" type="text" required>
+            <p class="field-error" id="err_administrator_contact" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="signer_name">Authorized representative</label>
+            <input id="signer_name" name="signer_name" type="text" required>
+            <p class="field-error" id="err_signer_name" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="signer_title">Representative’s title</label>
+            <input id="signer_title" name="signer_title" type="text" required>
+            <p class="field-error" id="err_signer_title" role="alert"></p>
+          </div>
+        </div>
+        <div class="only-salary">
+          <h3>Existing Section 125 plan</h3>
+          <p class="hint">A separate draft amendment is prepared. It is not part of the Section 128 plan itself.</p>
+          <div class="grid">
+            <div class="field span-2">
+              <label for="cafeteria_plan_name">Section 125 plan name</label>
+              <input id="cafeteria_plan_name" name="cafeteria_plan_name" type="text">
+              <p class="field-error" id="err_cafeteria_plan_name" role="alert"></p>
+            </div>
+            <div class="field">
+              <label for="cafeteria_amendment_date">Amendment effective date</label>
+              <input id="cafeteria_amendment_date" name="cafeteria_amendment_date" type="date">
+              <p class="hint">Today or a later date. The amendment cannot reach back.</p>
+              <p class="field-error" id="err_cafeteria_amendment_date" role="alert"></p>
+            </div>
+            <div class="field">
+              <label for="election_cutoff_days">Payroll processing notice (days)</label>
+              <input id="election_cutoff_days" name="election_cutoff_days" type="text" inputmode="numeric" placeholder="5">
+              <p class="hint">How many days before payday an election change must be in. Use 0 to 30. Changes must still be available at least monthly.</p>
+              <p class="field-error" id="err_election_cutoff_days" role="alert"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card hidden" data-step="4">
+        <h2>Review and generate</h2>
+        <p class="lede">Check the answers. You can edit any section. The Word file is created in your browser.</p>
+        <div id="reviewFlags"></div>
+        <div id="reviewSummary" class="summary"></div>
+        <label class="ack" for="draft_ack">
+          <input id="draft_ack" name="draft_ack" type="checkbox">
+          <span>I understand this is a draft for review. It is not IRS or attorney approval, and downloading it does not establish the program.</span>
+        </label>
+        <p class="field-error" id="err_draft_ack" role="alert"></p>
+      </section>
+
+      <section class="card hidden" data-step="5">
+        <h2>Your draft</h2>
+        <div id="emailStatus" class="status" role="status"></div>
+        <div class="downloads" id="downloadList"></div>
+        <p class="hint">Employee enrollment forms are not part of this governing plan. They stay separate and keep their own blanks.</p>
+        <button class="btn-secondary hidden" id="btnRetry" type="button">Retry email</button>
+      </section>
+
+      <div class="nav">
+        <button class="btn-secondary" id="btnBack" type="button">Back</button>
+        <button class="btn-primary" id="btnNext" type="button">Continue</button>
+      </div>
+    </form>
+  </main>
+  <footer class="site-footer">
+    <p>DK Benefits LLC · Daniel Kirves · <a href="tel:4074765076">407-476-5076</a> · <a href="mailto:dan@dkbenefits.net">dan@dkbenefits.net</a></p>
+    <p>Questions about a design this draft does not support, including matching contributions, can go to Daniel directly. No employee census, children’s names, Social Security numbers, or account numbers are collected here.</p>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="s128-model.js"></script>
+  <script src="s128-docgen.js"></script>
+  <script src="vendor/pdf-lib.min.js"></script>
+  <script src="s128-pdf.js"></script>
+  <script src="section128.js"></script>
+</body>
+</html>

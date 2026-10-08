@@ -1,0 +1,511 @@
+(function () {
+  var STATE_NAMES = {
+    AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California', CO: 'Colorado',
+    CT: 'Connecticut', DE: 'Delaware', DC: 'District of Columbia', FL: 'Florida', GA: 'Georgia',
+    HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois', IN: 'Indiana', IA: 'Iowa', KS: 'Kansas', KY: 'Kentucky',
+    LA: 'Louisiana', ME: 'Maine', MD: 'Maryland', MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota',
+    MS: 'Mississippi', MO: 'Missouri', MT: 'Montana', NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire',
+    NJ: 'New Jersey', NM: 'New Mexico', NY: 'New York', NC: 'North Carolina', ND: 'North Dakota',
+    OH: 'Ohio', OK: 'Oklahoma', OR: 'Oregon', PA: 'Pennsylvania', RI: 'Rhode Island', SC: 'South Carolina',
+    SD: 'South Dakota', TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virginia',
+    WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming'
+  };
+  var STEP_LABELS = ['Company', 'Design', 'Administration', 'Review', 'Download'];
+  var step = 1;
+  var startedAt = Date.now();
+  var sessionId = loadSessionId();
+  var submissionId = null;
+  var inFlight = false;
+  var planNameTouched = false;
+  var lastFiles = null;
+  var utm = readUtm();
+
+  function $(id) { return document.getElementById(id); }
+  function loadSessionId() {
+    try {
+      var existing = sessionStorage.getItem('dkb_s128_session');
+      if (existing) return existing;
+      var id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
+      sessionStorage.setItem('dkb_s128_session', id);
+      return id;
+    } catch (err) {
+      return String(Date.now());
+    }
+  }
+  function readUtm() {
+    var params = new URLSearchParams(location.search);
+    var keys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+    var out = {};
+    keys.forEach(function (key) {
+      var value = params.get(key) || '';
+      value = value.replace(/[^A-Za-z0-9._-]/g, '').slice(0, 80);
+      if (value) out[key] = value;
+    });
+    return out;
+  }
+  function checked(name) {
+    var el = document.querySelector('input[name="' + name + '"]:checked');
+    return el ? el.value : '';
+  }
+  function fieldValue(id) {
+    var el = $(id);
+    return el ? el.value : '';
+  }
+  function readForm() {
+    return {
+      employer_name: fieldValue('employer_name'),
+      employer_ein: fieldValue('employer_ein'),
+      street: fieldValue('street'),
+      city: fieldValue('city'),
+      state: fieldValue('state'),
+      zip: fieldValue('zip'),
+      contact_name: fieldValue('contact_name'),
+      contact_title: fieldValue('contact_title'),
+      contact_email: fieldValue('contact_email'),
+      contact_phone: fieldValue('contact_phone'),
+      total_employee_count: fieldValue('total_employee_count'),
+      funding_mode: checked('funding_mode'),
+      employer_annual_grant: fieldValue('employer_annual_grant'),
+      annual_cap_mode: checked('annual_cap_mode'),
+      fixed_annual_cap: fieldValue('fixed_annual_cap'),
+      allow_employee_account: checked('allow_employee_account'),
+      eligibility_class_choice: checked('eligibility_class_choice'),
+      eligibility_class_other: fieldValue('eligibility_class_other'),
+      waiting_days: fieldValue('waiting_days'),
+      plan_name: fieldValue('plan_name'),
+      effective_date: fieldValue('effective_date'),
+      participating_employers: fieldValue('participating_employers'),
+      entity_type: fieldValue('entity_type'),
+      related_businesses: fieldValue('related_businesses'),
+      owners_or_family_want_to_participate: fieldValue('owners_or_family_want_to_participate'),
+      collectively_bargained_employees: fieldValue('collectively_bargained_employees'),
+      has_existing_125_plan: fieldValue('has_existing_125_plan'),
+      administrator_name: fieldValue('administrator_name'),
+      administrator_contact: fieldValue('administrator_contact'),
+      signer_name: fieldValue('signer_name'),
+      signer_title: fieldValue('signer_title'),
+      cafeteria_plan_name: fieldValue('cafeteria_plan_name'),
+      cafeteria_amendment_date: fieldValue('cafeteria_amendment_date'),
+      election_cutoff_days: fieldValue('election_cutoff_days')
+    };
+  }
+  function clearErrors() {
+    document.querySelectorAll('.field-error').forEach(function (el) { el.textContent = ''; });
+    document.querySelectorAll('[aria-invalid="true"]').forEach(function (el) { el.removeAttribute('aria-invalid'); });
+  }
+  function showErrors(errors, only) {
+    var allow = only ? {} : null;
+    if (only) only.forEach(function (name) { allow[name] = true; });
+    var first = null;
+    errors.forEach(function (err) {
+      if (allow && !allow[err.field]) return;
+      var box = $('err_' + err.field);
+      if (box) box.textContent = err.message;
+      var input = $(err.field);
+      if (input && input.matches && input.matches('input, select, textarea')) input.setAttribute('aria-invalid', 'true');
+      if (!first) first = input || box;
+    });
+    if (first && first.focus) first.focus();
+    return errors.some(function (err) { return !allow || allow[err.field]; });
+  }
+  function fundingMode() { return checked('funding_mode'); }
+  function syncConditional() {
+    var mode = fundingMode();
+    var salary = mode === 'salary_reduction_only' || mode === 'combined';
+    var grant = mode === 'employer_only' || mode === 'combined';
+    document.querySelectorAll('.only-salary').forEach(function (el) { el.classList.toggle('hidden', !salary); });
+    document.querySelectorAll('.only-grant').forEach(function (el) { el.classList.toggle('hidden', !grant); });
+    document.querySelectorAll('.only-fixed').forEach(function (el) {
+      el.classList.toggle('hidden', checked('annual_cap_mode') !== 'fixed');
+    });
+    document.querySelectorAll('.only-other').forEach(function (el) {
+      el.classList.toggle('hidden', checked('eligibility_class_choice') !== 'other');
+    });
+    var result = S128Model.validate(readForm(), { asOf: S128Model.todayIso() });
+    var note = $('capacityNote');
+    var message = result.ok || result.plan.funding_mode ? S128Model.capacityMessage(result.plan) : '';
+    if (salary && message && !result.errors.some(function (e) { return e.field === 'employer_annual_grant' || e.field === 'fixed_annual_cap' || e.field === 'annual_cap_mode' || e.field === 'effective_date'; })) {
+      note.textContent = message;
+      note.classList.remove('hidden');
+    } else {
+      note.textContent = '';
+      note.classList.add('hidden');
+    }
+  }
+  function suggestName() {
+    if (planNameTouched) return;
+    var suggested = S128Model.suggestPlanName(fieldValue('employer_name'));
+    if (suggested) $('plan_name').value = suggested;
+  }
+  function fillStates() {
+    var select = $('state');
+    S128Model.US_STATES.forEach(function (code) {
+      var option = document.createElement('option');
+      option.value = code;
+      option.textContent = STATE_NAMES[code] || code;
+      select.appendChild(option);
+    });
+  }
+  function renderProgress() {
+    var list = $('progressList');
+    list.innerHTML = '';
+    STEP_LABELS.forEach(function (label, index) {
+      var li = document.createElement('li');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.innerHTML = '<span class="step-index">Step ' + (index + 1) + '</span> <span class="step-name">' + label + '</span>';
+      if (index + 1 === step) btn.setAttribute('aria-current', 'step');
+      btn.disabled = index + 1 > step || step === 5;
+      btn.addEventListener('click', function () {
+        if (index + 1 < step) go(index + 1);
+      });
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+  }
+  function showStep(next) {
+    step = next;
+    document.querySelectorAll('[data-step]').forEach(function (section) {
+      section.classList.toggle('hidden', Number(section.getAttribute('data-step')) !== step);
+    });
+    document.querySelectorAll('h2[id="stepTitle"]').forEach(function (heading) {
+      heading.removeAttribute('id');
+    });
+    var heading = document.querySelector('[data-step="' + step + '"] h2');
+    if (heading) {
+      heading.id = 'stepTitle';
+      heading.setAttribute('tabindex', '-1');
+      heading.focus();
+    }
+    $('btnBack').classList.toggle('hidden', step === 1);
+    $('btnNext').textContent = step === 4 ? 'Generate draft' : 'Continue';
+    $('btnNext').classList.toggle('hidden', step === 5);
+    renderProgress();
+    syncConditional();
+  }
+  function go(next) {
+    if (next === 4) renderReview();
+    showStep(next);
+  }
+  function validateCurrent() {
+    clearErrors();
+    var result = S128Model.validate(readForm(), { asOf: S128Model.todayIso() });
+    var fields = S128Model.stepFields(step);
+    var blocked = showErrors(result.errors, fields);
+    return !blocked;
+  }
+  function renderReview() {
+    var result = S128Model.validate(readForm(), { asOf: S128Model.todayIso() });
+    var flags = $('reviewFlags');
+    if (result.review.required) {
+      flags.innerHTML = '<div class="review-flag"><h3>Daniel will review these items</h3><p>The document is still a draft. These points are listed in the lead. This is not an approval.</p><ul>' +
+        result.review.reasons.map(function (reason) { return '<li>' + escapeHtml(reason) + '</li>'; }).join('') +
+        '</ul></div>';
+    } else {
+      flags.innerHTML = '<div class="clean-note"><strong>No extra review flags from these answers.</strong> The file is still a draft for review, and it is not adopted until the employer signs it.</div>';
+    }
+    var plan = result.plan;
+    var lead = result.lead;
+    var cap = S128Model.capacityMessage(plan);
+    $('reviewSummary').innerHTML = [
+      block('Company', 1, [
+        ['Legal name', plan.employer_name],
+        ['EIN', plan.employer_ein],
+        ['Address', plan.employer_address],
+        ['State', plan.state],
+        ['Employees', lead.total_employee_count],
+        ['Contact', [lead.contact_name, lead.contact_title, lead.contact_email, lead.contact_phone].filter(Boolean).join(' · ')],
+        ['Entity', S128Model.entityLabel(lead.entity_type)]
+      ]),
+      block('Design', 2, [
+        ['Program', plan.plan_name],
+        ['Effective date', S128Model.formatLongDate(plan.effective_date)],
+        ['Funding', S128Model.fundingLabel(plan.funding_mode)],
+        ['Employer grant', plan.employer_annual_grant ? S128Model.formatMoney(plan.employer_annual_grant) : 'None'],
+        ['Annual cap', S128Model.capText(plan)],
+        ['Salary reduction room', cap || 'Not used'],
+        ['Eligible class', plan.eligibility_class],
+        ['Waiting period', plan.waiting_days === 0 ? 'Eligible on hire' : plan.waiting_days + ' days'],
+        ['Other employers', (plan.participating_employers || []).join('; ') || 'None']
+      ]),
+      block('Administration', 3, [
+        ['Administrator', plan.administrator_name],
+        ['Administrator contact', plan.administrator_contact],
+        ['Representative', plan.signer_name + (plan.signer_title ? ', ' + plan.signer_title : '')],
+        ['Section 125 plan', plan.cafeteria_plan_name || 'Not used'],
+        ['Amendment date', plan.cafeteria_amendment_date ? S128Model.formatLongDate(plan.cafeteria_amendment_date) : 'Not used'],
+        ['Processing notice', plan.election_cutoff_days == null ? 'Not used' : plan.election_cutoff_days + ' days']
+      ])
+    ].join('');
+    $('reviewSummary').querySelectorAll('[data-edit]').forEach(function (btn) {
+      btn.addEventListener('click', function () { go(Number(btn.getAttribute('data-edit'))); });
+    });
+  }
+  function block(title, stepNo, rows) {
+    var body = rows.map(function (row) {
+      return '<dt>' + escapeHtml(row[0]) + '</dt><dd>' + escapeHtml(row[1] == null ? '' : row[1]) + '</dd>';
+    }).join('');
+    return '<section><h3>' + escapeHtml(title) + ' <button type="button" class="linkish" data-edit="' + stepNo + '">Edit</button></h3><dl>' + body + '</dl></section>';
+  }
+  function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"]/g, function (ch) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch];
+    });
+  }
+  function shouldPost() {
+    var cfg = window.S128_CONFIG || {};
+    if (!cfg.endpoint) return false;
+    var params = new URLSearchParams(location.search);
+    if (params.get('live') === '0') return false;
+    if (params.get('live') === '1') return true;
+    if (window.__s128Live === true) return true;
+    return location.hostname === 'dankirves-prog.github.io';
+  }
+  function newSubmissionId() {
+    submissionId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('s128-' + Date.now());
+    return submissionId;
+  }
+  function pendingKey(id) { return 'dkb_s128_pending_' + id; }
+  function savePending(record) {
+    try {
+      localStorage.setItem(pendingKey(record.submissionId), JSON.stringify(record));
+      localStorage.setItem('dkb_s128_pending_latest', record.submissionId);
+    } catch (err) {}
+  }
+  function clearPending(id) {
+    try {
+      localStorage.removeItem(pendingKey(id));
+      if (localStorage.getItem('dkb_s128_pending_latest') === id) localStorage.removeItem('dkb_s128_pending_latest');
+    } catch (err) {}
+  }
+  function payloadFrom(result, id) {
+    return {
+      event: 's128_submission',
+      submissionId: id,
+      sessionId: sessionId,
+      startedAt: new Date(startedAt).toISOString(),
+      submittedAt: new Date().toISOString(),
+      pageUrl: location.href,
+      templateVersion: S128Model.TEMPLATE_VERSION,
+      test: new URLSearchParams(location.search).get('test') === '1',
+      hp: fieldValue('company_website'),
+      utm: utm,
+      lead: result.lead,
+      plan: result.plan,
+      review: result.review,
+      sendVisitorCopy: true
+    };
+  }
+  function bytesToBlob(bytes, mime) {
+    var copy = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    return new Blob([copy], { type: mime });
+  }
+  function triggerDownload(bytes, name, mime) {
+    var url = URL.createObjectURL(bytesToBlob(bytes, mime));
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  }
+  function addDownload(bytes, name, mime, label) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-gold';
+    btn.textContent = label;
+    btn.addEventListener('click', function () { triggerDownload(bytes, name, mime); });
+    $('downloadList').appendChild(btn);
+  }
+  function buildFiles(plan) {
+    var files = [];
+    var planName = S128Docgen.planFileName(plan);
+    var planBytes = S128Docgen.buildPlanDocx(plan);
+    files.push({ name: planName, bytes: planBytes, mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', label: 'Download Word plan' });
+    var amendment = S128Docgen.buildAmendmentDocx(plan);
+    if (amendment) {
+      files.push({
+        name: S128Docgen.amendmentFileName(plan),
+        bytes: amendment,
+        mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        label: 'Download Section 125 amendment'
+      });
+    }
+    return files;
+  }
+  function showDownloads(files) {
+    $('downloadList').innerHTML = '';
+    files.forEach(function (file) { addDownload(file.bytes, file.name, file.mime, file.label); });
+  }
+  function attachPdf(plan) {
+    var jobs = [S128Pdf.buildPdf(S128Docgen.planParagraphs(plan), { title: plan.plan_name })];
+    var amendmentRows = S128Docgen.amendmentParagraphs(plan);
+    if (amendmentRows) jobs.push(S128Pdf.buildPdf(amendmentRows, { title: 'Draft amendment' }));
+    return Promise.all(jobs).then(function (pdfs) {
+      addDownload(pdfs[0], S128Docgen.pdfFileName(S128Docgen.planFileName(plan)), 'application/pdf', 'Download PDF plan');
+      if (pdfs[1]) addDownload(pdfs[1], S128Docgen.pdfFileName(S128Docgen.amendmentFileName(plan)), 'application/pdf', 'Download PDF amendment');
+    }).catch(function () {
+      var note = document.createElement('p');
+      note.className = 'hint';
+      note.textContent = 'A matching PDF could not be created in this browser. Use the Word file.';
+      $('downloadList').appendChild(note);
+    });
+  }
+  function setStatus(kind, html) {
+    var box = $('emailStatus');
+    box.className = 'status ' + kind;
+    box.innerHTML = html;
+  }
+  function phoneLine() {
+    var cfg = window.S128_CONFIG || {};
+    return '<a href="tel:' + (cfg.phoneTel || '4074765076') + '">' + (cfg.phoneDisplay || '407-476-5076') + '</a>';
+  }
+  function showEmailResult(body, errorText) {
+    $('btnRetry').classList.add('hidden');
+    if (body && body.ok === true && body.duplicate === true) {
+      setStatus('duplicate', '<strong>This request was already emailed.</strong> You can download the draft again below.');
+      return;
+    }
+    if (body && body.ok === true && body.leadEmailed === true && body.visitorEmailed === true) {
+      setStatus('sent', '<strong>Emailed.</strong> A copy was emailed to you, and Daniel at DK Benefits received the lead with the draft attached.');
+      return;
+    }
+    if (body && body.ok === true && body.leadEmailed === true) {
+      setStatus('sent', '<strong>Daniel received the lead.</strong> A copy could not be emailed to you' + (body.visitorRateLimited ? ' because that address has reached the hourly limit' : '') + '. Download it here, or call or text Daniel at ' + phoneLine() + '.');
+      return;
+    }
+    $('btnRetry').classList.remove('hidden');
+    if (!shouldPost()) {
+      setStatus('unsent', '<strong>Your draft is ready to download.</strong> It could not be emailed yet because email delivery is not connected. Your answers are saved in this browser so you can retry after it is connected. You can also call or text Daniel at ' + phoneLine() + '.');
+      return;
+    }
+    setStatus('failed', '<strong>The copy could not be emailed.</strong> ' + escapeHtml(errorText || (body && body.error) || 'The delivery service did not accept the message.') + ' Your answers are saved in this browser. Retry, or call or text Daniel at ' + phoneLine() + '.');
+  }
+  function postLead(record) {
+    var cfg = window.S128_CONFIG || {};
+    return fetch(cfg.endpoint, {
+      method: 'POST',
+      body: JSON.stringify(record)
+    }).then(function (response) {
+      return response.json().catch(function () { return { ok: false, error: 'The delivery service returned an unreadable response.' }; });
+    }).then(function (body) {
+      if (!body || body.ok !== true) {
+        var err = new Error((body && body.error) || 'The delivery service did not accept the message.');
+        err.body = body;
+        throw err;
+      }
+      return body;
+    });
+  }
+  function finishGenerate(isRetry) {
+    if (inFlight) return;
+    clearErrors();
+    var result = S128Model.validate(readForm(), { asOf: S128Model.todayIso() });
+    if (!result.ok) {
+      showErrors(result.errors);
+      go(1);
+      return;
+    }
+    if (!$('draft_ack').checked) {
+      $('err_draft_ack').textContent = 'Confirm that you understand this is a draft before generating it.';
+      $('draft_ack').focus();
+      if (step !== 4) go(4);
+      return;
+    }
+    var id = isRetry && submissionId ? submissionId : newSubmissionId();
+    var record = payloadFrom(result, id);
+    lastFiles = buildFiles(result.plan);
+    showStep(5);
+    showDownloads(lastFiles);
+    attachPdf(result.plan);
+    if (!isRetry) {
+      lastFiles.forEach(function (file) {
+        if (/\.docx$/i.test(file.name)) triggerDownload(file.bytes, file.name, file.mime);
+      });
+    }
+    savePending(record);
+    if (!shouldPost()) {
+      showEmailResult(null);
+      return;
+    }
+    inFlight = true;
+    $('btnRetry').disabled = true;
+    setStatus('unsent', 'Sending the lead and your copy…');
+    postLead(record).then(function (body) {
+      inFlight = false;
+      $('btnRetry').disabled = false;
+      clearPending(id);
+      showEmailResult(body);
+    }).catch(function (err) {
+      inFlight = false;
+      $('btnRetry').disabled = false;
+      showEmailResult(err.body || null, err.message);
+    });
+  }
+  function showSavedBanner() {
+    var latest = null;
+    try { latest = localStorage.getItem('dkb_s128_pending_latest'); } catch (err) { return; }
+    if (!latest) return;
+    var raw = null;
+    try { raw = localStorage.getItem(pendingKey(latest)); } catch (err) { return; }
+    if (!raw) return;
+    var banner = $('savedBanner');
+    banner.classList.remove('hidden');
+    banner.innerHTML = '<strong>An earlier draft was not emailed.</strong> It is saved in this browser. <button type="button" class="linkish" id="btnRestore">Review it</button>';
+    $('btnRestore').addEventListener('click', function () {
+      var saved = JSON.parse(raw);
+      restore(saved);
+      banner.classList.add('hidden');
+    });
+  }
+  function restore(saved) {
+    var data = Object.assign({}, saved.plan || {}, saved.lead || {});
+    Object.keys(data).forEach(function (key) {
+      var el = $(key);
+      if (!el || el.type === 'radio') return;
+      if (key === 'participating_employers' && Array.isArray(data[key])) el.value = data[key].join('\n');
+      else if (data[key] != null) el.value = data[key];
+    });
+    setRadio('funding_mode', data.funding_mode);
+    setRadio('annual_cap_mode', data.annual_cap_mode);
+    setRadio('eligibility_class_choice', data.eligibility_class_choice);
+    if (data.allow_employee_account === true) setRadio('allow_employee_account', 'yes');
+    if (data.allow_employee_account === false && data.funding_mode !== 'salary_reduction_only') setRadio('allow_employee_account', 'no');
+    submissionId = saved.submissionId;
+    if (saved.startedAt) startedAt = Date.parse(saved.startedAt) || startedAt;
+    planNameTouched = true;
+    syncConditional();
+    go(4);
+  }
+  function setRadio(name, value) {
+    var el = document.querySelector('input[name="' + name + '"][value="' + value + '"]');
+    if (el) el.checked = true;
+  }
+
+  function init() {
+    fillStates();
+    $('employer_name').addEventListener('change', suggestName);
+    $('plan_name').addEventListener('input', function () { planNameTouched = true; });
+    document.getElementById('wizard').addEventListener('change', syncConditional);
+    document.getElementById('wizard').addEventListener('input', syncConditional);
+    $('btnNext').addEventListener('click', function () {
+      if (step < 4) {
+        if (step === 1 && !fieldValue('plan_name')) suggestName();
+        if (!validateCurrent()) return;
+        go(step + 1);
+        return;
+      }
+      if (step === 4) finishGenerate(false);
+    });
+    $('btnBack').addEventListener('click', function () {
+      if (step > 1) go(step - 1);
+    });
+    $('btnRetry').addEventListener('click', function () { finishGenerate(true); });
+    showStep(1);
+    showSavedBanner();
+    window.__s128SetStartedAt = function (value) { startedAt = value; };
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
