@@ -220,7 +220,7 @@ var S128Docgen = (function () {
     rows.push({ style: null, text: 'Authorized representative: ' + plan.signer_name + '    Title: ' + plan.signer_title });
     rows.push({ style: null, text: 'Signature: ________________________________    Date: ________________' });
     rows.push({ style: null, text: '' });
-    rows.push({ pageBreak: true });
+    rows.push({ style: null, text: '' });
 
     rows.push({ style: 'Heading1', text: 'Plan purpose definitions and participation' });
     rows.push({ style: 'Heading2', text: 'Article 1 Purpose and governing terms' });
@@ -241,7 +241,6 @@ var S128Docgen = (function () {
       ? 'Participation ends when employment or eligible-class status ends, or the program terminates. The employer remains responsible for amounts already withheld and unresolved transfers or corrections. An employee may update account designations and certifications as provided below.'
       : 'Participation ends when employment or eligible-class status ends, or the program terminates. The employer remains responsible for unresolved transfers or corrections. An employee may update account designations and certifications as provided below.';
     rows.push({ style: null, text: endParticipation });
-    rows.push({ pageBreak: true });
 
     rows.push({ style: 'Heading1', text: 'Contributions and annual limits' });
     rows.push({ style: 'Heading2', text: 'Article 4 Funding and allocation' });
@@ -254,7 +253,6 @@ var S128Docgen = (function () {
     rows.push({ style: null, text: 'The statutory exclusion applies per employee across all employers. The employee must report other-employer contributions to the administrator to support prospective limits. Excess contributions attributable to unrelated employers are treated under applicable tax law. Such excess alone does not invalidate an otherwise compliant Program.' });
     rows.push({ style: null, text: accountLimitSentence(plan) });
     rows.push({ style: null, text: article5Carryover(plan) });
-    rows.push({ pageBreak: true });
 
     rows.push({ style: 'Heading1', text: 'Account designation and payroll elections' });
     rows.push({ style: 'Heading2', text: 'Article 6 Designation certification and verification' });
@@ -263,7 +261,6 @@ var S128Docgen = (function () {
     rows.push({ style: null, text: 'The employer will independently verify that each destination is a valid Trump account using information supplied by the trustee, payroll processor, or another service provider through a method reasonably designed for that purpose. An employee’s assertion that an account is valid, standing alone, is insufficient. Verification confirms that the account can accept contributions under this Program. An account automatically established by the Secretary that has not been claimed and activated cannot receive Program contributions. Verification is documented before initial payment and refreshed when an account or trustee changes or contrary information arises.' });
     rows.push({ style: null, text: 'The employer will not restrict contributions to accounts maintained by a selected trustee or list of trustees. A payroll vendor’s limited trustee support does not change that rule. The administrator will arrange a workable alternative transfer process for a valid designated account. Contributions pending verification or transfer are tracked and resolved. The employer does not promise tax qualification or retroactive dating for delayed deposits.' });
     article7(plan).forEach(function (row) { rows.push(row); });
-    rows.push({ pageBreak: true });
 
     rows.push({ style: 'Heading1', text: 'Employee notices tax treatment and records' });
     rows.push({ style: 'Heading2', text: 'Article 8 Notices and statements' });
@@ -275,7 +272,6 @@ var S128Docgen = (function () {
     rows.push({ style: null, text: article9Payroll(plan) });
     rows.push({ style: null, text: 'The administrator maintains the executed plan and amendments, employer adoption data, eligible employee notices, annual certifications, trustee verification evidence, designations and elections, dated transfer records, trustee acknowledgments or rejections, payroll and annual statements, nondiscrimination calculations, and correction records. Records are retained for applicable tax and other legal periods and protected using access controls and secure transmission. Account and tax identifiers must be collected and transmitted securely.' });
     rows.push({ style: null, text: 'The employer does not guarantee an employee’s tax treatment, investment return, future account value, or eligibility for the separate federal pilot deposit. Account investments, distributions, and account-level tax reporting are handled by the trustee and responsible party under applicable law.' });
-    rows.push({ pageBreak: true });
 
     rows.push({ style: 'Heading1', text: 'Testing corrections and employer authority' });
     rows.push({ style: 'Heading2', text: 'Article 10 Nondiscrimination' });
@@ -351,16 +347,16 @@ var S128Docgen = (function () {
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<w:styles xmlns:w="' + W + '">' +
       '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/>' +
-      '<w:pPr><w:spacing w:after="140" w:line="276" w:lineRule="auto"/></w:pPr>' +
+      '<w:pPr><w:spacing w:after="120" w:line="246" w:lineRule="auto"/></w:pPr>' +
       '<w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:style>' +
       '<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:qFormat/>' +
       '<w:pPr><w:spacing w:before="0" w:after="160"/></w:pPr>' +
       '<w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:color w:val="1A2E4A"/><w:sz w:val="36"/><w:szCs w:val="36"/></w:rPr></w:style>' +
       '<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:uiPriority w:val="9"/><w:qFormat/>' +
-      '<w:pPr><w:keepNext/><w:spacing w:before="280" w:after="120"/><w:outlineLvl w:val="0"/></w:pPr>' +
+      '<w:pPr><w:spacing w:before="240" w:after="80"/><w:outlineLvl w:val="0"/></w:pPr>' +
       '<w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:color w:val="1A2E4A"/><w:sz w:val="28"/><w:szCs w:val="28"/></w:rPr></w:style>' +
       '<w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/><w:uiPriority w:val="9"/><w:qFormat/>' +
-      '<w:pPr><w:keepNext/><w:spacing w:before="220" w:after="80"/><w:outlineLvl w:val="1"/></w:pPr>' +
+      '<w:pPr><w:spacing w:before="200" w:after="60"/><w:outlineLvl w:val="1"/></w:pPr>' +
       '<w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:color w:val="1A2E4A"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:style>' +
       '<w:style w:type="paragraph" w:styleId="Header"><w:name w:val="Header"/><w:basedOn w:val="Normal"/>' +
       '<w:pPr><w:spacing w:after="0"/></w:pPr><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/><w:i/><w:color w:val="5A6A7E"/></w:rPr></w:style>' +

@@ -9,19 +9,7 @@ function loadBrowserScripts(extra) {
     console,
     TextEncoder,
     Uint8Array,
-    Uint32Array,
-    Array,
-    Math,
-    Date,
-    JSON,
-    Object,
-    String,
-    Number,
-    Error,
-    RegExp,
-    Promise,
-    parseInt,
-    isFinite
+    Uint32Array
   };
   context.globalThis = context;
   if (extra) Object.assign(context, extra);

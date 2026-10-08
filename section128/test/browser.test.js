@@ -158,7 +158,12 @@ test('submission requires body.ok, blocks a double post, and retries with the sa
       const body = posts.length === 1
         ? { ok: false, error: 'mailbox unavailable' }
         : { ok: true, leadEmailed: true, visitorEmailed: true };
-      request.respond({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+      request.respond({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
       return;
     }
     request.continue();
