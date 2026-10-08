@@ -730,6 +730,7 @@ test('rates-first demo shows rates immediately and prints with or without group 
     assert.equal(drawerLead.leads, 1);
     assert.equal(drawerLead.forms, 1);
     assert.equal(drawerLead.focus, 'lead-state');
+    await evaluate(`document.getElementById('drawer-close').click()`);
     assert.deepEqual(lead.states.map((item) => item.label), ['Florida', 'Georgia', 'Other']);
     assert.ok(lead.states.every((item) => item.checked === 'false'));
     assert.ok(lead.help.every((checked) => checked === 'false'));
