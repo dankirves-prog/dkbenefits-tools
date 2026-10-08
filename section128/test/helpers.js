@@ -27,7 +27,7 @@ function loadBrowserScripts(extra) {
   context.globalThis = context;
   if (extra) Object.assign(context, extra);
   vm.createContext(context);
-  ['s128-model.js', 's128-docgen.js'].forEach(function (file) {
+  ['s128-model.js', 's128-terms.js', 's128-docgen.js'].forEach(function (file) {
     vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context, { filename: file });
   });
   return context;

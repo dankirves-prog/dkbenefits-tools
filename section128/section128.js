@@ -10,7 +10,7 @@
     SD: 'South Dakota', TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virginia',
     WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming'
   };
-  var STEP_LABELS = ['Company', 'Design', 'Administration', 'Review', 'Download'];
+  var STEP_LABELS = ['Company', 'Design', 'Administration', 'Check', 'Download'];
   var step = 1;
   var startedAt = Date.now();
   var sessionId = loadSessionId();
@@ -200,7 +200,7 @@
       heading.focus();
     }
     $('btnBack').classList.toggle('hidden', step === 1);
-    $('btnNext').textContent = step === 4 ? 'Generate draft' : 'Continue';
+    $('btnNext').textContent = step === 4 ? 'Generate sample documents' : 'Continue';
     $('btnNext').classList.toggle('hidden', step === 5);
     renderProgress();
     syncConditional();
@@ -220,11 +220,11 @@
     var result = S128Model.validate(readForm(), { asOf: S128Model.todayIso() });
     var flags = $('reviewFlags');
     if (result.review.required) {
-      flags.innerHTML = '<div class="review-flag"><h3>Daniel will review these items</h3><p>The document is still a draft. These points are listed for Daniel to review. This is not an approval.</p><ul>' +
+      flags.innerHTML = '<div class="review-flag"><h3>Additional legal requirements</h3><p>This choice involves additional legal requirements; we recommend reviewing it with your own attorney or tax advisor.</p><ul>' +
         result.review.reasons.map(function (reason) { return '<li>' + escapeHtml(reason) + '</li>'; }).join('') +
         '</ul></div>';
     } else {
-      flags.innerHTML = '<div class="clean-note"><strong>No extra review flags from these answers.</strong> The file is still a draft for review, and it is not adopted until the employer signs it.</div>';
+      flags.innerHTML = '<div class="clean-note"><strong>No additional legal conditions were flagged from these answers.</strong> The file is a sample draft for the employer’s review with its own advisors, and it is not adopted until the employer signs it.</div>';
     }
     var plan = result.plan;
     var lead = result.lead;
@@ -317,6 +317,11 @@
       lead: result.lead,
       plan: result.plan,
       review: result.review,
+      acknowledgement: {
+        accepted: true,
+        acceptedAt: new Date().toISOString(),
+        termsVersion: S128Terms.VERSION
+      },
       sendVisitorCopy: true
     };
   }
@@ -367,9 +372,15 @@
         name: S128Docgen.amendmentFileName(plan),
         bytes: amendment,
         mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        label: 'Download Section 125 amendment'
+        label: 'Download Section 125 amendment (Word)'
       });
     }
+    files.push({
+      name: S128Docgen.guideFileName(plan),
+      bytes: S128Docgen.buildGuideDocx(plan),
+      mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      label: 'Download implementation guide (Word)'
+    });
     return files;
   }
   function showDownloads(files) {
@@ -385,11 +396,16 @@
     var amendmentRows = S128Docgen.amendmentParagraphs(plan);
     if (amendmentRows) {
       jobs.push({
-        promise: S128Pdf.buildPdf(amendmentRows, { title: 'Draft amendment' }),
+        promise: S128Pdf.buildPdf(amendmentRows, { title: 'Sample amendment' }),
         name: S128Docgen.pdfFileName(S128Docgen.amendmentFileName(plan)),
-        label: 'Download PDF amendment'
+        label: 'Download Section 125 amendment (PDF)'
       });
     }
+    jobs.push({
+      promise: S128Pdf.buildPdf(S128Docgen.guideParagraphs(plan), { title: 'Section 128 implementation guide' }),
+      name: S128Docgen.pdfFileName(S128Docgen.guideFileName(plan)),
+      label: 'Download implementation guide (PDF)'
+    });
     return Promise.all(jobs.map(function (job) {
       return job.promise.then(function (bytes) {
         return { name: job.name, bytes: bytes, mime: 'application/pdf', label: job.label };
@@ -420,17 +436,17 @@
     if (body && body.ok === true && body.leadEmailed === true && body.visitorEmailed === true) {
       var already = body.duplicate === true;
       setStatus(already ? 'duplicate' : 'sent', already
-        ? '<strong>This request was already emailed.</strong> You can download the draft again below.'
-        : '<strong>Emailed.</strong> A copy was emailed to you, and Daniel at DK Benefits received your draft with the documents attached.');
+        ? '<strong>This request was already emailed.</strong> You can download the sample again below.'
+        : '<strong>Emailed.</strong> A copy was emailed to you.');
       return;
     }
     if (body && body.ok === true && body.leadEmailed === true) {
       $('btnRetry').classList.remove('hidden');
-      setStatus('partial', '<strong>Daniel received your draft.</strong> A copy could not be emailed to you' + (body.visitorRateLimited ? ' because that address has reached the hourly limit' : '') + '. Retry sends your copy only. You can also call or text Daniel at ' + phoneLine() + '.');
+      setStatus('partial', '<strong>A copy could not be emailed to you</strong>' + (body.visitorRateLimited ? ' because that address has reached the hourly limit' : '') + '. Retry sends your copy only. Questions about DK Benefits’ services? ' + phoneLine() + ' · dan@dkbenefits.net.');
       return;
     }
     $('btnRetry').classList.remove('hidden');
-    setStatus('failed', '<strong>The copy could not be emailed.</strong> ' + escapeHtml(errorText || (body && body.error) || 'The delivery service did not accept the message.') + ' Your answers are saved in this browser. Retry, or call or text Daniel at ' + phoneLine() + '.');
+    setStatus('failed', '<strong>The copy could not be emailed.</strong> ' + escapeHtml(errorText || (body && body.error) || 'The delivery service did not accept the message.') + ' Your answers are saved in this browser. Retry, or use the contact line below. Questions about DK Benefits’ services? ' + phoneLine() + ' · dan@dkbenefits.net.');
   }
   function postLead(record) {
     var cfg = window.S128_CONFIG || {};
@@ -457,9 +473,9 @@
       go(1);
       return;
     }
-    if (!$('draft_ack').checked) {
-      $('err_draft_ack').textContent = 'Confirm that you understand this is a draft before generating it.';
-      $('draft_ack').focus();
+    if (!$('terms_ack').checked) {
+      $('err_terms_ack').textContent = 'Agree to the Terms of use before the sample documents can be generated.';
+      $('terms_ack').focus();
       if (step !== 4) go(4);
       return;
     }
@@ -490,7 +506,7 @@
       record.emailAttempted = true;
       savePending(record);
       $('btnRetry').disabled = true;
-      setStatus('neutral', 'Sending your draft…');
+      setStatus('neutral', 'Sending the sample documents…');
       postLead(record).then(function (body) {
         inFlight = false;
         $('btnRetry').disabled = false;
@@ -522,9 +538,9 @@
     var banner = $('savedBanner');
     banner.classList.remove('hidden');
     var headline = saved.leadDelivered
-      ? 'Daniel already received an earlier draft. Your copy was not emailed.'
-      : 'An earlier draft was not emailed.';
-    banner.innerHTML = '<strong>' + headline + '</strong> It is saved in this browser. <button type="button" class="linkish" id="btnRestore">Review it</button>';
+      ? 'An earlier sample was recorded. Your copy was not emailed.'
+      : 'An earlier sample was not emailed.';
+    banner.innerHTML = '<strong>' + headline + '</strong> It is saved in this browser. <button type="button" class="linkish" id="btnRestore">Open the saved answers</button>';
     $('btnRestore').addEventListener('click', function () {
       restore(saved);
       banner.classList.add('hidden');
@@ -557,20 +573,22 @@
   function endpointConfigured() {
     return !!(window.S128_CONFIG && window.S128_CONFIG.endpoint);
   }
+  function mountTerms() {
+    function fill(el) {
+      if (!el) return;
+      el.innerHTML = S128Terms.PARAGRAPHS.map(function (paragraph) {
+        return '<p>' + escapeHtml(paragraph) + '</p>';
+      }).join('');
+    }
+    fill($('termsBox'));
+    fill($('termsDialogBody'));
+    $('termsAckText').textContent = S128Terms.CHECKBOX;
+    $('openTerms').addEventListener('click', function () { $('termsDialog').showModal(); });
+    $('closeTerms').addEventListener('click', function () { $('termsDialog').close(); });
+  }
   function syncEmailCopy() {
-    var on = endpointConfigured();
-    var lede = $('companyLede');
     var hint = $('contactEmailHint');
-    if (lede) {
-      lede.textContent = on
-        ? 'Use the employer’s legal name. Daniel Kirves will review your draft and follow up, and a copy is emailed to the address you enter.'
-        : 'Use the employer’s legal name. Daniel Kirves will review your draft and follow up.';
-    }
-    if (hint) {
-      hint.textContent = on
-        ? 'A copy of your draft is emailed to this address.'
-        : 'Daniel uses this address to follow up.';
-    }
+    if (hint) hint.textContent = 'A copy of the sample documents is emailed to this address when delivery is on.';
   }
   function onFieldEdited(event) {
     var target = event.target;
@@ -581,6 +599,8 @@
   }
   function init() {
     fillStates();
+    if (window.S128Tips) S128Tips.mount();
+    mountTerms();
     syncEmailCopy();
     $('employer_name').addEventListener('change', suggestName);
     $('plan_name').addEventListener('input', function () { planNameTouched = true; });

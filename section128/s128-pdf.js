@@ -30,9 +30,9 @@ var S128Pdf = (function () {
     if (!PDFLib) return Promise.reject(new Error('PDF library is not loaded'));
     props = props || {};
     return PDFLib.PDFDocument.create().then(function (doc) {
-      doc.setTitle(props.title || 'Section 128 draft for review');
+      doc.setTitle(props.title || 'Section 128 sample draft');
       doc.setAuthor('DK Benefits LLC');
-      doc.setSubject('Draft for review. Not an IRS or attorney determination.');
+      doc.setSubject('Sample draft for the employer. Not legal, tax, or ERISA advice.');
       doc.setCreator('DK Benefits LLC');
       doc.setProducer('DK Benefits Section 128 draft ' + (S128Model.TEMPLATE_VERSION || ''));
       var font = doc.embedStandardFont(PDFLib.StandardFonts.TimesRoman);
@@ -101,7 +101,7 @@ var S128Pdf = (function () {
       });
 
       pages.forEach(function (pg, index) {
-        var label = 'Draft for review  |  ' + (index + 1);
+        var label = 'Sample draft  |  ' + (index + 1);
         pg.drawText(label, {
           x: pageWidth - right - font.widthOfTextAtSize(label, 9),
           y: 32,

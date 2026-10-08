@@ -175,7 +175,7 @@ test('submission requires body.ok, blocks a double post, and retries with the sa
   await page.click('#btnNext');
   await fillAdmin(page, 'combined');
   await page.click('#btnNext');
-  assert.match(await page.$eval('#stepTitle', function (el) { return el.textContent; }), /Review/);
+  assert.match(await page.$eval('#stepTitle', function (el) { return el.textContent; }), /Check/);
   assert.match(await page.$eval('#reviewSummary', function (el) { return el.textContent; }), /Harbor & Co/);
   assert.match(await page.$eval('#reviewSummary', function (el) { return el.textContent; }), /\$1,500|1,500/);
   await page.click('[data-edit="1"]');
@@ -184,8 +184,9 @@ test('submission requires body.ok, blocks a double post, and retries with the sa
   await page.click('#btnNext');
   await page.click('#btnNext');
   await page.click('#btnNext');
-  assert.match(await page.$eval('#err_draft_ack', function (el) { return el.textContent; }), /draft/);
-  await page.click('#draft_ack');
+  assert.match(await page.$eval('#err_terms_ack', function (el) { return el.textContent; }), /Terms of use/);
+  await page.click('#terms_ack');
+  await page.screenshot({ path: path.join(artifactDir, 'acknowledgement-1440.png'), fullPage: true });
   await page.evaluate(function () {
     window.S128_CONFIG.endpoint = 'https://s128.test/exec';
     window.__s128Live = true;
@@ -214,10 +215,16 @@ test('submission requires body.ok, blocks a double post, and retries with the sa
     return file.mime === 'application/pdf' && String(file.dataBase64).indexOf('JVBERi') === 0;
   }));
   assert.ok(posts[0].files.some(function (file) { return /wordprocessingml/.test(file.mime); }));
+  assert.equal(posts[0].acknowledgement.accepted, true);
+  assert.equal(posts[0].acknowledgement.termsVersion, 's128-terms-2026-10-08');
+  assert.ok(posts[0].files.some(function (file) { return /Implementation_Guide/.test(file.name) && /pdf/.test(file.mime); }));
   assert.equal(posts[0].lead.contact_email, 'mia@harbor.example');
   assert.equal(posts[0].plan.funding_mode, 'combined');
   assert.equal(posts[0].hp, '');
   await page.screenshot({ path: path.join(artifactDir, 'desktop-confirmation.png'), fullPage: true });
+  await page.screenshot({ path: path.join(artifactDir, 'confirmation-1440.png'), fullPage: true });
+  await page.setViewport({ width: 390, height: 900 });
+  await page.screenshot({ path: path.join(artifactDir, 'confirmation-390.png'), fullPage: true });
   const quoteHits = posts.filter(function (body) { return JSON.stringify(body).indexOf('AKfycby4-') !== -1; });
   assert.equal(quoteHits.length, 0);
   await page.close();
@@ -245,7 +252,8 @@ test('without an endpoint the page does not claim the draft was emailed', async 
   await page.click('#btnNext');
   await fillAdmin(page, 'employer_only');
   await page.click('#btnNext');
-  await page.click('#draft_ack');
+  await page.click('#terms_ack');
+  await page.screenshot({ path: path.join(artifactDir, 'acknowledgement-390.png'), fullPage: true });
   await page.evaluate(function () { window.__s128SetStartedAt(Date.now() - 10000); });
   await page.click('#btnNext');
   await page.waitForFunction(function () {
@@ -262,5 +270,89 @@ test('without an endpoint the page does not claim the draft was emailed', async 
   await page.screenshot({ path: path.join(artifactDir, 'phone-confirmation.png'), fullPage: true });
   await page.reload();
   assert.equal(await page.$eval('#savedBanner', function (el) { return el.classList.contains('hidden'); }), true);
+  await page.close();
+});
+
+test('tooltips open from the keyboard and from a tap, and close on Escape or an outside tap', async function () {
+  const page = await openPage(1440);
+  const coverage = await page.evaluate(function () {
+    const ids = Object.keys(window.S128Tips.TEXT);
+    const mounted = Array.from(document.querySelectorAll('.tip-btn')).map(function (el) { return el.dataset.tipId; });
+    return {
+      missing: ids.filter(function (id) { return mounted.indexOf(id) === -1; }),
+      slots: document.querySelectorAll('.tip-slot').length,
+      count: mounted.length
+    };
+  });
+  assert.deepEqual(coverage.missing, []);
+  assert.equal(coverage.slots, 0);
+  assert.ok(coverage.count >= 40);
+  await page.focus('button[data-tip-id="employer_name"]');
+  const focused = await page.evaluate(function () {
+    const button = document.querySelector('button[data-tip-id="employer_name"]');
+    const panel = document.getElementById(button.getAttribute('aria-describedby'));
+    const rect = panel.getBoundingClientRect();
+    return {
+      expanded: button.getAttribute('aria-expanded'),
+      role: panel.getAttribute('role'),
+      hidden: panel.hidden,
+      text: panel.textContent,
+      left: rect.left,
+      right: rect.right,
+      width: rect.width
+    };
+  });
+  assert.equal(focused.expanded, 'true');
+  assert.equal(focused.role, 'tooltip');
+  assert.equal(focused.hidden, false);
+  assert.match(focused.text, /separate written plan/);
+  assert.ok(focused.left >= 0);
+  assert.ok(focused.right <= 1440);
+  assert.ok(focused.width <= 280);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.$eval('button[data-tip-id="employer_name"]', function (el) { return el.getAttribute('aria-expanded'); }), 'false');
+  await page.click('button[data-tip-id="employer_name"]');
+  assert.equal(await page.$eval('#employer_name', function (el) { return el.value; }), '');
+  assert.equal(await page.$eval('button[data-tip-id="employer_name"]', function (el) { return el.getAttribute('aria-expanded'); }), 'true');
+  await page.screenshot({ path: path.join(artifactDir, 'tooltip-open-1440.png'), fullPage: false });
+  await page.click('h1');
+  assert.equal(await page.$eval('button[data-tip-id="employer_name"]', function (el) { return el.getAttribute('aria-expanded'); }), 'false');
+  await page.setViewport({ width: 390, height: 800 });
+  await page.click('button[data-tip-id="employer_name"]');
+  const phone = await page.evaluate(function () {
+    const button = document.querySelector('button[data-tip-id="employer_name"]');
+    const panel = document.getElementById(button.getAttribute('aria-describedby'));
+    const rect = panel.getBoundingClientRect();
+    return {
+      expanded: button.getAttribute('aria-expanded'),
+      left: rect.left,
+      right: rect.right,
+      width: rect.width,
+      overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
+    };
+  });
+  assert.equal(phone.expanded, 'true');
+  assert.equal(phone.overflow, false);
+  assert.ok(phone.left >= 0);
+  assert.ok(phone.right <= 390);
+  assert.ok(phone.width <= 374);
+  await page.screenshot({ path: path.join(artifactDir, 'tooltip-open-390.png'), fullPage: false });
+  await page.setViewport({ width: 320, height: 700 });
+  await page.click('button[data-tip-id="contact_phone"]');
+  const narrow = await page.evaluate(function () {
+    const button = document.querySelector('button[data-tip-id="contact_phone"]');
+    const panel = document.getElementById(button.getAttribute('aria-describedby'));
+    const rect = panel.getBoundingClientRect();
+    return {
+      left: rect.left,
+      right: rect.right,
+      overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
+    };
+  });
+  assert.ok(narrow.left >= 0);
+  assert.ok(narrow.right <= 320);
+  assert.equal(narrow.overflow, false);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.$eval('button[data-tip-id="contact_phone"]', function (el) { return el.getAttribute('aria-expanded'); }), 'false');
   await page.close();
 });

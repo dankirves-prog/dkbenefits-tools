@@ -3,7 +3,9 @@
 **Prepared for:** Daniel Kirves, DK Benefits LLC
 **Research date:** Thursday, October 8, 2026 (all sources checked this day; times ET)
 **Purpose:** To check the document-generator logic and the supplied materials (Employer Plan DOCX, Standard Template DOCX, Research Guide PDF, Field Specification JSON) against official sources, and to log material changes.
-**Release status:** This is a draft for review. There are no final Section 128 regulations yet. Nothing here claims IRS approval, attorney approval, or guaranteed compliance.
+**Release status:** There are no final Section 128 regulations yet. Nothing here claims IRS approval, attorney approval, or guaranteed compliance.
+
+**Template v0.3 (October 8, 2026):** The visitor-facing header is “SAMPLE DRAFT — for the employer’s review with its own advisors. Not adopted until signed by the Employer.” The page is an educational resource. DK Benefits does not review, approve, or verify the employer’s sample.
 
 ## Verification for the generator build (October 8, 2026)
 

@@ -1,10 +1,10 @@
 /**
  * Section 128 Trump Account Contribution Program — validation, limits, review flags.
- * Template s128-v0.2-2026-10-08. Guidance reviewed October 8, 2026.
+ * Template s128-v0.3-2026-10-08. Guidance as of October 8, 2026.
  * Same rules run in the browser and in the Apps Script.
  */
 var S128Model = (function () {
-  var TEMPLATE_VERSION = 's128-v0.2-2026-10-08';
+  var TEMPLATE_VERSION = 's128-v0.3-2026-10-08';
   var GUIDANCE_AS_OF = '2026-10-08';
   var FIRST_CONTRIBUTION_DATE = '2026-07-04';
   var PUBLISHED_S128_CEILING = 2500;
@@ -334,7 +334,7 @@ var S128Model = (function () {
     if (!/^\d+$/.test(waitingRaw)) push(errors, 'waiting_days', 'Enter the waiting period as a whole number of days.');
     else {
       var waiting = Number(waitingRaw);
-      if (waiting > 365) push(errors, 'waiting_days', 'Use 0 to 365 calendar days. A longer wait needs a separate review outside this draft.');
+      if (waiting > 365) push(errors, 'waiting_days', 'Use 0 to 365 calendar days. A longer wait is outside this sample.');
       else plan.waiting_days = waiting;
     }
 
@@ -474,42 +474,42 @@ var S128Model = (function () {
   function buildReview(plan, lead, asOf) {
     var reasons = [];
     if (plan.participating_employers && plan.participating_employers.length) {
-      reasons.push('Additional participating employers are listed. Related employers are treated as one employer for Section 128. Review the group before use.');
+      reasons.push('Additional participating employers are listed. Related employers are treated as one employer for Section 128.');
     }
     if (lead.related_businesses === 'yes' || lead.related_businesses === 'unsure') {
-      reasons.push('Related businesses were marked ' + (lead.related_businesses === 'yes' ? 'yes' : 'unsure') + '. Controlled-group and affiliated-service-group rules may apply. Review before use.');
+      reasons.push('Related businesses were marked ' + (lead.related_businesses === 'yes' ? 'yes' : 'unsure') + '. Controlled-group and affiliated-service-group rules may apply.');
     }
     if (plan.eligibility_class_choice === 'other') {
-      reasons.push('The eligible class is narrower than all common-law employees. It must stay objective and nondiscriminatory. Review before use.');
+      reasons.push('The eligible class is narrower than all common-law employees. It must stay objective and nondiscriminatory.');
     }
     if (lead.owners_or_family_want_to_participate === 'yes') {
       if (lead.entity_type === 's_corp') {
-        reasons.push('An owner or family member wants to participate in an S corporation. A 2-percent shareholder, with ownership attribution, is not treated as an employee for this program under the proposed-regulation preamble. Review before use.');
+        reasons.push('An owner or family member wants to participate in an S corporation. A 2-percent shareholder, with ownership attribution, is not treated as an employee for this program under the proposed-regulation preamble.');
       } else if (lead.entity_type === 'llc_partnership' || lead.entity_type === 'sole_prop') {
-        reasons.push('An owner wants to participate, but partners and sole proprietors are not eligible employees. Review who would actually be covered.');
+        reasons.push('An owner wants to participate, but partners and sole proprietors are not eligible employees.');
       } else if (lead.entity_type === 'c_corp') {
-        reasons.push('A C corporation owner-employee may participate if the person is a common-law employee. That person is usually highly compensated for testing. Review before use.');
+        reasons.push('A C corporation owner-employee may participate if the person is a common-law employee. That person is usually highly compensated for testing.');
       } else {
-        reasons.push('An owner or family member wants to participate. Review eligibility before use.');
+        reasons.push('An owner or family member wants to participate. Eligibility depends on whether that person is a common-law employee.');
       }
     }
     if (plan.allow_employee_account === true) {
-      reasons.push('Employer grants may go to an employee’s own account during the growth period. Department of Labor conditions apply to that design. Review before use.');
+      reasons.push('Employer grants may go to an employee’s own account during the growth period. Department of Labor conditions apply to that design.');
     }
     if (fundingUsesSalary(plan.funding_mode) && (lead.has_existing_125_plan === 'no' || lead.has_existing_125_plan === 'unsure')) {
-      reasons.push('Salary reduction has to run through a Section 125 cafeteria plan. No cafeteria plan was confirmed, so this draft does not include an amendment. A cafeteria plan must be adopted or confirmed before salary reduction can start. Review before use.');
+      reasons.push('Salary reduction has to run through a Section 125 cafeteria plan. No cafeteria plan was confirmed, so this sample does not include an amendment. A cafeteria plan must be adopted or confirmed before salary reduction can start.');
     }
     if (isIsoDate(plan.effective_date) && plan.effective_date < asOf) {
-      reasons.push('The effective date is before today. Review whether this draft can still be used prospectively.');
+      reasons.push('The effective date is before today. The sample can be used prospectively only if that date is still available.');
     }
     if (isIsoDate(plan.effective_date) && +plan.effective_date.slice(0, 4) >= 2028) {
-      reasons.push('The Section 128 limit for ' + plan.effective_date.slice(0, 4) + ' has not been published. This draft does not invent an indexed dollar amount. Review the limit before any contribution is made for that year.');
+      reasons.push('The Section 128 limit for ' + plan.effective_date.slice(0, 4) + ' has not been published. This sample does not invent an indexed dollar amount. Confirm the published limit before any contribution is made for that year.');
     }
     if (lead.collectively_bargained_employees === 'yes') {
-      reasons.push('Collectively bargained employees were reported. Testing exclusions apply only when their conditions are met. Review before use.');
+      reasons.push('Collectively bargained employees were reported. Testing exclusions apply only when their conditions are met.');
     }
     if (plan.state && plan.state !== 'FL' && plan.state !== 'GA') {
-      reasons.push('Business review: the employer is in ' + plan.state + '. Employers in any U.S. state can prepare this draft. The state is included in the lead.');
+      reasons.push('The employer is in ' + plan.state + '. Employers in any U.S. state can prepare this sample. State income-tax treatment is separate from the federal exclusion.');
     }
     return { required: reasons.length > 0, reasons: reasons };
   }

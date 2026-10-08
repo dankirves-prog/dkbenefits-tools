@@ -5,7 +5,7 @@
  */
 window.S128_CONFIG = {
   endpoint: 'https://script.google.com/macros/s/AKfycbzf5HcrGmEsDmzzp07JOwNUgXXNpgZ77CAUjztiU6JJrtG-hOVV4NkP6ubT_IcWSYyHIQ/exec',
-  templateVersion: 's128-v0.2-2026-10-08',
+  templateVersion: 's128-v0.3-2026-10-08',
   phoneDisplay: '407-476-5076',
   phoneTel: '4074765076'
 };

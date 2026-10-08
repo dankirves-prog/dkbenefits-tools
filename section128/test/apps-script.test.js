@@ -14,6 +14,9 @@ function boot() {
   }
   Sheet.prototype.appendRow = function (row) { this.rows.push(row.slice()); };
   Sheet.prototype.getLastRow = function () { return this.rows.length; };
+  Sheet.prototype.getLastColumn = function () {
+    return this.rows.reduce(function (max, row) { return Math.max(max, row.length); }, 0);
+  };
   Sheet.prototype.getDataRange = function () {
     const rows = this.rows;
     return { getValues: function () { return rows.map(function (row) { return row.slice(); }); } };
@@ -27,8 +30,21 @@ function boot() {
       },
       setValues: function (matrix) {
         matrix.forEach(function (line, i) {
+          if (!sheet.rows[r - 1 + i]) sheet.rows[r - 1 + i] = [];
           line.forEach(function (value, j) { sheet.rows[r - 1 + i][c - 1 + j] = value; });
         });
+      },
+      getValues: function () {
+        const height = numRows || 1;
+        const width = numCols || 1;
+        const values = [];
+        for (let i = 0; i < height; i++) {
+          const source = sheet.rows[r - 1 + i] || [];
+          const line = [];
+          for (let j = 0; j < width; j++) line.push(source[c - 1 + j] == null ? '' : source[c - 1 + j]);
+          values.push(line);
+        }
+        return values;
       }
     };
   };
@@ -107,12 +123,17 @@ function payload(overrides, id) {
     startedAt: '2026-10-08T15:00:00.000Z',
     submittedAt: '2026-10-08T15:00:10.000Z',
     pageUrl: 'https://dankirves-prog.github.io/dkbenefits-tools/section128/',
-    templateVersion: 's128-v0.2-2026-10-08',
+    templateVersion: 's128-v0.3-2026-10-08',
     test: true,
     hp: '',
     lead: checked.lead,
     plan: checked.plan,
     review: checked.review,
+    acknowledgement: {
+      accepted: true,
+      acceptedAt: '2026-10-08T15:00:10.000Z',
+      termsVersion: 's128-terms-2026-10-08'
+    },
     sendVisitorCopy: true
   }, overrides && overrides.payload || {});
 }
@@ -130,13 +151,20 @@ test('a valid lead emails Dan and the visitor and returns ok only after MailApp 
   assert.match(ctx.sent[0].body, /State: FL/);
   assert.match(ctx.sent[0].body, /Employees: 25/);
   assert.match(ctx.sent[0].body, /Employer grant only/);
-  assert.equal(ctx.sent[0].attachments.length, 1);
-  assert.match(ctx.sent[0].attachments[0].name, /\.docx$/);
+  assert.equal(ctx.sent[0].attachments.length, 2);
+  assert.match(ctx.sent[0].attachments[0].name, /Section_128_Plan/);
+  assert.match(ctx.sent[0].attachments[1].name, /Implementation_Guide/);
   assert.equal(ctx.sent[0].attachments[0].data[0], 0x50);
   assert.equal(ctx.sent[0].attachments[0].data[1], 0x4b);
+  assert.match(ctx.sent[0].body, /s128-terms-2026-10-08/);
+  assert.match(ctx.sent[0].body, /2026-10-08T15:00:10.000Z/);
   assert.equal(ctx.sent[1].to, 'ada@northwind.example');
-  assert.match(ctx.sent[1].body, /draft for review/i);
+  assert.match(ctx.sent[1].body, /SAMPLE DRAFT/);
+  assert.match(ctx.sent[1].body, /January 31/);
+  assert.doesNotMatch(ctx.sent[1].body, /received your draft|will follow up|Daniel Kirves will/i);
   assert.equal(ctx.sheets.Submissions.rows[1][2], 'sent');
+  assert.equal(ctx.sheets.Submissions.rows[1][20], 's128-terms-2026-10-08');
+  assert.equal(ctx.sheets.Submissions.rows[1][21], '2026-10-08T15:00:10.000Z');
 });
 
 test('duplicate submission id does not send a second email', function () {
@@ -209,8 +237,9 @@ test('visitor copies are limited to three an hour and salary reduction attaches 
   assert.match(danMessages[0].subject, /\[TEST\]/);
   assert.match(danMessages[0].subject, /\[REVIEW\]/);
   assert.match(danMessages[0].body, /State: NC/);
-  assert.equal(danMessages[0].attachments.length, 2);
+  assert.equal(danMessages[0].attachments.length, 3);
   assert.match(danMessages[0].attachments[1].name, /Section_125_Amendment/);
+  assert.match(danMessages[0].attachments[2].name, /Implementation_Guide/);
   assert.equal(ctx.sent.filter(function (message) { return message.to === 'ada@northwind.example'; }).length, 3);
 });
 
@@ -286,4 +315,33 @@ test('the daily lead cap stops a new email and a recent pending row is not stuck
   const busy = ctx.post(payload(null, fresh[1]));
   assert.equal(busy.ok, false);
   assert.match(busy.error, /already being sent/);
+});
+
+test('a submission without the terms acknowledgement is rejected', function () {
+  const ctx = boot();
+  const missing = payload(null, '12121212-1212-4212-8212-121212121212');
+  delete missing.acknowledgement;
+  const rejected = ctx.post(missing);
+  assert.equal(rejected.ok, false);
+  assert.match(rejected.error, /acknowledgement/i);
+  assert.equal(ctx.sent.length, 0);
+});
+
+test('an existing sheet header gains only the acknowledgement columns', function () {
+  const ctx = boot();
+  const sheet = ctx.SpreadsheetApp.getActiveSpreadsheet().insertSheet('Submissions');
+  const old = ctx.S128_SUBMISSION_HEADERS.slice(0, 20);
+  sheet.appendRow(old);
+  const prior = old.map(function () { return ''; });
+  prior[1] = 'kept-id';
+  prior[16] = 'yes';
+  sheet.appendRow(prior);
+  const body = ctx.post(payload(null, '13131313-1313-4313-8313-131313131313'));
+  assert.equal(body.ok, true);
+  assert.equal(sheet.rows[0][16], 'lead_emailed');
+  assert.equal(sheet.rows[0][17], 'visitor_emailed');
+  assert.equal(sheet.rows[0][20], 'terms_version');
+  assert.equal(sheet.rows[0][21], 'terms_accepted_at');
+  assert.equal(sheet.rows[1][1], 'kept-id');
+  assert.equal(sheet.rows[1][16], 'yes');
 });

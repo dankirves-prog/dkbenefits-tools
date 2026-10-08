@@ -194,7 +194,7 @@ test('each review flag can be raised', function () {
     has_existing_125_plan: 'no'
   }), /Section 125/);
   assert.match(reasons({ collectively_bargained_employees: 'yes' }), /Collectively bargained/);
-  assert.match(reasons({ state: 'TX', city: 'Austin', zip: '78701' }), /Business review: the employer is in TX/);
+  assert.match(reasons({ state: 'TX', city: 'Austin', zip: '78701' }), /employer is in TX/);
 });
 
 test('Georgia and Florida are not out-of-market flags by themselves', function () {
@@ -206,5 +206,5 @@ test('server wrapper accepts plan and lead objects', function () {
   const flat = baseInput();
   const result = S128Model.validateSubmission({ plan: flat, lead: flat }, { asOf: ASOF });
   assert.equal(result.ok, true, JSON.stringify(result.errors));
-  assert.equal(result.templateVersion, 's128-v0.2-2026-10-08');
+  assert.equal(result.templateVersion, 's128-v0.3-2026-10-08');
 });

@@ -2,9 +2,11 @@
  * DK Benefits Section 128 lead service.
  * Container-bound to a new spreadsheet. Do not paste this into the quote-tool script.
  *
- * Also add two script files, pasted from the repo with no edits:
+ * Also add these script files, pasted from the repo with no edits:
  *   S128Model.gs  = section128/s128-model.js
+ *   S128Terms.gs  = section128/s128-terms.js
  *   S128Docgen.gs = section128/s128-docgen.js
+ * Or paste section128/apps-script/S128Combined.gs as the only script file.
  *
  * Deploy as a web app: Execute as Me, Who has access: Anyone.
  * See README.md in this folder.
@@ -17,7 +19,7 @@ var S128_DAILY_LEAD_CAP = 50;
 var S128_MIN_ELAPSED_MS = 3000;
 var S128_PENDING_STALE_MS = 45000;
 var S128_MAX_FILE_BYTES = 1500000;
-var S128_MAX_FILES = 4;
+var S128_MAX_FILES = 8;
 var S128_DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 var S128_PDF_MIME = 'application/pdf';
 
@@ -25,7 +27,8 @@ var S128_SUBMISSION_HEADERS = [
   'timestamp', 'submission_id', 'status', 'test', 'company', 'state', 'contact_name',
   'contact_email', 'contact_phone', 'employees', 'funding_mode', 'effective_date',
   'review_required', 'review_reasons', 'page_url', 'template_version',
-  'lead_emailed', 'visitor_emailed', 'error', 'payload_json'
+  'lead_emailed', 'visitor_emailed', 'error', 'payload_json',
+  'terms_version', 'terms_accepted_at'
 ];
 
 function doGet() {
@@ -51,23 +54,29 @@ function doPost(e) {
     return s128Json_(s128Handle_(payload));
   } catch (err) {
     try { s128LogEvent_('failed', payload.submissionId || '', err && err.message ? err.message : 'failed'); } catch (ignore) {}
-    return s128Json_({ ok: false, error: 'The draft could not be sent.' });
+    return s128Json_({ ok: false, error: 'The sample could not be sent.' });
   }
 }
 
 function s128Handle_(payload) {
   if (payload.hp) {
     s128LogEvent_('rejected_honeypot', payload.submissionId || '', 'honeypot');
-    return { ok: false, error: 'The draft could not be sent.' };
+    return { ok: false, error: 'The sample could not be sent.' };
   }
   var started = Date.parse(payload.startedAt || '');
   var submitted = Date.parse(payload.submittedAt || '') || Date.now();
   if (!started || submitted - started < S128_MIN_ELAPSED_MS) {
     s128LogEvent_('rejected_fast', payload.submissionId || '', 'too fast');
-    return { ok: false, error: 'The draft could not be sent.' };
+    return { ok: false, error: 'The sample could not be sent.' };
   }
   if (!payload.submissionId || String(payload.submissionId).length < 8 || String(payload.submissionId).length > 80) {
     return { ok: false, error: 'The submission id is missing.' };
+  }
+
+  var ack = payload.acknowledgement || {};
+  if (ack.accepted !== true || !ack.acceptedAt || !Date.parse(ack.acceptedAt) || ack.termsVersion !== S128Terms.VERSION) {
+    s128LogEvent_('rejected_terms', payload.submissionId, 'terms');
+    return { ok: false, error: 'The terms acknowledgement is missing.' };
   }
 
   var checked = S128Model.validateSubmission(payload, { asOf: s128Today_() });
@@ -101,7 +110,7 @@ function s128Handle_(payload) {
     wantVisitor = wantVisitor && !(existing && existing.visitorEmailed);
     if (sendLead && s128CountLeadsToday_(String(payload.submissionId)) >= S128_DAILY_LEAD_CAP) {
       s128LogEvent_('rejected_daily_cap', payload.submissionId, 'cap');
-      return { ok: false, error: 'The daily email limit has been reached. Call or text Daniel at 407-476-5076.' };
+      return { ok: false, error: 'The daily email limit has been reached. Questions about DK Benefits’ services? 407-476-5076 · dan@dkbenefits.net' };
     }
     s128UpsertSubmission_(
       existing,
@@ -121,7 +130,7 @@ function s128Handle_(payload) {
     files = s128AttachmentFiles_(payload, checked.plan);
   } catch (buildErr) {
     s128Mark_(String(payload.submissionId), 'failed', buildErr.message || 'document error', !!(existing && existing.leadEmailed), !!(existing && existing.visitorEmailed));
-    return { ok: false, error: 'The draft could not be prepared for email.' };
+    return { ok: false, error: 'The sample could not be prepared for email.' };
   }
 
   var quota = 0;
@@ -140,7 +149,7 @@ function s128Handle_(payload) {
       s128Mark_(String(payload.submissionId), 'partial', '', true, visitorSent);
     } catch (mailErr) {
       s128Mark_(String(payload.submissionId), 'failed', mailErr.message || 'mail failed', false, visitorSent);
-      return { ok: false, error: 'The draft could not be emailed.' };
+      return { ok: false, error: 'The sample could not be emailed.' };
     }
   }
 
@@ -188,6 +197,9 @@ function s128AttachmentFiles_(payload, plan) {
     var amendmentBytes = S128Docgen.buildAmendmentDocx(plan);
     if (amendmentBytes && accepted.length < S128_MAX_FILES) {
       accepted.push(s128BytesBlob_(amendmentBytes, S128_DOCX_MIME, S128Docgen.amendmentFileName(plan)));
+    }
+    if (accepted.length < S128_MAX_FILES) {
+      accepted.push(s128BytesBlob_(S128Docgen.buildGuideDocx(plan), S128_DOCX_MIME, S128Docgen.guideFileName(plan)));
     }
   }
   return accepted.slice(0, S128_MAX_FILES);
@@ -274,7 +286,11 @@ function s128LeadMessage_(payload, checked, files) {
     'Review',
     review.required ? review.reasons.map(function (reason) { return '- ' + reason; }).join('\n') : 'No extra review flags.',
     '',
-    'The attached plan is a draft for review. It is not adopted until the employer signs it.'
+    'Acknowledgement',
+    'Terms version: ' + ((payload.acknowledgement && payload.acknowledgement.termsVersion) || ''),
+    'Accepted at: ' + ((payload.acknowledgement && payload.acknowledgement.acceptedAt) || ''),
+    '',
+    'The attached files are sample drafts for the employer. They are not adopted until the employer signs them.'
   ];
   return {
     to: S128_NOTIFY_EMAIL,
@@ -287,21 +303,10 @@ function s128LeadMessage_(payload, checked, files) {
 
 function s128VisitorMessage_(checked, files) {
   var plan = checked.plan;
-  var body = [
-    'Hello ' + checked.lead.contact_name + ',',
-    '',
-    'Attached is the draft Section 128 Trump Account contribution program for ' + plan.employer_name + '.',
-    'It is a draft for review. It is not an IRS determination, an attorney opinion, or a guarantee of compliance.',
-    'Downloading it does not establish the program. The signature and date are blank for the employer to sign.',
-    '',
-    'Daniel Kirves at DK Benefits will follow up. Call or text 407-476-5076 or email dan@dkbenefits.net.',
-    '',
-    'DK Benefits LLC'
-  ].join('\n');
   return {
     to: checked.lead.contact_email,
-    subject: 'Your draft Section 128 program — ' + plan.employer_name,
-    body: body,
+    subject: 'Sample Section 128 documents — ' + plan.employer_name,
+    body: S128Docgen.visitorEmailText(plan, checked.lead),
     name: 'DK Benefits LLC',
     replyTo: S128_NOTIFY_EMAIL,
     attachments: files
@@ -323,9 +328,23 @@ function s128Sheet_(name, headers) {
   if (!sheet) {
     sheet = ss.insertSheet(name);
     sheet.appendRow(headers);
-  } else if (sheet.getLastRow() === 0) {
-    sheet.appendRow(headers);
+    return sheet;
   }
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(headers);
+    return sheet;
+  }
+  var width = headers.length;
+  if (sheet.getLastColumn) width = Math.max(sheet.getLastColumn(), headers.length);
+  var current = sheet.getRange(1, 1, 1, width).getValues()[0];
+  var changed = false;
+  for (var i = 0; i < headers.length; i++) {
+    if (current[i] === '' || current[i] == null) {
+      current[i] = headers[i];
+      changed = true;
+    }
+  }
+  if (changed) sheet.getRange(1, 1, 1, headers.length).setValues([current.slice(0, headers.length)]);
   return sheet;
 }
 
@@ -382,7 +401,9 @@ function s128Row_(payload, checked, status, error, leadEmailed, visitorEmailed) 
     leadEmailed ? 'yes' : 'no',
     visitorEmailed ? 'yes' : 'no',
     error || '',
-    JSON.stringify({ lead: lead, plan: plan, review: checked.review, utm: payload.utm || {} })
+    JSON.stringify({ lead: lead, plan: plan, review: checked.review, acknowledgement: payload.acknowledgement || {}, utm: payload.utm || {} }),
+    (payload.acknowledgement && payload.acknowledgement.termsVersion) || '',
+    (payload.acknowledgement && payload.acknowledgement.acceptedAt) || ''
   ];
 }
 

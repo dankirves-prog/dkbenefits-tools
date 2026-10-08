@@ -67,7 +67,7 @@ function assertClean(xml, mode) {
   assert.match(text, /Articles 1 through 12/);
   assert.match(text, /on or before January 31/);
   assert.match(text, /claimed and activated cannot receive Program contributions/);
-  assert.match(text, /DRAFT FOR REVIEW/);
+  assert.match(text, /SAMPLE DRAFT/);
   if (mode === 'employer_only') {
     const rest = text.split('\n').filter(function (line) { return line.indexOf('Reserved:') === -1; }).join('\n');
     assert.doesNotMatch(rest, /\bsalary\b|\bdeduction\b|\bwithheld\b|\bcafeteria\b|section 125/i);
@@ -95,9 +95,9 @@ for (const [name, overrides, mode] of cases) {
     const bytes = S128Docgen.buildPlanDocx(plan);
     const packed = textOf(bytes);
     assertClean(packed.document, mode);
-    assert.match(packed.header, /DRAFT FOR REVIEW/);
+    assert.match(packed.header, /SAMPLE DRAFT/);
     assert.match(packed.footer, /PAGE/);
-    assert.match(packed.footer, /Draft for review/);
+    assert.match(packed.footer, /Sample draft/);
     assert.match(packed.core, /DK Benefits LLC/);
     assert.doesNotMatch(packed.core, /python-docx/);
     assert.match(packed.core, new RegExp(plan.plan_name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
@@ -123,7 +123,7 @@ for (const [name, overrides, mode] of cases) {
       assert.equal(amendment, null);
     } else {
       const amendText = plain(textOf(amendment).document);
-      assert.match(amendText, /Draft Amendment to Northwind Cafeteria Plan/);
+      assert.match(amendText, /Sample amendment to Northwind Cafeteria Plan/);
       assert.match(amendText, /Signature: _{10,}/);
       assert.doesNotMatch(amendText, /\{\{|\[\s*\]/);
       if (mode === 'combined') assert.match(amendText, /reservation of the annual employer grant of \$1,000/);
@@ -165,6 +165,51 @@ test('salary reduction without a confirmed cafeteria plan does not build an amen
   assert.match(text, /cannot receive Program contributions until a parent or guardian claims it/);
 });
 
+test('implementation guide matches the funding design and the visitor email', function () {
+  const combined = planFor(Object.assign({ funding_mode: 'combined', employer_annual_grant: '1000' }, salaryFields));
+  const guide = S128Docgen.plainText(S128Docgen.guideParagraphs(combined));
+  const email = S128Docgen.visitorEmailText(combined, { contact_name: 'Ada Lopez' });
+  [
+    /1\. Read the sample with the employer’s own attorney and tax advisor/,
+    /2\. Finalize the design choices/,
+    /3\. Formally adopt the program/,
+    /4\. Confirm the Section 125 cafeteria plan/,
+    /5\. Set up payroll/,
+    /6\. Give employees written notice/,
+    /7\. Collect designations and verify the accounts/,
+    /8\. Remit contributions/,
+    /9\. Keep records/,
+    /10\. Provide the annual employee statement/,
+    /11\. Monitor eligibility and nondiscrimination/,
+    /12\. Recheck final rules and state tax/,
+    /\$2,500/,
+    /December 31 of the year the child turns 17/,
+    /July 4, 2026/,
+    /does not reduce Social Security or Medicare tax/,
+    /box 12, code TA/,
+    /January 31/,
+    /21 calendar days|Twenty-one calendar days/,
+    /55 percent/,
+    /REG-101355-26/,
+    /Georgia/,
+    /October 8, 2026/,
+    /Who:/,
+    /What:/,
+    /When:/
+  ].forEach(function (pattern) { assert.match(guide, pattern); });
+  assert.match(email, /Hello Ada Lopez/);
+  assert.match(email, /SAMPLE DRAFT/);
+  assert.match(email, /Questions about DK Benefits’ services\? 407-476-5076/);
+  assert.ok(email.indexOf(guide) !== -1);
+  assert.doesNotMatch(email, /received your draft|will follow up|Daniel Kirves will|we'll review/i);
+  const grantOnly = planFor({ funding_mode: 'employer_only' });
+  const grantGuide = S128Docgen.plainText(S128Docgen.guideParagraphs(grantOnly));
+  assert.doesNotMatch(grantGuide, /Confirm the Section 125 cafeteria plan/);
+  assert.match(grantGuide, /11\. Recheck final rules and state tax/);
+  assert.match(S128Docgen.guideFileName(combined), /Northwind_Benefits_LLC_Section_128_Implementation_Guide_v0\.3\.docx/);
+  fs.writeFileSync(path.join(outDir, 'combined-guide.docx'), Buffer.from(S128Docgen.buildGuideDocx(combined)));
+});
+
 test('LibreOffice renders each funding method and pdf-lib matches the text', async function () {
   const artifacts = artifactDir();
   fs.mkdirSync(artifacts, { recursive: true });
@@ -181,7 +226,7 @@ test('LibreOffice renders each funding method and pdf-lib matches the text', asy
     const renderedPdf = path.join(outDir, name + '-render.pdf');
     const rendered = execFileSync('pdftotext', ['-layout', renderedPdf, '-'], { encoding: 'utf8' });
     assert.match(rendered, /Northwind Benefits LLC/);
-    assert.match(rendered, /DRAFT FOR REVIEW/);
+    assert.match(rendered, /SAMPLE DRAFT/);
     assert.match(rendered, /Article 12/);
     assert.match(rendered, /January 31/);
     assert.doesNotMatch(rendered, /\{\{|\[\s*\]/);
@@ -196,7 +241,7 @@ test('LibreOffice renders each funding method and pdf-lib matches the text', asy
   const pdfText = execFileSync('pdftotext', ['-layout', pdfPath, '-'], { encoding: 'utf8' });
   assert.match(pdfText, /Northwind Benefits LLC/);
   assert.match(pdfText, /Salary reduction cannot consume/);
-  assert.match(pdfText, /Draft for review\s+\|\s+1/);
+  assert.match(pdfText, /Sample draft\s+\|\s+1/);
   assert.match(pdfText, /Ada Lopez/);
   const einLine = pdfText.split('\n').find(function (line) { return line.indexOf('Employer EIN:') !== -1; });
   assert.ok(einLine);
@@ -209,4 +254,18 @@ test('LibreOffice renders each funding method and pdf-lib matches the text', asy
   const amendmentText = execFileSync('pdftotext', ['-layout', amendmentPath, '-'], { encoding: 'utf8' });
   assert.match(amendmentText, /reservation of the annual employer grant of\s+\$1,000/);
   assert.match(amendmentText, /Signature:/);
+  const guidePdf = await S128Pdf.buildPdf(S128Docgen.guideParagraphs(plan), { title: 'Section 128 implementation guide' });
+  const guidePath = path.join(artifacts, 'combined-guide-pdflib.pdf');
+  fs.writeFileSync(guidePath, Buffer.from(guidePdf));
+  const guideText = execFileSync('pdftotext', ['-layout', guidePath, '-'], { encoding: 'utf8' });
+  assert.match(guideText, /Confirm the Section 125/);
+  assert.match(guideText, /SAMPLE DRAFT/);
+  assert.match(guideText, /Sample draft\s+\|\s+1/);
+  [
+    ['combined-plan-page', pdfPath],
+    ['combined-amendment-page', amendmentPath],
+    ['combined-guide-page', guidePath]
+  ].forEach(function (pair) {
+    execFileSync('pdftoppm', ['-png', '-r', '110', pair[1], path.join(artifacts, pair[0])]);
+  });
 });
