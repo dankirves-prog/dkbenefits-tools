@@ -27,7 +27,8 @@ body.is-customizing #customize-panel { display: block; }
 .rf-mix-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 8px 0 6px; }
 .rf-pay h3, .rf-contrib h3 { margin: 8px 0 6px; font-size: 0.95rem; }
 .rf-customize .hint { margin: 4px 0; font-size: 0.84rem; }
-.rf-customize input[type="number"] { min-height: 36px; }
+.rf-customize input[type="number"],
+.rf-customize input[type="text"] { min-height: 36px; }
 .rf-customize .mode-btn, .rf-customize .preset, .rf-customize .btn { min-height: 36px; }
 .state-bubbles { border: 0; margin: 0 0 12px; padding: 0; }
 .state-bubbles legend { font-weight: 700; margin-bottom: 8px; }
@@ -106,4 +107,65 @@ body.is-customizing #customize-panel { display: block; }
   #customize-panel #flat-fields { display: block; }
   #customize-panel #percent-fields[hidden],
   #customize-panel #flat-fields[hidden] { display: none; }
+}
+
+@media (max-width: 430px) {
+  .rf-page .header-inner { min-height: 32px; padding: 1px 0; }
+  .rf-page .header-phone { min-height: 28px; padding: 2px 8px; font-size: 0.75rem; }
+  .rf-page .brand-name { font-size: 0.92rem; }
+  .rf-page .intro { padding: 2px 0 0; }
+  .rf-page .intro h1 { font-size: 1rem; line-height: 1.15; margin: 1px 0; }
+  .rf-page .intro .trust,
+  .rf-page .intro .as-of {
+    display: inline !important;
+    margin: 0 8px 0 0;
+    font-size: 0.72rem;
+    line-height: 1.25;
+  }
+  .rf-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+  }
+  .rf-toolbar .chips { flex: 1 1 auto; gap: 4px; }
+  .rf-toolbar .sort-field { flex: 1 1 100%; min-width: 0; gap: 4px; }
+  .rf-toolbar .sort-field select { width: 100%; max-width: 100%; }
+  .rf-toolbar .toolbar-actions {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+    width: 100%;
+  }
+  .rf-toolbar .chip,
+  .rf-toolbar .btn,
+  .rf-toolbar select {
+    min-height: 28px;
+    font-size: 0.72rem;
+    padding: 0 6px;
+  }
+  .rf-toolbar .toolbar-actions .btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 2px 4px;
+    font-size: 0.68rem;
+    line-height: 1.15;
+    white-space: normal;
+    text-align: center;
+  }
+  #print-all-btn { font-size: 0.68rem; padding: 2px 4px; }
+  .section-title { margin: 4px 0 2px; font-size: 0.92rem; }
+  .plan-card { padding: 6px 8px; }
+  .plan-head { gap: 6px; }
+  .plan-card h3,
+  .plan-head h3 { font-size: 0.98rem; margin: 0; line-height: 1.15; }
+  .carrier { font-size: 0.68rem; letter-spacing: 0.04em; }
+  .network { margin: 0 0 2px; font-size: 0.75rem; line-height: 1.2; }
+  .badge { padding: 1px 6px; font-size: 0.68rem; line-height: 1.2; }
+  .plan-card .save-toggle { min-height: 28px; padding: 0 8px; font-size: 0.72rem; }
+  .tier-table,
+  .tier-table.is-rates-only { margin-top: 4px; }
+  .tier-table caption { padding-bottom: 0; font-size: 0.65rem; }
+  .tier-table th,
+  .tier-table td { padding: 2px 2px; font-size: 0.8rem; line-height: 1.2; }
 }

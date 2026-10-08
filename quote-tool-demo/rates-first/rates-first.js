@@ -85,12 +85,17 @@
     var saved = new Map();
     var eligible = '';
     var enrolling = '';
+    var eligibleShown = '';
+    var enrollingShown = '';
     var mix = copyMix(EMPTY_MIX);
+    var mixShown = copyMix(EMPTY_MIX);
     var mixError = '';
     var mixManual = false;
     var leadState = '';
     var helpWith = '';
     var flatEntry = '';
+    var flatDraft = '';
+    var flatError = '';
     var contribution = {
       model: '',
       employerPercent: null,
@@ -138,12 +143,14 @@
         employeeChildren: String(numbers.employeeChildren),
         family: String(numbers.family)
       };
+      mixShown = copyMix(mix);
     }
 
     function fillEstimate() {
       var count = enrollingCount();
       if (count == null) {
         mix = copyMix(EMPTY_MIX);
+        mixShown = copyMix(EMPTY_MIX);
         return;
       }
       writeMix(QuoteMath.estimateSmartMix(count));
@@ -370,9 +377,9 @@
         sortMode: sortMode,
         mecOpen: mecOpen,
         mecAvailable: plans.some(function (plan) { return plan.group === 'mec'; }),
-        eligible: eligible,
-        enrolling: enrolling,
-        mix: copyMix(mix),
+        eligible: eligibleShown,
+        enrolling: enrollingShown,
+        mix: copyMix(mixShown),
         mixNote: status.message,
         mixOk: status.ok,
         mixManual: mixManual,
@@ -393,6 +400,8 @@
         leadState: leadState,
         helpWith: helpWith,
         flatEntry: flatEntry,
+        flatDraft: flatDraft,
+        flatError: flatError,
         summaryLine: summaryLine(),
         ratesAsOfLabel: ratesAsOfLabel,
         carriers: ['All'].concat(QuoteMath.listCarriers(plans)),
@@ -401,33 +410,72 @@
       };
     }
 
-    function setCount(which, raw) {
-      noteInteraction();
-      var text = String(raw == null ? '' : raw).trim();
+    function countLabel(which) {
+      return which === 'eligible' ? 'eligible employees' : 'people enrolling';
+    }
+
+    function applyCount(which) {
+      var shown = which === 'eligible' ? eligibleShown : enrollingShown;
+      var text = String(shown || '').trim();
       if (text === '') {
         if (which === 'eligible') eligible = '';
-        else {
-          enrolling = '';
-          if (!mixManual) fillEstimate();
-        }
-        mixError = '';
-        disarm('group');
-        return { ok: true };
+        else enrolling = '';
+        return '';
       }
-      var parsed = QuoteMath.parseWholeCount(text, { min: 1, label: which === 'eligible' ? 'eligible employees' : 'people enrolling' });
-      if (!parsed.ok) return { ok: false, error: parsed.message };
-      if (which === 'enrolling' && eligibleCount() != null && parsed.value > eligibleCount()) {
-        return { ok: false, error: 'Enrollment can’t be higher than the number of eligible employees.' };
-      }
-      if (which === 'eligible' && enrollingCount() != null && enrollingCount() > parsed.value) {
-        return { ok: false, error: 'Eligible employees can’t be lower than the number you expect to enroll.' };
+      var parsed = QuoteMath.parseWholeCount(text, { min: 1, label: countLabel(which) });
+      if (!parsed.ok) {
+        if (which === 'eligible') eligible = '';
+        else enrolling = '';
+        return parsed.message;
       }
       if (which === 'eligible') eligible = String(parsed.value);
-      else {
-        enrolling = String(parsed.value);
-        if (!mixManual) fillEstimate();
+      else enrolling = String(parsed.value);
+      return '';
+    }
+
+    function mixFieldProblem() {
+      var fields = ['employeeOnly', 'employeeSpouse', 'employeeChildren', 'family'];
+      for (var i = 0; i < fields.length; i += 1) {
+        var text = String(mixShown[fields[i]] || '').trim();
+        if (text === '') continue;
+        var parsed = QuoteMath.parseWholeCount(text, { min: 0, label: 'this tier' });
+        if (!parsed.ok) return parsed.message;
+      }
+      return '';
+    }
+
+    function refreshGroupTimer() {
+      if (eligibleCount() == null && enrollingCount() == null) {
+        disarm('group');
+        return;
       }
       arm('group');
+    }
+
+    function setCount(which, raw) {
+      noteInteraction();
+      var display = String(raw == null ? '' : raw);
+      if (which === 'eligible') eligibleShown = display;
+      else enrollingShown = display;
+      var previousEnrolling = enrolling;
+      var eligibleMsg = applyCount('eligible');
+      var enrollingMsg = applyCount('enrolling');
+      var cross = '';
+      if (eligibleCount() != null && enrollingCount() != null && enrollingCount() > eligibleCount()) {
+        if (which === 'eligible') {
+          eligible = '';
+          cross = 'Eligible employees can’t be lower than the number you expect to enroll.';
+        } else {
+          enrolling = '';
+          cross = 'Enrollment can’t be higher than the number of eligible employees.';
+        }
+      }
+      if (!mixManual && enrolling !== previousEnrolling) fillEstimate();
+      var editedMsg = which === 'eligible' ? eligibleMsg : enrollingMsg;
+      var otherMsg = which === 'eligible' ? enrollingMsg : eligibleMsg;
+      mixError = cross || editedMsg || otherMsg || mixFieldProblem() || '';
+      refreshGroupTimer();
+      if (cross || editedMsg) return { ok: false, error: mixError };
       return { ok: true };
     }
 
@@ -460,20 +508,21 @@
       setMixField: function (field, raw) {
         noteInteraction();
         mixManual = true;
-        var text = String(raw == null ? '' : raw).trim();
-        if (text === '') {
-          mix[field] = '';
-          mixError = '';
-          return { ok: true };
+        var text = String(raw == null ? '' : raw);
+        mixShown[field] = text;
+        var trimmed = text.trim();
+        if (trimmed === '') mix[field] = '';
+        else {
+          var parsed = QuoteMath.parseWholeCount(trimmed, { min: 0, label: 'this tier' });
+          if (!parsed.ok) {
+            mix[field] = '';
+            mixError = parsed.message;
+            return { ok: false, error: parsed.message };
+          }
+          mix[field] = String(parsed.value);
         }
-        var parsed = QuoteMath.parseWholeCount(text, { min: 0, label: 'this tier' });
-        if (!parsed.ok) {
-          mixError = parsed.message;
-          return { ok: false, error: parsed.message };
-        }
-        mix[field] = String(parsed.value);
-        mixError = '';
-        return { ok: true };
+        mixError = mixFieldProblem();
+        return mixError ? { ok: false, error: mixError } : { ok: true };
       },
       setPayCycle: function (value) {
         noteInteraction();
@@ -488,12 +537,18 @@
           contribution.flatAmount = partial.flatAmount == null || partial.flatAmount === '' ? null : Number(partial.flatAmount);
         }
         if (partial.entry) flatEntry = partial.entry;
+        if (partial.entry === 'preset') {
+          flatDraft = '';
+          flatError = '';
+        }
         if (partial.clear) {
           contribution.model = '';
           contribution.employerPercent = null;
           contribution.dependentPercent = null;
           contribution.flatAmount = null;
           flatEntry = '';
+          flatDraft = '';
+          flatError = '';
           disarm('contrib');
           return;
         }
@@ -503,6 +558,38 @@
         }
         disarm('contrib');
         commitContribution();
+      },
+      openCustomFlat: function () {
+        noteInteraction();
+        flatDraft = '';
+        flatError = '';
+        contribution.model = 'flat';
+        contribution.flatAmount = null;
+        flatEntry = 'custom';
+        disarm('contrib');
+      },
+      setCustomFlatText: function (raw) {
+        noteInteraction();
+        var text = String(raw == null ? '' : raw);
+        flatDraft = text;
+        flatEntry = 'custom';
+        contribution.model = 'flat';
+        var trimmed = text.trim();
+        if (trimmed === '') {
+          contribution.flatAmount = null;
+          flatError = '';
+        } else {
+          var parsed = QuoteMath.parseWholeCount(trimmed, { min: 1, label: 'the custom amount' });
+          if (!parsed.ok) {
+            contribution.flatAmount = null;
+            flatError = parsed.message;
+          } else {
+            contribution.flatAmount = parsed.value;
+            flatError = '';
+          }
+        }
+        if (Number(contribution.flatAmount) > 0) arm('contrib');
+        else disarm('contrib');
       },
       settleGroupSize: function () {
         disarm('group');
@@ -523,7 +610,10 @@
         disarm('contrib');
         eligible = '';
         enrolling = '';
+        eligibleShown = '';
+        enrollingShown = '';
         mix = copyMix(EMPTY_MIX);
+        mixShown = copyMix(EMPTY_MIX);
         mixError = '';
         mixManual = false;
         contribution.model = '';
@@ -532,6 +622,8 @@
         contribution.flatAmount = null;
         contribution.payPeriods = null;
         flatEntry = '';
+        flatDraft = '';
+        flatError = '';
       },
       setLeadState: function (value) { leadState = value || ''; },
       setHelp: function (value) { helpWith = value || ''; },
@@ -905,13 +997,19 @@
       }).join('');
     }
 
+    function paintValue(el, value) {
+      if (!el || document.activeElement === el) return;
+      var next = value == null ? '' : String(value);
+      if (el.value !== next) el.value = next;
+    }
+
     function renderCustomize(state) {
-      $('eligible').value = state.eligible;
-      $('enrolling').value = state.enrolling;
-      $('mix-ee').value = state.mix.employeeOnly;
-      $('mix-es').value = state.mix.employeeSpouse;
-      $('mix-ec').value = state.mix.employeeChildren;
-      $('mix-fam').value = state.mix.family;
+      paintValue($('eligible'), state.eligible);
+      paintValue($('enrolling'), state.enrolling);
+      paintValue($('mix-ee'), state.mix.employeeOnly);
+      paintValue($('mix-es'), state.mix.employeeSpouse);
+      paintValue($('mix-ec'), state.mix.employeeChildren);
+      paintValue($('mix-fam'), state.mix.family);
       $('mix-note').hidden = !state.mixNote;
       $('mix-note').textContent = state.mixNote || '';
       $('mix-note').classList.toggle('message-error', state.mixOk === false);
@@ -951,12 +1049,12 @@
       var customOn = state.contribution.model === 'flat' && state.flatEntry === 'custom';
       custom.hidden = !customOn;
       custom.parentElement.hidden = !customOn;
-      if (customOn && state.contribution.flatAmount != null && document.activeElement !== custom) {
-        custom.value = String(state.contribution.flatAmount);
-      }
-      $('flat-readout').textContent = state.contribution.model === 'flat' && state.contribution.flatAmount
-        ? QuoteMath.money(state.contribution.flatAmount) + ' per enrolled employee'
-        : '';
+      paintValue(custom, state.flatDraft);
+      var readout = $('flat-readout');
+      if (customOn && state.flatError) readout.textContent = state.flatError;
+      else if (state.contribution.model === 'flat' && state.contribution.flatAmount) readout.textContent = QuoteMath.money(state.contribution.flatAmount) + ' per enrolled employee';
+      else readout.textContent = '';
+      readout.classList.toggle('message-error', !!(customOn && state.flatError));
       document.querySelectorAll('[data-state]').forEach(function (button) {
         var on = state.leadState === button.getAttribute('data-state');
         button.setAttribute('aria-checked', on ? 'true' : 'false');
@@ -1038,14 +1136,25 @@
       win.print();
     }
 
-    function openLead() {
+    function openLead(trigger) {
       var lead = $('lead');
       lead.hidden = false;
       $('lead-success').hidden = true;
       $('lead-form').hidden = false;
-      lead.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (desktopCustomize()) {
+        var home = $('load-error');
+        if (home && home.parentNode) home.parentNode.insertBefore(lead, home);
+        lead.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        win.setTimeout(function () {
+          var field = $('first-name');
+          if (field && field.focus) field.focus({ preventScroll: true });
+        }, 0);
+        return;
+      }
+      var anchor = trigger && trigger.id === 'drawer-send' ? $('my-plans-panel') : document.querySelector('.rf-toolbar');
+      if (anchor && anchor.parentNode) anchor.insertAdjacentElement('afterend', lead);
       win.setTimeout(function () {
-        var field = $('first-name');
+        var field = $('lead-state');
         if (field && field.focus) field.focus({ preventScroll: true });
       }, 0);
     }
@@ -1125,8 +1234,8 @@
       if (desktopCustomize()) return;
       setCustomizeOpen(!document.body.classList.contains('is-customizing'));
     });
-    $('contact-btn').addEventListener('click', openLead);
-    $('drawer-send').addEventListener('click', openLead);
+    $('contact-btn').addEventListener('click', function () { openLead($('contact-btn')); });
+    $('drawer-send').addEventListener('click', function () { openLead($('drawer-send')); });
     $('clear-group').addEventListener('click', function () {
       model.clearGroup();
       render();
@@ -1141,14 +1250,7 @@
     }
     function bindCount(el, read) {
       function apply(settle) {
-        var result = read(el.value);
-        if (!result.ok) {
-          $('mix-note').hidden = false;
-          $('mix-note').textContent = result.error;
-          $('mix-note').classList.add('message-error');
-          if (settle) model.settleGroupSize();
-          return;
-        }
+        read(el.value);
         if (settle) model.settleGroupSize();
         render();
       }
@@ -1160,13 +1262,7 @@
     bindCount($('enrolling'), function (value) { return model.setEnrolling(value); });
     document.querySelectorAll('[data-mix]').forEach(function (input) {
       onField(input, function () {
-        var result = model.setMixField(input.getAttribute('data-mix'), input.value);
-        if (!result.ok) {
-          $('mix-note').hidden = false;
-          $('mix-note').textContent = result.error;
-          $('mix-note').classList.add('message-error');
-          return;
-        }
+        model.setMixField(input.getAttribute('data-mix'), input.value);
         render();
       });
     });
@@ -1220,34 +1316,27 @@
       button.addEventListener('click', function () {
         var value = button.getAttribute('data-flat');
         if (value === 'custom') {
-          var typed = Number($('flat-custom-amount').value || 0);
-          model.setContribution({ model: 'flat', flatAmount: typed > 0 ? typed : null, defer: true, entry: 'custom' });
+          model.openCustomFlat();
           render();
-          $('flat-custom-amount').focus();
+          var field = $('flat-custom-amount');
+          win.setTimeout(function () {
+            if (field.scrollIntoView) field.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+            field.focus();
+          }, 0);
           return;
         }
         model.setContribution({ model: 'flat', flatAmount: Number(value), entry: 'preset' });
         render();
       });
     });
-    function readCustomFlat() {
-      var amount = Number($('flat-custom-amount').value || 0);
-      return amount > 0 ? amount : null;
+    function onCustomFlat(settle) {
+      model.setCustomFlatText($('flat-custom-amount').value);
+      if (settle) model.settleContribution();
+      render();
     }
-    $('flat-custom-amount').addEventListener('input', function () {
-      model.setContribution({ model: 'flat', flatAmount: readCustomFlat(), defer: true, entry: 'custom' });
-      render();
-    });
-    $('flat-custom-amount').addEventListener('change', function () {
-      model.setContribution({ model: 'flat', flatAmount: readCustomFlat(), defer: true, entry: 'custom' });
-      model.settleContribution();
-      render();
-    });
-    $('flat-custom-amount').addEventListener('blur', function () {
-      model.setContribution({ model: 'flat', flatAmount: readCustomFlat(), defer: true, entry: 'custom' });
-      model.settleContribution();
-      render();
-    });
+    $('flat-custom-amount').addEventListener('input', function () { onCustomFlat(false); });
+    $('flat-custom-amount').addEventListener('change', function () { onCustomFlat(true); });
+    $('flat-custom-amount').addEventListener('blur', function () { onCustomFlat(true); });
     $('mec-toggle').addEventListener('click', function () {
       model.toggleMec(!model.getState().mecOpen);
       render();
@@ -1270,6 +1359,10 @@
       if (!state.leadState) {
         $('lead-error').hidden = false;
         $('lead-error').textContent = 'Choose Florida, Georgia, or Other.';
+        if (!desktopCustomize()) {
+          var stateField = $('lead-state');
+          if (stateField && stateField.focus) stateField.focus({ preventScroll: true });
+        }
         return;
       }
       $('lead-error').hidden = true;

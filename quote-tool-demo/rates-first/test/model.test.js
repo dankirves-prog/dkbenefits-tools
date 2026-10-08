@@ -394,6 +394,132 @@ test('group size and contribution wait for a settled value and send once', () =>
   assert.equal(immediate.clock.pending(), 0);
 });
 
+test('custom flat replaces a preset and the math matches the typed amount', () => {
+  const quote = model();
+  const plan = PLANS.find((item) => item.id === 'cigna-epo-1750-hsa');
+  quote.setEligible('10');
+  quote.setEnrolling('7');
+  quote.setContribution({ model: 'flat', flatAmount: 400, entry: 'preset' });
+  let state = quote.getState();
+  assert.equal(state.contribution.flatAmount, 400);
+  assert.equal(state.flatEntry, 'preset');
+  assert.equal(state.showEmployer, true);
+  quote.openCustomFlat();
+  state = quote.getState();
+  assert.equal(state.flatEntry, 'custom');
+  assert.equal(state.flatDraft, '');
+  assert.equal(state.contribution.flatAmount, null);
+  assert.equal(state.showEmployer, false);
+  assert.doesNotMatch(rates.planArticle(plan, state), /Employer monthly contribution|\$2,800/);
+  assert.doesNotMatch(rates.printHtml(printState(quote, 'all')), /Employer monthly contribution/);
+  quote.setCustomFlatText('250');
+  state = quote.getState();
+  assert.equal(state.flatDraft, '250');
+  assert.equal(state.contribution.flatAmount, 250);
+  assert.equal(state.flatError, '');
+  assert.equal(state.showEmployer, true);
+  assert.equal(state.resolvedContribution.flatAmount, 250);
+  const priced = rates.planArticle(plan, state);
+  assert.match(priced, /\$1,750/);
+  assert.doesNotMatch(priced, /\$2,800/);
+  quote.setCustomFlatText('2.5');
+  state = quote.getState();
+  assert.equal(state.flatDraft, '2.5');
+  assert.equal(state.contribution.flatAmount, null);
+  assert.match(state.flatError, /whole number/);
+  assert.equal(state.showEmployer, false);
+  quote.setCustomFlatText('');
+  assert.equal(quote.getState().contribution.flatAmount, null);
+  assert.equal(quote.getState().flatDraft, '');
+});
+
+test('invalid enrolling clears calculated output and group size sends only a settled number', () => {
+  const quote = model();
+  const plan = PLANS.find((item) => item.id === 'cigna-epo-1750-hsa');
+  quote.setEligible('10');
+  quote.setEnrolling('7');
+  assert.equal(quote.getState().showGross, true);
+  const tooMany = quote.setEnrolling('12');
+  assert.equal(tooMany.ok, false);
+  assert.match(tooMany.error, /higher than/);
+  let state = quote.getState();
+  assert.equal(state.enrolling, '12');
+  assert.equal(state.showGross, false);
+  assert.equal(state.showEmployer, false);
+  assert.doesNotMatch(rates.planArticle(plan, state), /Total monthly premium|Employer monthly contribution/);
+  assert.doesNotMatch(rates.printHtml(printState(quote, 'all')), /Total monthly premium|Employer monthly contribution/);
+  const decimal = quote.setEnrolling('2.5');
+  assert.equal(decimal.ok, false);
+  state = quote.getState();
+  assert.equal(state.enrolling, '2.5');
+  assert.notEqual(state.enrolling, '52');
+  assert.notEqual(state.enrolling, '2');
+  assert.equal(state.showGross, false);
+  assert.match(state.mixNote, /Decimals/);
+  quote.setEnrolling('7');
+  assert.equal(quote.getState().enrolling, '7');
+  assert.equal(quote.getState().showGross, true);
+
+  const stale = activityCalls();
+  const live = model({
+    tracker: stale.tracker,
+    live: true,
+    schedule: stale.clock.schedule,
+    cancel: stale.clock.cancel
+  });
+  live.setEnrolling('2');
+  live.setEnrolling('2.5');
+  assert.equal(stale.clock.pending(), 0);
+  stale.clock.flush();
+  live.settleGroupSize();
+  assert.equal(stale.calls.filter((call) => call[0] === 'group').length, 0);
+  assert.equal(live.getState().enrolling, '2.5');
+  assert.equal(live.getState().showGross, false);
+  live.setEnrolling('8');
+  live.settleGroupSize();
+  const settled = stale.calls.find((call) => call[0] === 'group')[1];
+  assert.equal(settled.answers.enrolling, '8');
+  assert.equal(settled.answers.employees, '');
+
+  const crossed = activityCalls();
+  const group = model({
+    tracker: crossed.tracker,
+    live: true,
+    schedule: crossed.clock.schedule,
+    cancel: crossed.clock.cancel
+  });
+  group.setEligible('10');
+  group.setEnrolling('7');
+  group.setEnrolling('12');
+  assert.equal(group.getState().showGross, false);
+  crossed.clock.flush();
+  const sent = crossed.calls.find((call) => call[0] === 'group')[1];
+  assert.equal(sent.answers.employees, '10');
+  assert.equal(sent.answers.enrolling, '');
+  assert.equal(crossed.calls.filter((call) => call[0] === 'group').length, 1);
+
+  const typed = activityCalls();
+  const flat = model({
+    tracker: typed.tracker,
+    live: true,
+    schedule: typed.clock.schedule,
+    cancel: typed.clock.cancel
+  });
+  flat.setCustomFlatText('4');
+  flat.setCustomFlatText('2.5');
+  assert.equal(typed.clock.pending(), 0);
+  typed.clock.flush();
+  assert.equal(typed.calls.filter((call) => call[0] === 'contribution').length, 0);
+  flat.setCustomFlatText('4');
+  flat.setCustomFlatText('40');
+  flat.setCustomFlatText('400');
+  assert.equal(typed.calls.filter((call) => call[0] === 'contribution').length, 0);
+  typed.clock.flush();
+  const contribution = typed.calls.find((call) => call[0] === 'contribution')[1];
+  assert.equal(contribution.contribution.flatDollar, 400);
+  assert.equal(typed.calls.filter((call) => call[0] === 'contribution').length, 1);
+});
+
 test('the page does not gate rates behind the questionnaire', () => {
   const page = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
   assert.match(page, /Group health rates for small businesses/);
@@ -441,6 +567,12 @@ test('the live entry posts without ?live=1 and the demo folder stays quiet', () 
   assert.match(livePage, /__rfConfigUrl\s*=\s*'preview\/preview-config\.json'/);
   assert.match(livePage, /src="rates-first\/rates-first\.js"/);
   assert.match(livePage, /src="quote-activity\.js"/);
+  assert.match(livePage, /id="enrolling"[^>]*type="text"[^>]*inputmode="numeric"/);
+  assert.match(livePage, /id="flat-custom-amount"[^>]*type="text"[^>]*inputmode="numeric"/);
+  assert.match(livePage, /id="lead-state"/);
+  assert.doesNotMatch(livePage, /id="enrolling"[^>]*type="number"/);
+  assert.match(demoPage, /id="enrolling"[^>]*type="text"[^>]*inputmode="numeric"/);
+  assert.match(demoPage, /id="flat-custom-amount"[^>]*type="text"[^>]*inputmode="numeric"/);
   assert.doesNotMatch(livePage, /utm_source=preview|noindex/);
   assert.doesNotMatch(demoPage, /__rfLive/);
   assert.match(demoPage, /fetch\('\.\.\/plans\.json'/);

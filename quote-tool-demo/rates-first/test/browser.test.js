@@ -401,6 +401,13 @@ test('rates-first demo shows rates immediately and prints with or without group 
     report.timing = { viewport: '390x844', firstCardMs: layout.mark };
     assert.ok(typeof layout.mark === 'number' && layout.mark < 5000, 'first card was slow or missing: ' + layout.mark);
     assertLanding(layout, true);
+    const tiers = await evaluate(`(() => {
+      const row = [...document.querySelectorAll('#top-plans .plan-card:not(.skeleton) .tier-table tbody tr')].find((item) => item.querySelector('th').textContent === 'Family');
+      const rect = row.getBoundingClientRect();
+      return { bottom: rect.bottom, innerHeight, scrollY: window.scrollY };
+    })()`);
+    assert.equal(tiers.scrollY, 0);
+    assert.ok(tiers.bottom <= tiers.innerHeight - 8, 'Family tier is below the 390 fold: ' + tiers.bottom);
     await shot('rf_mobile390_landing.png');
     await shot('rf4_mobile390_landing.png');
 
@@ -548,6 +555,85 @@ test('rates-first demo shows rates immediately and prints with or without group 
     await shot('rf_desktop_customized.png');
     await shot('rf3_desktop_1440_entered.png');
 
+    await evaluate(`(() => {
+      document.getElementById('model-flat').click();
+      document.querySelector('[data-flat="400"]').click();
+    })()`);
+    const presetFlat = await evaluate(`(() => {
+      const card = document.querySelector('[data-plan-id="cigna-epo-1750-hsa"]').innerText;
+      return {
+        readout: document.getElementById('flat-readout').textContent,
+        pressed: document.querySelector('[data-flat="400"]').getAttribute('aria-pressed'),
+        card
+      };
+    })()`);
+    assert.equal(presetFlat.readout, '$400 per enrolled employee');
+    assert.equal(presetFlat.pressed, 'true');
+    assert.match(presetFlat.card, /\$2,800/);
+    await evaluate(`document.querySelector('[data-flat="custom"]').click()`);
+    await waitFor(async () => evaluate(`document.getElementById('flat-custom-amount').hidden === false`), 'custom flat input');
+    const customFlat = await evaluate(`(() => {
+      const input = document.getElementById('flat-custom-amount');
+      input.focus();
+      input.value = '250';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      const card = document.querySelector('[data-plan-id="cigna-epo-1750-hsa"]').innerText;
+      return {
+        hidden: input.hidden,
+        value: input.value,
+        type: input.type,
+        readout: document.getElementById('flat-readout').textContent,
+        customPressed: document.querySelector('[data-flat="custom"]').getAttribute('aria-pressed'),
+        presetPressed: document.querySelector('[data-flat="400"]').getAttribute('aria-pressed'),
+        card
+      };
+    })()`);
+    assert.equal(customFlat.hidden, false);
+    assert.equal(customFlat.type, 'text');
+    assert.equal(customFlat.value, '250');
+    assert.equal(customFlat.readout, '$250 per enrolled employee');
+    assert.equal(customFlat.customPressed, 'true');
+    assert.equal(customFlat.presetPressed, 'false');
+    assert.match(customFlat.card, /\$1,750/);
+    assert.doesNotMatch(customFlat.card, /\$2,800/);
+    await evaluate(`document.getElementById('flat-custom-amount').scrollIntoView({ block: 'center' })`);
+    await shot('custom_flat_input.png');
+
+    await evaluate(`(() => {
+      const el = document.getElementById('enrolling');
+      el.focus();
+      el.value = '12';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    })()`);
+    const overEnrolled = await evaluate(`(() => {
+      const card = document.querySelector('[data-plan-id="cigna-epo-1750-hsa"]').innerText;
+      return {
+        value: document.getElementById('enrolling').value,
+        note: document.getElementById('mix-note').textContent,
+        card
+      };
+    })()`);
+    assert.equal(overEnrolled.value, '12');
+    assert.match(overEnrolled.note, /higher than/);
+    assert.doesNotMatch(overEnrolled.card, /Total monthly premium|Employer monthly contribution/);
+    await shot('enrolling_above_eligible.png');
+    await evaluate(`(() => {
+      const el = document.getElementById('enrolling');
+      el.focus();
+      el.select();
+    })()`);
+    await send('Input.insertText', { text: '2' }, sessionId);
+    await send('Input.insertText', { text: '.' }, sessionId);
+    await send('Input.insertText', { text: '5' }, sessionId);
+    const decimal = await evaluate(`(() => ({
+      value: document.getElementById('enrolling').value,
+      note: document.getElementById('mix-note').textContent,
+      card: document.querySelector('[data-plan-id="cigna-epo-1750-hsa"]').innerText
+    }))()`);
+    assert.equal(decimal.value, '2.5');
+    assert.match(decimal.note, /Decimals/);
+    assert.doesNotMatch(decimal.card, /Total monthly premium/);
+
     await setViewport(390, 844);
     await evaluate(`document.getElementById('clear-group').click()`);
     await evaluate(`window.scrollTo(0, 0)`);
@@ -593,16 +679,19 @@ test('rates-first demo shows rates immediately and prints with or without group 
     assert.equal(panel.value, '');
     assert.ok(panel.top < 844, 'customize panel is not on screen');
 
+    await evaluate(`window.scrollTo(0, 0)`);
+    assert.equal(await evaluate(`document.getElementById('lead').nextElementSibling.id`), 'load-error');
     await evaluate(`document.getElementById('contact-btn').click()`);
-    await waitFor(async () => evaluate(`document.activeElement && document.activeElement.id === 'first-name'`), 'first field focused');
+    await waitFor(async () => evaluate(`document.activeElement && document.activeElement.id === 'lead-state'`), 'state question focused');
     const lead = await evaluate(`(() => {
       const states = [...document.querySelectorAll('[data-state]')].map((el) => ({
         label: el.textContent.trim(),
         checked: el.getAttribute('aria-checked')
       }));
       const help = [...document.querySelectorAll('[data-help]')].map((el) => el.getAttribute('aria-checked'));
+      const button = document.getElementById('contact-btn').getBoundingClientRect();
       const rect = document.getElementById('lead').getBoundingClientRect();
-      const low = document.getElementById('section-low').getBoundingClientRect();
+      const state = document.getElementById('lead-state').getBoundingClientRect();
       return {
         states,
         help,
@@ -610,13 +699,37 @@ test('rates-first demo shows rates immediately and prints with or without group 
         hidden: document.getElementById('lead').hidden,
         heading: document.getElementById('lead-heading').textContent,
         line: document.getElementById('lead-next').textContent,
-        afterPlans: rect.top >= low.top
+        next: document.querySelector('.rf-toolbar').nextElementSibling.id,
+        leads: document.querySelectorAll('#lead').length,
+        forms: document.querySelectorAll('#lead-form').length,
+        buttonBottom: button.bottom,
+        stateBottom: state.bottom,
+        innerHeight
       };
     })()`);
     assert.equal(lead.hidden, false);
     assert.equal(lead.heading, "Let's Talk");
     assert.equal(lead.line, 'Questions, more options, or ready to enroll? Daniel will reach out personally.');
-    assert.equal(lead.afterPlans, true);
+    assert.equal(lead.next, 'lead');
+    assert.equal(lead.leads, 1);
+    assert.equal(lead.forms, 1);
+    assert.ok(lead.top >= lead.buttonBottom - 4, 'contact form is not under the toolbar button');
+    assert.ok(lead.stateBottom <= lead.innerHeight, 'state question is below the phone fold');
+    await shot('phone390_lets_talk.png');
+    await evaluate(`(() => {
+      document.getElementById('my-plans-btn').click();
+      document.getElementById('drawer-send').click();
+    })()`);
+    const drawerLead = await evaluate(`(() => ({
+      next: document.getElementById('my-plans-panel').nextElementSibling.id,
+      leads: document.querySelectorAll('#lead').length,
+      forms: document.querySelectorAll('#lead-form').length,
+      focus: document.activeElement && document.activeElement.id
+    }))()`);
+    assert.equal(drawerLead.next, 'lead');
+    assert.equal(drawerLead.leads, 1);
+    assert.equal(drawerLead.forms, 1);
+    assert.equal(drawerLead.focus, 'lead-state');
     assert.deepEqual(lead.states.map((item) => item.label), ['Florida', 'Georgia', 'Other']);
     assert.ok(lead.states.every((item) => item.checked === 'false'));
     assert.ok(lead.help.every((checked) => checked === 'false'));
@@ -651,6 +764,9 @@ test('rates-first demo shows rates immediately and prints with or without group 
     assert.equal(mobileCard.helpOn, 'true');
     await shot('rf4_mobile390_contact_card.png');
     await setViewport(1440, 900);
+    await evaluate(`document.getElementById('contact-btn').click()`);
+    await waitFor(async () => evaluate(`document.activeElement && document.activeElement.id === 'first-name'`), 'desktop name focused');
+    assert.equal(await evaluate(`document.getElementById('lead').nextElementSibling.id`), 'load-error');
     const desktopCard = await frameContactCard();
     assert.equal(desktopCard.heading, true, 'contact heading is off the desktop screen');
     assert.equal(desktopCard.florida, true, 'Florida bubble is off the desktop screen');

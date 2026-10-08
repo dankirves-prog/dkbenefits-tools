@@ -251,6 +251,108 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
     await send('Page.enable', {}, sessionId);
     await send('Runtime.enable', {}, sessionId);
     await send('Fetch.enable', { patterns: [{ urlPattern: '*', requestStage: 'Request' }] }, sessionId);
+    await setViewport(390, 844);
+    await openTop(LIVE);
+    const fold = await evaluate(`(() => {
+      const row = [...document.querySelectorAll('#top-plans .plan-card:not(.skeleton) .tier-table tbody tr')].find((item) => item.querySelector('th').textContent === 'Family');
+      const rect = row.getBoundingClientRect();
+      return {
+        bottom: rect.bottom,
+        innerHeight,
+        scrollY: window.scrollY,
+        trust: document.querySelector('.trust').textContent,
+        tools: ['#carrier-filters', '#sort-mode', '#my-plans-btn', '#print-all-btn', '#customize-btn', '#contact-btn'].map((sel) => {
+          const el = document.querySelector(sel);
+          return { sel, display: getComputedStyle(el).display, text: el.textContent.trim() };
+        })
+      };
+    })()`);
+    assert.equal(fold.scrollY, 0);
+    assert.equal(fold.trust, 'No company info needed. No spam.');
+    fold.tools.forEach((tool) => {
+      assert.notEqual(tool.display, 'none', tool.sel);
+      assert.ok(tool.text.length > 0, tool.sel);
+    });
+    assert.ok(fold.bottom <= fold.innerHeight - 8, 'Family tier is below the live 390 fold: ' + fold.bottom);
+    await shot('phone390_after.png');
+    await setViewport(1440, 900);
+    await openTop(LIVE);
+    const desk = await evaluate(`(() => {
+      const panel = document.getElementById('customize-panel');
+      const card = document.querySelector('#top-plans .plan-card');
+      return {
+        display: getComputedStyle(panel).display,
+        position: getComputedStyle(panel).position,
+        btn: getComputedStyle(document.getElementById('customize-btn')).display,
+        panelLeft: panel.getBoundingClientRect().left,
+        cardRight: card.getBoundingClientRect().right,
+        leadNext: document.getElementById('lead').nextElementSibling.id
+      };
+    })()`);
+    assert.notEqual(desk.display, 'none');
+    assert.equal(desk.position, 'sticky');
+    assert.equal(desk.btn, 'none');
+    assert.ok(desk.panelLeft > desk.cardRight - 2, 'desktop side panel is not beside the cards');
+    assert.equal(desk.leadNext, 'load-error');
+    await evaluate(`window.scrollTo(0, 0)`);
+    await shot('desktop1440_after.png');
+    await setViewport(390, 844);
+    await openTop(LIVE);
+    assert.equal(await evaluate(`document.getElementById('lead').nextElementSibling.id`), 'load-error');
+    await evaluate(`document.getElementById('contact-btn').click()`);
+    await waitFor(async () => evaluate(`document.activeElement && document.activeElement.id === 'lead-state'`), 'state question focused');
+    await evaluate(`(() => {
+      document.getElementById('first-name').value = 'Pat';
+      document.getElementById('email').value = 'pat@example.com';
+      document.getElementById('lead-form').requestSubmit();
+    })()`);
+    const opened = await evaluate(`(() => {
+      const button = document.getElementById('contact-btn').getBoundingClientRect();
+      const lead = document.getElementById('lead').getBoundingClientRect();
+      const state = document.getElementById('lead-state').getBoundingClientRect();
+      const error = document.getElementById('lead-error');
+      const errorRect = error.getBoundingClientRect();
+      return {
+        next: document.querySelector('.rf-toolbar').nextElementSibling.id,
+        leads: document.querySelectorAll('#lead').length,
+        forms: document.querySelectorAll('#lead-form').length,
+        buttonBottom: button.bottom,
+        leadTop: lead.top,
+        stateBottom: state.bottom,
+        errorHidden: error.hidden,
+        errorText: error.textContent,
+        errorBottom: errorRect.bottom,
+        innerHeight,
+        scrollY: window.scrollY
+      };
+    })()`);
+    assert.equal(opened.next, 'lead');
+    assert.equal(opened.leads, 1);
+    assert.equal(opened.forms, 1);
+    assert.equal(opened.scrollY, 0);
+    assert.ok(opened.leadTop >= opened.buttonBottom - 4, 'form is not under the toolbar button');
+    assert.ok(opened.stateBottom <= opened.innerHeight, 'state question is below the phone fold');
+    assert.equal(opened.errorHidden, false);
+    assert.equal(opened.errorText, 'Choose Florida, Georgia, or Other.');
+    assert.ok(opened.errorBottom <= opened.innerHeight, 'state error is below the phone fold');
+    await shot('phone390_lets_talk.png');
+    await evaluate(`(() => {
+      document.getElementById('my-plans-btn').click();
+      document.getElementById('drawer-send').click();
+    })()`);
+    const drawerLead = await evaluate(`(() => ({
+      next: document.getElementById('my-plans-panel').nextElementSibling.id,
+      leads: document.querySelectorAll('#lead').length,
+      forms: document.querySelectorAll('#lead-form').length
+    }))()`);
+    assert.equal(drawerLead.next, 'lead');
+    assert.equal(drawerLead.leads, 1);
+    assert.equal(drawerLead.forms, 1);
+    await setViewport(1440, 900);
+    await evaluate(`document.getElementById('contact-btn').click()`);
+    await waitFor(async () => evaluate(`document.activeElement && document.activeElement.id === 'first-name'`), 'desktop name focused');
+    assert.equal(await evaluate(`document.getElementById('lead').nextElementSibling.id`), 'load-error');
+
     await setViewport(1280, 900);
 
     await openTop(LIVE);
