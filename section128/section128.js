@@ -200,7 +200,7 @@
       heading.focus();
     }
     $('btnBack').classList.toggle('hidden', step === 1);
-    $('btnNext').textContent = step === 4 ? 'Generate sample documents' : 'Continue';
+    $('btnNext').textContent = step === 4 ? 'Create documents' : 'Continue';
     $('btnNext').classList.toggle('hidden', step === 5);
     renderProgress();
     syncConditional();
@@ -220,11 +220,11 @@
     var result = S128Model.validate(readForm(), { asOf: S128Model.todayIso() });
     var flags = $('reviewFlags');
     if (result.review.required) {
-      flags.innerHTML = '<div class="review-flag"><h3>Additional legal requirements</h3><p>This choice involves additional legal requirements; we recommend reviewing it with your own attorney or tax advisor.</p><ul>' +
+      flags.innerHTML = '<div class="review-flag"><h3>A few items to look at</h3><ul>' +
         result.review.reasons.map(function (reason) { return '<li>' + escapeHtml(reason) + '</li>'; }).join('') +
         '</ul></div>';
     } else {
-      flags.innerHTML = '<div class="clean-note"><strong>No additional legal conditions were flagged from these answers.</strong> The file is a sample draft for the employer’s review with its own advisors, and it is not adopted until the employer signs it.</div>';
+      flags.innerHTML = '<div class="clean-note"><strong>Ready to create your documents.</strong> The signature and date stay blank until your company signs.</div>';
     }
     var plan = result.plan;
     var lead = result.lead;
@@ -396,7 +396,7 @@
     var amendmentRows = S128Docgen.amendmentParagraphs(plan);
     if (amendmentRows) {
       jobs.push({
-        promise: S128Pdf.buildPdf(amendmentRows, { title: 'Sample amendment' }),
+        promise: S128Pdf.buildPdf(amendmentRows, { title: 'Amendment' }),
         name: S128Docgen.pdfFileName(S128Docgen.amendmentFileName(plan)),
         label: 'Download Section 125 amendment (PDF)'
       });
@@ -436,7 +436,7 @@
     if (body && body.ok === true && body.leadEmailed === true && body.visitorEmailed === true) {
       var already = body.duplicate === true;
       setStatus(already ? 'duplicate' : 'sent', already
-        ? '<strong>This request was already emailed.</strong> You can download the sample again below.'
+        ? '<strong>This request was already emailed.</strong> You can download the documents again below.'
         : '<strong>Emailed.</strong> A copy was emailed to you.');
       return;
     }
@@ -474,7 +474,7 @@
       return;
     }
     if (!$('terms_ack').checked) {
-      $('err_terms_ack').textContent = 'Agree to the Terms of use before the sample documents can be generated.';
+      $('err_terms_ack').textContent = 'Agree to the Terms of use before the documents can be created.';
       $('terms_ack').focus();
       if (step !== 4) go(4);
       return;
@@ -506,7 +506,7 @@
       record.emailAttempted = true;
       savePending(record);
       $('btnRetry').disabled = true;
-      setStatus('neutral', 'Sending the sample documents…');
+      setStatus('neutral', 'Sending your documents…');
       postLead(record).then(function (body) {
         inFlight = false;
         $('btnRetry').disabled = false;
@@ -538,8 +538,8 @@
     var banner = $('savedBanner');
     banner.classList.remove('hidden');
     var headline = saved.leadDelivered
-      ? 'An earlier sample was recorded. Your copy was not emailed.'
-      : 'An earlier sample was not emailed.';
+      ? 'An earlier request was recorded. Your copy was not emailed.'
+      : 'An earlier request was not emailed.';
     banner.innerHTML = '<strong>' + headline + '</strong> It is saved in this browser. <button type="button" class="linkish" id="btnRestore">Open the saved answers</button>';
     $('btnRestore').addEventListener('click', function () {
       restore(saved);
@@ -574,16 +574,14 @@
     return !!(window.S128_CONFIG && window.S128_CONFIG.endpoint);
   }
   function mountTerms() {
-    function fill(el) {
-      if (!el) return;
-      el.innerHTML = S128Terms.PARAGRAPHS.map(function (paragraph) {
-        return '<p>' + escapeHtml(paragraph) + '</p>';
-      }).join('');
-    }
-    fill($('termsBox'));
-    fill($('termsDialogBody'));
-    $('termsAckText').textContent = S128Terms.CHECKBOX;
-    $('openTerms').addEventListener('click', function () { $('termsDialog').showModal(); });
+    $('termsDialogBody').innerHTML = S128Terms.PARAGRAPHS.map(function (paragraph) {
+      return '<p>' + escapeHtml(paragraph) + '</p>';
+    }).join('');
+    $('openTerms').addEventListener('click', function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      $('termsDialog').showModal();
+    });
     $('closeTerms').addEventListener('click', function () { $('termsDialog').close(); });
   }
   function syncEmailCopy() {

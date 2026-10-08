@@ -187,6 +187,7 @@ test('submission requires body.ok, blocks a double post, and retries with the sa
   assert.match(await page.$eval('#err_terms_ack', function (el) { return el.textContent; }), /Terms of use/);
   await page.click('#terms_ack');
   await page.screenshot({ path: path.join(artifactDir, 'acknowledgement-1440.png'), fullPage: true });
+  await page.screenshot({ path: path.join(artifactDir, 'check-step-1440.png'), fullPage: true });
   await page.evaluate(function () {
     window.S128_CONFIG.endpoint = 'https://s128.test/exec';
     window.__s128Live = true;
@@ -216,7 +217,7 @@ test('submission requires body.ok, blocks a double post, and retries with the sa
   }));
   assert.ok(posts[0].files.some(function (file) { return /wordprocessingml/.test(file.mime); }));
   assert.equal(posts[0].acknowledgement.accepted, true);
-  assert.equal(posts[0].acknowledgement.termsVersion, 's128-terms-2026-10-08');
+  assert.equal(posts[0].acknowledgement.termsVersion, 's128-terms-2026-10-08b');
   assert.ok(posts[0].files.some(function (file) { return /Implementation_Guide/.test(file.name) && /pdf/.test(file.mime); }));
   assert.equal(posts[0].lead.contact_email, 'mia@harbor.example');
   assert.equal(posts[0].plan.funding_mode, 'combined');
@@ -254,6 +255,7 @@ test('without an endpoint the page does not claim the draft was emailed', async 
   await page.click('#btnNext');
   await page.click('#terms_ack');
   await page.screenshot({ path: path.join(artifactDir, 'acknowledgement-390.png'), fullPage: true });
+  await page.screenshot({ path: path.join(artifactDir, 'check-step-390.png'), fullPage: true });
   await page.evaluate(function () { window.__s128SetStartedAt(Date.now() - 10000); });
   await page.click('#btnNext');
   await page.waitForFunction(function () {

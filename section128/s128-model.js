@@ -1,10 +1,10 @@
 /**
  * Section 128 Trump Account Contribution Program — validation, limits, review flags.
- * Template s128-v0.3-2026-10-08. Guidance as of October 8, 2026.
+ * Template s128-v0.4-2026-10-08. Guidance as of October 8, 2026.
  * Same rules run in the browser and in the Apps Script.
  */
 var S128Model = (function () {
-  var TEMPLATE_VERSION = 's128-v0.3-2026-10-08';
+  var TEMPLATE_VERSION = 's128-v0.4-2026-10-08';
   var GUIDANCE_AS_OF = '2026-10-08';
   var FIRST_CONTRIBUTION_DATE = '2026-07-04';
   var PUBLISHED_S128_CEILING = 2500;

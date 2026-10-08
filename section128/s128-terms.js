@@ -1,10 +1,11 @@
 /**
- * Educational-tool terms. Version s128-terms-2026-10-08.
+ * Educational-tool terms. Version s128-terms-2026-10-08b.
  * Draft wording for DK Benefits LLC's own attorney to review before go-live.
- * Not itself legal advice.
+ * Not itself legal advice. The paragraph text is unchanged from s128-terms-2026-10-08
+ * except the version string. The checkbox sentence is the shorter v0.4 label.
  */
 var S128Terms = (function () {
-  var VERSION = 's128-terms-2026-10-08';
+  var VERSION = 's128-terms-2026-10-08b';
   var AS_OF = 'October 8, 2026';
 
   var PARAGRAPHS = [
@@ -19,24 +20,15 @@ var S128Terms = (function () {
     'Checking the box means the employer agrees to these terms, version ' + VERSION + ', and that the person submitting the form is authorized to agree for the employer.'
   ];
 
-  var CHECKBOX = 'I agree to the Terms of use (' + VERSION + '). This is an educational tool and a sample template only. It is not legal, tax, accounting, or ERISA advice, and it does not create an attorney-client or advisory relationship. DK Benefits LLC and Daniel Kirves do not review, approve, or verify the documents or the information entered. The employer is solely responsible for deciding whether to adopt, for customizing, for adoption and implementation, and for ongoing compliance and operation. Consult your own attorney and tax advisor before adopting. The materials are provided “as is,” without warranties of any kind. To the fullest extent permitted by law, there is no liability for any use of or reliance on the tool or documents. Law and guidance may change, and the template reflects guidance as of ' + AS_OF + '. The employer agrees to hold harmless and indemnify DK Benefits LLC and Daniel Kirves as the Terms of use describe.';
+  var CHECKBOX = 'I understand this is an educational tool, not legal or tax advice, and my company is responsible for what it adopts. I agree to the Terms of use.';
 
-  var HEADER = 'SAMPLE DRAFT — for the employer’s review with its own advisors. Not adopted until signed by the Employer. Template v0.3 (guidance as of ' + AS_OF + ').';
-
-  var OPENING = 'SAMPLE DRAFT — for the employer’s review with its own advisors. Not adopted until signed by the Employer. This file is an educational sample template provided to help employers. It is not legal, tax, accounting, or ERISA advice. DK Benefits LLC and Daniel Kirves do not review, approve, or verify it. The employer is solely responsible for any use. It reflects guidance as of ' + AS_OF + ' and is provided as is, without warranties. Generating or downloading it does not adopt the program.';
-
-  var CLOSING = 'Closing notice. This sample is for the employer’s review with its own advisors. It is not adopted until the employer signs it. The signature and date above are blank. DK Benefits LLC does not review, approve, or verify this file. Consult your own attorney and tax advisor before adopting. Guidance as of ' + AS_OF + '. Provided as is, without warranties. To the fullest extent permitted by law, there is no liability for use of or reliance on this sample.';
-
-  var SHORT_NOTICE = OPENING;
+  var FOOTER = 'Prepared with DK Benefits\' educational tool. Not effective until signed by the employer.';
 
   return {
     VERSION: VERSION,
     AS_OF: AS_OF,
     PARAGRAPHS: PARAGRAPHS,
     CHECKBOX: CHECKBOX,
-    HEADER: HEADER,
-    OPENING: OPENING,
-    CLOSING: CLOSING,
-    SHORT_NOTICE: SHORT_NOTICE
+    FOOTER: FOOTER
   };
 })();

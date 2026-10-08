@@ -161,7 +161,7 @@ function s128Handle_(payload) {
       visitorLimited = true;
     } else {
       try {
-        MailApp.sendEmail(s128VisitorMessage_(checked, files));
+        MailApp.sendEmail(s128VisitorMessage_(payload, checked, files));
         visitorSent = true;
       } catch (visitorErr) {
         visitorSent = false;
@@ -301,11 +301,13 @@ function s128LeadMessage_(payload, checked, files) {
   };
 }
 
-function s128VisitorMessage_(checked, files) {
+function s128VisitorMessage_(payload, checked, files) {
   var plan = checked.plan;
+  var subject = 'Your Section 128 program documents — ' + plan.employer_name;
+  if (payload && payload.test) subject = '[TEST] ' + subject;
   return {
     to: checked.lead.contact_email,
-    subject: 'Sample Section 128 documents — ' + plan.employer_name,
+    subject: subject,
     body: S128Docgen.visitorEmailText(plan, checked.lead),
     name: 'DK Benefits LLC',
     replyTo: S128_NOTIFY_EMAIL,

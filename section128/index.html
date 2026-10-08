@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Section 128 Trump Account sample program | DK Benefits</title>
-  <meta name="description" content="An educational resource to help employers prepare a sample Section 128 Trump Account contribution program. DK Benefits LLC.">
+  <title>Section 128 Trump Account contribution program | DK Benefits</title>
+  <meta name="description" content="A free tool to help employers set up a Section 128 Trump Account contribution program. DK Benefits LLC.">
   <link rel="stylesheet" href="section128.css">
 </head>
 <body>
@@ -13,12 +13,12 @@
     <div class="site-header-inner">
       <p class="brand">DK Benefits LLC</p>
       <h1>Section 128 Trump Account contribution program</h1>
-      <p>An educational resource to help employers prepare a sample Section 128 Trump Account contribution program. The employer decides whether to adopt it. Preparing a file does not establish the program.</p>
+      <p>A free tool to help employers set up a Section 128 Trump Account contribution program.</p>
     </div>
   </header>
   <div class="draft-banner">
     <div class="draft-banner-inner">
-      <strong>Sample draft.</strong> For the employer’s review with its own advisors. Not adopted until signed by the employer. Final Section 128 regulations are not out yet. This page is not legal, tax, accounting, or ERISA advice. The signature and date stay blank.
+      Educational tool — not legal or tax advice.
     </div>
   </div>
 
@@ -123,7 +123,7 @@
             <legend class="choice-legend">Grant recipients<span class="tip-slot" data-tip="grant_recipients"></span></legend>
             <div class="choices">
               <label class="choice"><input type="radio" name="allow_employee_account" value="no"><span>Eligible dependent accounts only<span class="tip-slot" data-tip="grant_dependents"></span><small>The usual design.</small></span></label>
-              <label class="choice"><input type="radio" name="allow_employee_account" value="yes"><span>Dependent accounts and an eligible employee’s own account<span class="tip-slot" data-tip="grant_own_account"></span><small>This choice involves additional legal requirements; we recommend reviewing it with your own attorney or tax advisor.</small></span></label>
+              <label class="choice"><input type="radio" name="allow_employee_account" value="yes"><span>Dependent accounts and an eligible employee’s own account<span class="tip-slot" data-tip="grant_own_account"></span><small>Extra conditions apply to an employee’s own account.</small></span></label>
             </div>
             <p class="field-error" id="err_allow_employee_account" role="alert"></p>
           </fieldset>
@@ -179,7 +179,7 @@
           <div class="field span-2">
             <label for="participating_employers">Additional participating employers<span class="tip-slot" data-tip="participating_employers"></span></label>
             <textarea id="participating_employers" name="participating_employers" placeholder="Leave blank if this employer is the only one. One legal name per line."></textarea>
-            <p class="hint">Related employers under Section 414 are treated as one employer. This choice involves additional legal requirements; we recommend reviewing it with your own attorney or tax advisor.</p>
+            <p class="hint">Related employers under Section 414 are treated as one employer.</p>
             <p class="field-error" id="err_participating_employers" role="alert"></p>
           </div>
           <div class="field">
@@ -232,7 +232,7 @@
               <option value="unsure">Not sure</option>
             </select>
             <p class="hint">Salary reduction has to run through that plan. If you need a cafeteria plan sample, use the <a href="https://www.dkbenefits.net/section125plantool">Section 125 plan tool</a>.</p>
-            <p class="note hidden" id="cafeteriaMissing">A cafeteria plan must be adopted, or an existing one confirmed, before salary reduction can start. This sample program is still prepared. A separate amendment is not created until a cafeteria plan is in place. This choice involves additional legal requirements; we recommend reviewing it with your own attorney or tax advisor.</p>
+            <p class="note hidden" id="cafeteriaMissing">A cafeteria plan must be adopted, or an existing one confirmed, before salary reduction can start. The program document is still prepared. A separate amendment is not created until a cafeteria plan is in place.</p>
             <p class="field-error" id="err_has_existing_125_plan" role="alert"></p>
           </div>
         </div>
@@ -266,7 +266,7 @@
         <div class="only-salary">
           <h3>Salary reduction</h3>
           <p class="hint only-cafeteria">A separate sample amendment is prepared. It is not part of the Section 128 plan itself.</p>
-          <p class="note hidden" id="cafeteriaMissingAdmin">A cafeteria plan must be adopted, or an existing one confirmed, before salary reduction can start. This sample program is still prepared. A separate amendment is not created until a cafeteria plan is in place. This choice involves additional legal requirements; we recommend reviewing it with your own attorney or tax advisor.</p>
+          <p class="note hidden" id="cafeteriaMissingAdmin">A cafeteria plan must be adopted, or an existing one confirmed, before salary reduction can start. The program document is still prepared. A separate amendment is not created until a cafeteria plan is in place.</p>
           <div class="grid">
             <div class="field span-2 only-cafeteria">
               <label for="cafeteria_plan_name">Section 125 plan name<span class="tip-slot" data-tip="cafeteria_plan_name"></span></label>
@@ -291,21 +291,18 @@
 
       <section class="card hidden" data-step="4">
         <h2>Check and generate</h2>
-        <p class="lede">Check the answers. You can edit any section. The sample files are created in this browser after the Terms of use are accepted.</p>
+        <p class="lede">Check the answers. You can edit any section, then create the documents.</p>
         <div id="reviewFlags"></div>
         <div id="reviewSummary" class="summary"></div>
-        <h3>Terms of use</h3>
-        <div class="terms-box" id="termsBox" tabindex="0"></div>
-        <p><button type="button" class="linkish" id="openTerms">Read the full Terms of use</button></p>
         <label class="ack" for="terms_ack">
           <input id="terms_ack" name="terms_ack" type="checkbox" required>
-          <span id="termsAckText"></span>
+          <span>I understand this is an educational tool, not legal or tax advice, and my company is responsible for what it adopts. I agree to the <button type="button" class="linkish" id="openTerms">Terms of use</button>.</span>
         </label>
         <p class="field-error" id="err_terms_ack" role="alert"></p>
       </section>
 
       <section class="card hidden" data-step="5">
-        <h2>Your sample documents</h2>
+        <h2>Your documents</h2>
         <div id="emailStatus" class="status" role="status"></div>
         <div class="downloads" id="downloadList"></div>
         <p class="hint">Employee forms and notices are prepared separately.</p>

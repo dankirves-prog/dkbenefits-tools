@@ -123,7 +123,7 @@ function payload(overrides, id) {
     startedAt: '2026-10-08T15:00:00.000Z',
     submittedAt: '2026-10-08T15:00:10.000Z',
     pageUrl: 'https://dankirves-prog.github.io/dkbenefits-tools/section128/',
-    templateVersion: 's128-v0.3-2026-10-08',
+    templateVersion: 's128-v0.4-2026-10-08',
     test: true,
     hp: '',
     lead: checked.lead,
@@ -132,7 +132,7 @@ function payload(overrides, id) {
     acknowledgement: {
       accepted: true,
       acceptedAt: '2026-10-08T15:00:10.000Z',
-      termsVersion: 's128-terms-2026-10-08'
+      termsVersion: 's128-terms-2026-10-08b'
     },
     sendVisitorCopy: true
   }, overrides && overrides.payload || {});
@@ -156,14 +156,15 @@ test('a valid lead emails Dan and the visitor and returns ok only after MailApp 
   assert.match(ctx.sent[0].attachments[1].name, /Implementation_Guide/);
   assert.equal(ctx.sent[0].attachments[0].data[0], 0x50);
   assert.equal(ctx.sent[0].attachments[0].data[1], 0x4b);
-  assert.match(ctx.sent[0].body, /s128-terms-2026-10-08/);
+  assert.match(ctx.sent[0].body, /s128-terms-2026-10-08b/);
   assert.match(ctx.sent[0].body, /2026-10-08T15:00:10.000Z/);
   assert.equal(ctx.sent[1].to, 'ada@northwind.example');
-  assert.match(ctx.sent[1].body, /SAMPLE DRAFT/);
-  assert.match(ctx.sent[1].body, /January 31/);
-  assert.doesNotMatch(ctx.sent[1].body, /received your draft|will follow up|Daniel Kirves will/i);
+  assert.match(ctx.sent[1].subject, /^\[TEST\] Your Section 128 program documents — Northwind Benefits LLC$/);
+  assert.match(ctx.sent[1].body, /Tell payroll/);
+  assert.match(ctx.sent[1].body, /isn't legal or tax advice/);
+  assert.doesNotMatch(ctx.sent[1].body, /received your draft|will follow up|Daniel Kirves will|attorney|SAMPLE DRAFT/i);
   assert.equal(ctx.sheets.Submissions.rows[1][2], 'sent');
-  assert.equal(ctx.sheets.Submissions.rows[1][20], 's128-terms-2026-10-08');
+  assert.equal(ctx.sheets.Submissions.rows[1][20], 's128-terms-2026-10-08b');
   assert.equal(ctx.sheets.Submissions.rows[1][21], '2026-10-08T15:00:10.000Z');
 });
 

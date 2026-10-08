@@ -1,13 +1,12 @@
 /**
- * Deterministic Section 128 DOCX builder. Template s128-v0.3-2026-10-08.
+ * Deterministic Section 128 DOCX builder. Template s128-v0.4-2026-10-08.
  * Language is the Employer Plan (Articles 1–12 and the adoption agreement),
  * with the October 8, 2026 research edits applied. No live drafting.
  */
 var S128Docgen = (function () {
   var W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
   var R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
-  var HEADER = S128Terms.HEADER;
-  var DRAFT_BODY = S128Terms.OPENING;
+  var FOOTER = S128Terms.FOOTER;
 
   function xml(value) {
     return String(value == null ? '' : value)
@@ -186,7 +185,6 @@ var S128Docgen = (function () {
   function planParagraphs(plan) {
     var rows = [
       { style: 'Title', text: 'Section 128 Trump Account Contribution Program' },
-      { style: null, text: DRAFT_BODY },
       { style: 'Heading1', text: 'Employer adoption agreement' },
       { style: null, text: 'Employer legal name: ' + plan.employer_name },
       { style: null, text: 'Employer EIN: ' + plan.employer_ein },
@@ -214,7 +212,7 @@ var S128Docgen = (function () {
         rows.push({ style: null, text: 'Section 125 plan name: ' + plan.cafeteria_plan_name });
         rows.push({ style: null, text: 'Section 125 amendment effective date: ' + longDate(plan.cafeteria_amendment_date) });
       } else {
-        rows.push({ style: null, text: 'A Section 125 cafeteria plan was not confirmed. Salary reduction cannot start until a cafeteria plan is adopted or confirmed and amended for this benefit. This draft does not include a cafeteria-plan amendment.' });
+        rows.push({ style: null, text: 'A Section 125 cafeteria plan was not confirmed. Salary reduction cannot start until a cafeteria plan is adopted or confirmed and amended for this benefit. A cafeteria-plan amendment is not included.' });
       }
     }
     rows.push({ style: 'Heading2', text: 'Employer adoption' });
@@ -287,7 +285,6 @@ var S128Docgen = (function () {
     rows.push({ style: 'Heading2', text: 'Article 12 Amendment, termination, and individual ownership' });
     rows.push({ style: null, text: article12(plan) });
     rows.push({ style: null, text: 'The account belongs to its beneficiary and remains independent of employment. Participation is voluntary. The employer does not direct or influence investments, impose use or rollover restrictions beyond law, present the account or program as an employer-maintained ERISA pension or welfare plan, or receive payment or compensation in connection with an account. The employer imposes no vesting or forfeiture condition on money deposited into an account. Account-level rights are governed by Section 530A and the trustee’s instrument.' });
-    rows.push({ style: null, text: S128Terms.CLOSING });
     return rows;
   }
 
@@ -297,9 +294,8 @@ var S128Docgen = (function () {
       ? 'Employer grants and salary reduction attributable to an employee share that maximum. Salary reduction is limited to the remaining amount after reservation of the annual employer grant of ' + money(plan, plan.employer_annual_grant) + '.'
       : 'Salary reduction contributions attributable to an employee may not exceed that cap.';
     return [
-      { style: 'Title', text: 'Sample amendment to ' + plan.cafeteria_plan_name },
+      { style: 'Title', text: 'Amendment to ' + plan.cafeteria_plan_name },
       { style: 'Heading2', text: 'Section 128 Trump Account Contribution Benefit' },
-      { style: null, text: S128Terms.OPENING + ' Generating or downloading it does not amend ' + plan.cafeteria_plan_name + '.' },
       { style: 'Heading2', text: 'Adoption and qualified benefit' },
       { style: null, text: plan.employer_name + ' amends ' + plan.cafeteria_plan_name + ' effective ' + longDate(plan.cafeteria_amendment_date) + ' to make available the Section 128 Trump Account contribution benefit described in ' + plan.plan_name + ', maintained as a separate written program. Eligible participants may elect prospective salary reduction contributions to verified Trump accounts of their anticipated Section 152 dependents during those beneficiaries’ growth periods. Contributions to a participant’s own Trump account are not available through this cafeteria plan.' },
       { style: 'Heading2', text: 'Eligibility and amounts' },
@@ -310,127 +306,58 @@ var S128Docgen = (function () {
       { style: null, text: 'Authorized deductions are remitted directly to independently verified Trump account trustees under the Section 128 program. Elections end or are adjusted when the participant or account becomes ineligible, the beneficiary’s growth period ends, the participant revokes an election, the maximum is reached, or a compliance limit applies. Payroll will apply federal gross income exclusion only to qualifying amounts and will retain applicable Social Security, Medicare, unemployment, and other required wage treatment. This amendment creates no payroll-tax exclusion.' },
       { style: null, text: 'The employer will evaluate cafeteria plan nondiscrimination independently of Section 128 testing. The amendment does not establish an FSA grace period, carryover, uniform coverage rule, or prior-year contribution designation. Except for the specific benefit and election provisions above, the cafeteria plan remains governed by its existing terms and applicable law.' },
       { style: null, text: 'Authorized representative: ' + plan.signer_name + '    Title: ' + plan.signer_title },
-      { style: null, text: 'Signature: ________________________________    Date: ________________' },
-      { style: null, text: S128Terms.CLOSING }
+      { style: null, text: 'Signature: ________________________________    Date: ________________' }
     ];
   }
 
-  function guideStep(title, who, what, when) {
-    return [
-      { style: 'Heading2', text: title },
-      { style: null, text: 'Who: ' + who },
-      { style: null, text: 'What: ' + what },
-      { style: null, text: 'When: ' + when }
+  function checklistLines(plan) {
+    var lines = [
+      'Sign and date the plan before the effective date (' + longDate(plan.effective_date) + ').'
     ];
+    if (usesSalary(plan)) {
+      lines.push('Add the Section 125 amendment to your cafeteria plan and sign it.');
+    }
+    lines.push('Tell payroll: contributions are excluded from income tax but still subject to Social Security and Medicare, reported on W-2 box 12 code TA.');
+    lines.push('Give employees a short written notice of the program.');
+    lines.push('Collect each employee’s child’s Trump account info and confirm the account is active. The child is under 18. Treasury auto-created accounts must be claimed first.');
+    lines.push('Start contributions through payroll. No contribution is earlier than July 4, 2026. The limit is $2,500 per employee per year.');
+    return lines;
   }
 
   function guideParagraphs(plan) {
-    var salary = usesSalary(plan);
-    var grant = usesGrant(plan);
-    var whenDate = longDate(plan.effective_date);
     var rows = [
-      { style: 'Title', text: 'Section 128 implementation guide' },
-      { style: null, text: S128Terms.OPENING },
-      { style: null, text: 'Educational sample as of October 8, 2026, for ' + plan.employer_name + '. Funding design: ' + S128Model.fundingLabel(plan.funding_mode) + '. This guide lists steps an employer can take from this sample toward operation. It does not mean any step has been completed.' }
+      { style: 'Title', text: 'Section 128 implementation checklist' },
+      { style: null, text: plan.employer_name + ' — ' + S128Model.fundingLabel(plan.funding_mode) + '.' }
     ];
-    rows = rows.concat(guideStep(
-      '1. Read the sample with the employer’s own attorney and tax advisor',
-      'The employer, with its own attorney and tax advisor.',
-      'Read the sample program' + (salary ? ', the Section 125 amendment if one was created,' : '') + ' and this guide. Compare them with the employer’s payroll, entity, and benefit plans. Final Section 128 regulations have not been issued. The proposed rules are REG-101355-26. Treasury Decision 10056 covers Trump account activation.',
-      'Before anyone signs, and before the effective date of ' + whenDate + '.'
-    ));
-    rows = rows.concat(guideStep(
-      '2. Finalize the design choices',
-      'The employer.',
-      'Confirm the funding method, the annual cap, the eligible class, and the waiting period.' + (grant ? ' Confirm who may receive the employer grant.' : '') + ' The Section 128 limit is $2,500 per employee for 2026 and 2027, for all employers combined, not for each child. The growth period ends on December 31 of the year the child turns 17. No contribution can be accepted before July 4, 2026.',
-      'Before the sample is signed.'
-    ));
-    rows = rows.concat(guideStep(
-      '3. Formally adopt the program',
-      'The person the employer authorizes to sign. A board or the owners act as well if the employer’s attorney says that entity requires a resolution.',
-      'Sign on the blank signature line and write the date on the blank date line. Downloading the file does not adopt it. A resolution is used only when it applies to that entity.',
-      'Before the effective date of ' + whenDate + '.'
-    ));
-    if (salary) {
-      rows = rows.concat(guideStep(
-        '4. Confirm the Section 125 cafeteria plan',
-        'The employer.',
-        'Salary reduction for this benefit is allowed only through a written Section 125 cafeteria plan, and only for dependents’ accounts. Confirm that plan is in place. Sign the sample amendment, or an amendment the employer’s attorney prepares, so the cafeteria plan describes the benefit. Elections must be changeable or revocable at least monthly before the pay is currently available. No life event is required.',
-        'Before the first salary-reduction election takes effect. The amendment date must be prospective and not before July 4, 2026.'
-      ));
-    }
-    var payrollWhat = 'Treat qualifying Section 128 amounts as excluded from federal gross income. They are generally not subject to federal income tax withholding. They remain wages for Social Security, Medicare, and FUTA, and for Railroad Retirement Tax Act compensation where that tax applies. Report the amount on Form W-2, box 12, code TA, under the 2026 instructions.';
-    if (salary) payrollWhat += ' Salary reduction does not reduce Social Security or Medicare tax.';
-    rows = rows.concat(guideStep(
-      (salary ? '5' : '4') + '. Set up payroll',
-      'The employer and its payroll processor.',
-      payrollWhat,
-      'Starting with the first payroll that includes a contribution, and again at year-end reporting.'
-    ));
-    rows = rows.concat(guideStep(
-      (salary ? '6' : '5') + '. Give employees written notice',
-      'The employer.',
-      'Give every eligible employee reasonable written notice of the program’s availability and terms. The statute and the proposed rules do not prescribe a form. Include eligibility, the funding method, the limits, how to designate an account, the tax treatment, and the administrator contact. Also state that an account automatically created by the Treasury cannot receive a program contribution until a parent or guardian claims it and the account is activated.',
-      'Before participation, and again when a material term changes.'
-    ));
-    rows = rows.concat(guideStep(
-      (salary ? '7' : '6') + '. Collect designations and verify the accounts',
-      'The employee gives a written certification. The employer or the named administrator verifies the account.',
-      'The certification states that the beneficiary is the employee or an anticipated dependent, the beneficiary’s date of birth, and that the signer knows no facts making the beneficiary ineligible that year. The employer may rely on that certification unless it knows it is wrong. The employer may not rely only on the employee to show that the account is a Trump account. Verify it through the trustee, the payroll processor, or another provider. Confirm the beneficiary is still in the growth period, which ends on December 31 of the year the child turns 17. An unclaimed Treasury auto account cannot receive a Section 128 contribution.',
-      'Before the first contribution for that employee and beneficiary.'
-    ));
-    var remit = grant
-      ? 'Pay the employer grant once per employee per calendar year, with the next practicable regular payroll after eligibility, a written designation, and account verification are complete.'
-      : 'This design does not include an employer grant.';
-    if (salary) remit += ' Remit authorized salary reduction through the regular payroll process, and only while it can be sent to a verified eligible dependent account.';
-    remit += ' At each transfer, tell the trustee in writing that the amount is a Section 128 contribution. A contribution counts in the calendar year it is actually made. It cannot be dated to the prior year.';
-    rows = rows.concat(guideStep(
-      (salary ? '8' : '7') + '. Remit contributions',
-      'The employer, through its payroll process.',
-      remit,
-      'On the payroll cycle after the conditions above are met, and not before July 4, 2026.'
-    ));
-    rows = rows.concat(guideStep(
-      (salary ? '9' : '8') + '. Keep records',
-      'The administrator named in the sample.',
-      'Keep the written plan, certifications, verification records, trustee notices, payroll records, and correction records. If an amount identified as a Section 128 contribution is later found not to qualify, give the trustee written notice of the account, the calendar year, and the amount. Twenty-one calendar days after that determination is a deemed-reasonable period under the proposed rules.',
-      'As each event happens, and for the period that applies to the employer’s tax records.'
-    ));
-    rows = rows.concat(guideStep(
-      (salary ? '10' : '9') + '. Provide the annual employee statement',
-      'The employer.',
-      'Give each participating employee a written statement of Section 128 contributions for the preceding calendar year. Under the proposed rules, a correct Form W-2 box 12 code TA can satisfy that statement for 2026.',
-      'On or before January 31 of the following year.'
-    ));
-    rows = rows.concat(guideStep(
-      (salary ? '11' : '10') + '. Monitor eligibility and nondiscrimination',
-      'The employer or the named administrator.',
-      'Apply the eligibility classification and the 55 percent average-benefits test in the proposed rules. The average for a group is its Section 128 contributions divided by the number of employees in that group who received a contribution. The test date is the last day of the plan year. A class cannot be a list of names. If the test fails, the exclusion is lost for highly compensated employees. Employees who are not highly compensated keep the exclusion under the proposed rules.',
-      'On the last day of the plan year. Earlier checks during the year can limit later contributions.'
-    ));
-    rows = rows.concat(guideStep(
-      (salary ? '12' : '11') + '. Recheck final rules and state tax',
-      'The employer, with its own attorney and tax advisor.',
-      'As of October 8, 2026 there are no final Section 128 regulations. The proposed rules in REG-101355-26 may be relied on for plan years beginning before final rules are published. Recheck when final rules are issued. Federal exclusion does not decide state income tax. Florida has no personal income tax. Georgia’s 2026 conformity statute does not list Section 128 among the sections it decouples. State withholding guidance should still be confirmed.',
-      'Before the first contribution, and again when final regulations or state guidance are published.'
-    ));
-    rows.push({ style: null, text: S128Terms.CLOSING });
+    checklistLines(plan).forEach(function (line, index) {
+      rows.push({ style: null, text: (index + 1) + '. ' + line });
+    });
     return rows;
   }
 
   function visitorEmailText(plan, lead) {
-    return [
+    var attached = usesSalary(plan) && plan.cafeteria_plan_name
+      ? 'Your plan, Section 125 amendment, and implementation checklist are attached.'
+      : 'Your plan and implementation checklist are attached.';
+    var lines = [
       'Hello ' + (lead.contact_name || '') + ',',
       '',
-      'Attached are sample documents for ' + plan.employer_name + '.',
-      'They include the Section 128 sample program, this implementation guide' + (usesSalary(plan) && plan.cafeteria_plan_name ? ', and a sample Section 125 amendment' : '') + '.',
+      'Here are the Section 128 program documents for ' + plan.employer_name + '.',
+      attached,
+      ''
+    ];
+    checklistLines(plan).forEach(function (line, index) {
+      lines.push((index + 1) + '. ' + line);
+    });
+    lines.push(
       '',
-      plainText(guideParagraphs(plan)),
+      'Your tax advisor can help with anything specific to your situation.',
       '',
       'Questions about DK Benefits’ services? 407-476-5076 · dan@dkbenefits.net',
       '',
-      'DK Benefits LLC'
-    ].join('\n');
+      'This was created with an educational tool and isn\'t legal or tax advice.'
+    );
+    return lines.join('\n');
   }
 
   function paragraphXml(row) {
@@ -455,14 +382,13 @@ var S128Docgen = (function () {
 
   function headerXml() {
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-      '<w:hdr xmlns:w="' + W + '"><w:p><w:pPr><w:pStyle w:val="Header"/></w:pPr><w:r><w:t xml:space="preserve">' + xml(HEADER) + '</w:t></w:r></w:p></w:hdr>';
+      '<w:hdr xmlns:w="' + W + '"><w:p><w:pPr><w:pStyle w:val="Header"/></w:pPr></w:p></w:hdr>';
   }
 
   function footerXml() {
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-      '<w:ftr xmlns:w="' + W + '"><w:p><w:pPr><w:pStyle w:val="Footer"/><w:jc w:val="right"/></w:pPr>' +
-      '<w:r><w:t xml:space="preserve">Sample draft  |  </w:t></w:r>' +
-      '<w:fldSimple w:instr=" PAGE "><w:r><w:t>1</w:t></w:r></w:fldSimple></w:p></w:ftr>';
+      '<w:ftr xmlns:w="' + W + '"><w:p><w:pPr><w:pStyle w:val="Footer"/></w:pPr>' +
+      '<w:r><w:t xml:space="preserve">' + xml(FOOTER) + '</w:t></w:r></w:p></w:ftr>';
   }
 
   function stylesXml() {
@@ -491,11 +417,11 @@ var S128Docgen = (function () {
     var now = (props.created || '2026-10-08') + 'T00:00:00Z';
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' +
-      '<dc:title>' + xml(props.title || 'Section 128 draft') + '</dc:title>' +
-      '<dc:subject>Sample draft for the employer. Section 128 Trump Account Contribution Program.</dc:subject>' +
+      '<dc:title>' + xml(props.title || 'Section 128 Trump Account Contribution Program') + '</dc:title>' +
+      '<dc:subject>Section 128 Trump Account Contribution Program.</dc:subject>' +
       '<dc:creator>DK Benefits LLC</dc:creator>' +
       '<cp:lastModifiedBy>DK Benefits LLC</cp:lastModifiedBy>' +
-      '<dc:description>Sample draft for the employer. Not legal, tax, or ERISA advice. Template ' + xml(S128Model.TEMPLATE_VERSION) + '.</dc:description>' +
+      '<dc:description>Template ' + xml(S128Model.TEMPLATE_VERSION) + '.</dc:description>' +
       '<dcterms:created xsi:type="dcterms:W3CDTF">' + xml(now) + '</dcterms:created>' +
       '<dcterms:modified xsi:type="dcterms:W3CDTF">' + xml(now) + '</dcterms:modified>' +
       '</cp:coreProperties>';
@@ -641,15 +567,15 @@ var S128Docgen = (function () {
   }
 
   function planFileName(plan) {
-    return safeFilePart(plan.employer_name) + '_Section_128_Plan_DRAFT_v0.3.docx';
+    return safeFilePart(plan.employer_name) + '_Section_128_Plan_v0.4.docx';
   }
 
   function amendmentFileName(plan) {
-    return safeFilePart(plan.employer_name) + '_Section_125_Amendment_DRAFT_v0.3.docx';
+    return safeFilePart(plan.employer_name) + '_Section_125_Amendment_v0.4.docx';
   }
 
   function guideFileName(plan) {
-    return safeFilePart(plan.employer_name) + '_Section_128_Implementation_Guide_v0.3.docx';
+    return safeFilePart(plan.employer_name) + '_Section_128_Implementation_Guide_v0.4.docx';
   }
 
   function pdfFileName(docxName) {
@@ -667,14 +593,14 @@ var S128Docgen = (function () {
     var rows = amendmentParagraphs(plan);
     if (!rows) return null;
     return buildDocx(rows, {
-      title: 'Sample amendment to ' + plan.cafeteria_plan_name,
+      title: 'Amendment to ' + plan.cafeteria_plan_name,
       created: S128Model.GUIDANCE_AS_OF
     });
   }
 
   function buildGuideDocx(plan) {
     return buildDocx(guideParagraphs(plan), {
-      title: 'Section 128 implementation guide',
+      title: 'Section 128 implementation checklist',
       created: S128Model.GUIDANCE_AS_OF
     });
   }
@@ -684,8 +610,8 @@ var S128Docgen = (function () {
   }
 
   return {
-    HEADER: HEADER,
-    DRAFT_BODY: DRAFT_BODY,
+    FOOTER: FOOTER,
+    checklistLines: checklistLines,
     planParagraphs: planParagraphs,
     amendmentParagraphs: amendmentParagraphs,
     guideParagraphs: guideParagraphs,

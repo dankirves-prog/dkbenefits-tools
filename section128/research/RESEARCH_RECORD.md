@@ -5,7 +5,7 @@
 **Purpose:** To check the document-generator logic and the supplied materials (Employer Plan DOCX, Standard Template DOCX, Research Guide PDF, Field Specification JSON) against official sources, and to log material changes.
 **Release status:** There are no final Section 128 regulations yet. Nothing here claims IRS approval, attorney approval, or guaranteed compliance.
 
-**Template v0.3 (October 8, 2026):** The visitor-facing header is “SAMPLE DRAFT — for the employer’s review with its own advisors. Not adopted until signed by the Employer.” The page is an educational resource. DK Benefits does not review, approve, or verify the employer’s sample.
+**Template v0.4 (October 8, 2026):** Visitor-facing documents use one footer line, “Prepared with DK Benefits' educational tool. Not effective until signed by the employer.” The full Terms of use stay in the on-screen dialog (version s128-terms-2026-10-08b). The research findings below are unchanged.
 
 ## Verification for the generator build (October 8, 2026)
 

@@ -30,14 +30,13 @@ var S128Pdf = (function () {
     if (!PDFLib) return Promise.reject(new Error('PDF library is not loaded'));
     props = props || {};
     return PDFLib.PDFDocument.create().then(function (doc) {
-      doc.setTitle(props.title || 'Section 128 sample draft');
+      doc.setTitle(props.title || 'Section 128 Trump Account Contribution Program');
       doc.setAuthor('DK Benefits LLC');
-      doc.setSubject('Sample draft for the employer. Not legal, tax, or ERISA advice.');
+      doc.setSubject('Section 128 Trump Account Contribution Program');
       doc.setCreator('DK Benefits LLC');
-      doc.setProducer('DK Benefits Section 128 draft ' + (S128Model.TEMPLATE_VERSION || ''));
+      doc.setProducer('DK Benefits Section 128 ' + (S128Model.TEMPLATE_VERSION || ''));
       var font = doc.embedStandardFont(PDFLib.StandardFonts.TimesRoman);
       var bold = doc.embedStandardFont(PDFLib.StandardFonts.TimesRomanBold);
-      var italic = doc.embedStandardFont(PDFLib.StandardFonts.TimesRomanItalic);
       var pageWidth = 612;
       var pageHeight = 792;
       var left = 58;
@@ -56,14 +55,6 @@ var S128Pdf = (function () {
         page = doc.addPage([pageWidth, pageHeight]);
         pages.push(page);
         y = pageHeight - top;
-        page.drawRectangle({ x: left, y: pageHeight - 36, width: 42, height: 3, color: PDFLib.rgb(0.784, 0.663, 0.318) });
-        var headerLines = wrap(S128Docgen.HEADER, italic, 8, maxWidth - 48);
-        var hy = pageHeight - 28;
-        headerLines.forEach(function (line) {
-          page.drawText(line, { x: left + 48, y: hy, size: 8, font: italic, color: muted });
-          hy -= 10;
-        });
-        y = Math.min(y, hy - 8);
       }
 
       function ensure(height) {
@@ -100,14 +91,14 @@ var S128Pdf = (function () {
         y -= gap;
       });
 
-      pages.forEach(function (pg, index) {
-        var label = 'Sample draft  |  ' + (index + 1);
-        pg.drawText(label, {
-          x: pageWidth - right - font.widthOfTextAtSize(label, 9),
-          y: 32,
-          size: 9,
-          font: font,
-          color: muted
+      pages.forEach(function (pg) {
+        var label = S128Docgen.FOOTER;
+        var size = 8;
+        var lines = wrap(label, font, size, maxWidth);
+        var fy = 28 + (lines.length - 1) * 10;
+        lines.forEach(function (line) {
+          pg.drawText(line, { x: left, y: fy, size: size, font: font, color: muted });
+          fy -= 10;
         });
       });
       return doc.save();

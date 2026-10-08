@@ -4,7 +4,7 @@ This is a **new** Apps Script. Do not paste it into the quote-tool project, and 
 
 The page reads the web-app URL from `section128/config.js` (`endpoint`). Until that value is a real `/exec` URL, the page still builds the Word and PDF samples in the browser and shows that they are ready to download. It does not email anyone.
 
-Template version `s128-v0.3-2026-10-08`. The Terms of use in `s128-terms.js` are a draft for DK Benefits LLC’s own attorney to review before go-live. They are not themselves legal advice.
+Template version `s128-v0.4-2026-10-08`. Terms version `s128-terms-2026-10-08b`. The Terms of use in `s128-terms.js` are a draft for DK Benefits LLC’s own attorney to review before go-live. They are not themselves legal advice.
 
 ## 1. Create the spreadsheet
 

@@ -206,5 +206,5 @@ test('server wrapper accepts plan and lead objects', function () {
   const flat = baseInput();
   const result = S128Model.validateSubmission({ plan: flat, lead: flat }, { asOf: ASOF });
   assert.equal(result.ok, true, JSON.stringify(result.errors));
-  assert.equal(result.templateVersion, 's128-v0.3-2026-10-08');
+  assert.equal(result.templateVersion, 's128-v0.4-2026-10-08');
 });
