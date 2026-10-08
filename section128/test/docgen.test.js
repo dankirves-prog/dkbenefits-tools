@@ -178,8 +178,9 @@ test('implementation guide matches the funding design and the visitor email', fu
   assert.match(guide, /1\. Sign and date the plan before the effective date/);
   assert.match(guide, /2\. Add the Section 125 amendment to your cafeteria plan and sign it/);
   assert.match(guide, /box 12 code TA/);
-  assert.match(guide, /July 4, 2026/);
-  assert.match(guide, /\$2,500 per employee per year/);
+  assert.match(guide, /Collect each employee’s child’s Trump account information and make sure the account is active\. Accounts the Treasury opened automatically must be claimed by a parent first\./);
+  assert.match(guide, /Start contributions through payroll, up to \$2,500 per employee per year\./);
+  assert.doesNotMatch(guide, /July 4, 2026/);
   assert.doesNotMatch(guide, /Who:|What:|When:|REG-101355|attorney|SAMPLE DRAFT/);
   lines.forEach(function (line) { assert.ok(email.indexOf(line) !== -1, line); });
   assert.match(email, /Hello Ada Lopez/);

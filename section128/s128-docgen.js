@@ -319,8 +319,8 @@ var S128Docgen = (function () {
     }
     lines.push('Tell payroll: contributions are excluded from income tax but still subject to Social Security and Medicare, reported on W-2 box 12 code TA.');
     lines.push('Give employees a short written notice of the program.');
-    lines.push('Collect each employee’s child’s Trump account info and confirm the account is active. The child is under 18. Treasury auto-created accounts must be claimed first.');
-    lines.push('Start contributions through payroll. No contribution is earlier than July 4, 2026. The limit is $2,500 per employee per year.');
+    lines.push('Collect each employee’s child’s Trump account information and make sure the account is active. Accounts the Treasury opened automatically must be claimed by a parent first.');
+    lines.push('Start contributions through payroll, up to $2,500 per employee per year.');
     return lines;
   }
 
