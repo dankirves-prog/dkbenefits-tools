@@ -243,7 +243,7 @@ test('LibreOffice renders each funding method and pdf-lib matches the text', asy
   fs.writeFileSync(pdfPath, Buffer.from(pdfBytes));
   const pdfText = execFileSync('pdftotext', ['-layout', pdfPath, '-'], { encoding: 'utf8' });
   assert.match(pdfText, /Northwind Benefits LLC/);
-  assert.match(pdfText, /together cannot exceed the annual limit/);
+  assert.match(pdfText, /together cannot\s+exceed the annual limit/);
   assert.match(pdfText, /Prepared with DK Benefits/);
   assert.match(pdfText, /Not effective until signed by the employer/);
   assert.doesNotMatch(pdfText, /SAMPLE DRAFT/);
