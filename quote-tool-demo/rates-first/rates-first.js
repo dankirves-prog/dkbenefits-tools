@@ -77,6 +77,7 @@
     var mixError = '';
     var mixManual = false;
     var leadState = '';
+    var helpWith = '';
     var contribution = {
       model: '',
       employerPercent: null,
@@ -324,6 +325,7 @@
         saved: Array.from(saved.values()),
         sections: sections(),
         leadState: leadState,
+        helpWith: helpWith,
         summaryLine: summaryLine(),
         ratesAsOfLabel: ratesAsOfLabel,
         carriers: ['All'].concat(QuoteMath.listCarriers(plans)),
@@ -442,6 +444,7 @@
         contribution.payPeriods = null;
       },
       setLeadState: function (value) { leadState = value || ''; },
+      setHelp: function (value) { helpWith = value || ''; },
       setRatesAsOfLabel: function (label) { ratesAsOfLabel = label || ''; },
       leadPayload: function (contact) {
         var payload = QuoteMath.buildLeadPayload({
@@ -455,6 +458,14 @@
           visiblePlans: visiblePlanRecords(),
           submittedAt: now().toISOString(),
           pageUrl: pageUrl
+        });
+        payload.helpWith = helpWith || '';
+        ['notes', 'comments', 'comment', 'message'].forEach(function (key) {
+          if (typeof payload[key] !== 'string' || !payload.helpWith) return;
+          var current = payload[key].trim();
+          payload[key] = current
+            ? current + ' What can we help with? ' + payload.helpWith
+            : 'What can we help with? ' + payload.helpWith;
         });
         return tracker ? tracker.decorateLeadPayload(payload) : payload;
       }
@@ -857,6 +868,10 @@
         var on = state.leadState === button.getAttribute('data-state');
         button.setAttribute('aria-checked', on ? 'true' : 'false');
       });
+      document.querySelectorAll('[data-help]').forEach(function (button) {
+        var on = state.helpWith === button.getAttribute('data-help');
+        button.setAttribute('aria-checked', on ? 'true' : 'false');
+      });
     }
 
     function renderPlans(state) {
@@ -894,8 +909,8 @@
       $('drawer-body').innerHTML = compareHtml(Object.assign({}, state, { savedFull: full }));
       $('drawer-print').disabled = !state.saved.length;
       $('lead-saved-note').textContent = state.saved.length
-        ? 'Your ' + state.saved.length + ' saved plan' + (state.saved.length === 1 ? '' : 's') + ' will be included with this request.'
-        : 'All plans shown will be included with this request.';
+        ? 'Your ' + state.saved.length + ' saved plan' + (state.saved.length === 1 ? '' : 's') + ' will be included.'
+        : 'All plans shown will be included.';
       $('lead-plan-list').innerHTML = state.saved.length
         ? state.saved.map(function (plan) { return '<li>' + escapeHtml(plan.name) + '</li>'; }).join('')
         : '<li>All plans currently shown</li>';
@@ -930,10 +945,15 @@
     }
 
     function openLead() {
-      $('lead').hidden = false;
+      var lead = $('lead');
+      lead.hidden = false;
       $('lead-success').hidden = true;
       $('lead-form').hidden = false;
-      $('lead').scrollIntoView({ block: 'start' });
+      lead.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      win.setTimeout(function () {
+        var field = $('first-name');
+        if (field && field.focus) field.focus({ preventScroll: true });
+      }, 0);
     }
 
     function showLoadError() {
@@ -1013,7 +1033,6 @@
     });
     $('contact-btn').addEventListener('click', openLead);
     $('drawer-send').addEventListener('click', openLead);
-    $('lead-back').addEventListener('click', function () { $('lead').hidden = true; });
     $('clear-group').addEventListener('click', function () {
       model.clearGroup();
       render();
@@ -1123,6 +1142,12 @@
         renderCustomize(model.getState());
       });
     });
+    document.querySelectorAll('[data-help]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        model.setHelp(button.getAttribute('data-help'));
+        renderCustomize(model.getState());
+      });
+    });
     $('lead-form').addEventListener('submit', function (event) {
       event.preventDefault();
       var state = model.getState();
@@ -1149,10 +1174,10 @@
         if (!response.ok) throw new Error('request failed');
         $('lead-form').hidden = true;
         success.hidden = false;
-        success.innerHTML = '<h3>Sent</h3><p>Daniel has your request.</p>';
+        success.innerHTML = '<h3>Thanks! Daniel will reach out soon.</h3>';
       }).catch(function () {
         $('lead-error').hidden = false;
-        $('lead-error').textContent = 'Something went wrong sending your request. Please call or text Daniel directly at 407-476-5076.';
+        $('lead-error').textContent = 'Something went wrong. Please call or text Daniel directly at 407-476-5076.';
       });
     });
     win.addEventListener('beforeprint', function () {
