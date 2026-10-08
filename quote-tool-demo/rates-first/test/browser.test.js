@@ -622,19 +622,39 @@ test('rates-first demo shows rates immediately and prints with or without group 
     await evaluate(`(() => {
       document.querySelector('[data-help="Talk through these plans"]').click();
       document.querySelector('[data-state="Florida"]').click();
-      document.getElementById('lead').scrollIntoView({ block: 'start' });
     })()`);
-    await waitFor(async () => {
-      const top = await evaluate(`document.getElementById('lead').getBoundingClientRect().top`);
-      return top >= -4 && top < 40;
-    }, 'mobile contact card');
+    async function frameContactCard() {
+      return evaluate(`(() => {
+        const lead = document.getElementById('lead');
+        const maxScroll = Math.max(0, document.documentElement.scrollHeight - innerHeight);
+        window.scrollTo(0, Math.min(Math.max(0, lead.offsetTop - 8), maxScroll));
+        const visible = (el) => {
+          const rect = el.getBoundingClientRect();
+          return rect.top >= -2 && rect.top < innerHeight - 28 && rect.height > 20;
+        };
+        return {
+          heading: visible(document.getElementById('lead-heading')),
+          florida: visible(document.querySelector('[data-state="Florida"]')),
+          help: visible(document.querySelector('[data-help="Talk through these plans"]')),
+          floridaOn: document.querySelector('[data-state="Florida"]').getAttribute('aria-checked'),
+          helpOn: document.querySelector('[data-help="Talk through these plans"]').getAttribute('aria-checked')
+        };
+      })()`);
+    }
+    const mobileCard = await frameContactCard();
+    assert.equal(mobileCard.heading, true, 'contact heading is off the phone screen');
+    assert.equal(mobileCard.florida, true, 'Florida bubble is off the phone screen');
+    assert.equal(mobileCard.help, true, 'help bubble is off the phone screen');
+    assert.equal(mobileCard.floridaOn, 'true');
+    assert.equal(mobileCard.helpOn, 'true');
     await shot('rf4_mobile390_contact_card.png');
     await setViewport(1440, 900);
-    await evaluate(`document.getElementById('lead').scrollIntoView({ block: 'start' })`);
-    await waitFor(async () => {
-      const top = await evaluate(`document.getElementById('lead').getBoundingClientRect().top`);
-      return top >= -4 && top < 40;
-    }, 'desktop contact card');
+    const desktopCard = await frameContactCard();
+    assert.equal(desktopCard.heading, true, 'contact heading is off the desktop screen');
+    assert.equal(desktopCard.florida, true, 'Florida bubble is off the desktop screen');
+    assert.equal(desktopCard.help, true, 'help bubble is off the desktop screen');
+    assert.equal(desktopCard.floridaOn, 'true');
+    assert.equal(desktopCard.helpOn, 'true');
     await shot('rf4_desktop_contact_card.png');
     await evaluate(`(() => {
       document.getElementById('first-name').value = 'Pat';
