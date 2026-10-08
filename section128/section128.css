@@ -123,6 +123,7 @@ body {
   font-family: Merriweather, Georgia, serif;
   font-size: 1.35rem;
   margin: 0 0 6px;
+  scroll-margin-top: 90px;
 }
 .lede { color: var(--text-light); margin: 0 0 18px; }
 

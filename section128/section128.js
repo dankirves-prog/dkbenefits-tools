@@ -101,6 +101,35 @@
     if (input) input.removeAttribute('aria-invalid');
     document.querySelectorAll('[name="' + name + '"]').forEach(function (el) { el.removeAttribute('aria-invalid'); });
   }
+  function embeddedFrame() {
+    try {
+      return window.self !== window.top;
+    } catch (err) {
+      return true;
+    }
+  }
+  function documentOffsetTop(el) {
+    var top = 0;
+    var node = el;
+    while (node) {
+      top += node.offsetTop || 0;
+      node = node.offsetParent;
+    }
+    return top;
+  }
+  function notifyParentScroll(el) {
+    if (!el || !embeddedFrame()) return;
+    window.parent.postMessage({
+      type: 's128-scroll',
+      top: documentOffsetTop(el),
+      step: step
+    }, '*');
+  }
+  function fieldControl(name) {
+    var input = $(name);
+    if (input) return input;
+    return document.querySelector('input[name="' + name + '"], select[name="' + name + '"], textarea[name="' + name + '"]');
+  }
   function showErrors(errors, only) {
     var allow = only ? {} : null;
     if (only) only.forEach(function (name) { allow[name] = true; });
@@ -109,13 +138,14 @@
       if (allow && !allow[err.field]) return;
       var box = $('err_' + err.field);
       if (box) box.textContent = err.message;
-      var input = $(err.field);
+      var input = fieldControl(err.field);
       if (input && input.matches && input.matches('input, select, textarea')) input.setAttribute('aria-invalid', 'true');
       if (!first) first = input || box;
     });
-    if (first && first.focus) {
-      first.focus({ preventScroll: true });
-      if (first.scrollIntoView) first.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+    if (first) {
+      if (first.scrollIntoView) first.scrollIntoView({ block: 'center', behavior: 'auto' });
+      if (first.focus) first.focus({ preventScroll: true });
+      notifyParentScroll(first);
     }
     return errors.some(function (err) { return !allow || allow[err.field]; });
   }
@@ -207,7 +237,13 @@
     $('btnNext').classList.toggle('hidden', step === 5);
     renderProgress();
     syncConditional();
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    var target = heading || document.querySelector('[data-step="' + step + '"]');
+    if (embeddedFrame()) {
+      if (target && target.scrollIntoView) target.scrollIntoView({ block: 'start', behavior: 'auto' });
+      notifyParentScroll(target);
+    } else {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
   }
   function go(next) {
     if (next === 4) renderReview();

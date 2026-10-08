@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Section 128 embed harness</title>
+  <style>
+    html, body { margin: 0; }
+    header {
+      position: sticky;
+      top: 0;
+      height: 72px;
+      box-sizing: border-box;
+      background: #1a2e4a;
+      color: #fff;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      font: 600 16px/1.2 sans-serif;
+    }
+    iframe { width: 100%; border: 0; display: block; background: #fff; }
+  </style>
+</head>
+<body>
+  <header id="siteHeader">DK Benefits</header>
+  <script>
+    window.__s128Messages = [];
+    window.addEventListener('message', function (event) {
+      var data = event.data;
+      if (!data || data.type !== 's128-scroll' || typeof data.top !== 'number' || typeof data.step !== 'number') return;
+      window.__s128Messages.push({
+        type: data.type,
+        top: data.top,
+        step: data.step,
+        keys: Object.keys(data)
+      });
+    });
+  </script>
+  <iframe id="tool" title="Section 128 tool"></iframe>
+  <script>
+    var params = new URLSearchParams(location.search);
+    var frame = document.getElementById('tool');
+    frame.style.height = (params.get('h') || '3200') + 'px';
+    frame.src = params.get('src');
+  </script>
+</body>
+</html>

@@ -4,9 +4,11 @@
   "description": "Static Section 128 draft generator. Tests use Node and puppeteer-core against the system Chrome.",
   "scripts": {
     "test:unit": "node --test test/model.test.js test/docgen.test.js test/apps-script.test.js",
-    "test:browser": "node --test test/browser.test.js"
+    "test:browser": "node --test test/browser.test.js",
+    "test:iframe": "node --test test/iframe-scroll.test.js"
   },
   "devDependencies": {
+    "playwright": "^1.64.0",
     "puppeteer-core": "24.15.0"
   }
 }
