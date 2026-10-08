@@ -123,7 +123,7 @@ function payload(overrides, id) {
     startedAt: '2026-10-08T15:00:00.000Z',
     submittedAt: '2026-10-08T15:00:10.000Z',
     pageUrl: 'https://dankirves-prog.github.io/dkbenefits-tools/section128/',
-    templateVersion: 's128-v0.4-2026-10-08',
+    templateVersion: 's128-v0.5-2026-10-08',
     test: true,
     hp: '',
     lead: checked.lead,

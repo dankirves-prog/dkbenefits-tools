@@ -66,6 +66,8 @@ test('combined funding shows remaining salary reduction room', function () {
   assert.equal(result.ok, true, JSON.stringify(result.errors));
   assert.equal(S128Model.salaryCapacity(result.plan).room, 1500);
   assert.match(S128Model.capacityMessage(result.plan), /\$1,500/);
+  assert.match(S128Model.capacityMessage(result.plan), /together can't exceed the \$2,500 annual limit/);
+  assert.match(S128Model.capacityMessage(result.plan), /With a \$1,000 grant, an employee can elect up to \$1,500 through payroll/);
 });
 
 test('grant above the cap, combined grant equal to the cap, and a fixed cap above $2,500 fail', function () {
@@ -108,8 +110,23 @@ test('formats and conditional fields', function () {
   assert.ok(fields(check({ zip: '3280' })).includes('zip'));
   assert.ok(fields(check({ contact_email: 'not-an-email' })).includes('contact_email'));
   assert.ok(fields(check({ contact_phone: '555-0100' })).includes('contact_phone'));
+  assert.equal(check({ contact_phone: '4074765076' }).lead.contact_phone, '(407) 476-5076');
+  assert.equal(check({ contact_phone: '14074765076' }).lead.contact_phone, '(407) 476-5076');
+  assert.equal(check({ contact_phone: '4074765076123' }).lead.contact_phone, '(407) 476-5076 ext. 123');
+  assert.equal(check({ contact_phone: '(407) 476-5076 ext. 1234567' }).lead.contact_phone, '(407) 476-5076 ext. 123456');
+  assert.equal(S128Model.formatEinLive('1234567890'), '12-3456789');
+  assert.equal(S128Model.formatEinLive('12-3456789'), '12-3456789');
+  assert.equal(S128Model.formatEinLive('ab12'), '12');
+  assert.equal(S128Model.formatPhoneLive('4074765076'), '(407) 476-5076');
+  assert.equal(S128Model.formatPhoneLive('4074765076123999'), '(407) 476-5076 ext. 123999');
+  assert.equal(S128Model.formatPhoneLive('1 (407) 476-5076 x123'), '(407) 476-5076 ext. 123');
   assert.ok(fields(check({ waiting_days: '400' })).includes('waiting_days'));
+  assert.ok(fields(check({ waiting_days: '366' })).includes('waiting_days'));
+  assert.ok(fields(check({ waiting_days: '12.5' })).includes('waiting_days'));
+  assert.ok(fields(check({ waiting_days: '30 days' })).includes('waiting_days'));
   assert.ok(fields(check({ waiting_days: '-1' })).includes('waiting_days'));
+  assert.equal(check({ waiting_days: '365' }).plan.waiting_days, 365);
+  assert.equal(check({ waiting_days: '0' }).plan.waiting_days, 0);
   assert.equal(check().plan.employer_address, '100 King Street, Orlando, FL 32801');
   const salaryMissing = check({
     funding_mode: 'salary_reduction_only',
@@ -206,5 +223,5 @@ test('server wrapper accepts plan and lead objects', function () {
   const flat = baseInput();
   const result = S128Model.validateSubmission({ plan: flat, lead: flat }, { asOf: ASOF });
   assert.equal(result.ok, true, JSON.stringify(result.errors));
-  assert.equal(result.templateVersion, 's128-v0.4-2026-10-08');
+  assert.equal(result.templateVersion, 's128-v0.5-2026-10-08');
 });

@@ -1,5 +1,5 @@
 /**
- * Deterministic Section 128 DOCX builder. Template s128-v0.4-2026-10-08.
+ * Deterministic Section 128 DOCX builder. Template s128-v0.5-2026-10-08.
  * Language is the Employer Plan (Articles 1–12 and the adoption agreement),
  * with the October 8, 2026 research edits applied. No live drafting.
  */
@@ -86,10 +86,19 @@ var S128Docgen = (function () {
     return 'The program annual cap is ' + S128Model.capText(plan) + '. Total Section 128 contributions attributable to an employee, ' + who + ', may not exceed the lesser of that cap and the Section 128(b) statutory limit.' + tail;
   }
 
+  function combinedShareSentence(plan) {
+    var info = S128Model.salaryCapacity(plan);
+    var grant = money(plan, plan.employer_annual_grant);
+    if (info && info.room != null) {
+      return 'The employer grant and employee salary reduction together cannot exceed the annual limit per employee. With a ' + grant + ' grant, an employee can elect up to ' + S128Model.formatMoney(info.room) + ' through payroll.';
+    }
+    return 'The employer grant and employee salary reduction together cannot exceed the annual limit per employee. Salary reduction is limited to the amount left after the employer grant.';
+  }
+
   function article5Tracking(plan) {
     var base = 'The administrator tracks actual contributions and amounts pending transmission across participating employers and all programs required to be aggregated.';
     if (plan.funding_mode === 'combined') {
-      return base + ' Salary reduction cannot consume the amount reserved for the annual employer grant. Any amount reported by the employee from an unrelated employer is considered when setting prospective elections, to the extent practicable.';
+      return base + ' ' + combinedShareSentence(plan) + ' Any amount reported by the employee from an unrelated employer is considered when setting prospective elections, to the extent practicable.';
     }
     if (plan.funding_mode === 'salary_reduction_only') {
       return base + ' Any amount reported by the employee from an unrelated employer is considered when setting prospective elections, to the extent practicable.';
@@ -215,11 +224,8 @@ var S128Docgen = (function () {
         rows.push({ style: null, text: 'A Section 125 cafeteria plan was not confirmed. Salary reduction cannot start until a cafeteria plan is adopted or confirmed and amended for this benefit. A cafeteria-plan amendment is not included.' });
       }
     }
-    rows.push({ style: 'Heading2', text: 'Employer adoption' });
     rows.push({ style: null, text: adoptionClose(plan) });
-    rows.push({ style: null, text: 'Authorized representative: ' + plan.signer_name + '    Title: ' + plan.signer_title });
-    rows.push({ style: null, text: 'Signature: ________________________________    Date: ________________' });
-    rows.push({ style: null, text: '' });
+    signatureBlock(plan).forEach(function (row) { rows.push(row); });
     rows.push({ style: null, text: '' });
 
     rows.push({ style: 'Heading1', text: 'Plan purpose, definitions, and participation' });
@@ -291,7 +297,7 @@ var S128Docgen = (function () {
   function amendmentParagraphs(plan) {
     if (!usesSalary(plan) || !plan.cafeteria_plan_name) return null;
     var capShare = plan.funding_mode === 'combined'
-      ? 'Employer grants and salary reduction attributable to an employee share that maximum. Salary reduction is limited to the remaining amount after reservation of the annual employer grant of ' + money(plan, plan.employer_annual_grant) + '.'
+      ? combinedShareSentence(plan)
       : 'Salary reduction contributions attributable to an employee may not exceed that cap.';
     return [
       { style: 'Title', text: 'Amendment to ' + plan.cafeteria_plan_name },
@@ -304,15 +310,26 @@ var S128Docgen = (function () {
       { style: null, text: 'A participant may initiate, increase, decrease, or revoke a salary reduction election for this benefit prospectively at any time during the plan year. No qualifying life event is required. The participant must provide ' + plan.election_cutoff_days + ' calendar days of payroll processing notice. Administration must permit changes and revocations to become effective at least monthly and only as to salary not yet currently available. No retroactive election or change is permitted. This provision controls over a general irrevocability or change-in-status restriction in the cafeteria plan solely for this benefit.' },
       { style: 'Heading2', text: 'Payment, tax treatment, and compliance' },
       { style: null, text: 'Authorized deductions are remitted directly to independently verified Trump account trustees under the Section 128 program. Elections end or are adjusted when the participant or account becomes ineligible, the beneficiary’s growth period ends, the participant revokes an election, the maximum is reached, or a compliance limit applies. Payroll will apply federal gross income exclusion only to qualifying amounts and will retain applicable Social Security, Medicare, unemployment, and other required wage treatment. This amendment creates no payroll-tax exclusion.' },
-      { style: null, text: 'The employer will evaluate cafeteria plan nondiscrimination independently of Section 128 testing. The amendment does not establish an FSA grace period, carryover, uniform coverage rule, or prior-year contribution designation. Except for the specific benefit and election provisions above, the cafeteria plan remains governed by its existing terms and applicable law.' },
-      { style: null, text: 'Authorized representative: ' + plan.signer_name + '    Title: ' + plan.signer_title },
-      { style: null, text: 'Signature: ________________________________    Date: ________________' }
+      { style: null, text: 'The employer will evaluate cafeteria plan nondiscrimination independently of Section 128 testing. The amendment does not establish an FSA grace period, carryover, uniform coverage rule, or prior-year contribution designation. Except for the specific benefit and election provisions above, the cafeteria plan remains governed by its existing terms and applicable law.' }
+    ].concat(signatureBlock(plan));
+  }
+
+  function signatureBlock(plan) {
+    return [
+      { style: 'Heading2', text: 'Employer signature' },
+      { style: null, text: 'Authorized representative: ' + plan.signer_name },
+      { style: null, text: '' },
+      { style: null, text: 'Title: ' + plan.signer_title },
+      { style: null, text: '' },
+      { style: null, text: 'Signature: ________________________________' },
+      { style: null, text: '' },
+      { style: null, text: 'Date: ________________' }
     ];
   }
 
   function checklistLines(plan) {
     var lines = [
-      'Sign and date the plan before the effective date (' + longDate(plan.effective_date) + ').'
+      'Sign and date the plan (page 1) before the effective date (' + longDate(plan.effective_date) + ').'
     ];
     if (usesSalary(plan)) {
       lines.push('Add the Section 125 amendment to your cafeteria plan and sign it.');
@@ -344,6 +361,8 @@ var S128Docgen = (function () {
       '',
       'Here are the Section 128 program documents for ' + plan.employer_name + '.',
       attached,
+      '',
+      'Employee notices, salary-reduction election forms, and account designation forms aren\'t included.',
       ''
     ];
     checklistLines(plan).forEach(function (line, index) {
@@ -567,15 +586,15 @@ var S128Docgen = (function () {
   }
 
   function planFileName(plan) {
-    return safeFilePart(plan.employer_name) + '_Section_128_Plan_v0.4.docx';
+    return safeFilePart(plan.employer_name) + '_Section_128_Plan_v0.5.docx';
   }
 
   function amendmentFileName(plan) {
-    return safeFilePart(plan.employer_name) + '_Section_125_Amendment_v0.4.docx';
+    return safeFilePart(plan.employer_name) + '_Section_125_Amendment_v0.5.docx';
   }
 
   function guideFileName(plan) {
-    return safeFilePart(plan.employer_name) + '_Section_128_Implementation_Guide_v0.4.docx';
+    return safeFilePart(plan.employer_name) + '_Section_128_Implementation_Guide_v0.5.docx';
   }
 
   function pdfFileName(docxName) {

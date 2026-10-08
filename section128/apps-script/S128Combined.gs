@@ -2,17 +2,17 @@
  * Combined Section 128 Apps Script deploy file.
  * Generated from s128-model.js + s128-terms.js + s128-docgen.js + apps-script/Code.gs.
  * Paste this whole file into Apps Script as Code.gs. Do not edit by hand.
- * Template s128-v0.4-2026-10-08. Terms s128-terms-2026-10-08b.
+ * Template s128-v0.5-2026-10-08. Terms s128-terms-2026-10-08b.
  * The Terms of use are a draft for DK Benefits LLC counsel before go-live. They are not legal advice.
  */
 
 /**
  * Section 128 Trump Account Contribution Program — validation, limits, review flags.
- * Template s128-v0.4-2026-10-08. Guidance as of October 8, 2026.
+ * Template s128-v0.5-2026-10-08. Guidance as of October 8, 2026.
  * Same rules run in the browser and in the Apps Script.
  */
 var S128Model = (function () {
-  var TEMPLATE_VERSION = 's128-v0.4-2026-10-08';
+  var TEMPLATE_VERSION = 's128-v0.5-2026-10-08';
   var GUIDANCE_AS_OF = '2026-10-08';
   var FIRST_CONTRIBUTION_DATE = '2026-07-04';
   var PUBLISHED_S128_CEILING = 2500;
@@ -89,16 +89,43 @@ var S128Model = (function () {
     return d.slice(0, 2) + '-' + d.slice(2);
   }
 
-  function normalizePhone(raw) {
+  function formatEinLive(raw) {
+    var d = digitsOnly(raw).slice(0, 9);
+    if (d.length < 3) return d;
+    return d.slice(0, 2) + '-' + d.slice(2);
+  }
+
+  function phoneDigits(raw) {
     var d = digitsOnly(raw);
-    if (d.length === 11 && d.charAt(0) === '1') d = d.slice(1);
-    if (d.length !== 10) return null;
+    if (d.charAt(0) === '1' && d.length > 10) d = d.slice(1);
+    return d.slice(0, 16);
+  }
+
+  function normalizePhone(raw) {
+    var d = phoneDigits(raw);
+    if (d.length < 10) return null;
     return d;
   }
 
   function formatPhone(d) {
-    if (!d || d.length !== 10) return '';
-    return '(' + d.slice(0, 3) + ') ' + d.slice(3, 6) + '-' + d.slice(6);
+    if (!d || d.length < 10) return '';
+    var main = '(' + d.slice(0, 3) + ') ' + d.slice(3, 6) + '-' + d.slice(6, 10);
+    var ext = d.slice(10, 16);
+    return ext ? main + ' ext. ' + ext : main;
+  }
+
+  function formatPhoneLive(raw) {
+    var d = phoneDigits(raw);
+    if (!d) return '';
+    var main = d.slice(0, Math.min(10, d.length));
+    var ext = d.length > 10 ? d.slice(10) : '';
+    var out;
+    if (main.length < 3) out = '(' + main;
+    else if (main.length === 3) out = '(' + main + ')';
+    else if (main.length <= 6) out = '(' + main.slice(0, 3) + ') ' + main.slice(3);
+    else out = '(' + main.slice(0, 3) + ') ' + main.slice(3, 6) + '-' + main.slice(6);
+    if (ext) out += ' ext. ' + ext;
+    return out;
   }
 
   function validEmail(value) {
@@ -254,7 +281,11 @@ var S128Model = (function () {
       return 'Salary reduction for ' + info.year + ' is limited to the Section 128(b) amount for that year. The indexed figure has not been published, so this draft does not state a dollar capacity above the last published limit of ' + formatMoney(info.publishedCeiling) + '. Salary reduction can fund dependents’ accounts only.';
     }
     if (plan.funding_mode === 'combined') {
-      return 'For ' + info.year + ', employees may elect up to ' + formatMoney(info.room) + ' per year through payroll after the employer grant is reserved. Salary reduction can fund dependents’ accounts only. It does not reduce Social Security or Medicare tax.';
+      var ceiling = info.statutory || info.cap;
+      var together = ceiling
+        ? 'The employer grant and employee salary reduction together can\'t exceed the ' + formatMoney(ceiling) + ' annual limit per employee.'
+        : 'The employer grant and employee salary reduction together can\'t exceed the annual limit per employee.';
+      return together + ' With a ' + formatMoney(plan.employer_annual_grant || 0) + ' grant, an employee can elect up to ' + formatMoney(info.room) + ' through payroll. Salary reduction can fund dependents’ accounts only. It does not reduce Social Security or Medicare tax.';
     }
     return 'For ' + info.year + ', employees may elect up to ' + formatMoney(info.room) + ' per year through payroll, for dependents’ accounts only. Salary reduction does not reduce Social Security or Medicare tax.';
   }
@@ -550,7 +581,9 @@ var S128Model = (function () {
     todayIso: todayIso,
     formatLongDate: formatLongDate,
     formatMoney: formatMoney,
+    formatEinLive: formatEinLive,
     formatPhone: formatPhone,
+    formatPhoneLive: formatPhoneLive,
     suggestPlanName: suggestPlanName,
     fundingLabel: fundingLabel,
     entityLabel: entityLabel,
@@ -601,7 +634,7 @@ var S128Terms = (function () {
   };
 })();
 /**
- * Deterministic Section 128 DOCX builder. Template s128-v0.4-2026-10-08.
+ * Deterministic Section 128 DOCX builder. Template s128-v0.5-2026-10-08.
  * Language is the Employer Plan (Articles 1–12 and the adoption agreement),
  * with the October 8, 2026 research edits applied. No live drafting.
  */
@@ -688,10 +721,19 @@ var S128Docgen = (function () {
     return 'The program annual cap is ' + S128Model.capText(plan) + '. Total Section 128 contributions attributable to an employee, ' + who + ', may not exceed the lesser of that cap and the Section 128(b) statutory limit.' + tail;
   }
 
+  function combinedShareSentence(plan) {
+    var info = S128Model.salaryCapacity(plan);
+    var grant = money(plan, plan.employer_annual_grant);
+    if (info && info.room != null) {
+      return 'The employer grant and employee salary reduction together cannot exceed the annual limit per employee. With a ' + grant + ' grant, an employee can elect up to ' + S128Model.formatMoney(info.room) + ' through payroll.';
+    }
+    return 'The employer grant and employee salary reduction together cannot exceed the annual limit per employee. Salary reduction is limited to the amount left after the employer grant.';
+  }
+
   function article5Tracking(plan) {
     var base = 'The administrator tracks actual contributions and amounts pending transmission across participating employers and all programs required to be aggregated.';
     if (plan.funding_mode === 'combined') {
-      return base + ' Salary reduction cannot consume the amount reserved for the annual employer grant. Any amount reported by the employee from an unrelated employer is considered when setting prospective elections, to the extent practicable.';
+      return base + ' ' + combinedShareSentence(plan) + ' Any amount reported by the employee from an unrelated employer is considered when setting prospective elections, to the extent practicable.';
     }
     if (plan.funding_mode === 'salary_reduction_only') {
       return base + ' Any amount reported by the employee from an unrelated employer is considered when setting prospective elections, to the extent practicable.';
@@ -817,11 +859,8 @@ var S128Docgen = (function () {
         rows.push({ style: null, text: 'A Section 125 cafeteria plan was not confirmed. Salary reduction cannot start until a cafeteria plan is adopted or confirmed and amended for this benefit. A cafeteria-plan amendment is not included.' });
       }
     }
-    rows.push({ style: 'Heading2', text: 'Employer adoption' });
     rows.push({ style: null, text: adoptionClose(plan) });
-    rows.push({ style: null, text: 'Authorized representative: ' + plan.signer_name + '    Title: ' + plan.signer_title });
-    rows.push({ style: null, text: 'Signature: ________________________________    Date: ________________' });
-    rows.push({ style: null, text: '' });
+    signatureBlock(plan).forEach(function (row) { rows.push(row); });
     rows.push({ style: null, text: '' });
 
     rows.push({ style: 'Heading1', text: 'Plan purpose, definitions, and participation' });
@@ -893,7 +932,7 @@ var S128Docgen = (function () {
   function amendmentParagraphs(plan) {
     if (!usesSalary(plan) || !plan.cafeteria_plan_name) return null;
     var capShare = plan.funding_mode === 'combined'
-      ? 'Employer grants and salary reduction attributable to an employee share that maximum. Salary reduction is limited to the remaining amount after reservation of the annual employer grant of ' + money(plan, plan.employer_annual_grant) + '.'
+      ? combinedShareSentence(plan)
       : 'Salary reduction contributions attributable to an employee may not exceed that cap.';
     return [
       { style: 'Title', text: 'Amendment to ' + plan.cafeteria_plan_name },
@@ -906,15 +945,26 @@ var S128Docgen = (function () {
       { style: null, text: 'A participant may initiate, increase, decrease, or revoke a salary reduction election for this benefit prospectively at any time during the plan year. No qualifying life event is required. The participant must provide ' + plan.election_cutoff_days + ' calendar days of payroll processing notice. Administration must permit changes and revocations to become effective at least monthly and only as to salary not yet currently available. No retroactive election or change is permitted. This provision controls over a general irrevocability or change-in-status restriction in the cafeteria plan solely for this benefit.' },
       { style: 'Heading2', text: 'Payment, tax treatment, and compliance' },
       { style: null, text: 'Authorized deductions are remitted directly to independently verified Trump account trustees under the Section 128 program. Elections end or are adjusted when the participant or account becomes ineligible, the beneficiary’s growth period ends, the participant revokes an election, the maximum is reached, or a compliance limit applies. Payroll will apply federal gross income exclusion only to qualifying amounts and will retain applicable Social Security, Medicare, unemployment, and other required wage treatment. This amendment creates no payroll-tax exclusion.' },
-      { style: null, text: 'The employer will evaluate cafeteria plan nondiscrimination independently of Section 128 testing. The amendment does not establish an FSA grace period, carryover, uniform coverage rule, or prior-year contribution designation. Except for the specific benefit and election provisions above, the cafeteria plan remains governed by its existing terms and applicable law.' },
-      { style: null, text: 'Authorized representative: ' + plan.signer_name + '    Title: ' + plan.signer_title },
-      { style: null, text: 'Signature: ________________________________    Date: ________________' }
+      { style: null, text: 'The employer will evaluate cafeteria plan nondiscrimination independently of Section 128 testing. The amendment does not establish an FSA grace period, carryover, uniform coverage rule, or prior-year contribution designation. Except for the specific benefit and election provisions above, the cafeteria plan remains governed by its existing terms and applicable law.' }
+    ].concat(signatureBlock(plan));
+  }
+
+  function signatureBlock(plan) {
+    return [
+      { style: 'Heading2', text: 'Employer signature' },
+      { style: null, text: 'Authorized representative: ' + plan.signer_name },
+      { style: null, text: '' },
+      { style: null, text: 'Title: ' + plan.signer_title },
+      { style: null, text: '' },
+      { style: null, text: 'Signature: ________________________________' },
+      { style: null, text: '' },
+      { style: null, text: 'Date: ________________' }
     ];
   }
 
   function checklistLines(plan) {
     var lines = [
-      'Sign and date the plan before the effective date (' + longDate(plan.effective_date) + ').'
+      'Sign and date the plan (page 1) before the effective date (' + longDate(plan.effective_date) + ').'
     ];
     if (usesSalary(plan)) {
       lines.push('Add the Section 125 amendment to your cafeteria plan and sign it.');
@@ -946,6 +996,8 @@ var S128Docgen = (function () {
       '',
       'Here are the Section 128 program documents for ' + plan.employer_name + '.',
       attached,
+      '',
+      'Employee notices, salary-reduction election forms, and account designation forms aren\'t included.',
       ''
     ];
     checklistLines(plan).forEach(function (line, index) {
@@ -1169,15 +1221,15 @@ var S128Docgen = (function () {
   }
 
   function planFileName(plan) {
-    return safeFilePart(plan.employer_name) + '_Section_128_Plan_v0.4.docx';
+    return safeFilePart(plan.employer_name) + '_Section_128_Plan_v0.5.docx';
   }
 
   function amendmentFileName(plan) {
-    return safeFilePart(plan.employer_name) + '_Section_125_Amendment_v0.4.docx';
+    return safeFilePart(plan.employer_name) + '_Section_125_Amendment_v0.5.docx';
   }
 
   function guideFileName(plan) {
-    return safeFilePart(plan.employer_name) + '_Section_128_Implementation_Guide_v0.4.docx';
+    return safeFilePart(plan.employer_name) + '_Section_128_Implementation_Guide_v0.5.docx';
   }
 
   function pdfFileName(docxName) {

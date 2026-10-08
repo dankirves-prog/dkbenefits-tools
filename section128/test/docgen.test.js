@@ -54,9 +54,15 @@ function assertClean(xml, mode) {
   const text = plain(xml);
   assert.doesNotMatch(text, /\{\{|\}\}|\[\[|\]\]|\[\s*\]/);
   text.split('\n').forEach(function (line) {
-    if (line.includes('____')) assert.match(line, /Signature:/);
+    if (line.includes('____')) assert.match(line, /Signature:|Date:/);
   });
-  assert.match(text, /Signature: _{10,}\s+Date: _{8,}/);
+  assert.match(text, /Employer signature/);
+  assert.match(text, /Authorized representative: Ada Lopez/);
+  assert.match(text, /\nTitle: Owner/);
+  assert.match(text, /Signature: _{10,}/);
+  assert.match(text, /Date: _{8,}/);
+  assert.doesNotMatch(text, /Signature:[^\n]*Date:/);
+  assert.doesNotMatch(text, /Authorized representative:[^\n]*Title:/);
   assert.doesNotMatch(text, /Signature:[^\n]*October|Signature:[^\n]*2027/);
   let order = -1;
   for (let n = 1; n <= 12; n++) {
@@ -99,9 +105,9 @@ for (const [name, overrides, mode] of cases) {
     assert.match(packed.footer, /Prepared with DK Benefits/);
     assert.match(packed.footer, /Not effective until signed by the employer/);
     assert.doesNotMatch(packed.footer, /PAGE|Sample draft/);
-    assert.match(packed.core, /s128-v0\.4-2026-10-08/);
+    assert.match(packed.core, /s128-v0\.5-2026-10-08/);
     assert.doesNotMatch(S128Docgen.planFileName(plan), /DRAFT/);
-    assert.match(S128Docgen.planFileName(plan), /_v0\.4\.docx$/);
+    assert.match(S128Docgen.planFileName(plan), /_v0\.5\.docx$/);
     assert.match(packed.core, /DK Benefits LLC/);
     assert.doesNotMatch(packed.core, /python-docx/);
     assert.match(packed.core, new RegExp(plan.plan_name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
@@ -120,7 +126,7 @@ for (const [name, overrides, mode] of cases) {
     assert.equal((capLine.match(/\$2,500/g) || []).length, 1);
     if (overrides.annual_cap_mode === 'fixed') assert.match(capLine, /fixed employer cap does not increase automatically/);
     else assert.doesNotMatch(capLine, /fixed employer cap does not increase automatically/);
-    if (mode === 'combined') assert.match(plain(packed.document), /Salary reduction cannot consume the amount reserved/);
+    if (mode === 'combined') assert.match(plain(packed.document), /together cannot exceed the annual limit per employee/);
     if (overrides.annual_cap_mode === 'fixed') assert.match(plain(packed.document), /\$1,500|\$900|\$2,500/);
     const amendment = S128Docgen.buildAmendmentDocx(plan);
     if (mode === 'employer_only') {
@@ -129,9 +135,17 @@ for (const [name, overrides, mode] of cases) {
       const amendText = plain(textOf(amendment).document);
       assert.match(amendText, /Amendment to Northwind Cafeteria Plan/);
       assert.doesNotMatch(amendText, /Sample amendment|SAMPLE DRAFT/);
+      assert.match(amendText, /Employer signature/);
+      assert.match(amendText, /Authorized representative: Ada Lopez/);
       assert.match(amendText, /Signature: _{10,}/);
+      assert.match(amendText, /Date: _{8,}/);
+      assert.doesNotMatch(amendText, /Signature:[^\n]*Date:/);
+      assert.doesNotMatch(amendText, /Authorized representative:[^\n]*Title:/);
       assert.doesNotMatch(amendText, /\{\{|\[\s*\]/);
-      if (mode === 'combined') assert.match(amendText, /reservation of the annual employer grant of \$1,000/);
+      if (mode === 'combined') {
+        assert.match(amendText, /With a \$1,000 grant/);
+        assert.match(amendText, /\$1,500 through payroll/);
+      }
       if (mode === 'salary_reduction_only') {
         assert.doesNotMatch(amendText, /reservation of the annual employer grant/);
         assert.doesNotMatch(plain(packed.document), /cash substitute for an employer grant/);
@@ -175,7 +189,7 @@ test('implementation guide matches the funding design and the visitor email', fu
   const email = S128Docgen.visitorEmailText(combined, { contact_name: 'Ada Lopez' });
   const lines = S128Docgen.checklistLines(combined);
   assert.equal(lines.length, 6);
-  assert.match(guide, /1\. Sign and date the plan before the effective date/);
+  assert.match(guide, /1\. Sign and date the plan \(page 1\) before the effective date/);
   assert.match(guide, /2\. Add the Section 125 amendment to your cafeteria plan and sign it/);
   assert.match(guide, /box 12 code TA/);
   assert.match(guide, /Collect each employee’s child’s Trump account information and make sure the account is active\. Accounts the Treasury opened automatically must be claimed by a parent first\./);
@@ -184,6 +198,7 @@ test('implementation guide matches the funding design and the visitor email', fu
   assert.doesNotMatch(guide, /Who:|What:|When:|REG-101355|attorney|SAMPLE DRAFT/);
   lines.forEach(function (line) { assert.ok(email.indexOf(line) !== -1, line); });
   assert.match(email, /Hello Ada Lopez/);
+  assert.match(email, /Employee notices, salary-reduction election forms, and account designation forms aren't included/);
   assert.match(email, /Your tax advisor can help with anything specific to your situation/);
   assert.match(email, /Questions about DK Benefits’ services\? 407-476-5076/);
   assert.match(email, /isn't legal or tax advice/);
@@ -191,7 +206,7 @@ test('implementation guide matches the funding design and the visitor email', fu
   const grantOnly = planFor({ funding_mode: 'employer_only' });
   assert.equal(S128Docgen.checklistLines(grantOnly).length, 5);
   assert.doesNotMatch(S128Docgen.plainText(S128Docgen.guideParagraphs(grantOnly)), /Section 125 amendment/);
-  assert.match(S128Docgen.guideFileName(combined), /Northwind_Benefits_LLC_Section_128_Implementation_Guide_v0\.4\.docx/);
+  assert.match(S128Docgen.guideFileName(combined), /Northwind_Benefits_LLC_Section_128_Implementation_Guide_v0\.5\.docx/);
   assert.doesNotMatch(S128Docgen.guideFileName(combined), /DRAFT/);
   fs.writeFileSync(path.join(outDir, 'combined-guide.docx'), Buffer.from(S128Docgen.buildGuideDocx(combined)));
   fs.writeFileSync(path.join(artifactDir(), 'visitor-email-combined.txt'), email);
@@ -228,7 +243,7 @@ test('LibreOffice renders each funding method and pdf-lib matches the text', asy
   fs.writeFileSync(pdfPath, Buffer.from(pdfBytes));
   const pdfText = execFileSync('pdftotext', ['-layout', pdfPath, '-'], { encoding: 'utf8' });
   assert.match(pdfText, /Northwind Benefits LLC/);
-  assert.match(pdfText, /Salary reduction cannot consume/);
+  assert.match(pdfText, /together cannot exceed the annual limit/);
   assert.match(pdfText, /Prepared with DK Benefits/);
   assert.match(pdfText, /Not effective until signed by the employer/);
   assert.doesNotMatch(pdfText, /SAMPLE DRAFT/);
@@ -242,8 +257,11 @@ test('LibreOffice renders each funding method and pdf-lib matches the text', asy
   const amendmentPath = path.join(artifacts, 'combined-amendment-pdflib.pdf');
   fs.writeFileSync(amendmentPath, Buffer.from(amendmentPdf));
   const amendmentText = execFileSync('pdftotext', ['-layout', amendmentPath, '-'], { encoding: 'utf8' });
-  assert.match(amendmentText, /reservation of the annual employer grant of\s+\$1,000/);
+  assert.match(amendmentText, /With a\s+\$1,000 grant/);
+  assert.match(amendmentText, /Employer signature/);
+  assert.match(amendmentText, /Authorized representative/);
   assert.match(amendmentText, /Signature:/);
+  assert.match(amendmentText, /Date:/);
   const guidePdf = await S128Pdf.buildPdf(S128Docgen.guideParagraphs(plan), { title: 'Section 128 implementation guide' });
   const guidePath = path.join(artifacts, 'combined-guide-pdflib.pdf');
   fs.writeFileSync(guidePath, Buffer.from(guidePdf));
@@ -260,6 +278,10 @@ test('LibreOffice renders each funding method and pdf-lib matches the text', asy
   });
   fs.copyFileSync(path.join(artifacts, 'combined-plan-page-1.png'), path.join(artifacts, 'plan-page-1.png'));
   fs.copyFileSync(path.join(artifacts, 'combined-guide-page-1.png'), path.join(artifacts, 'guide-page-1.png'));
+  const page1 = execFileSync('pdftotext', ['-f', '1', '-l', '1', pdfPath, '-'], { encoding: 'utf8' });
+  assert.match(page1, /Employer signature/);
+  assert.match(page1, /Signature:/);
+  assert.match(page1, /Date:/);
   const info = execFileSync('pdfinfo', [pdfPath], { encoding: 'utf8' });
   const pageTotal = Number((info.match(/Pages:\s+(\d+)/) || [])[1] || 1);
   let signaturePage = 1;
@@ -270,5 +292,14 @@ test('LibreOffice renders each funding method and pdf-lib matches the text', asy
       break;
     }
   }
+  assert.equal(signaturePage, 1);
   fs.copyFileSync(path.join(artifacts, 'combined-plan-page-' + signaturePage + '.png'), path.join(artifacts, 'plan-signature-page.png'));
+  const amendInfo = execFileSync('pdfinfo', [amendmentPath], { encoding: 'utf8' });
+  const amendPages = Number((amendInfo.match(/Pages:\s+(\d+)/) || [])[1] || 1);
+  let amendSignaturePage = amendPages;
+  for (let n = 1; n <= amendPages; n++) {
+    const slice = execFileSync('pdftotext', ['-f', String(n), '-l', String(n), amendmentPath, '-'], { encoding: 'utf8' });
+    if (/Employer signature/.test(slice)) amendSignaturePage = n;
+  }
+  fs.copyFileSync(path.join(artifacts, 'combined-amendment-page-' + amendSignaturePage + '.png'), path.join(artifacts, 'amendment-signature.png'));
 });

@@ -75,8 +75,8 @@ var S128Pdf = (function () {
         var gap = style === 'Title' ? 8 : style ? 6 : 3;
         var lineHeight = size + 3;
         if (!text) {
-          ensure(10);
-          y -= 8;
+          ensure(18);
+          y -= 18;
           return;
         }
         var lines = wrap(text, useFont, size, maxWidth);

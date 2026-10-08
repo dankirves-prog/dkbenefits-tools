@@ -186,6 +186,19 @@ fieldset {
 .choice input { margin-top: 4px; width: 18px; height: 18px; flex: 0 0 auto; }
 .choice span { display: block; }
 .choice small { display: block; color: var(--text-light); font-size: 0.9rem; }
+.choice-default { border-color: var(--navy); background: #f7f9fc; }
+.default-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--navy);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  vertical-align: 1px;
+}
 
 .note {
   background: #f4f7fb;

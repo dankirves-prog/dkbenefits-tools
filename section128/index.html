@@ -45,7 +45,8 @@
           </div>
           <div class="field">
             <label for="employer_ein">Employer EIN<span class="tip-slot" data-tip="employer_ein"></span></label>
-            <input id="employer_ein" name="employer_ein" type="text" inputmode="numeric" autocomplete="off" placeholder="12-3456789" required>
+            <input id="employer_ein" name="employer_ein" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. 12-3456789" required>
+            <p class="hint">e.g. 12-3456789</p>
             <p class="field-error" id="err_employer_ein" role="alert"></p>
           </div>
           <div class="field">
@@ -72,7 +73,8 @@
           </div>
           <div class="field">
             <label for="zip">ZIP code<span class="tip-slot" data-tip="zip"></span></label>
-            <input id="zip" name="zip" type="text" inputmode="numeric" autocomplete="postal-code" required>
+            <input id="zip" name="zip" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="e.g. 32801" required>
+            <p class="hint">e.g. 32801</p>
             <p class="field-error" id="err_zip" role="alert"></p>
           </div>
           <div class="field">
@@ -87,13 +89,14 @@
           </div>
           <div class="field">
             <label for="contact_email">Email<span class="tip-slot" data-tip="contact_email"></span></label>
-            <input id="contact_email" name="contact_email" type="email" autocomplete="email" required>
+            <input id="contact_email" name="contact_email" type="email" autocomplete="email" placeholder="e.g. name@company.com" required>
             <p class="hint" id="contactEmailHint">A copy of the sample documents is emailed to this address.</p>
             <p class="field-error" id="err_contact_email" role="alert"></p>
           </div>
           <div class="field">
             <label for="contact_phone">Phone<span class="tip-slot" data-tip="contact_phone"></span></label>
-            <input id="contact_phone" name="contact_phone" type="tel" autocomplete="tel" required>
+            <input id="contact_phone" name="contact_phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="e.g. (407) 555-0123" required>
+            <p class="hint">e.g. (407) 555-0123</p>
             <p class="field-error" id="err_contact_phone" role="alert"></p>
           </div>
         </div>
@@ -107,7 +110,7 @@
           <div class="choices" role="radiogroup" aria-label="Funding method">
             <label class="choice"><input type="radio" name="funding_mode" value="employer_only"><span>Employer grant only<span class="tip-slot" data-tip="funding_employer_only"></span><small>The company pays the same annual amount for each eligible employee.</small></span></label>
             <label class="choice"><input type="radio" name="funding_mode" value="salary_reduction_only"><span>Salary reduction only<span class="tip-slot" data-tip="funding_salary_reduction_only"></span><small>Employees set aside pay for a dependent’s account. This does not reduce Social Security or Medicare tax.</small></span></label>
-            <label class="choice"><input type="radio" name="funding_mode" value="combined"><span>Employer grant and salary reduction<span class="tip-slot" data-tip="funding_combined"></span><small>The grant is reserved first. Employees may use the remaining room.</small></span></label>
+            <label class="choice"><input type="radio" name="funding_mode" value="combined"><span>Employer grant and salary reduction<span class="tip-slot" data-tip="funding_combined"></span><small>Together they can’t exceed the $2,500 limit. Example: a $1,000 grant leaves up to $1,500 through payroll.</small></span></label>
           </div>
           <p class="field-error" id="err_funding_mode" role="alert"></p>
         </fieldset>
@@ -115,14 +118,14 @@
         <div class="only-grant">
           <div class="field">
             <label for="employer_annual_grant">Annual employer grant per employee<span class="tip-slot" data-tip="employer_annual_grant"></span></label>
-            <input id="employer_annual_grant" name="employer_annual_grant" type="text" inputmode="numeric" placeholder="1000">
-            <p class="hint">Whole dollars. The same amount for each eligible employee, once per calendar year.</p>
+            <input id="employer_annual_grant" name="employer_annual_grant" type="text" inputmode="numeric" placeholder="e.g. 1,000">
+            <p class="hint">Whole dollars, e.g. 1,000. The same amount for each eligible employee, once per calendar year.</p>
             <p class="field-error" id="err_employer_annual_grant" role="alert"></p>
           </div>
           <fieldset>
             <legend class="choice-legend">Grant recipients<span class="tip-slot" data-tip="grant_recipients"></span></legend>
             <div class="choices">
-              <label class="choice"><input type="radio" name="allow_employee_account" value="no"><span>Eligible dependent accounts only<span class="tip-slot" data-tip="grant_dependents"></span><small>The usual design.</small></span></label>
+              <label class="choice choice-default"><input type="radio" name="allow_employee_account" value="no" checked><span>Eligible dependents’ accounts only <span class="default-tag">(Default)</span><span class="tip-slot" data-tip="grant_dependents"></span><small>Recommended default.</small></span></label>
               <label class="choice"><input type="radio" name="allow_employee_account" value="yes"><span>Dependent accounts and an eligible employee’s own account<span class="tip-slot" data-tip="grant_own_account"></span><small>Extra conditions apply to an employee’s own account.</small></span></label>
             </div>
             <p class="field-error" id="err_allow_employee_account" role="alert"></p>
@@ -139,7 +142,7 @@
         </fieldset>
         <div class="field only-fixed hidden">
           <label for="fixed_annual_cap">Fixed annual cap<span class="tip-slot" data-tip="fixed_annual_cap"></span></label>
-          <input id="fixed_annual_cap" name="fixed_annual_cap" type="text" inputmode="numeric" placeholder="1500">
+          <input id="fixed_annual_cap" name="fixed_annual_cap" type="text" inputmode="numeric" placeholder="e.g. 1,000">
           <p class="field-error" id="err_fixed_annual_cap" role="alert"></p>
         </div>
         <p class="note capacity hidden" id="capacityNote" aria-live="polite"></p>
@@ -162,13 +165,13 @@
           <div class="field">
             <label for="waiting_days">Waiting period (calendar days)<span class="tip-slot" data-tip="waiting_days"></span></label>
             <input id="waiting_days" name="waiting_days" type="text" inputmode="numeric" value="0">
-            <p class="hint">Use 0 if employees are eligible on hire. Maximum 365.</p>
+            <p class="hint">Whole days only, from 0 to 365. Use 0 if employees are eligible on hire.</p>
             <p class="field-error" id="err_waiting_days" role="alert"></p>
           </div>
           <div class="field">
             <label for="effective_date">Program effective date<span class="tip-slot" data-tip="effective_date"></span></label>
             <input id="effective_date" name="effective_date" type="date" required>
-            <p class="hint">On or after July 4, 2026. The signature date is not filled in.</p>
+            <p class="hint">YYYY-MM-DD. On or after July 4, 2026. The signature date is not filled in.</p>
             <p class="field-error" id="err_effective_date" role="alert"></p>
           </div>
           <div class="field span-2">
@@ -276,7 +279,7 @@
             <div class="field only-cafeteria">
               <label for="cafeteria_amendment_date">Amendment effective date<span class="tip-slot" data-tip="cafeteria_amendment_date"></span></label>
               <input id="cafeteria_amendment_date" name="cafeteria_amendment_date" type="date">
-              <p class="hint">Today or a later date. The amendment cannot reach back.</p>
+              <p class="hint">YYYY-MM-DD. Today or a later date. The amendment cannot reach back.</p>
               <p class="field-error" id="err_cafeteria_amendment_date" role="alert"></p>
             </div>
             <div class="field">
@@ -305,7 +308,7 @@
         <h2>Your documents</h2>
         <div id="emailStatus" class="status" role="status"></div>
         <div class="downloads" id="downloadList"></div>
-        <p class="hint">Employee forms and notices are prepared separately.</p>
+        <p class="note" id="employeeFormsNote">About employee forms: Employee notices, salary-reduction election forms, and account designation forms aren't included. Your payroll provider or tax advisor can help you prepare them. DK Benefits does not sell, market, open, or administer Trump accounts, and does not prepare these forms.</p>
         <button class="btn-secondary hidden" id="btnRetry" type="button">Retry email</button>
       </section>
 

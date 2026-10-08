@@ -588,11 +588,86 @@
     var hint = $('contactEmailHint');
     if (hint) hint.textContent = 'A copy of the sample documents is emailed to this address when delivery is on.';
   }
+  function digitsBeforeCaret(value, caret) {
+    return (String(value || '').slice(0, caret).match(/\d/g) || []).length;
+  }
+  function caretAfterDigits(formatted, count) {
+    if (count <= 0) return 0;
+    var seen = 0;
+    for (var i = 0; i < formatted.length; i++) {
+      if (/\d/.test(formatted.charAt(i))) {
+        seen++;
+        if (seen === count) return i + 1;
+      }
+    }
+    return formatted.length;
+  }
+  function bindLiveMask(input, format) {
+    function apply() {
+      var start = input.selectionStart || 0;
+      var count = digitsBeforeCaret(input.value, start);
+      var next = format(input.value);
+      if (next === input.value) return;
+      input.value = next;
+      var pos = caretAfterDigits(next, count);
+      if (input.setSelectionRange) input.setSelectionRange(pos, pos);
+    }
+    function removeDigit(index) {
+      var all = String(input.value || '').replace(/\D/g, '');
+      if (index < 0 || index >= all.length) return;
+      input.value = format(all.slice(0, index) + all.slice(index + 1));
+      var pos = caretAfterDigits(input.value, index);
+      if (input.setSelectionRange) input.setSelectionRange(pos, pos);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    input.addEventListener('input', apply);
+    input.addEventListener('keydown', function (event) {
+      if (event.key !== 'Backspace' && event.key !== 'Delete') return;
+      var start = input.selectionStart;
+      var end = input.selectionEnd;
+      if (start == null || start !== end) return;
+      var value = input.value || '';
+      if (event.key === 'Backspace' && start > 0 && /\D/.test(value.charAt(start - 1))) {
+        event.preventDefault();
+        removeDigit(digitsBeforeCaret(value, start) - 1);
+      } else if (event.key === 'Delete' && start < value.length && /\D/.test(value.charAt(start))) {
+        event.preventDefault();
+        removeDigit(digitsBeforeCaret(value, start));
+      }
+    });
+  }
+  function applyWaitingGate(input) {
+    var raw = String(input.value || '');
+    var cut = raw.search(/[^\d]/);
+    var digits = cut === -1 ? raw : raw.slice(0, cut);
+    var invalidChars = cut !== -1;
+    var message = '';
+    if (/^\d+$/.test(digits)) {
+      var n = Number(digits);
+      if (n > 365) {
+        digits = input.dataset.lastValid || '0';
+        message = 'Use 0 to 365 calendar days. A longer wait is outside this sample.';
+      } else {
+        digits = String(n);
+        input.dataset.lastValid = digits;
+        if (invalidChars) message = 'Enter the waiting period as a whole number of days.';
+      }
+    } else if (invalidChars) {
+      message = 'Enter the waiting period as a whole number of days.';
+    }
+    if (input.value !== digits) input.value = digits;
+    input.dataset.gateMessage = message;
+  }
   function onFieldEdited(event) {
     var target = event.target;
     if (!target) return;
     clearFieldError(target.id);
     if (target.name) clearFieldError(target.name);
+    if (target.id === 'waiting_days' && target.dataset.gateMessage) {
+      var box = $('err_waiting_days');
+      if (box) box.textContent = target.dataset.gateMessage;
+      target.setAttribute('aria-invalid', 'true');
+    }
     syncConditional();
   }
   function init() {
@@ -602,6 +677,21 @@
     syncEmailCopy();
     $('employer_name').addEventListener('change', suggestName);
     $('plan_name').addEventListener('input', function () { planNameTouched = true; });
+    bindLiveMask($('employer_ein'), S128Model.formatEinLive);
+    bindLiveMask($('contact_phone'), S128Model.formatPhoneLive);
+    var waiting = $('waiting_days');
+    waiting.dataset.lastValid = /^\d+$/.test(waiting.value) && Number(waiting.value) <= 365 ? String(Number(waiting.value)) : '0';
+    waiting.addEventListener('input', function () { applyWaitingGate(waiting); });
+    waiting.addEventListener('keydown', function (event) {
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.key.length === 1 && !/\d/.test(event.key)) {
+        event.preventDefault();
+        waiting.dataset.gateMessage = 'Enter the waiting period as a whole number of days.';
+        var box = $('err_waiting_days');
+        if (box) box.textContent = waiting.dataset.gateMessage;
+        waiting.setAttribute('aria-invalid', 'true');
+      }
+    });
     document.getElementById('wizard').addEventListener('change', onFieldEdited);
     document.getElementById('wizard').addEventListener('input', onFieldEdited);
     $('btnNext').addEventListener('click', function () {

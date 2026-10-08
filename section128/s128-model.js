@@ -1,10 +1,10 @@
 /**
  * Section 128 Trump Account Contribution Program — validation, limits, review flags.
- * Template s128-v0.4-2026-10-08. Guidance as of October 8, 2026.
+ * Template s128-v0.5-2026-10-08. Guidance as of October 8, 2026.
  * Same rules run in the browser and in the Apps Script.
  */
 var S128Model = (function () {
-  var TEMPLATE_VERSION = 's128-v0.4-2026-10-08';
+  var TEMPLATE_VERSION = 's128-v0.5-2026-10-08';
   var GUIDANCE_AS_OF = '2026-10-08';
   var FIRST_CONTRIBUTION_DATE = '2026-07-04';
   var PUBLISHED_S128_CEILING = 2500;
@@ -81,16 +81,43 @@ var S128Model = (function () {
     return d.slice(0, 2) + '-' + d.slice(2);
   }
 
-  function normalizePhone(raw) {
+  function formatEinLive(raw) {
+    var d = digitsOnly(raw).slice(0, 9);
+    if (d.length < 3) return d;
+    return d.slice(0, 2) + '-' + d.slice(2);
+  }
+
+  function phoneDigits(raw) {
     var d = digitsOnly(raw);
-    if (d.length === 11 && d.charAt(0) === '1') d = d.slice(1);
-    if (d.length !== 10) return null;
+    if (d.charAt(0) === '1' && d.length > 10) d = d.slice(1);
+    return d.slice(0, 16);
+  }
+
+  function normalizePhone(raw) {
+    var d = phoneDigits(raw);
+    if (d.length < 10) return null;
     return d;
   }
 
   function formatPhone(d) {
-    if (!d || d.length !== 10) return '';
-    return '(' + d.slice(0, 3) + ') ' + d.slice(3, 6) + '-' + d.slice(6);
+    if (!d || d.length < 10) return '';
+    var main = '(' + d.slice(0, 3) + ') ' + d.slice(3, 6) + '-' + d.slice(6, 10);
+    var ext = d.slice(10, 16);
+    return ext ? main + ' ext. ' + ext : main;
+  }
+
+  function formatPhoneLive(raw) {
+    var d = phoneDigits(raw);
+    if (!d) return '';
+    var main = d.slice(0, Math.min(10, d.length));
+    var ext = d.length > 10 ? d.slice(10) : '';
+    var out;
+    if (main.length < 3) out = '(' + main;
+    else if (main.length === 3) out = '(' + main + ')';
+    else if (main.length <= 6) out = '(' + main.slice(0, 3) + ') ' + main.slice(3);
+    else out = '(' + main.slice(0, 3) + ') ' + main.slice(3, 6) + '-' + main.slice(6);
+    if (ext) out += ' ext. ' + ext;
+    return out;
   }
 
   function validEmail(value) {
@@ -246,7 +273,11 @@ var S128Model = (function () {
       return 'Salary reduction for ' + info.year + ' is limited to the Section 128(b) amount for that year. The indexed figure has not been published, so this draft does not state a dollar capacity above the last published limit of ' + formatMoney(info.publishedCeiling) + '. Salary reduction can fund dependents’ accounts only.';
     }
     if (plan.funding_mode === 'combined') {
-      return 'For ' + info.year + ', employees may elect up to ' + formatMoney(info.room) + ' per year through payroll after the employer grant is reserved. Salary reduction can fund dependents’ accounts only. It does not reduce Social Security or Medicare tax.';
+      var ceiling = info.statutory || info.cap;
+      var together = ceiling
+        ? 'The employer grant and employee salary reduction together can\'t exceed the ' + formatMoney(ceiling) + ' annual limit per employee.'
+        : 'The employer grant and employee salary reduction together can\'t exceed the annual limit per employee.';
+      return together + ' With a ' + formatMoney(plan.employer_annual_grant || 0) + ' grant, an employee can elect up to ' + formatMoney(info.room) + ' through payroll. Salary reduction can fund dependents’ accounts only. It does not reduce Social Security or Medicare tax.';
     }
     return 'For ' + info.year + ', employees may elect up to ' + formatMoney(info.room) + ' per year through payroll, for dependents’ accounts only. Salary reduction does not reduce Social Security or Medicare tax.';
   }
@@ -542,7 +573,9 @@ var S128Model = (function () {
     todayIso: todayIso,
     formatLongDate: formatLongDate,
     formatMoney: formatMoney,
+    formatEinLive: formatEinLive,
     formatPhone: formatPhone,
+    formatPhoneLive: formatPhoneLive,
     suggestPlanName: suggestPlanName,
     fundingLabel: fundingLabel,
     entityLabel: entityLabel,
