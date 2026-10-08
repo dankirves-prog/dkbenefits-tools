@@ -689,3 +689,43 @@ test('the merged script is the paste-ready file and the page still posts the fie
   assert.equal(live.includes('AKfycby4-ZxTQfsAgIBO0JYSngccVoj5HRKtNshy6N2XlJhbxaEk2oW7b_xIRBGlcSq0CZ0z'), false);
   assert.equal(previewJs.includes('https://script.google.com/macros/s/AKfycby4-ZxTQfsAgIBO0JYSngccVoj5HRKtNshy6N2XlJhbxaEk2oW7b_xIRBGlcSq0CZ0z/exec'), true);
 });
+
+test('new activity methods post once and the original methods still post', async () => {
+  const storage = memoryStorage();
+  const sent = [];
+  const tracker = activity.createQuoteActivityTracker({
+    storage,
+    post(payload) {
+      sent.push(payload);
+      return Promise.resolve({ ok: true });
+    },
+    now: () => NOW
+  });
+  await tracker.onQuoteAccessed({ firstName: 'Quote page accessed', email: '', phone: '' });
+  await tracker.onQuoteAccessed({ firstName: 'Quote page accessed' });
+  await tracker.onGroupSize({ firstName: 'Group size', answers: { employees: '12', enrolling: '' } });
+  await tracker.onGroupSize({ firstName: 'Group size' });
+  await tracker.onContributionIdentified({ firstName: 'Contribution identified' });
+  await tracker.onContributionIdentified({ firstName: 'again' });
+  await tracker.onQuoteStarted({ firstName: 'Quote process started', email: '', phone: '' });
+  await tracker.onRatesRendered({
+    plans,
+    visibleGroups: ['top', 'low'],
+    details: { firstName: 'Rates displayed' }
+  });
+  await tracker.onRatesRendered({ plans, visibleGroups: ['top', 'low'], details: { firstName: 'Rates displayed' } });
+  assert.deepEqual(sent.map((payload) => payload.event), [
+    'quote_accessed',
+    'group_size',
+    'contribution_identified',
+    'quote_started',
+    'rates_displayed'
+  ]);
+  assert.equal(sent[0].firstName, 'Quote page accessed');
+  assert.equal(sent[1].answers.employees, '12');
+  assert.equal(sent[2].firstName, 'Contribution identified');
+  assert.equal(sent[3].firstName, 'Quote process started');
+  assert.equal(sent[4].firstName, 'Rates displayed');
+  assert.equal(sent[3].event, 'quote_started');
+  assert.equal(sent[4].event, 'rates_displayed');
+});

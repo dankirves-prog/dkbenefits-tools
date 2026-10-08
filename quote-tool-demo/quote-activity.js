@@ -14,6 +14,9 @@
   var UTMS_KEY = 'dkb_quote_utms';
   var STARTED_KEY = 'dkb_quote_started';
   var RATES_KEY = 'dkb_rates_notified';
+  var ACCESSED_KEY = 'dkb_quote_accessed';
+  var GROUP_KEY = 'dkb_group_size';
+  var CONTRIB_KEY = 'dkb_contribution_identified';
   var UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
   function hasDisplayableRates(plan) {
@@ -179,6 +182,24 @@
       });
     }
 
+    function onQuoteAccessed(details) {
+      return postOnce(ACCESSED_KEY, 'quote_accessed', details).catch(function (error) {
+        return { sent: false, error: error };
+      });
+    }
+
+    function onGroupSize(details) {
+      return postOnce(GROUP_KEY, 'group_size', details).catch(function (error) {
+        return { sent: false, error: error };
+      });
+    }
+
+    function onContributionIdentified(details) {
+      return postOnce(CONTRIB_KEY, 'contribution_identified', details).catch(function (error) {
+        return { sent: false, error: error };
+      });
+    }
+
     function onRatesRendered(input) {
       var classification = classifyDisplayedRates(input && input.plans, {
         error: input && input.error,
@@ -212,6 +233,9 @@
       getUtms: readUtms,
       onQuoteStarted: onQuoteStarted,
       onRatesRendered: onRatesRendered,
+      onQuoteAccessed: onQuoteAccessed,
+      onGroupSize: onGroupSize,
+      onContributionIdentified: onContributionIdentified,
       decorateLeadPayload: decorateLeadPayload
     };
   }
