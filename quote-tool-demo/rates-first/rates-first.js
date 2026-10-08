@@ -1134,7 +1134,7 @@
             typing.focus({ preventScroll: true });
           }
         }
-        if (guardSettle) win.setTimeout(function () { blockCountSettle -= 1; }, 50);
+        if (guardSettle) blockCountSettle -= 1;
       }
     }
 
