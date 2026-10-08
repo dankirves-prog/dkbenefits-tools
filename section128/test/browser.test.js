@@ -104,6 +104,22 @@ async function fillAdmin(page, mode) {
   }
 }
 
+test('step 2 Next registers on the first click at 390px', async function () {
+  const page = await openPage(390);
+  assert.equal(await page.evaluate(function () { return getComputedStyle(document.documentElement).scrollBehavior; }), 'auto');
+  assert.match(await page.$eval('#err_effective_date', function (el) { return el.previousElementSibling.textContent; }), /e\.g\. 01\/01\/2027/);
+  assert.doesNotMatch(await page.content(), /YYYY-MM-DD/);
+  await fillCompany(page);
+  await page.click('#btnNext');
+  assert.match(await page.$eval('#stepTitle', function (el) { return el.textContent; }), /Benefit design/);
+  await page.evaluate(function () {
+    document.getElementById('btnNext').scrollIntoView({ block: 'end', behavior: 'auto' });
+  });
+  await page.click('#btnNext');
+  assert.match(await page.$eval('#err_funding_mode', function (el) { return el.textContent; }), /funded/);
+  await page.close();
+});
+
 test('labels, invalid EIN, and back navigation keep answers', async function () {
   const page = await openPage(1440);
   const label = await page.$eval('label[for="employer_name"]', function (el) { return el.textContent; });

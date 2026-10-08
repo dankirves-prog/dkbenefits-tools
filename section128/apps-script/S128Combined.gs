@@ -861,7 +861,6 @@ var S128Docgen = (function () {
     }
     rows.push({ style: null, text: adoptionClose(plan) });
     signatureBlock(plan).forEach(function (row) { rows.push(row); });
-    rows.push({ style: null, text: '' });
 
     rows.push({ style: 'Heading1', text: 'Plan purpose, definitions, and participation' });
     rows.push({ style: 'Heading2', text: 'Article 1 Purpose and governing terms' });
@@ -950,15 +949,21 @@ var S128Docgen = (function () {
   }
 
   function signatureBlock(plan) {
+    function line(text, spaceBefore) {
+      return {
+        text: text,
+        spaceBefore: spaceBefore,
+        spaceAfter: 40,
+        keepNext: true,
+        keepLines: true
+      };
+    }
     return [
-      { style: 'Heading2', text: 'Employer signature' },
-      { style: null, text: 'Authorized representative: ' + plan.signer_name },
-      { style: null, text: '' },
-      { style: null, text: 'Title: ' + plan.signer_title },
-      { style: null, text: '' },
-      { style: null, text: 'Signature: ________________________________' },
-      { style: null, text: '' },
-      { style: null, text: 'Date: ________________' }
+      { style: 'Heading2', text: 'Employer signature', keepNext: true, keepLines: true },
+      line('Authorized representative: ' + plan.signer_name, 120),
+      line('Title: ' + plan.signer_title, 160),
+      line('Signature: ________________________________', 200),
+      { text: 'Date: ________________', spaceBefore: 200, spaceAfter: 40, keepLines: true }
     ];
   }
 
@@ -1016,7 +1021,18 @@ var S128Docgen = (function () {
 
   function paragraphXml(row) {
     if (row.pageBreak) return '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
-    var pPr = row.style ? '<w:pPr><w:pStyle w:val="' + xml(row.style) + '"/></w:pPr>' : '';
+    var bits = [];
+    if (row.style) bits.push('<w:pStyle w:val="' + xml(row.style) + '"/>');
+    if (row.keepNext) bits.push('<w:keepNext/>');
+    if (row.keepLines) bits.push('<w:keepLines/>');
+    if (row.spaceBefore || row.spaceAfter != null) {
+      var spacing = '<w:spacing';
+      if (row.spaceBefore) spacing += ' w:before="' + row.spaceBefore + '"';
+      if (row.spaceAfter != null) spacing += ' w:after="' + row.spaceAfter + '"';
+      spacing += '/>';
+      bits.push(spacing);
+    }
+    var pPr = bits.length ? '<w:pPr>' + bits.join('') + '</w:pPr>' : '';
     var text = row.text || '';
     if (!text) return '<w:p>' + pPr + '</w:p>';
     return '<w:p>' + pPr + '<w:r><w:t xml:space="preserve">' + xml(text) + '</w:t></w:r></w:p>';

@@ -183,6 +183,51 @@ test('salary reduction without a confirmed cafeteria plan does not build an amen
   assert.match(text, /cannot receive Program contributions until a parent or guardian claims it/);
 });
 
+test('amendment signature stays on one page, including a long employer and plan name', function () {
+  const employer = 'Northwind Regional Benefits Cooperative LLC of Greater Orlando';
+  const planName = 'Northwind Regional Trump Account Contribution Program';
+  assert.ok(employer.length >= 60 && employer.length <= 70, employer.length);
+  assert.ok(planName.length >= 50 && planName.length <= 60, planName.length);
+  const plan = planFor(Object.assign({
+    funding_mode: 'combined',
+    employer_name: employer,
+    plan_name: planName,
+    employer_annual_grant: '1000'
+  }, salaryFields));
+  const bytes = S128Docgen.buildAmendmentDocx(plan);
+  const packed = textOf(bytes);
+  const xmlDoc = packed.document;
+  const at = xmlDoc.indexOf('Employer signature');
+  const signatureXml = xmlDoc.slice(Math.max(0, at - 500));
+  assert.ok(at > 0, 'signature heading');
+  assert.ok((signatureXml.match(/<w:keepNext\/>/g) || []).length >= 4);
+  assert.ok((signatureXml.match(/<w:keepLines\/>/g) || []).length >= 5);
+  assert.match(signatureXml, /w:spacing w:before="120"/);
+  assert.doesNotMatch(signatureXml.split('Date:')[0], /<w:p\/>|<w:p><\/w:p>/);
+  const planDoc = textOf(S128Docgen.buildPlanDocx(plan)).document;
+  const planAt = planDoc.indexOf('Employer signature');
+  const planXml = planDoc.slice(Math.max(0, planAt - 500), planAt + 1200);
+  assert.ok((planXml.match(/<w:keepNext\/>/g) || []).length >= 4);
+  assert.ok((planXml.match(/<w:keepLines\/>/g) || []).length >= 5);
+  const docx = path.join(outDir, 'long-name-amendment.docx');
+  fs.writeFileSync(docx, Buffer.from(bytes));
+  execFileSync('soffice', ['--headless', '--convert-to', 'pdf', '--outdir', outDir, docx], { timeout: 120000 });
+  const pdf = path.join(outDir, 'long-name-amendment.pdf');
+  const info = execFileSync('pdfinfo', [pdf], { encoding: 'utf8' });
+  assert.equal(Number((info.match(/Pages:\s+(\d+)/) || [])[1]), 1);
+  const page1 = execFileSync('pdftotext', ['-f', '1', '-l', '1', '-layout', pdf, '-'], { encoding: 'utf8' });
+  assert.match(page1, /Employer signature/);
+  assert.match(page1, /Authorized representative/);
+  assert.match(page1, /Title:/);
+  assert.match(page1, /Signature:/);
+  assert.match(page1, /Date:/);
+  const signatureAt = page1.indexOf('Signature:');
+  const dateAt = page1.indexOf('Date:');
+  assert.ok(signatureAt > -1 && dateAt > signatureAt);
+  const between = page1.slice(signatureAt, dateAt);
+  assert.doesNotMatch(between, /\f/);
+});
+
 test('implementation guide matches the funding design and the visitor email', function () {
   const combined = planFor(Object.assign({ funding_mode: 'combined', employer_annual_grant: '1000' }, salaryFields));
   const guide = S128Docgen.plainText(S128Docgen.guideParagraphs(combined));

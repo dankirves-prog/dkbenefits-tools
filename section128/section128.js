@@ -113,7 +113,10 @@
       if (input && input.matches && input.matches('input, select, textarea')) input.setAttribute('aria-invalid', 'true');
       if (!first) first = input || box;
     });
-    if (first && first.focus) first.focus();
+    if (first && first.focus) {
+      first.focus({ preventScroll: true });
+      if (first.scrollIntoView) first.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+    }
     return errors.some(function (err) { return !allow || allow[err.field]; });
   }
   function fundingMode() { return checked('funding_mode'); }
@@ -197,13 +200,14 @@
     if (heading) {
       heading.id = 'stepTitle';
       heading.setAttribute('tabindex', '-1');
-      heading.focus();
+      if (heading.focus) heading.focus({ preventScroll: true });
     }
     $('btnBack').classList.toggle('hidden', step === 1);
     $('btnNext').textContent = step === 4 ? 'Create documents' : 'Continue';
     $('btnNext').classList.toggle('hidden', step === 5);
     renderProgress();
     syncConditional();
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }
   function go(next) {
     if (next === 4) renderReview();
