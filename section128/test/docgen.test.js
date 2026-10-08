@@ -228,6 +228,46 @@ test('amendment signature stays on one page, including a long employer and plan 
   assert.doesNotMatch(between, /\f/);
 });
 
+test('pdf keeps a long-name signature block together', async function () {
+  const employer = 'Northwind Regional Benefits Cooperative LLC of Greater Orlando';
+  const cafeteria = 'Northwind Regional Employees Cafeteria and Welfare Benefits Plan for Hourly and Salaried Staff';
+  const title = 'Senior Vice President of Human Resources, Benefits Administration, and Payroll';
+  assert.ok(employer.length >= 60);
+  assert.ok(cafeteria.length >= 80);
+  assert.ok(title.length >= 70);
+  const plan = planFor(Object.assign({}, salaryFields, {
+    funding_mode: 'combined',
+    employer_name: employer,
+    plan_name: 'Northwind Regional Trump Account Contribution Program',
+    cafeteria_plan_name: cafeteria,
+    signer_title: title,
+    employer_annual_grant: '1000'
+  }));
+  async function assertTogether(bytes, label) {
+    const pdfPath = path.join(outDir, label + '.pdf');
+    fs.writeFileSync(pdfPath, Buffer.from(bytes));
+    const info = execFileSync('pdfinfo', [pdfPath], { encoding: 'utf8' });
+    const pageTotal = Number((info.match(/Pages:\s+(\d+)/) || [])[1] || 1);
+    let together = 0;
+    for (let n = 1; n <= pageTotal; n++) {
+      const slice = execFileSync('pdftotext', ['-f', String(n), '-l', String(n), '-layout', pdfPath, '-'], { encoding: 'utf8' });
+      const hasHeading = /Employer signature/.test(slice);
+      const hasSignature = /Signature:/.test(slice);
+      const hasDate = /Date:/.test(slice);
+      if (!hasHeading && !hasSignature && !hasDate) continue;
+      assert.equal(hasHeading, true, label + ' page ' + n + ' is missing the signature heading');
+      assert.equal(hasSignature, true, label + ' page ' + n + ' is missing the signature line');
+      assert.equal(hasDate, true, label + ' page ' + n + ' is missing the date line');
+      assert.ok(slice.indexOf('Employer signature') < slice.indexOf('Signature:'));
+      assert.ok(slice.indexOf('Signature:') < slice.indexOf('Date:'));
+      together++;
+    }
+    assert.equal(together, 1, label);
+  }
+  await assertTogether(await S128Pdf.buildPdf(S128Docgen.amendmentParagraphs(plan), { title: 'amendment' }), 'long-amendment-pdf');
+  await assertTogether(await S128Pdf.buildPdf(S128Docgen.planParagraphs(plan), { title: plan.plan_name }), 'long-plan-pdf');
+});
+
 test('implementation guide matches the funding design and the visitor email', function () {
   const combined = planFor(Object.assign({ funding_mode: 'combined', employer_annual_grant: '1000' }, salaryFields));
   const guide = S128Docgen.plainText(S128Docgen.guideParagraphs(combined));

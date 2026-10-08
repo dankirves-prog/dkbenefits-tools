@@ -61,12 +61,47 @@ var S128Pdf = (function () {
         if (!page || y - height < bottom) newPage();
       }
 
-      newPage();
-      (rows || []).forEach(function (row) {
-        if (row.pageBreak) {
-          newPage();
+      function metricsFor(row) {
+        var text = row.text || '';
+        var style = row.style;
+        var size = style === 'Title' ? 16 : style === 'Heading1' ? 13 : style === 'Heading2' ? 12 : 11;
+        var useFont = style ? bold : font;
+        var color = style ? navy : body;
+        var gap = style === 'Title' ? 8 : style ? 6 : 3;
+        var lineHeight = size + 3;
+        var before = row.spaceBefore ? row.spaceBefore / 20 : 0;
+        if (!text) {
+          return { empty: true, before: before, height: before + 8, size: size, useFont: useFont, color: color, lines: [], lineHeight: lineHeight, gap: gap, style: style };
+        }
+        var lines = wrap(text, useFont, size, maxWidth);
+        return {
+          empty: false,
+          before: before,
+          height: before + lines.length * lineHeight + gap,
+          size: size,
+          useFont: useFont,
+          color: color,
+          lines: lines,
+          lineHeight: lineHeight,
+          gap: gap,
+          style: style
+        };
+      }
+
+      function drawMeasured(metrics) {
+        if (metrics.before) y -= metrics.before;
+        if (metrics.empty) {
+          y -= 8;
           return;
         }
+        metrics.lines.forEach(function (line) {
+          page.drawText(line, { x: left, y: y - metrics.size, size: metrics.size, font: metrics.useFont, color: metrics.color });
+          y -= metrics.lineHeight;
+        });
+        y -= metrics.gap;
+      }
+
+      function drawLegacy(row) {
         var text = row.text || '';
         var style = row.style;
         var size = style === 'Title' ? 16 : style === 'Heading1' ? 13 : style === 'Heading2' ? 12 : 11;
@@ -94,7 +129,41 @@ var S128Pdf = (function () {
           y -= lineHeight;
         });
         y -= gap;
-      });
+      }
+
+      newPage();
+      var list = rows || [];
+      var index = 0;
+      var contentRoom = (pageHeight - top) - bottom;
+      while (index < list.length) {
+        var row = list[index];
+        if (row.pageBreak) {
+          newPage();
+          index++;
+          continue;
+        }
+        var end = index;
+        while (list[end].keepNext && end + 1 < list.length && !list[end + 1].pageBreak) end++;
+        if (end > index) {
+          var metrics = [];
+          var total = 0;
+          for (var g = index; g <= end; g++) {
+            var measured = metricsFor(list[g]);
+            metrics.push(measured);
+            total += measured.height;
+          }
+          if (total <= contentRoom) {
+            if (!page || y - total < bottom) newPage();
+            metrics.forEach(drawMeasured);
+          } else {
+            for (var h = index; h <= end; h++) drawLegacy(list[h]);
+          }
+          index = end + 1;
+          continue;
+        }
+        drawLegacy(row);
+        index++;
+      }
 
       pages.forEach(function (pg) {
         var label = S128Docgen.FOOTER;
