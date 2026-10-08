@@ -5,6 +5,7 @@
 })(typeof window !== 'undefined' ? window : globalThis, function () {
   var WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby4-ZxTQfsAgIBO0JYSngccVoj5HRKtNshy6N2XlJhbxaEk2oW7b_xIRBGlcSq0CZ0z/exec';
   var ACTIVITY_TRACKING_ENABLED = true;
+  var SETTLE_MS = 1500;
 
   function shouldPostLive(win) {
     var search = '';
@@ -74,6 +75,8 @@
     var tracker = settings.tracker || null;
     var live = !!settings.live;
     var now = settings.now || function () { return new Date(); };
+    var schedule = settings.schedule || function (fn, ms) { return setTimeout(fn, ms); };
+    var cancelSchedule = settings.cancel || function (id) { clearTimeout(id); };
     var pageUrl = settings.pageUrl || '';
     var ratesAsOfLabel = settings.ratesAsOfLabel || '';
     var sortMode = 'price';
@@ -87,6 +90,7 @@
     var mixManual = false;
     var leadState = '';
     var helpWith = '';
+    var flatEntry = '';
     var contribution = {
       model: '',
       employerPercent: null,
@@ -95,7 +99,10 @@
       payPeriods: null
     };
     var started = false;
-    var ratesNotified = false;
+    var groupNotified = false;
+    var contributionNotified = false;
+    var groupTimer = null;
+    var contribTimer = null;
 
     function parsedCount(raw) {
       if (String(raw || '').trim() === '') return null;
@@ -174,21 +181,94 @@
       return hasValidMix() ? numericMix(mix) : { employeeOnly: 0, employeeSpouse: 0, employeeChildren: 0, family: 0 };
     }
 
+    function activityDetails(label) {
+      var mixNumbers = numericMix(mix);
+      var mixPresent = QuoteMath.mixTotal(mixNumbers) > 0;
+      var shaped = QuoteMath.buildLeadPayload({
+        firstName: label,
+        email: '',
+        phone: '',
+        answers: answerBag(''),
+        tierMix: mixNumbers,
+        contribution: {
+          model: contribution.model,
+          employerPercent: contribution.employerPercent,
+          dependentPercent: contribution.dependentPercent,
+          flatAmount: contribution.flatAmount
+        },
+        selectedPlans: [],
+        visiblePlans: [],
+        submittedAt: '',
+        pageUrl: ''
+      });
+      var details = {
+        firstName: shaped.firstName,
+        email: shaped.email,
+        phone: shaped.phone,
+        answers: shaped.answers,
+        contribution: shaped.contribution,
+        selectedPlans: []
+      };
+      if (mixPresent) {
+        details.tierMix = {
+          employeeOnly: shaped.tierMix.employeeOnly,
+          employeeSpouse: shaped.tierMix.employeeSpouse,
+          employeeChildren: shaped.tierMix.employeeChildren,
+          family: shaped.tierMix.family
+        };
+      }
+      if (contribution.dependentPercent != null) details.contribution.dependentPercent = Number(contribution.dependentPercent);
+      if (contribution.payPeriods) details.contribution.payPeriods = Number(contribution.payPeriods);
+      return details;
+    }
+
     function noteInteraction() {
       if (started) return;
       started = true;
-      if (live && tracker) tracker.onQuoteStarted({ firstName: 'Quote process started', email: '', phone: '' });
+      if (live && tracker && tracker.onQuoteAccessed) tracker.onQuoteAccessed(activityDetails('Quote page accessed'));
     }
 
-    function maybeNotifyRates() {
-      if (!live || !tracker || ratesNotified) return;
-      if (enrollingCount() == null || !contributionReady()) return;
-      ratesNotified = true;
-      tracker.onRatesRendered({
-        plans: plans,
-        visibleGroups: visibleGroups(),
-        details: ratesDisplayedDetails()
-      });
+    function disarm(kind) {
+      if (kind === 'group') {
+        if (groupTimer == null) return;
+        cancelSchedule(groupTimer);
+        groupTimer = null;
+        return;
+      }
+      if (contribTimer == null) return;
+      cancelSchedule(contribTimer);
+      contribTimer = null;
+    }
+
+    function arm(kind) {
+      if (!live || !tracker) return;
+      if (kind === 'group' && groupNotified) return;
+      if (kind !== 'group' && contributionNotified) return;
+      disarm(kind);
+      var id = schedule(function () {
+        if (kind === 'group') groupTimer = null;
+        else contribTimer = null;
+        if (kind === 'group') commitGroupSize();
+        else commitContribution();
+      }, SETTLE_MS);
+      if (kind === 'group') groupTimer = id;
+      else contribTimer = id;
+    }
+
+    function commitGroupSize() {
+      if (!live || !tracker || groupNotified || !tracker.onGroupSize) return;
+      if (eligibleCount() == null && enrollingCount() == null) return;
+      groupNotified = true;
+      disarm('group');
+      tracker.onGroupSize(activityDetails('Group size'));
+    }
+
+    function commitContribution() {
+      if (!live || !tracker || contributionNotified || !tracker.onContributionIdentified) return;
+      if (!contributionReady()) return;
+      contributionNotified = true;
+      disarm('contrib');
+      tracker.onContributionIdentified(activityDetails('Contribution identified'));
     }
 
     function answerBag(stateValue) {
@@ -209,35 +289,6 @@
         dependentPercent: contribution.dependentPercent,
         flatAmount: contribution.flatAmount,
         payPeriods: contribution.payPeriods
-      };
-    }
-
-    function ratesDisplayedDetails() {
-      var shaped = QuoteMath.buildLeadPayload({
-        firstName: 'Rates displayed',
-        email: '',
-        phone: '',
-        answers: answerBag(''),
-        tierMix: numericMix(mix),
-        contribution: payloadContribution(),
-        selectedPlans: [],
-        visiblePlans: [],
-        submittedAt: '',
-        pageUrl: ''
-      });
-      return {
-        firstName: shaped.firstName,
-        email: shaped.email,
-        phone: shaped.phone,
-        answers: shaped.answers,
-        contribution: shaped.contribution,
-        tierMix: {
-          employeeOnly: shaped.tierMix.employeeOnly,
-          employeeSpouse: shaped.tierMix.employeeSpouse,
-          employeeChildren: shaped.tierMix.employeeChildren,
-          family: shaped.tierMix.family
-        },
-        selectedPlans: []
       };
     }
 
@@ -341,6 +392,7 @@
         sections: sections(),
         leadState: leadState,
         helpWith: helpWith,
+        flatEntry: flatEntry,
         summaryLine: summaryLine(),
         ratesAsOfLabel: ratesAsOfLabel,
         carriers: ['All'].concat(QuoteMath.listCarriers(plans)),
@@ -359,7 +411,7 @@
           if (!mixManual) fillEstimate();
         }
         mixError = '';
-        maybeNotifyRates();
+        disarm('group');
         return { ok: true };
       }
       var parsed = QuoteMath.parseWholeCount(text, { min: 1, label: which === 'eligible' ? 'eligible employees' : 'people enrolling' });
@@ -375,7 +427,7 @@
         enrolling = String(parsed.value);
         if (!mixManual) fillEstimate();
       }
-      maybeNotifyRates();
+      arm('group');
       return { ok: true };
     }
 
@@ -432,14 +484,33 @@
         if (partial.model != null) contribution.model = partial.model;
         if (partial.employerPercent != null) contribution.employerPercent = Number(partial.employerPercent);
         if (partial.dependentPercent != null) contribution.dependentPercent = Number(partial.dependentPercent);
-        if (partial.flatAmount != null) contribution.flatAmount = Number(partial.flatAmount);
+        if (Object.prototype.hasOwnProperty.call(partial, 'flatAmount')) {
+          contribution.flatAmount = partial.flatAmount == null || partial.flatAmount === '' ? null : Number(partial.flatAmount);
+        }
+        if (partial.entry) flatEntry = partial.entry;
         if (partial.clear) {
           contribution.model = '';
           contribution.employerPercent = null;
           contribution.dependentPercent = null;
           contribution.flatAmount = null;
+          flatEntry = '';
+          disarm('contrib');
+          return;
         }
-        maybeNotifyRates();
+        if (partial.defer) {
+          arm('contrib');
+          return;
+        }
+        disarm('contrib');
+        commitContribution();
+      },
+      settleGroupSize: function () {
+        disarm('group');
+        commitGroupSize();
+      },
+      settleContribution: function () {
+        disarm('contrib');
+        commitContribution();
       },
       resetMix: function () {
         noteInteraction();
@@ -448,6 +519,8 @@
         fillEstimate();
       },
       clearGroup: function () {
+        disarm('group');
+        disarm('contrib');
         eligible = '';
         enrolling = '';
         mix = copyMix(EMPTY_MIX);
@@ -458,6 +531,7 @@
         contribution.dependentPercent = null;
         contribution.flatAmount = null;
         contribution.payPeriods = null;
+        flatEntry = '';
       },
       setLeadState: function (value) { leadState = value || ''; },
       setHelp: function (value) { helpWith = value || ''; },
@@ -868,15 +942,18 @@
       $('dependent-percent-readout').textContent = state.contribution.dependentPercent == null ? '—' : state.contribution.dependentPercent + '%';
       document.querySelectorAll('[data-flat]').forEach(function (button) {
         var amount = state.contribution.flatAmount;
-        var match = button.getAttribute('data-flat') === 'custom'
-          ? state.contribution.model === 'flat' && amount != null && ['200', '300', '400'].indexOf(String(amount)) === -1
-          : String(amount) === button.getAttribute('data-flat');
+        var match = state.contribution.model === 'flat' && (button.getAttribute('data-flat') === 'custom'
+          ? state.flatEntry === 'custom'
+          : state.flatEntry !== 'custom' && String(amount) === button.getAttribute('data-flat'));
         button.setAttribute('aria-pressed', match ? 'true' : 'false');
       });
       var custom = $('flat-custom-amount');
-      var customOn = state.contribution.model === 'flat' && state.contribution.flatAmount != null && ['200', '300', '400'].indexOf(String(state.contribution.flatAmount)) === -1;
+      var customOn = state.contribution.model === 'flat' && state.flatEntry === 'custom';
       custom.hidden = !customOn;
       custom.parentElement.hidden = !customOn;
+      if (customOn && state.contribution.flatAmount != null && document.activeElement !== custom) {
+        custom.value = String(state.contribution.flatAmount);
+      }
       $('flat-readout').textContent = state.contribution.model === 'flat' && state.contribution.flatAmount
         ? QuoteMath.money(state.contribution.flatAmount) + ' per enrolled employee'
         : '';
@@ -1062,27 +1139,25 @@
       el.addEventListener('input', fn);
       el.addEventListener('change', fn);
     }
-    onField($('eligible'), function () {
-      var result = model.setEligible($('eligible').value);
-      $('mix-note').hidden = !!result.ok;
-      if (!result.ok) {
-        $('mix-note').hidden = false;
-        $('mix-note').textContent = result.error;
-        $('mix-note').classList.add('message-error');
-        return;
+    function bindCount(el, read) {
+      function apply(settle) {
+        var result = read(el.value);
+        if (!result.ok) {
+          $('mix-note').hidden = false;
+          $('mix-note').textContent = result.error;
+          $('mix-note').classList.add('message-error');
+          if (settle) model.settleGroupSize();
+          return;
+        }
+        if (settle) model.settleGroupSize();
+        render();
       }
-      render();
-    });
-    onField($('enrolling'), function () {
-      var result = model.setEnrolling($('enrolling').value);
-      if (!result.ok) {
-        $('mix-note').hidden = false;
-        $('mix-note').textContent = result.error;
-        $('mix-note').classList.add('message-error');
-        return;
-      }
-      render();
-    });
+      el.addEventListener('input', function () { apply(false); });
+      el.addEventListener('change', function () { apply(true); });
+      el.addEventListener('blur', function () { apply(true); });
+    }
+    bindCount($('eligible'), function (value) { return model.setEligible(value); });
+    bindCount($('enrolling'), function (value) { return model.setEnrolling(value); });
     document.querySelectorAll('[data-mix]').forEach(function (input) {
       onField(input, function () {
         var result = model.setMixField(input.getAttribute('data-mix'), input.value);
@@ -1124,29 +1199,53 @@
       });
     });
     $('employer-contribution').addEventListener('input', function () {
-      model.setContribution({ model: 'percent', employerPercent: Number($('employer-contribution').value) });
+      model.setContribution({ model: 'percent', employerPercent: Number($('employer-contribution').value), defer: true });
+      render();
+    });
+    $('employer-contribution').addEventListener('change', function () {
+      model.setContribution({ model: 'percent', employerPercent: Number($('employer-contribution').value), defer: true });
+      model.settleContribution();
       render();
     });
     $('dependent-contribution').addEventListener('input', function () {
-      model.setContribution({ model: 'percent', dependentPercent: Number($('dependent-contribution').value) });
+      model.setContribution({ model: 'percent', dependentPercent: Number($('dependent-contribution').value), defer: true });
+      render();
+    });
+    $('dependent-contribution').addEventListener('change', function () {
+      model.setContribution({ model: 'percent', dependentPercent: Number($('dependent-contribution').value), defer: true });
+      model.settleContribution();
       render();
     });
     document.querySelectorAll('[data-flat]').forEach(function (button) {
       button.addEventListener('click', function () {
         var value = button.getAttribute('data-flat');
         if (value === 'custom') {
-          model.setContribution({ model: 'flat', flatAmount: Number($('flat-custom-amount').value || 0) || null });
-          $('flat-custom-amount').hidden = false;
-          $('flat-custom-amount').parentElement.hidden = false;
+          var typed = Number($('flat-custom-amount').value || 0);
+          model.setContribution({ model: 'flat', flatAmount: typed > 0 ? typed : null, defer: true, entry: 'custom' });
           render();
+          $('flat-custom-amount').focus();
           return;
         }
-        model.setContribution({ model: 'flat', flatAmount: Number(value) });
+        model.setContribution({ model: 'flat', flatAmount: Number(value), entry: 'preset' });
         render();
       });
     });
+    function readCustomFlat() {
+      var amount = Number($('flat-custom-amount').value || 0);
+      return amount > 0 ? amount : null;
+    }
+    $('flat-custom-amount').addEventListener('input', function () {
+      model.setContribution({ model: 'flat', flatAmount: readCustomFlat(), defer: true, entry: 'custom' });
+      render();
+    });
     $('flat-custom-amount').addEventListener('change', function () {
-      model.setContribution({ model: 'flat', flatAmount: Number($('flat-custom-amount').value || 0) });
+      model.setContribution({ model: 'flat', flatAmount: readCustomFlat(), defer: true, entry: 'custom' });
+      model.settleContribution();
+      render();
+    });
+    $('flat-custom-amount').addEventListener('blur', function () {
+      model.setContribution({ model: 'flat', flatAmount: readCustomFlat(), defer: true, entry: 'custom' });
+      model.settleContribution();
       render();
     });
     $('mec-toggle').addEventListener('click', function () {
@@ -1230,6 +1329,7 @@
   return {
     WEBHOOK_URL: WEBHOOK_URL,
     ACTIVITY_TRACKING_ENABLED: ACTIVITY_TRACKING_ENABLED,
+    SETTLE_MS: SETTLE_MS,
     shouldPostLive: shouldPostLive,
     createModel: createModel,
     printHtml: printHtml,

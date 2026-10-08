@@ -784,7 +784,7 @@ test('rates-first demo shows rates immediately and prints with or without group 
 
     await openPage(PAGE + '?live=1');
     await evaluate(`document.querySelector('[data-carrier="UHC"]').click()`);
-    await waitFor(async () => posts.some((post) => post.body.includes('"event":"quote_started"')), 'quote started');
+    await waitFor(async () => posts.some((post) => post.body.includes('"event":"quote_accessed"')), 'quote accessed');
     await evaluate(`(() => {
       const set = (id, value) => {
         const el = document.getElementById(id);
@@ -794,15 +794,20 @@ test('rates-first demo shows rates immediately and prints with or without group 
       set('enrolling', '7');
       document.querySelector('[data-ee="50"]').click();
     })()`);
-    await waitFor(async () => posts.some((post) => post.body.includes('"event":"rates_displayed"')), 'rates displayed');
-    const started = JSON.parse(posts.find((post) => post.body.includes('"event":"quote_started"')).body);
-    const displayed = JSON.parse(posts.find((post) => post.body.includes('"event":"rates_displayed"')).body);
-    assert.equal(started.firstName, 'Quote process started');
-    assert.equal(displayed.firstName, 'Rates displayed');
+    await waitFor(async () => posts.some((post) => post.body.includes('"event":"contribution_identified"')), 'contribution identified');
+    const started = JSON.parse(posts.find((post) => post.body.includes('"event":"quote_accessed"')).body);
+    const group = JSON.parse(posts.find((post) => post.body.includes('"event":"group_size"')).body);
+    const displayed = JSON.parse(posts.find((post) => post.body.includes('"event":"contribution_identified"')).body);
+    assert.equal(started.firstName, 'Quote page accessed');
+    assert.equal(group.firstName, 'Group size');
+    assert.equal(group.answers.enrolling, '7');
+    assert.equal(displayed.firstName, 'Contribution identified');
     assert.equal(displayed.answers.state, '');
     assert.equal(displayed.answers.enrolling, '7');
     assert.equal(displayed.contribution.percent, 50);
-    assert.equal(posts.filter((post) => post.body.includes('"event":"rates_displayed"')).length, 1);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"quote_accessed"')).length, 1);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"group_size"')).length, 1);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"contribution_identified"')).length, 1);
     await evaluate(`(() => {
       document.querySelector('[data-help="Ready to enroll"]').click();
       document.querySelector('[data-state="Georgia"]').click();

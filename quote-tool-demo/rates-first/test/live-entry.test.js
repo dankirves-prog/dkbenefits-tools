@@ -260,20 +260,47 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
     assert.doesNotMatch(liveBoot.href, /[?&]live=/);
     await waitFor(async () => evaluate(`!!document.querySelector('[data-carrier="All"]')`), 'carrier chips');
     await evaluate(`document.querySelector('[data-carrier="All"]').click()`);
-    await waitFor(async () => posts.some((post) => post.body.includes('"event":"quote_started"')), 'live quote started');
+    await waitFor(async () => posts.some((post) => post.body.includes('"event":"quote_accessed"')), 'live quote accessed');
     await evaluate(`(() => {
-      document.querySelector('.save-toggle[data-plan-id="cigna-epo-1750-hsa"]').click();
-      const set = (id, value) => {
-        const el = document.getElementById(id);
-        el.value = value;
-        el.dispatchEvent(new Event('input', { bubbles: true }));
-        el.dispatchEvent(new Event('change', { bubbles: true }));
+      const eligible = document.getElementById('eligible');
+      const type = (value) => {
+        eligible.value = value;
+        eligible.dispatchEvent(new Event('input', { bubbles: true }));
       };
-      set('enrolling', '7');
-      document.querySelector('[data-ee="50"]').click();
+      type('1');
+      type('12');
     })()`);
-    await waitFor(async () => posts.some((post) => post.body.includes('"event":"rates_displayed"')), 'live rates displayed');
+    await sleep(250);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"group_size"')).length, 0);
+    await sleep(1600);
+    await waitFor(async () => posts.some((post) => post.body.includes('"event":"group_size"')), 'live group size');
     await evaluate(`(() => {
+      const eligible = document.getElementById('eligible');
+      eligible.value = '20';
+      eligible.dispatchEvent(new Event('change', { bubbles: true }));
+      const enrolling = document.getElementById('enrolling');
+      enrolling.value = '7';
+      enrolling.dispatchEvent(new Event('change', { bubbles: true }));
+      document.querySelector('[data-pay="26"]').click();
+      document.querySelector('[data-flat="custom"]').click();
+      const flat = document.getElementById('flat-custom-amount');
+      const type = (value) => {
+        flat.value = value;
+        flat.dispatchEvent(new Event('input', { bubbles: true }));
+      };
+      type('4');
+      type('40');
+      type('400');
+    })()`);
+    await sleep(250);
+    assert.equal(posts.filter((post) => post.body.includes('"event":"contribution_identified"')).length, 0);
+    await sleep(1600);
+    await waitFor(async () => posts.some((post) => post.body.includes('"event":"contribution_identified"')), 'live contribution');
+    await evaluate(`(() => {
+      const flat = document.getElementById('flat-custom-amount');
+      flat.value = '250';
+      flat.dispatchEvent(new Event('change', { bubbles: true }));
+      document.querySelector('.save-toggle[data-plan-id="cigna-epo-1750-hsa"]').click();
       document.querySelector('[data-state="Georgia"]').click();
       document.querySelector('[data-help="Ready to enroll"]').click();
       document.getElementById('first-name').value = 'Pat';
@@ -283,30 +310,41 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
     })()`);
     await waitFor(async () => posts.some((post) => post.body.includes('"event":"lead_submitted"')), 'live lead');
     await waitFor(async () => evaluate(`document.getElementById('lead-success').textContent.includes('Daniel will reach out soon')`), 'live thanks');
-    const started = JSON.parse(posts.find((post) => post.body.includes('"event":"quote_started"')).body);
-    const displayed = JSON.parse(posts.find((post) => post.body.includes('"event":"rates_displayed"')).body);
-    const lead = JSON.parse(posts.find((post) => post.body.includes('"event":"lead_submitted"')).body);
-    assert.equal(started.firstName, 'Quote process started');
-    assert.equal(displayed.firstName, 'Rates displayed');
-    assert.equal(displayed.answers.state, '');
-    assert.equal(displayed.answers.enrolling, '7');
-    assert.equal(lead.firstName, 'Pat');
-    assert.equal(lead.email, 'pat@example.com');
-    assert.equal(lead.phone, '407-555-0100');
-    assert.equal(lead.answers.state, 'Georgia');
-    assert.equal(lead.answers.enrolling, '7');
-    assert.equal(lead.contribution.model, 'percent');
-    assert.equal(lead.contribution.percent, 50);
-    assert.equal(lead.helpWith, 'Ready to enroll');
-    assert.equal(lead.selectedPlans[0].id, 'cigna-epo-1750-hsa');
-    assert.equal(lead.notes, undefined);
+    await sleep(200);
+    const bodies = posts.map((post) => JSON.parse(post.body));
+    assert.deepEqual(bodies.map((body) => body.event), ['quote_accessed', 'group_size', 'contribution_identified', 'lead_submitted']);
+    assert.equal(bodies[0].firstName, 'Quote page accessed');
+    assert.equal(bodies[0].email, '');
+    assert.equal(bodies[1].firstName, 'Group size');
+    assert.equal(bodies[1].answers.employees, '12');
+    assert.equal(bodies[1].answers.enrolling, '');
+    assert.equal(bodies[2].firstName, 'Contribution identified');
+    assert.equal(bodies[2].answers.employees, '20');
+    assert.equal(bodies[2].answers.enrolling, '7');
+    assert.equal(bodies[2].contribution.model, 'flat');
+    assert.equal(bodies[2].contribution.flatDollar, 400);
+    assert.equal(bodies[2].contribution.payPeriods, 26);
+    assert.equal(bodies[2].tierMix.employeeOnly, 4);
+    assert.equal(bodies[3].firstName, 'Pat');
+    assert.equal(bodies[3].email, 'pat@example.com');
+    assert.equal(bodies[3].phone, '407-555-0100');
+    assert.equal(bodies[3].answers.state, 'Georgia');
+    assert.equal(bodies[3].helpWith, 'Ready to enroll');
+    assert.equal(bodies[3].selectedPlans[0].id, 'cigna-epo-1750-hsa');
+    assert.equal(bodies[3].notes, undefined);
+    assert.ok(bodies.every((body) => body.sessionId));
     assert.ok(posts.every((post) => post.url.includes('lcSq0CZ0z')));
-    assert.equal(posts.filter((post) => post.method === 'POST').length, 3);
+    assert.equal(posts.filter((post) => post.method === 'POST').length, 4);
     assert.equal(leaked, false);
 
     await openTop(DEMO);
     await evaluate(`(() => {
       document.querySelector('[data-carrier="Cigna"]').click();
+      const eligible = document.getElementById('eligible');
+      eligible.value = '1';
+      eligible.dispatchEvent(new Event('input', { bubbles: true }));
+      eligible.value = '12';
+      eligible.dispatchEvent(new Event('input', { bubbles: true }));
       const set = (id, value) => {
         const el = document.getElementById(id);
         el.value = value;
@@ -322,7 +360,7 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
       document.getElementById('lead-form').requestSubmit();
     })()`);
     await waitFor(async () => evaluate(`document.getElementById('lead-success').textContent.includes('Demo mode, not sent')`), 'demo confirmation');
-    await sleep(500);
+    await sleep(1700);
     assert.equal(posts.length, 0, 'demo folder posted without ?live=1');
 
     async function assertHarness(width, height, phone) {
@@ -382,7 +420,7 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
       assert.equal(printed.important, true);
       assert.equal(printed.notes, true);
       assert.equal(printed.name, true);
-      await waitFor(async () => posts.some((post) => post.body.includes('"event":"quote_started"')), 'iframe quote started ' + width);
+      await waitFor(async () => posts.some((post) => post.body.includes('"event":"quote_accessed"')), 'iframe quote accessed ' + width);
       assert.ok(posts.every((post) => post.url.includes('lcSq0CZ0z')));
       posts.length = 0;
       return layout;

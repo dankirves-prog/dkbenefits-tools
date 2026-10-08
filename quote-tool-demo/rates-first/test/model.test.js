@@ -212,18 +212,45 @@ test('save, compare, carrier filter, and print work before any group info', () =
   assert.equal(featured(quote)[0].id, 'cigna-epo-1750-hsa');
 });
 
-test('lead state is collected on the form and activity stays off unless live', () => {
+function activityCalls() {
   const calls = [];
+  const queue = [];
   const tracker = {
-    onQuoteStarted(details) { calls.push(['started', details]); },
-    onRatesRendered(input) { calls.push(['rates', input.details]); },
+    onQuoteAccessed(details) { calls.push(['accessed', details]); },
+    onGroupSize(details) { calls.push(['group', details]); },
+    onContributionIdentified(details) { calls.push(['contribution', details]); },
     decorateLeadPayload(payload) { return Object.assign({ event: 'lead_submitted' }, payload); }
   };
-  const quiet = model({ tracker, live: false });
+  const clock = {
+    schedule(fn) {
+      const id = queue.length + 1;
+      queue.push({ id, fn });
+      return id;
+    },
+    cancel(id) {
+      const index = queue.findIndex((item) => item.id === id);
+      if (index >= 0) queue.splice(index, 1);
+    },
+    flush() {
+      queue.splice(0).forEach((item) => item.fn());
+    },
+    pending() { return queue.length; }
+  };
+  return { calls, tracker, clock };
+}
+
+test('lead state is collected on the form and activity stays off unless live', () => {
+  const quietLog = activityCalls();
+  const tracker = quietLog.tracker;
+  const calls = quietLog.calls;
+  const quiet = model({ tracker, live: false, schedule: quietLog.clock.schedule, cancel: quietLog.clock.cancel });
   quiet.setCarrier('UHC');
   quiet.setSort('price');
   quiet.toggleSaved('cigna-epo-1000', true);
   quiet.noteInteraction();
+  quiet.setEligible('12');
+  quiet.settleGroupSize();
+  quietLog.clock.flush();
   quiet.setEnrolling('7');
   quiet.setContribution({ model: 'percent', employerPercent: 50 });
   assert.equal(calls.length, 0);
@@ -251,26 +278,50 @@ test('lead state is collected on the form and activity stays off unless live', (
   assert.equal(emptyLead.answers.coverage, '');
   assert.equal(emptyLead.answers.timeline, '');
 
-  const live = model({ tracker, live: true });
+  const liveLog = activityCalls();
+  const live = model({
+    tracker: liveLog.tracker,
+    live: true,
+    schedule: liveLog.clock.schedule,
+    cancel: liveLog.clock.cancel
+  });
+  const liveCalls = liveLog.calls;
   live.setSort('carrier');
   live.setCarrier('PHCS');
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0][0], 'started');
-  assert.equal(calls[0][1].firstName, 'Quote process started');
+  assert.equal(liveCalls.length, 1);
+  assert.equal(liveCalls[0][0], 'accessed');
+  assert.equal(liveCalls[0][1].firstName, 'Quote page accessed');
+  assert.equal(liveCalls[0][1].email, '');
+  assert.equal(liveCalls[0][1].phone, '');
+  assert.equal(liveCalls[0][1].answers.employees, '');
+  assert.equal(liveCalls[0][1].answers.enrolling, '');
   live.setEnrolling('7');
-  assert.equal(calls.length, 1);
-  live.setContribution({ model: 'percent', employerPercent: 75, dependentPercent: 0 });
-  assert.equal(calls.length, 2);
-  assert.equal(calls[1][0], 'rates');
-  assert.equal(calls[1][1].firstName, 'Rates displayed');
-  assert.equal(calls[1][1].answers.state, '');
-  assert.equal(calls[1][1].answers.enrolling, '7');
-  assert.equal(calls[1][1].answers.priority, '');
-  assert.equal(calls[1][1].contribution.percent, 75);
-  assert.deepEqual(calls[1][1].tierMix, math.estimateSmartMix(7));
+  assert.equal(liveCalls.length, 1);
+  live.settleGroupSize();
+  assert.equal(liveCalls.length, 2);
+  assert.equal(liveCalls[1][0], 'group');
+  assert.equal(liveCalls[1][1].firstName, 'Group size');
+  assert.equal(liveCalls[1][1].answers.state, '');
+  assert.equal(liveCalls[1][1].answers.employees, '');
+  assert.equal(liveCalls[1][1].answers.enrolling, '7');
+  assert.equal(liveCalls[1][1].answers.priority, '');
+  assert.deepEqual(liveCalls[1][1].tierMix, math.estimateSmartMix(7));
+  live.setEnrolling('8');
+  live.settleGroupSize();
+  liveLog.clock.flush();
+  assert.equal(liveCalls.filter((call) => call[0] === 'group').length, 1);
   live.setPayCycle('26');
+  live.setContribution({ model: 'percent', employerPercent: 75, dependentPercent: 0 });
+  assert.equal(liveCalls.length, 3);
+  assert.equal(liveCalls[2][0], 'contribution');
+  assert.equal(liveCalls[2][1].firstName, 'Contribution identified');
+  assert.equal(liveCalls[2][1].answers.enrolling, '8');
+  assert.equal(liveCalls[2][1].contribution.percent, 75);
+  assert.equal(liveCalls[2][1].contribution.dependentPercent, 0);
+  assert.equal(liveCalls[2][1].contribution.payPeriods, 26);
+  assert.deepEqual(liveCalls[2][1].tierMix, math.estimateSmartMix(8));
   live.setContribution({ employerPercent: 50 });
-  assert.equal(calls.length, 2);
+  assert.equal(liveCalls.filter((call) => call[0] === 'contribution').length, 1);
   live.setLeadState('Other');
   live.setHelp('Ready to enroll');
   const lead = live.leadPayload({ firstName: 'Pat', email: 'pat@example.com', phone: '407-555-0100' });
@@ -278,7 +329,69 @@ test('lead state is collected on the form and activity stays off unless live', (
   assert.equal(lead.answers.state, 'Other');
   assert.equal(lead.helpWith, 'Ready to enroll');
   assert.equal(lead.email, 'pat@example.com');
-  assert.equal(calls.length, 2);
+  assert.equal(liveCalls.length, 3);
+  assert.equal(Object.hasOwn(lead.contribution, 'payPeriods'), false);
+  assert.equal(Object.hasOwn(lead.contribution, 'dependentPercent'), false);
+});
+
+test('group size and contribution wait for a settled value and send once', () => {
+  const log = activityCalls();
+  const quote = model({
+    tracker: log.tracker,
+    live: true,
+    schedule: log.clock.schedule,
+    cancel: log.clock.cancel
+  });
+  quote.setCarrier('Cigna');
+  quote.setEligible('1');
+  quote.setEligible('12');
+  assert.equal(log.calls.filter((call) => call[0] === 'group').length, 0);
+  assert.equal(log.clock.pending(), 1);
+  log.clock.flush();
+  const group = log.calls.find((call) => call[0] === 'group')[1];
+  assert.equal(group.firstName, 'Group size');
+  assert.equal(group.answers.employees, '12');
+  assert.equal(group.answers.enrolling, '');
+  assert.equal(Object.hasOwn(group, 'tierMix'), false);
+  quote.setEligible('15');
+  quote.settleGroupSize();
+  log.clock.flush();
+  assert.equal(log.calls.filter((call) => call[0] === 'group').length, 1);
+
+  quote.setEnrolling('7');
+  quote.settleGroupSize();
+  quote.setPayCycle('26');
+  quote.setContribution({ model: 'flat', flatAmount: 4, defer: true, entry: 'custom' });
+  quote.setContribution({ model: 'flat', flatAmount: 40, defer: true, entry: 'custom' });
+  quote.setContribution({ model: 'flat', flatAmount: 400, defer: true, entry: 'custom' });
+  assert.equal(log.calls.filter((call) => call[0] === 'contribution').length, 0);
+  log.clock.flush();
+  const contribution = log.calls.find((call) => call[0] === 'contribution')[1];
+  assert.equal(contribution.firstName, 'Contribution identified');
+  assert.equal(contribution.answers.employees, '15');
+  assert.equal(contribution.answers.enrolling, '7');
+  assert.equal(contribution.contribution.model, 'flat');
+  assert.equal(contribution.contribution.flatDollar, 400);
+  assert.equal(contribution.contribution.percent, null);
+  assert.equal(contribution.contribution.payPeriods, 26);
+  assert.deepEqual(contribution.tierMix, math.estimateSmartMix(7));
+  quote.setContribution({ model: 'flat', flatAmount: 500, defer: true, entry: 'custom' });
+  log.clock.flush();
+  assert.deepEqual(log.calls.map((call) => call[0]), ['accessed', 'group', 'contribution']);
+
+  const immediate = activityCalls();
+  const percent = model({
+    tracker: immediate.tracker,
+    live: true,
+    schedule: immediate.clock.schedule,
+    cancel: immediate.clock.cancel
+  });
+  percent.setContribution({ model: 'percent', employerPercent: 60 });
+  assert.deepEqual(immediate.calls.map((call) => call[0]), ['accessed', 'contribution']);
+  assert.equal(immediate.calls[1][1].answers.employees, '');
+  assert.equal(immediate.calls[1][1].answers.enrolling, '');
+  assert.equal(immediate.calls[1][1].contribution.percent, 60);
+  assert.equal(immediate.clock.pending(), 0);
 });
 
 test('the page does not gate rates behind the questionnaire', () => {
