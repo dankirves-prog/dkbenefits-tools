@@ -991,15 +991,14 @@
 
     function setCustomizeOpen(open) {
       document.body.classList.toggle('is-customizing', !!open);
-      document.body.classList.toggle('rf-customize-closed', desktopCustomize() && !open);
       $('customize-btn').setAttribute('aria-expanded', open ? 'true' : 'false');
     }
 
     function syncCustomize() {
       if (desktopCustomize()) {
-        if (!document.body.classList.contains('rf-customize-closed')) setCustomizeOpen(true);
+        document.body.classList.remove('is-customizing');
+        $('customize-btn').setAttribute('aria-expanded', 'true');
       } else {
-        document.body.classList.remove('rf-customize-closed');
         setCustomizeOpen(false);
       }
     }
@@ -1009,11 +1008,8 @@
 
     $('customize-btn').addEventListener('click', function () {
       model.noteInteraction();
-      if (desktopCustomize()) setCustomizeOpen(true);
-      else setCustomizeOpen(!document.body.classList.contains('is-customizing'));
-    });
-    $('customize-hide').addEventListener('click', function () {
-      setCustomizeOpen(false);
+      if (desktopCustomize()) return;
+      setCustomizeOpen(!document.body.classList.contains('is-customizing'));
     });
     $('contact-btn').addEventListener('click', openLead);
     $('drawer-send').addEventListener('click', openLead);
