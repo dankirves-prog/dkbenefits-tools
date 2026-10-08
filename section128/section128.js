@@ -93,6 +93,14 @@
     document.querySelectorAll('.field-error').forEach(function (el) { el.textContent = ''; });
     document.querySelectorAll('[aria-invalid="true"]').forEach(function (el) { el.removeAttribute('aria-invalid'); });
   }
+  function clearFieldError(name) {
+    if (!name) return;
+    var box = $('err_' + name);
+    if (box) box.textContent = '';
+    var input = $(name);
+    if (input) input.removeAttribute('aria-invalid');
+    document.querySelectorAll('[name="' + name + '"]').forEach(function (el) { el.removeAttribute('aria-invalid'); });
+  }
   function showErrors(errors, only) {
     var allow = only ? {} : null;
     if (only) only.forEach(function (name) { allow[name] = true; });
@@ -121,6 +129,20 @@
     document.querySelectorAll('.only-other').forEach(function (el) {
       el.classList.toggle('hidden', checked('eligibility_class_choice') !== 'other');
     });
+    var existingPlan = fieldValue('has_existing_125_plan');
+    var confirmedPlan = salary && existingPlan === 'yes';
+    var missingPlan = salary && (existingPlan === 'no' || existingPlan === 'unsure');
+    document.querySelectorAll('.only-cafeteria').forEach(function (el) {
+      el.classList.toggle('hidden', !confirmedPlan);
+    });
+    ['cafeteriaMissing', 'cafeteriaMissingAdmin'].forEach(function (id) {
+      var note = $(id);
+      if (note) note.classList.toggle('hidden', !missingPlan);
+    });
+    if (!confirmedPlan) {
+      clearFieldError('cafeteria_plan_name');
+      clearFieldError('cafeteria_amendment_date');
+    }
     var result = S128Model.validate(readForm(), { asOf: S128Model.todayIso() });
     var note = $('capacityNote');
     var message = result.ok || result.plan.funding_mode ? S128Model.capacityMessage(result.plan) : '';
@@ -198,7 +220,7 @@
     var result = S128Model.validate(readForm(), { asOf: S128Model.todayIso() });
     var flags = $('reviewFlags');
     if (result.review.required) {
-      flags.innerHTML = '<div class="review-flag"><h3>Daniel will review these items</h3><p>The document is still a draft. These points are listed in the lead. This is not an approval.</p><ul>' +
+      flags.innerHTML = '<div class="review-flag"><h3>Daniel will review these items</h3><p>The document is still a draft. These points are listed for Daniel to review. This is not an approval.</p><ul>' +
         result.review.reasons.map(function (reason) { return '<li>' + escapeHtml(reason) + '</li>'; }).join('') +
         '</ul></div>';
     } else {
@@ -232,8 +254,8 @@
         ['Administrator', plan.administrator_name],
         ['Administrator contact', plan.administrator_contact],
         ['Representative', plan.signer_name + (plan.signer_title ? ', ' + plan.signer_title : '')],
-        ['Section 125 plan', plan.cafeteria_plan_name || 'Not used'],
-        ['Amendment date', plan.cafeteria_amendment_date ? S128Model.formatLongDate(plan.cafeteria_amendment_date) : 'Not used'],
+        ['Section 125 plan', !S128Model.fundingUsesSalary(plan.funding_mode) ? 'Not used' : (plan.cafeteria_plan_name || 'Not confirmed. A cafeteria plan must be adopted or confirmed before salary reduction can start.')],
+        ['Amendment', !S128Model.fundingUsesSalary(plan.funding_mode) ? 'Not used' : (plan.cafeteria_plan_name ? S128Model.formatLongDate(plan.cafeteria_amendment_date) : 'Not prepared')],
         ['Processing notice', plan.election_cutoff_days == null ? 'Not used' : plan.election_cutoff_days + ' days']
       ])
     ].join('');
@@ -268,7 +290,9 @@
   function pendingKey(id) { return 'dkb_s128_pending_' + id; }
   function savePending(record) {
     try {
-      localStorage.setItem(pendingKey(record.submissionId), JSON.stringify(record));
+      var stored = Object.assign({}, record);
+      delete stored.files;
+      localStorage.setItem(pendingKey(record.submissionId), JSON.stringify(stored));
       localStorage.setItem('dkb_s128_pending_latest', record.submissionId);
     } catch (err) {}
   }
@@ -295,6 +319,20 @@
       review: result.review,
       sendVisitorCopy: true
     };
+  }
+  function bytesToBase64(bytes) {
+    var view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    var binary = '';
+    var chunk = 0x8000;
+    for (var i = 0; i < view.length; i += chunk) {
+      binary += String.fromCharCode.apply(null, view.subarray(i, i + chunk));
+    }
+    return btoa(binary);
+  }
+  function filesPayload(files) {
+    return files.map(function (file) {
+      return { name: file.name, mime: file.mime, dataBase64: bytesToBase64(file.bytes) };
+    });
   }
   function bytesToBlob(bytes, mime) {
     var copy = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
@@ -338,19 +376,31 @@
     $('downloadList').innerHTML = '';
     files.forEach(function (file) { addDownload(file.bytes, file.name, file.mime, file.label); });
   }
-  function attachPdf(plan) {
-    var jobs = [S128Pdf.buildPdf(S128Docgen.planParagraphs(plan), { title: plan.plan_name })];
+  function pdfFiles(plan) {
+    var jobs = [{
+      promise: S128Pdf.buildPdf(S128Docgen.planParagraphs(plan), { title: plan.plan_name }),
+      name: S128Docgen.pdfFileName(S128Docgen.planFileName(plan)),
+      label: 'Download PDF plan'
+    }];
     var amendmentRows = S128Docgen.amendmentParagraphs(plan);
-    if (amendmentRows) jobs.push(S128Pdf.buildPdf(amendmentRows, { title: 'Draft amendment' }));
-    return Promise.all(jobs).then(function (pdfs) {
-      addDownload(pdfs[0], S128Docgen.pdfFileName(S128Docgen.planFileName(plan)), 'application/pdf', 'Download PDF plan');
-      if (pdfs[1]) addDownload(pdfs[1], S128Docgen.pdfFileName(S128Docgen.amendmentFileName(plan)), 'application/pdf', 'Download PDF amendment');
-    }).catch(function () {
-      var note = document.createElement('p');
-      note.className = 'hint';
-      note.textContent = 'A matching PDF could not be created in this browser. Use the Word file.';
-      $('downloadList').appendChild(note);
-    });
+    if (amendmentRows) {
+      jobs.push({
+        promise: S128Pdf.buildPdf(amendmentRows, { title: 'Draft amendment' }),
+        name: S128Docgen.pdfFileName(S128Docgen.amendmentFileName(plan)),
+        label: 'Download PDF amendment'
+      });
+    }
+    return Promise.all(jobs.map(function (job) {
+      return job.promise.then(function (bytes) {
+        return { name: job.name, bytes: bytes, mime: 'application/pdf', label: job.label };
+      });
+    })).catch(function () { return []; });
+  }
+  function notePdfMissing() {
+    var note = document.createElement('p');
+    note.className = 'hint';
+    note.textContent = 'A matching PDF could not be created in this browser. Use the Word file.';
+    $('downloadList').appendChild(note);
   }
   function setStatus(kind, html) {
     var box = $('emailStatus');
@@ -363,23 +413,23 @@
   }
   function showEmailResult(body, errorText) {
     $('btnRetry').classList.add('hidden');
-    if (body && body.ok === true && body.duplicate === true) {
-      setStatus('duplicate', '<strong>This request was already emailed.</strong> You can download the draft again below.');
+    if (!shouldPost()) {
+      setStatus('neutral', '<strong>Your documents are ready to download.</strong>');
       return;
     }
     if (body && body.ok === true && body.leadEmailed === true && body.visitorEmailed === true) {
-      setStatus('sent', '<strong>Emailed.</strong> A copy was emailed to you, and Daniel at DK Benefits received the lead with the draft attached.');
+      var already = body.duplicate === true;
+      setStatus(already ? 'duplicate' : 'sent', already
+        ? '<strong>This request was already emailed.</strong> You can download the draft again below.'
+        : '<strong>Emailed.</strong> A copy was emailed to you, and Daniel at DK Benefits received your draft with the documents attached.');
       return;
     }
     if (body && body.ok === true && body.leadEmailed === true) {
-      setStatus('sent', '<strong>Daniel received the lead.</strong> A copy could not be emailed to you' + (body.visitorRateLimited ? ' because that address has reached the hourly limit' : '') + '. Download it here, or call or text Daniel at ' + phoneLine() + '.');
+      $('btnRetry').classList.remove('hidden');
+      setStatus('partial', '<strong>Daniel received your draft.</strong> A copy could not be emailed to you' + (body.visitorRateLimited ? ' because that address has reached the hourly limit' : '') + '. Retry sends your copy only. You can also call or text Daniel at ' + phoneLine() + '.');
       return;
     }
     $('btnRetry').classList.remove('hidden');
-    if (!shouldPost()) {
-      setStatus('unsent', '<strong>Your draft is ready to download.</strong> It could not be emailed yet because email delivery is not connected. Your answers are saved in this browser so you can retry after it is connected. You can also call or text Daniel at ' + phoneLine() + '.');
-      return;
-    }
     setStatus('failed', '<strong>The copy could not be emailed.</strong> ' + escapeHtml(errorText || (body && body.error) || 'The delivery service did not accept the message.') + ' Your answers are saved in this browser. Retry, or call or text Daniel at ' + phoneLine() + '.');
   }
   function postLead(record) {
@@ -418,29 +468,45 @@
     lastFiles = buildFiles(result.plan);
     showStep(5);
     showDownloads(lastFiles);
-    attachPdf(result.plan);
     if (!isRetry) {
       lastFiles.forEach(function (file) {
         if (/\.docx$/i.test(file.name)) triggerDownload(file.bytes, file.name, file.mime);
       });
     }
-    savePending(record);
-    if (!shouldPost()) {
-      showEmailResult(null);
-      return;
-    }
     inFlight = true;
-    $('btnRetry').disabled = true;
-    setStatus('unsent', 'Sending the lead and your copy…');
-    postLead(record).then(function (body) {
-      inFlight = false;
-      $('btnRetry').disabled = false;
-      clearPending(id);
-      showEmailResult(body);
-    }).catch(function (err) {
-      inFlight = false;
-      $('btnRetry').disabled = false;
-      showEmailResult(err.body || null, err.message);
+    $('btnRetry').classList.add('hidden');
+    setStatus('neutral', 'Preparing your documents…');
+    pdfFiles(result.plan).then(function (pdfs) {
+      var all = lastFiles.concat(pdfs);
+      showDownloads(all);
+      if (!pdfs.length) notePdfMissing();
+      record.files = filesPayload(all);
+      if (!shouldPost()) {
+        inFlight = false;
+        clearPending(id);
+        showEmailResult(null);
+        return;
+      }
+      record.emailAttempted = true;
+      savePending(record);
+      $('btnRetry').disabled = true;
+      setStatus('neutral', 'Sending your draft…');
+      postLead(record).then(function (body) {
+        inFlight = false;
+        $('btnRetry').disabled = false;
+        if (body.leadEmailed && body.visitorEmailed) clearPending(id);
+        else {
+          record.leadDelivered = !!body.leadEmailed;
+          savePending(record);
+        }
+        showEmailResult(body);
+      }).catch(function (err) {
+        inFlight = false;
+        $('btnRetry').disabled = false;
+        record.leadDelivered = !!(err.body && err.body.leadEmailed);
+        savePending(record);
+        showEmailResult(err.body || null, err.message);
+      });
     });
   }
   function showSavedBanner() {
@@ -450,11 +516,16 @@
     var raw = null;
     try { raw = localStorage.getItem(pendingKey(latest)); } catch (err) { return; }
     if (!raw) return;
+    var saved = null;
+    try { saved = JSON.parse(raw); } catch (err) { return; }
+    if (!saved || !saved.emailAttempted || !shouldPost()) return;
     var banner = $('savedBanner');
     banner.classList.remove('hidden');
-    banner.innerHTML = '<strong>An earlier draft was not emailed.</strong> It is saved in this browser. <button type="button" class="linkish" id="btnRestore">Review it</button>';
+    var headline = saved.leadDelivered
+      ? 'Daniel already received an earlier draft. Your copy was not emailed.'
+      : 'An earlier draft was not emailed.';
+    banner.innerHTML = '<strong>' + headline + '</strong> It is saved in this browser. <button type="button" class="linkish" id="btnRestore">Review it</button>';
     $('btnRestore').addEventListener('click', function () {
-      var saved = JSON.parse(raw);
       restore(saved);
       banner.classList.add('hidden');
     });
@@ -483,12 +554,38 @@
     if (el) el.checked = true;
   }
 
+  function endpointConfigured() {
+    return !!(window.S128_CONFIG && window.S128_CONFIG.endpoint);
+  }
+  function syncEmailCopy() {
+    var on = endpointConfigured();
+    var lede = $('companyLede');
+    var hint = $('contactEmailHint');
+    if (lede) {
+      lede.textContent = on
+        ? 'Use the employer’s legal name. Daniel Kirves will review your draft and follow up, and a copy is emailed to the address you enter.'
+        : 'Use the employer’s legal name. Daniel Kirves will review your draft and follow up.';
+    }
+    if (hint) {
+      hint.textContent = on
+        ? 'A copy of your draft is emailed to this address.'
+        : 'Daniel uses this address to follow up.';
+    }
+  }
+  function onFieldEdited(event) {
+    var target = event.target;
+    if (!target) return;
+    clearFieldError(target.id);
+    if (target.name) clearFieldError(target.name);
+    syncConditional();
+  }
   function init() {
     fillStates();
+    syncEmailCopy();
     $('employer_name').addEventListener('change', suggestName);
     $('plan_name').addEventListener('input', function () { planNameTouched = true; });
-    document.getElementById('wizard').addEventListener('change', syncConditional);
-    document.getElementById('wizard').addEventListener('input', syncConditional);
+    document.getElementById('wizard').addEventListener('change', onFieldEdited);
+    document.getElementById('wizard').addEventListener('input', onFieldEdited);
     $('btnNext').addEventListener('click', function () {
       if (step < 4) {
         if (step === 1 && !fieldValue('plan_name')) suggestName();

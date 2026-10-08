@@ -110,9 +110,35 @@ test('formats and conditional fields', function () {
   assert.ok(fields(check({ contact_phone: '555-0100' })).includes('contact_phone'));
   assert.ok(fields(check({ waiting_days: '400' })).includes('waiting_days'));
   assert.ok(fields(check({ waiting_days: '-1' })).includes('waiting_days'));
-  const salaryMissing = check({ funding_mode: 'salary_reduction_only', employer_annual_grant: '' });
+  assert.equal(check().plan.employer_address, '100 King Street, Orlando, FL 32801');
+  const salaryMissing = check({
+    funding_mode: 'salary_reduction_only',
+    employer_annual_grant: '',
+    has_existing_125_plan: 'yes'
+  });
   assert.ok(fields(salaryMissing).includes('cafeteria_plan_name'));
   assert.ok(fields(salaryMissing).includes('election_cutoff_days'));
+  assert.ok(fields(check({ funding_mode: 'salary_reduction_only', employer_annual_grant: '' })).includes('has_existing_125_plan'));
+  const noPlan = check({
+    funding_mode: 'salary_reduction_only',
+    employer_annual_grant: '',
+    has_existing_125_plan: 'no',
+    election_cutoff_days: '5'
+  });
+  assert.equal(noPlan.ok, true, JSON.stringify(noPlan.errors));
+  assert.equal(noPlan.plan.cafeteria_plan_name, '');
+  assert.equal(noPlan.review.required, true);
+  const unsure = check({
+    funding_mode: 'combined',
+    employer_annual_grant: '1000',
+    has_existing_125_plan: 'unsure',
+    election_cutoff_days: '5',
+    cafeteria_plan_name: 'Should be ignored',
+    cafeteria_amendment_date: '2026-01-02'
+  });
+  assert.equal(unsure.ok, true, JSON.stringify(unsure.errors));
+  assert.equal(unsure.plan.cafeteria_plan_name, '');
+  assert.equal(unsure.plan.cafeteria_amendment_date, '');
   assert.ok(fields(check({
     funding_mode: 'salary_reduction_only',
     employer_annual_grant: '',

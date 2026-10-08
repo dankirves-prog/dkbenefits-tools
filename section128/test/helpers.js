@@ -4,6 +4,19 @@ const vm = require('vm');
 
 const root = path.join(__dirname, '..');
 
+function artifactDir() {
+  if (process.env.S128_ARTIFACT_DIR) return process.env.S128_ARTIFACT_DIR;
+  const preferred = '/opt/cursor/artifacts/section128';
+  try {
+    fs.mkdirSync(preferred, { recursive: true });
+    fs.accessSync(preferred, fs.constants.W_OK);
+    return preferred;
+  } catch (err) {
+    const os = require('os');
+    return fs.mkdtempSync(path.join(os.tmpdir(), 's128-artifacts-'));
+  }
+}
+
 function loadBrowserScripts(extra) {
   const context = {
     console,
@@ -55,4 +68,4 @@ function baseInput(overrides) {
 
 const ASOF = '2026-10-08';
 
-module.exports = { loadBrowserScripts, baseInput, ASOF, root };
+module.exports = { loadBrowserScripts, baseInput, ASOF, root, artifactDir };

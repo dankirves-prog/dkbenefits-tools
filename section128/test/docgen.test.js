@@ -4,7 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
-const { loadBrowserScripts, baseInput, ASOF } = require('./helpers');
+const { loadBrowserScripts, baseInput, ASOF, artifactDir } = require('./helpers');
 
 const ctx = loadBrowserScripts();
 vmPdf(ctx);
@@ -103,7 +103,19 @@ for (const [name, overrides, mode] of cases) {
     assert.match(packed.core, new RegExp(plan.plan_name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
     assert.match(plain(packed.document), new RegExp(plan.employer_name));
     assert.match(plain(packed.document), /12-3456789/);
+    assert.match(plain(packed.document), /Orlando, FL 32801/);
+    assert.doesNotMatch(plain(packed.document), /Orlando, FL, 32801/);
     assert.match(plain(packed.document), /January 1, 2027/);
+    assert.match(plain(packed.document), /Plan purpose, definitions, and participation/);
+    assert.match(plain(packed.document), /Employee notices, tax treatment, and records/);
+    assert.match(plain(packed.document), /Testing, corrections, and employer authority/);
+    assert.match(plain(packed.document), /Designation, certification, and verification/);
+    assert.match(plain(packed.document), /Amendment, termination, and individual ownership/);
+    assert.match(plain(packed.document), /cannot receive Program contributions until a parent or guardian claims it/);
+    const capLine = plain(packed.document).split('\n').find(function (line) { return line.indexOf('The program annual cap is') === 0; });
+    assert.equal((capLine.match(/\$2,500/g) || []).length, 1);
+    if (overrides.annual_cap_mode === 'fixed') assert.match(capLine, /fixed employer cap does not increase automatically/);
+    else assert.doesNotMatch(capLine, /fixed employer cap does not increase automatically/);
     if (mode === 'combined') assert.match(plain(packed.document), /Salary reduction cannot consume the amount reserved/);
     if (overrides.annual_cap_mode === 'fixed') assert.match(plain(packed.document), /\$1,500|\$900|\$2,500/);
     const amendment = S128Docgen.buildAmendmentDocx(plan);
@@ -115,7 +127,15 @@ for (const [name, overrides, mode] of cases) {
       assert.match(amendText, /Signature: _{10,}/);
       assert.doesNotMatch(amendText, /\{\{|\[\s*\]/);
       if (mode === 'combined') assert.match(amendText, /reservation of the annual employer grant of \$1,000/);
-      if (mode === 'salary_reduction_only') assert.doesNotMatch(amendText, /reservation of the annual employer grant/);
+      if (mode === 'salary_reduction_only') {
+        assert.doesNotMatch(amendText, /reservation of the annual employer grant/);
+        assert.doesNotMatch(plain(packed.document), /cash substitute for an employer grant/);
+      }
+      if (mode === 'combined') assert.match(plain(packed.document), /cash substitute for an employer grant/);
+      assert.match(amendText, /Payment, tax treatment, and compliance/);
+      assert.match(amendText, /does not amend Northwind Cafeteria Plan/);
+      assert.doesNotMatch(amendText, /does not establish the Program/);
+      assert.doesNotMatch(amendText, /subject to the statutory maximum/);
     }
     fs.writeFileSync(path.join(outDir, name + '.docx'), Buffer.from(bytes));
   });
@@ -130,9 +150,24 @@ test('2028 plan does not print unpublished indexed amounts', function () {
   assert.match(text, /\$1,000/);
 });
 
+test('salary reduction without a confirmed cafeteria plan does not build an amendment', function () {
+  const plan = planFor({
+    funding_mode: 'salary_reduction_only',
+    employer_annual_grant: '',
+    election_cutoff_days: '5',
+    has_existing_125_plan: 'no'
+  });
+  const text = plain(textOf(S128Docgen.buildPlanDocx(plan)).document);
+  assert.match(text, /cafeteria plan was not confirmed/);
+  assert.match(text, /Salary reduction/);
+  assert.doesNotMatch(text, /Section 125 plan name:/);
+  assert.equal(S128Docgen.buildAmendmentDocx(plan), null);
+  assert.match(text, /cannot receive Program contributions until a parent or guardian claims it/);
+});
+
 test('LibreOffice renders each funding method and pdf-lib matches the text', async function () {
-  const artifactDir = '/opt/cursor/artifacts/section128';
-  fs.mkdirSync(artifactDir, { recursive: true });
+  const artifacts = artifactDir();
+  fs.mkdirSync(artifacts, { recursive: true });
   const sampleMap = {
     'employer-statutory': cases[0][1],
     'salary-statutory': cases[2][1],
@@ -150,23 +185,28 @@ test('LibreOffice renders each funding method and pdf-lib matches the text', asy
     assert.match(rendered, /Article 12/);
     assert.match(rendered, /January 31/);
     assert.doesNotMatch(rendered, /\{\{|\[\s*\]/);
-    execFileSync('pdftoppm', ['-png', '-f', '1', '-l', '1', '-r', '80', renderedPdf, path.join(artifactDir, name)]);
-    fs.copyFileSync(docx, path.join(artifactDir, name + '.docx'));
-    fs.copyFileSync(renderedPdf, path.join(artifactDir, name + '-libreoffice.pdf'));
+    execFileSync('pdftoppm', ['-png', '-f', '1', '-l', '1', '-r', '80', renderedPdf, path.join(artifacts, name)]);
+    fs.copyFileSync(docx, path.join(artifacts, name + '.docx'));
+    fs.copyFileSync(renderedPdf, path.join(artifacts, name + '-libreoffice.pdf'));
   }
   const plan = planFor(Object.assign({ funding_mode: 'combined', employer_annual_grant: '1000' }, salaryFields));
   const pdfBytes = await S128Pdf.buildPdf(S128Docgen.planParagraphs(plan), { title: plan.plan_name });
-  const pdfPath = path.join(artifactDir, 'combined-statutory-pdflib.pdf');
+  const pdfPath = path.join(artifacts, 'combined-statutory-pdflib.pdf');
   fs.writeFileSync(pdfPath, Buffer.from(pdfBytes));
   const pdfText = execFileSync('pdftotext', ['-layout', pdfPath, '-'], { encoding: 'utf8' });
   assert.match(pdfText, /Northwind Benefits LLC/);
   assert.match(pdfText, /Salary reduction cannot consume/);
   assert.match(pdfText, /Draft for review\s+\|\s+1/);
   assert.match(pdfText, /Ada Lopez/);
+  const einLine = pdfText.split('\n').find(function (line) { return line.indexOf('Employer EIN:') !== -1; });
+  assert.ok(einLine);
+  assert.match(einLine, /12-3456789/);
+  assert.doesNotMatch(einLine, /Effective date/);
+  assert.match(pdfText, /Effective date: January 1, 2027/);
   const amendmentPdf = await S128Pdf.buildPdf(S128Docgen.amendmentParagraphs(plan), { title: 'amendment' });
-  const amendmentPath = path.join(artifactDir, 'combined-amendment-pdflib.pdf');
+  const amendmentPath = path.join(artifacts, 'combined-amendment-pdflib.pdf');
   fs.writeFileSync(amendmentPath, Buffer.from(amendmentPdf));
   const amendmentText = execFileSync('pdftotext', ['-layout', amendmentPath, '-'], { encoding: 'utf8' });
-  assert.match(amendmentText, /reservation of the annual employer grant of \$1,000/);
+  assert.match(amendmentText, /reservation of the annual employer grant of\s+\$1,000/);
   assert.match(amendmentText, /Signature:/);
 });

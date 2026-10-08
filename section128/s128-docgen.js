@@ -46,14 +46,6 @@ var S128Docgen = (function () {
     return 'eligible dependent Trump accounts only';
   }
 
-  function statutoryLimitSentence(plan) {
-    var year = +String(plan.effective_date).slice(0, 4);
-    if (year >= 2028) {
-      return 'The statutory limit for years after 2027 is the Section 128(b)(1) amount as adjusted under Section 128(b)(2). No indexed dollar amount for those years is stated in this Program because none has been published. A fixed employer cap does not increase automatically. A cap equal to the statutory limit follows published adjustments.';
-    }
-    return 'The statutory limit is $2,500 for 2026 and 2027 and is adjusted under Section 128(b)(2) for later years. A fixed employer cap does not increase automatically. A cap equal to the statutory limit follows published adjustments.';
-  }
-
   function accountLimitSentence(plan) {
     var year = +String(plan.effective_date).slice(0, 4);
     if (year >= 2028) {
@@ -89,7 +81,10 @@ var S128Docgen = (function () {
       ? 'including employer grants and salary reduction'
       : 'including employer grants';
     if (plan.funding_mode === 'salary_reduction_only') who = 'including salary reduction';
-    return 'The program annual cap is ' + S128Model.capText(plan) + '. Total Section 128 contributions attributable to an employee, ' + who + ', may not exceed the lesser of that cap and the Section 128(b) statutory limit. ' + statutoryLimitSentence(plan);
+    var tail = '';
+    if (plan.annual_cap_mode === 'fixed') tail = ' A fixed employer cap does not increase automatically.';
+    else if (+String(plan.effective_date).slice(0, 4) < 2028) tail = ' A cap equal to the statutory limit follows published adjustments.';
+    return 'The program annual cap is ' + S128Model.capText(plan) + '. Total Section 128 contributions attributable to an employee, ' + who + ', may not exceed the lesser of that cap and the Section 128(b) statutory limit.' + tail;
   }
 
   function article5Tracking(plan) {
@@ -124,15 +119,17 @@ var S128Docgen = (function () {
       { style: 'Heading2', text: 'Article 7 Salary reduction' },
       { style: null, text: 'Salary reduction is elected in the Adoption Agreement. An employee may initiate, increase, decrease, or revoke an election prospectively at any time during the plan year, subject to ' + plan.election_cutoff_days + ' calendar days of payroll processing notice. Administration must permit changes and revocations to become effective at least monthly and only as to salary not yet currently available. No qualifying life event is required.' },
       { style: null, text: 'Elections identify the amount per payroll and the effective payroll date. The administrator limits deductions to the available annual amount, applicable compensation, and verified eligible dependent accounts. No retroactive election is permitted. Salary reduction stops before the dependent’s growth period ends and when the employee revokes the election, employment or eligibility ends, or applicable limits require a stop.' },
-      { style: null, text: 'The employer remits authorized salary reduction promptly under its regular payroll remittance process. Deductions continue only while they can be sent to valid eligible accounts. If a contribution is rejected, the administrator investigates, retries only when a lawful eligible transfer is available, and otherwise returns an untransferred deduction through payroll with the appropriate wage and withholding adjustments. A correction does not authorize retroactive salary reduction or a cash substitute for an employer grant.' }
+      { style: null, text: 'The employer remits authorized salary reduction promptly under its regular payroll remittance process. Deductions continue only while they can be sent to valid eligible accounts. If a contribution is rejected, the administrator investigates, retries only when a lawful eligible transfer is available, and otherwise returns an untransferred deduction through payroll with the appropriate wage and withholding adjustments. ' + (plan.funding_mode === 'combined'
+        ? 'A correction does not authorize retroactive salary reduction or a cash substitute for an employer grant.'
+        : 'A correction does not authorize retroactive salary reduction.') }
     ];
   }
 
   function article8Notice(plan) {
-    if (usesSalary(plan)) {
-      return 'The employer gives all eligible employees reasonable written notice of the program’s availability and terms before participation and when material terms change. The notice identifies eligibility, funding, contribution limits, designation requirements, available election changes, tax treatment, and the administrator contact. Electronic delivery must provide a practical way for employees to obtain the terms.';
-    }
-    return 'The employer gives all eligible employees reasonable written notice of the program’s availability and terms before participation and when material terms change. The notice identifies eligibility, funding, contribution limits, designation requirements, tax treatment, and the administrator contact. Electronic delivery must provide a practical way for employees to obtain the terms.';
+    var items = 'eligibility, funding, contribution limits, designation requirements, ';
+    if (usesSalary(plan)) items += 'available election changes, ';
+    items += 'tax treatment, the administrator contact, and that an account automatically created by the Treasury Department cannot receive Program contributions until a parent or guardian claims it and the account is activated';
+    return 'The employer gives all eligible employees reasonable written notice of the program’s availability and terms before participation and when material terms change. The notice identifies ' + items + '. Electronic delivery must provide a practical way for employees to obtain the terms.';
   }
 
   function article9Payroll(plan) {
@@ -192,7 +189,8 @@ var S128Docgen = (function () {
       { style: null, text: DRAFT_BODY },
       { style: 'Heading1', text: 'Employer adoption agreement' },
       { style: null, text: 'Employer legal name: ' + plan.employer_name },
-      { style: null, text: 'Employer EIN: ' + plan.employer_ein + '    Effective date: ' + longDate(plan.effective_date) },
+      { style: null, text: 'Employer EIN: ' + plan.employer_ein },
+      { style: null, text: 'Effective date: ' + longDate(plan.effective_date) },
       { style: null, text: 'Employer address: ' + plan.employer_address },
       { style: null, text: 'Additional participating employers: ' + employersText(plan) },
       { style: null, text: 'Program name: ' + plan.plan_name },
@@ -212,8 +210,12 @@ var S128Docgen = (function () {
     }
     if (usesSalary(plan)) {
       rows.push({ style: null, text: 'Salary reduction election processing notice: ' + plan.election_cutoff_days + ' calendar days before payday' });
-      rows.push({ style: null, text: 'Section 125 plan name: ' + plan.cafeteria_plan_name });
-      rows.push({ style: null, text: 'Section 125 amendment effective date: ' + longDate(plan.cafeteria_amendment_date) });
+      if (plan.cafeteria_plan_name) {
+        rows.push({ style: null, text: 'Section 125 plan name: ' + plan.cafeteria_plan_name });
+        rows.push({ style: null, text: 'Section 125 amendment effective date: ' + longDate(plan.cafeteria_amendment_date) });
+      } else {
+        rows.push({ style: null, text: 'A Section 125 cafeteria plan was not confirmed. Salary reduction cannot start until a cafeteria plan is adopted or confirmed and amended for this benefit. This draft does not include a cafeteria-plan amendment.' });
+      }
     }
     rows.push({ style: 'Heading2', text: 'Employer adoption' });
     rows.push({ style: null, text: adoptionClose(plan) });
@@ -222,7 +224,7 @@ var S128Docgen = (function () {
     rows.push({ style: null, text: '' });
     rows.push({ style: null, text: '' });
 
-    rows.push({ style: 'Heading1', text: 'Plan purpose definitions and participation' });
+    rows.push({ style: 'Heading1', text: 'Plan purpose, definitions, and participation' });
     rows.push({ style: 'Heading2', text: 'Article 1 Purpose and governing terms' });
     var separate = usesSalary(plan)
       ? 'The Program is separate from the Employer’s Section 125 cafeteria plan and from each beneficiary’s individual Trump account.'
@@ -255,14 +257,14 @@ var S128Docgen = (function () {
     rows.push({ style: null, text: article5Carryover(plan) });
 
     rows.push({ style: 'Heading1', text: 'Account designation and payroll elections' });
-    rows.push({ style: 'Heading2', text: 'Article 6 Designation certification and verification' });
+    rows.push({ style: 'Heading2', text: 'Article 6 Designation, certification, and verification' });
     rows.push({ style: null, text: 'Before any contribution, an employee submits a paper or electronic designation identifying the contribution year, each beneficiary and date of birth, the relationship to the employee, the trustee, secure payment instructions, and the allocation percentage. The employee certifies in writing that each beneficiary is the employee or an anticipated Section 152 dependent for that contribution year and that no facts known to the employee make the beneficiary ineligible for that calendar year.' });
     rows.push({ style: null, text: 'The employee renews the certification for each contribution year and promptly reports changes affecting eligibility, dependency, trustee, account status, allocation, or contributions from other employers. The employer may rely on the relationship and eligibility certifications unless it has actual knowledge they are incorrect. Dependency or ownership questions requiring interpretation are resolved before payment.' });
     rows.push({ style: null, text: 'The employer will independently verify that each destination is a valid Trump account using information supplied by the trustee, payroll processor, or another service provider through a method reasonably designed for that purpose. An employee’s assertion that an account is valid, standing alone, is insufficient. Verification confirms that the account can accept contributions under this Program. An account automatically established by the Secretary that has not been claimed and activated cannot receive Program contributions. Verification is documented before initial payment and refreshed when an account or trustee changes or contrary information arises.' });
     rows.push({ style: null, text: 'The employer will not restrict contributions to accounts maintained by a selected trustee or list of trustees. A payroll vendor’s limited trustee support does not change that rule. The administrator will arrange a workable alternative transfer process for a valid designated account. Contributions pending verification or transfer are tracked and resolved. The employer does not promise tax qualification or retroactive dating for delayed deposits.' });
     article7(plan).forEach(function (row) { rows.push(row); });
 
-    rows.push({ style: 'Heading1', text: 'Employee notices tax treatment and records' });
+    rows.push({ style: 'Heading1', text: 'Employee notices, tax treatment, and records' });
     rows.push({ style: 'Heading2', text: 'Article 8 Notices and statements' });
     rows.push({ style: null, text: article8Notice(plan) });
     rows.push({ style: null, text: 'The employer furnishes each participating employee, on or before January 31, a written statement of Section 128 contributions made during the preceding calendar year. This obligation may be satisfied by correct reporting on Form W-2 under the instructions applicable for that year. For 2026, the instructions prescribe box 12, code TA. The employer provides any additional or corrected statement required to explain reclassification or an administrative error.' });
@@ -273,7 +275,7 @@ var S128Docgen = (function () {
     rows.push({ style: null, text: 'The administrator maintains the executed plan and amendments, employer adoption data, eligible employee notices, annual certifications, trustee verification evidence, designations and elections, dated transfer records, trustee acknowledgments or rejections, payroll and annual statements, nondiscrimination calculations, and correction records. Records are retained for applicable tax and other legal periods and protected using access controls and secure transmission. Account and tax identifiers must be collected and transmitted securely.' });
     rows.push({ style: null, text: 'The employer does not guarantee an employee’s tax treatment, investment return, future account value, or eligibility for the separate federal pilot deposit. Account investments, distributions, and account-level tax reporting are handled by the trustee and responsible party under applicable law.' });
 
-    rows.push({ style: 'Heading1', text: 'Testing corrections and employer authority' });
+    rows.push({ style: 'Heading1', text: 'Testing, corrections, and employer authority' });
     rows.push({ style: 'Heading2', text: 'Article 10 Nondiscrimination' });
     rows.push({ style: null, text: article10Intro(plan) });
     rows.push({ style: null, text: article10Average(plan) });
@@ -282,28 +284,28 @@ var S128Docgen = (function () {
     rows.push({ style: null, text: article11Corrections(plan) });
     rows.push({ style: null, text: 'When a previously identified Section 128 contribution is determined not to qualify, the employer gives the trustee written notice of the account, contribution calendar year, and nonqualifying amount within 21 calendar days after determination. The employee is informed of the amount, year, reason, tax and statement corrections, and required action. Correction does not authorize unilateral withdrawal from the account.' });
     rows.push({ style: null, text: 'A nondiscrimination failure generally removes the exclusion for affected HCEs without removing it for NHCEs. Where legally available, an average-benefits failure may be remediated by timely treating the calculated HCE excess as gross income and applicable wages and reporting it by the Form W-2 furnishing deadline for the tested year, with trustee corrective notices. That partial remediation is not assumed to cure an eligibility or contribution-terms failure. Otherwise the employer applies the income inclusion required by law and corrects reporting.' });
-    rows.push({ style: 'Heading2', text: 'Article 12 Amendment termination and individual ownership' });
+    rows.push({ style: 'Heading2', text: 'Article 12 Amendment, termination, and individual ownership' });
     rows.push({ style: null, text: article12(plan) });
     rows.push({ style: null, text: 'The account belongs to its beneficiary and remains independent of employment. Participation is voluntary. The employer does not direct or influence investments, impose use or rollover restrictions beyond law, present the account or program as an employer-maintained ERISA pension or welfare plan, or receive payment or compensation in connection with an account. The employer imposes no vesting or forfeiture condition on money deposited into an account. Account-level rights are governed by Section 530A and the trustee’s instrument.' });
     return rows;
   }
 
   function amendmentParagraphs(plan) {
-    if (!usesSalary(plan)) return null;
+    if (!usesSalary(plan) || !plan.cafeteria_plan_name) return null;
     var capShare = plan.funding_mode === 'combined'
       ? 'Employer grants and salary reduction attributable to an employee share that maximum. Salary reduction is limited to the remaining amount after reservation of the annual employer grant of ' + money(plan, plan.employer_annual_grant) + '.'
-      : 'Salary reduction contributions attributable to an employee may not exceed that cap or the Section 128(b) statutory limit.';
+      : 'Salary reduction contributions attributable to an employee may not exceed that cap.';
     return [
       { style: 'Title', text: 'Draft Amendment to ' + plan.cafeteria_plan_name },
       { style: 'Heading2', text: 'Section 128 Trump Account Contribution Benefit' },
-      { style: null, text: DRAFT_BODY },
+      { style: null, text: 'DRAFT FOR REVIEW. Not adopted until signed by the employer. This draft reflects guidance reviewed as of October 8, 2026. It is not an IRS determination, an attorney opinion, or a guarantee of compliance. Generating or downloading it does not amend ' + plan.cafeteria_plan_name + '.' },
       { style: 'Heading2', text: 'Adoption and qualified benefit' },
       { style: null, text: plan.employer_name + ' amends ' + plan.cafeteria_plan_name + ' effective ' + longDate(plan.cafeteria_amendment_date) + ' to make available the Section 128 Trump Account contribution benefit described in ' + plan.plan_name + ', maintained as a separate written program. Eligible participants may elect prospective salary reduction contributions to verified Trump accounts of their anticipated Section 152 dependents during those beneficiaries’ growth periods. Contributions to a participant’s own Trump account are not available through this cafeteria plan.' },
       { style: 'Heading2', text: 'Eligibility and amounts' },
-      { style: null, text: 'Participation requires eligibility under both this cafeteria plan and the separate Section 128 program. The Section 128 program annual cap is ' + S128Model.capText(plan) + ', subject to the statutory maximum. ' + capShare + ' Account designation, certification, verification, allocation, notices, and corrections follow the Section 128 program.' },
+      { style: null, text: 'Participation requires eligibility under both this cafeteria plan and the separate Section 128 program named ' + plan.plan_name + ' (the Program). The Section 128 program annual cap is ' + S128Model.capText(plan) + '. ' + capShare + ' Account designation, certification, verification, allocation, notices, and corrections follow the Program.' },
       { style: 'Heading2', text: 'Prospective election changes' },
       { style: null, text: 'A participant may initiate, increase, decrease, or revoke a salary reduction election for this benefit prospectively at any time during the plan year. No qualifying life event is required. The participant must provide ' + plan.election_cutoff_days + ' calendar days of payroll processing notice. Administration must permit changes and revocations to become effective at least monthly and only as to salary not yet currently available. No retroactive election or change is permitted. This provision controls over a general irrevocability or change-in-status restriction in the cafeteria plan solely for this benefit.' },
-      { style: 'Heading2', text: 'Payment tax treatment and compliance' },
+      { style: 'Heading2', text: 'Payment, tax treatment, and compliance' },
       { style: null, text: 'Authorized deductions are remitted directly to independently verified Trump account trustees under the Section 128 program. Elections end or are adjusted when the participant or account becomes ineligible, the beneficiary’s growth period ends, the participant revokes an election, the maximum is reached, or a compliance limit applies. Payroll will apply federal gross income exclusion only to qualifying amounts and will retain applicable Social Security, Medicare, unemployment, and other required wage treatment. This amendment creates no payroll-tax exclusion.' },
       { style: null, text: 'The employer will evaluate cafeteria plan nondiscrimination independently of Section 128 testing. The amendment does not establish an FSA grace period, carryover, uniform coverage rule, or prior-year contribution designation. Except for the specific benefit and election provisions above, the cafeteria plan remains governed by its existing terms and applicable law.' },
       { style: null, text: 'Authorized representative: ' + plan.signer_name + '    Title: ' + plan.signer_title },

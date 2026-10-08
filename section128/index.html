@@ -13,7 +13,7 @@
     <div class="site-header-inner">
       <p class="brand">DK Benefits LLC</p>
       <h1>Section 128 Trump Account contribution program</h1>
-      <p>Answer a few questions and download a draft employer plan for your company. Daniel Kirves reviews the lead. This draft does not establish the program.</p>
+      <p>Answer a few questions and download a draft employer plan for your company. Daniel Kirves will review your draft and follow up. This draft does not establish the program.</p>
     </div>
   </header>
   <div class="draft-banner">
@@ -36,7 +36,7 @@
 
       <section class="card" data-step="1" aria-labelledby="stepTitle">
         <h2 id="stepTitle">Company and contact</h2>
-        <p class="lede">Use the employer’s legal name. This contact is how Daniel follows up, and where your copy is sent once email delivery is connected.</p>
+        <p class="lede" id="companyLede">Use the employer’s legal name. Daniel Kirves will review your draft and follow up.</p>
         <div class="grid">
           <div class="field span-2">
             <label for="employer_name">Employer legal name</label>
@@ -88,7 +88,7 @@
           <div class="field">
             <label for="contact_email">Email</label>
             <input id="contact_email" name="contact_email" type="email" autocomplete="email" required>
-            <p class="hint">Your draft copy is sent here when email delivery is connected.</p>
+            <p class="hint" id="contactEmailHint">Daniel uses this address to follow up.</p>
             <p class="field-error" id="err_contact_email" role="alert"></p>
           </div>
           <div class="field">
@@ -232,6 +232,7 @@
               <option value="unsure">Not sure</option>
             </select>
             <p class="hint">Salary reduction has to run through that plan. If you need a cafeteria plan draft, use the <a href="https://www.dkbenefits.net/section125plantool">Section 125 plan tool</a>.</p>
+            <p class="note hidden" id="cafeteriaMissing">A cafeteria plan must be adopted, or an existing one confirmed, before salary reduction can start. This draft program will still be prepared, and Daniel will review it. A separate amendment is not created until a cafeteria plan is in place.</p>
             <p class="field-error" id="err_has_existing_125_plan" role="alert"></p>
           </div>
         </div>
@@ -263,15 +264,16 @@
           </div>
         </div>
         <div class="only-salary">
-          <h3>Existing Section 125 plan</h3>
-          <p class="hint">A separate draft amendment is prepared. It is not part of the Section 128 plan itself.</p>
+          <h3>Salary reduction</h3>
+          <p class="hint only-cafeteria">A separate draft amendment is prepared. It is not part of the Section 128 plan itself.</p>
+          <p class="note hidden" id="cafeteriaMissingAdmin">A cafeteria plan must be adopted, or an existing one confirmed, before salary reduction can start. This draft program is still prepared. A separate amendment is not created until a cafeteria plan is in place.</p>
           <div class="grid">
-            <div class="field span-2">
+            <div class="field span-2 only-cafeteria">
               <label for="cafeteria_plan_name">Section 125 plan name</label>
               <input id="cafeteria_plan_name" name="cafeteria_plan_name" type="text">
               <p class="field-error" id="err_cafeteria_plan_name" role="alert"></p>
             </div>
-            <div class="field">
+            <div class="field only-cafeteria">
               <label for="cafeteria_amendment_date">Amendment effective date</label>
               <input id="cafeteria_amendment_date" name="cafeteria_amendment_date" type="date">
               <p class="hint">Today or a later date. The amendment cannot reach back.</p>
@@ -303,7 +305,7 @@
         <h2>Your draft</h2>
         <div id="emailStatus" class="status" role="status"></div>
         <div class="downloads" id="downloadList"></div>
-        <p class="hint">Employee enrollment forms are not part of this governing plan. They stay separate and keep their own blanks.</p>
+        <p class="hint">Employee forms and notices are prepared separately.</p>
         <button class="btn-secondary hidden" id="btnRetry" type="button">Retry email</button>
       </section>
 

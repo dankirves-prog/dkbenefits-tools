@@ -203,9 +203,12 @@ var S128Model = (function () {
     }
     var amt = formatMoney(plan.fixed_annual_cap);
     if (published) {
+      if (Number(plan.fixed_annual_cap) === PUBLISHED_S128_CEILING) {
+        return 'a fixed cap of ' + amt + ' per employee per calendar year, equal to the Section 128(b) limit for 2026 and 2027 (as adjusted under Section 128(b)(2) for later years)';
+      }
       return 'a fixed cap of ' + amt + ' per employee per calendar year, not to exceed the Section 128(b) limit ($2,500 for 2026 and 2027; as adjusted under Section 128(b)(2) for later years)';
     }
-    return 'a fixed cap of ' + amt + ' per employee per calendar year, not to exceed the Section 128(b) limit as adjusted under Section 128(b)(2) (this fixed cap does not increase automatically, and no indexed amount after 2027 is stated because none has been published)';
+    return 'a fixed cap of ' + amt + ' per employee per calendar year, not to exceed the Section 128(b) limit as adjusted under Section 128(b)(2) (no indexed amount after 2027 is stated because none has been published)';
   }
 
   function salaryCapacity(plan) {
@@ -388,15 +391,21 @@ var S128Model = (function () {
         if (cutoff > 30) push(errors, 'election_cutoff_days', 'Use 0 to 30 days so employees can still change an election at least monthly.');
         else plan.election_cutoff_days = cutoff;
       }
-      plan.cafeteria_plan_name = cleanText(src.cafeteria_plan_name);
-      if (plan.cafeteria_plan_name.length < 2 || plan.cafeteria_plan_name.length > 160) {
-        push(errors, 'cafeteria_plan_name', 'Enter the name of the existing Section 125 plan.');
+      var existing125 = yesNo(src.has_existing_125_plan);
+      if (existing125 === 'yes') {
+        plan.cafeteria_plan_name = cleanText(src.cafeteria_plan_name);
+        if (plan.cafeteria_plan_name.length < 2 || plan.cafeteria_plan_name.length > 160) {
+          push(errors, 'cafeteria_plan_name', 'Enter the name of the existing Section 125 plan.');
+        }
+        plan.cafeteria_amendment_date = cleanText(src.cafeteria_amendment_date);
+        if (!isIsoDate(plan.cafeteria_amendment_date)) push(errors, 'cafeteria_amendment_date', 'Choose the Section 125 amendment effective date.');
+        else if (plan.cafeteria_amendment_date < FIRST_CONTRIBUTION_DATE) push(errors, 'cafeteria_amendment_date', 'The amendment cannot be effective before July 4, 2026.');
+        else if (plan.cafeteria_amendment_date < asOf) push(errors, 'cafeteria_amendment_date', 'The Section 125 amendment must be prospective. Choose today or a later date.');
+        else if (plan.cafeteria_amendment_date > addMonthsIso(asOf, 18)) push(errors, 'cafeteria_amendment_date', 'Choose an amendment date within the next 18 months.');
+      } else {
+        plan.cafeteria_plan_name = '';
+        plan.cafeteria_amendment_date = '';
       }
-      plan.cafeteria_amendment_date = cleanText(src.cafeteria_amendment_date);
-      if (!isIsoDate(plan.cafeteria_amendment_date)) push(errors, 'cafeteria_amendment_date', 'Choose the Section 125 amendment effective date.');
-      else if (plan.cafeteria_amendment_date < FIRST_CONTRIBUTION_DATE) push(errors, 'cafeteria_amendment_date', 'The amendment cannot be effective before July 4, 2026.');
-      else if (plan.cafeteria_amendment_date < asOf) push(errors, 'cafeteria_amendment_date', 'The Section 125 amendment must be prospective. Choose today or a later date.');
-      else if (plan.cafeteria_amendment_date > addMonthsIso(asOf, 18)) push(errors, 'cafeteria_amendment_date', 'Choose an amendment date within the next 18 months.');
     } else {
       plan.election_cutoff_days = null;
       plan.cafeteria_plan_name = '';
@@ -447,7 +456,9 @@ var S128Model = (function () {
       lead.has_existing_125_plan = '';
     }
 
-    plan.employer_address = [plan.street, plan.city, plan.state, plan.zip].filter(Boolean).join(', ');
+    var cityLine = [plan.city, plan.state].filter(Boolean).join(', ');
+    if (plan.zip) cityLine = cityLine ? cityLine + ' ' + plan.zip : plan.zip;
+    plan.employer_address = [plan.street, cityLine].filter(Boolean).join(', ');
     var review = buildReview(plan, lead, asOf);
     return {
       ok: errors.length === 0,
@@ -486,7 +497,7 @@ var S128Model = (function () {
       reasons.push('Employer grants may go to an employee’s own account during the growth period. Department of Labor conditions apply to that design. Review before use.');
     }
     if (fundingUsesSalary(plan.funding_mode) && (lead.has_existing_125_plan === 'no' || lead.has_existing_125_plan === 'unsure')) {
-      reasons.push('Salary reduction needs an existing Section 125 plan, amended before the first affected paycheck. No existing plan was confirmed. Review before use.');
+      reasons.push('Salary reduction has to run through a Section 125 cafeteria plan. No cafeteria plan was confirmed, so this draft does not include an amendment. A cafeteria plan must be adopted or confirmed before salary reduction can start. Review before use.');
     }
     if (isIsoDate(plan.effective_date) && plan.effective_date < asOf) {
       reasons.push('The effective date is before today. Review whether this draft can still be used prospectively.');

@@ -48,6 +48,7 @@ function boot() {
     getRemainingDailyQuota: function () { return context.quota == null ? 50 : context.quota; },
     sendEmail: function (message) {
       if (context.failMail) throw new Error('mail down');
+      if (context.failVisitor && message.to !== 'dan@dkbenefits.net') throw new Error('visitor down');
       sent.push(message);
     }
   };
@@ -77,6 +78,12 @@ function boot() {
     formatDate: function (date, zone, pattern) {
       if (pattern === 'yyyy-MM-dd') return ASOF;
       return ASOF + ' 12:00 ET';
+    },
+    base64Decode: function (b64) {
+      const buf = Buffer.from(String(b64), 'base64');
+      const out = [];
+      for (let i = 0; i < buf.length; i++) out.push(buf[i]);
+      return out;
     }
   };
   context.Session = { getScriptTimeZone: function () { return 'America/New_York'; } };
@@ -182,7 +189,7 @@ test('visitor copies are limited to three an hour and salary reduction attaches 
     cafeteria_plan_name: 'Northwind Cafeteria Plan',
     cafeteria_amendment_date: '2027-01-01',
     election_cutoff_days: '5',
-    has_existing_125_plan: 'no',
+    has_existing_125_plan: 'yes',
     state: 'NC',
     city: 'Charlotte',
     zip: '28202'
@@ -205,4 +212,78 @@ test('visitor copies are limited to three an hour and salary reduction attaches 
   assert.equal(danMessages[0].attachments.length, 2);
   assert.match(danMessages[0].attachments[1].name, /Section_125_Amendment/);
   assert.equal(ctx.sent.filter(function (message) { return message.to === 'ada@northwind.example'; }).length, 3);
+});
+
+test('checked client files are attached, and a missing visitor copy can be retried without emailing Dan again', function () {
+  const ctx = boot();
+  const pdf = Buffer.from('%PDF-1.4\n%test\n').toString('base64');
+  const docx = Buffer.from('PK\u0003\u0004not-a-real-zip').toString('base64');
+  const id = '88888888-8888-4888-8888-888888888888';
+  const body = Object.assign(payload(null, id), {
+    files: [
+      { name: 'Plan.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', dataBase64: docx },
+      { name: 'Plan.pdf', mime: 'application/pdf', dataBase64: pdf },
+      { name: 'evil.exe', mime: 'application/octet-stream', dataBase64: pdf },
+      { name: 'bad.pdf', mime: 'application/pdf', dataBase64: Buffer.from('not a pdf').toString('base64') }
+    ]
+  });
+  ctx.failVisitor = true;
+  const first = ctx.post(body);
+  assert.equal(first.ok, true);
+  assert.equal(first.leadEmailed, true);
+  assert.equal(first.visitorEmailed, false);
+  assert.equal(first.duplicate, false);
+  const dan = ctx.sent.filter(function (message) { return message.to === 'dan@dkbenefits.net'; });
+  assert.equal(dan.length, 1);
+  assert.equal(dan[0].attachments.length, 2);
+  assert.equal(dan[0].attachments[1].data[0], 0x25);
+  assert.match(dan[0].attachments[1].name, /\.pdf$/);
+  ctx.failVisitor = false;
+  const second = ctx.post(body);
+  assert.equal(second.ok, true);
+  assert.equal(second.leadEmailed, true);
+  assert.equal(second.visitorEmailed, true);
+  assert.equal(second.duplicate, false);
+  assert.equal(ctx.sent.filter(function (message) { return message.to === 'dan@dkbenefits.net'; }).length, 1);
+  assert.equal(ctx.sent.filter(function (message) { return message.to === 'ada@northwind.example'; }).length, 1);
+  const third = ctx.post(body);
+  assert.equal(third.ok, true);
+  assert.equal(third.duplicate, true);
+  assert.equal(third.visitorEmailed, true);
+  assert.equal(ctx.sent.length, 2);
+});
+
+test('the daily lead cap stops a new email and a recent pending row is not stuck after Dan was already sent', function () {
+  const ctx = boot();
+  ctx.S128_DAILY_LEAD_CAP = 1;
+  assert.equal(ctx.post(payload(null, '99999999-9999-4999-8999-999999999991')).ok, true);
+  const blocked = ctx.post(payload(null, '99999999-9999-4999-8999-999999999992'));
+  assert.equal(blocked.ok, false);
+  assert.match(blocked.error, /daily email limit/i);
+  assert.equal(ctx.sent.filter(function (message) { return message.to === 'dan@dkbenefits.net'; }).length, 1);
+
+  const sheet = ctx.sheets.Submissions;
+  const pending = sheet.rows[1].slice();
+  pending[0] = new Date().toISOString();
+  pending[1] = '99999999-9999-4999-8999-999999999993';
+  pending[2] = 'pending';
+  pending[16] = 'yes';
+  pending[17] = 'no';
+  sheet.rows.push(pending);
+  const resumed = ctx.post(payload(null, pending[1]));
+  assert.equal(resumed.ok, true);
+  assert.equal(resumed.leadEmailed, true);
+  assert.equal(resumed.visitorEmailed, true);
+  assert.equal(ctx.sent.filter(function (message) { return message.to === 'dan@dkbenefits.net'; }).length, 1);
+
+  const fresh = sheet.rows[1].slice();
+  fresh[0] = new Date().toISOString();
+  fresh[1] = '99999999-9999-4999-8999-999999999994';
+  fresh[2] = 'pending';
+  fresh[16] = 'no';
+  fresh[17] = 'no';
+  sheet.rows.push(fresh);
+  const busy = ctx.post(payload(null, fresh[1]));
+  assert.equal(busy.ok, false);
+  assert.match(busy.error, /already being sent/);
 });

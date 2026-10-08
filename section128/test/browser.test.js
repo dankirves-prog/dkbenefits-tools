@@ -5,9 +5,10 @@ const path = require('path');
 const fs = require('fs');
 const puppeteer = require('puppeteer-core');
 
+const { artifactDir: resolveArtifactDir } = require('./helpers');
 const repoRoot = path.join(__dirname, '..', '..');
 const chrome = process.env.CHROME_PATH || '/usr/local/bin/google-chrome';
-const artifactDir = '/opt/cursor/artifacts/section128';
+const artifactDir = resolveArtifactDir();
 let server;
 let browser;
 
@@ -209,6 +210,10 @@ test('submission requires body.ok, blocks a double post, and retries with the sa
   });
   assert.equal(posts.length, 2);
   assert.equal(posts[1].submissionId, firstId);
+  assert.ok(posts[0].files.some(function (file) {
+    return file.mime === 'application/pdf' && String(file.dataBase64).indexOf('JVBERi') === 0;
+  }));
+  assert.ok(posts[0].files.some(function (file) { return /wordprocessingml/.test(file.mime); }));
   assert.equal(posts[0].lead.contact_email, 'mia@harbor.example');
   assert.equal(posts[0].plan.funding_mode, 'combined');
   assert.equal(posts[0].hp, '');
@@ -224,6 +229,16 @@ test('without an endpoint the page does not claim the draft was emailed', async 
   page.on('request', function (request) {
     if (request.method() === 'POST') posts.push(request.url());
   });
+  const outline = await page.$eval('#stepTitle', function (el) { return getComputedStyle(el).outlineStyle; });
+  assert.equal(outline, 'none');
+  await page.$eval('#employer_ein', function (el) { el.value = '00'; });
+  await page.click('#btnNext');
+  assert.match(await page.$eval('#err_employer_ein', function (el) { return el.textContent; }), /EIN/);
+  await page.$eval('#employer_ein', function (el) {
+    el.value = '12-3456789';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  assert.equal(await page.$eval('#err_employer_ein', function (el) { return el.textContent; }), '');
   await fillCompany(page);
   await page.click('#btnNext');
   await fillDesign(page, 'employer_only');
@@ -234,12 +249,18 @@ test('without an endpoint the page does not claim the draft was emailed', async 
   await page.evaluate(function () { window.__s128SetStartedAt(Date.now() - 10000); });
   await page.click('#btnNext');
   await page.waitForFunction(function () {
-    return /could not be emailed yet/i.test(document.getElementById('emailStatus').textContent);
+    return /ready to download/i.test(document.getElementById('emailStatus').textContent);
   });
   const text = await page.$eval('#emailStatus', function (el) { return el.textContent; });
-  assert.match(text, /not connected/);
-  assert.doesNotMatch(text, /A copy was emailed/);
+  const statusClass = await page.$eval('#emailStatus', function (el) { return el.className; });
+  assert.match(text, /ready to download/i);
+  assert.match(statusClass, /neutral/);
+  assert.doesNotMatch(statusClass, /failed|unsent/);
+  assert.doesNotMatch(text, /could not be emailed|Retry email|not connected/i);
+  assert.equal(await page.$eval('#btnRetry', function (el) { return el.classList.contains('hidden'); }), true);
   assert.equal(posts.length, 0);
   await page.screenshot({ path: path.join(artifactDir, 'phone-confirmation.png'), fullPage: true });
+  await page.reload();
+  assert.equal(await page.$eval('#savedBanner', function (el) { return el.classList.contains('hidden'); }), true);
   await page.close();
 });

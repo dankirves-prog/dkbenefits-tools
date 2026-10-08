@@ -276,7 +276,15 @@ button:focus-visible, .button:focus-visible { outline: 3px solid var(--gold); ou
 }
 .status.sent { background: #f3faf6; border: 1px solid #b7dfc6; }
 .status.unsent, .status.failed { background: #fff4f2; border: 1px solid #e7b2aa; }
-.status.duplicate { background: #f4f7fb; border: 1px solid #c5d0de; }
+.status.neutral, .status.partial, .status.duplicate { background: #f4f7fb; border: 1px solid #c5d0de; }
+h2#stepTitle:focus { outline: none; }
+.note {
+  background: #f4f7fb;
+  border: 1px solid #c5d0de;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 8px 0 0;
+}
 .hidden { display: none !important; }
 
 .hp-wrap {

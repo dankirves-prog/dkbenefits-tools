@@ -20,7 +20,7 @@ The findings below were checked again against the official pages before the draf
 
 | ID | Change in the generated draft |
 |---|---|
-| E1 | Article 6 adds that verification must show the account can accept program contributions, and that a Treasury auto account that has not been claimed and activated cannot. |
+| E1 | Article 6 adds that verification must show the account can accept program contributions, and that a Treasury auto account that has not been claimed and activated cannot. Article 8’s employee notice tells employees the same activation rule. |
 | E2 | Article 8 states the annual statement is due on or before January 31. A correct Form W-2 box 12 code TA can satisfy it for 2026. |
 | E3 | Adoption-agreement checkboxes are replaced with the choice the employer actually made. Lines that do not apply to the funding method are omitted. |
 | E4 | Employer-grant-only keeps Article 7 as “Article 7 Reserved,” with one sentence that salary reduction is not offered. Articles stay numbered 1 through 12. |
@@ -303,7 +303,7 @@ No legal conflicts were found in Articles 1–12 apart from E1 and E2. The remai
 ### 3.3 Standard Template DOCX
 - **Use it for** the separate §125 amendment and for the employee and trustee models.
 - **Changes:**
-  - Adding E1 to the employee notice and designation form is recommended.
+  - E1 is in Article 6 and in the Article 8 employee notice. A separate designation form is still outside this draft.
   - In the §125 amendment, the representative name and title may be filled from the form. "Signature ____ Date ____" must stay blank lines, just as in the Employer Plan. The amendment needs no other execution data.
 - **Do not send employers** the cover "Preparation instructions" paragraph or the "Research draft" subtitle as part of their documents.
 

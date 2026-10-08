@@ -2,7 +2,7 @@
 
 This is a **new** Apps Script. Do not paste it into the quote-tool project, and do not change that project’s `/exec` URL.
 
-The page reads the web-app URL from `section128/config.js` (`endpoint`). Until that value is a real `/exec` URL, the page still builds the Word and PDF drafts and says, honestly, that they could not be emailed.
+The page reads the web-app URL from `section128/config.js` (`endpoint`). Until that value is a real `/exec` URL, the page still builds the Word and PDF drafts in the browser and shows that they are ready to download. It does not email anyone.
 
 ## 1. Create the spreadsheet
 
@@ -20,19 +20,13 @@ Create these files in the Apps Script project (the names must match):
 | `S128Docgen.gs` | `section128/s128-docgen.js` (entire file) |
 | `Code.gs` | `section128/apps-script/Code.gs` (entire file) |
 
-`S128Model.gs` and `S128Docgen.gs` are the same source the page uses, so the server checks the same rules and rebuilds the Word file instead of trusting a file from the browser.
+`S128Model.gs` and `S128Docgen.gs` are the same source the page uses, so the server checks the same rules. The page also sends the Word and PDF files it created.
 
-Save the project.
+Save the project. Do not add the Drive API.
 
-## 3. Optional PDF attachments
+## 3. Attachments
 
-Word attachments are always built in the script. PDF attachments need the Advanced Drive Service:
-
-1. Project Settings (gear) → check **Show "appsscript.json" manifest file**.
-2. Editor left sidebar → Services → add **Drive API** (this is `Drive`, not only `DriveApp`).
-3. The first run will ask you to authorize Drive and Gmail.
-
-If you skip this, Dan’s email and the visitor’s email still include the Word plan and, when salary reduction is selected, the Word Section 125 amendment. `ok` is still true when Gmail accepts Dan’s message.
+The page sends the Word and PDF files in the submission as base64. The script checks the type, the size (1.5 MB each, up to four files), and the file signature (`PK` for Word, `%PDF` for PDF), then attaches the files that pass. If the Word plan is missing or fails those checks, the script rebuilds the Word file from the submitted answers, including the Section 125 amendment when a cafeteria plan name was confirmed. No Drive conversion is used.
 
 ## 4. Deploy the web app
 
@@ -40,7 +34,7 @@ If you skip this, Dan’s email and the visitor’s email still include the Word
 2. Description: `Section 128 leads`.
 3. Execute as: **Me** (`dan@dkbenefits.net`).
 4. Who has access: **Anyone**.
-5. Deploy, authorize MailApp (and Drive if you added it).
+5. Deploy and authorize MailApp.
 6. Copy the URL that ends in `/exec`.
 
 Opening that URL in a browser should show: `DK Benefits Section 128 lead service is deployed.`
@@ -55,7 +49,7 @@ endpoint: 'https://script.google.com/macros/s/PASTE_THE_DEPLOYMENT_ID/exec'
 
 Commit that one-line change and let GitHub Pages publish it. After that, a submission on `https://dankirves-prog.github.io/dkbenefits-tools/section128/` emails:
 
-- **dan@dkbenefits.net** — lead summary plus the draft Word plan (and the Section 125 amendment when salary reduction is selected; PDF too if Drive conversion is on)
+- **dan@dkbenefits.net** — summary plus the draft Word plan and PDF (and the Section 125 amendment when a cafeteria plan was confirmed)
 - the visitor — the same attachments, at the email address they typed, limited to 3 copies per address per hour
 
 The page shows an “emailed” confirmation only when the script returns `{"ok":true,...}` after MailApp accepts your message.
@@ -65,9 +59,10 @@ The page shows an “emailed” confirmation only when the script returns `{"ok"
 - Checks the same field, date, and year-specific dollar limits as the page.
 - Rejects a filled honeypot and any submission completed in under 3 seconds.
 - Uses `CacheService` to limit visitor copies.
-- Uses `LockService` and the `Submissions` tab so a retry of the same submission id does not email twice. A duplicate retry returns `ok: true` with `duplicate: true`.
+- Stops after `S128_DAILY_LEAD_CAP` lead emails in a UTC day. The default at the top of `Code.gs` is 50. A retry of a draft Dan already received does not count again.
+- Records whether Dan’s email and the visitor’s copy each went out. A retry of the same submission id sends only the missing part. If Dan already received the draft and the visitor copy failed, the retry emails the visitor and does not email Dan again. When both already went out, the retry returns `ok: true` with `duplicate: true`.
 - Writes each attempt to the `Submissions` tab and a short line to the `Events` tab.
-- Sends your email first. If the daily MailApp quota cannot cover a second message, you still get the lead and the visitor does not.
+- Sends your email first. If the daily MailApp quota cannot cover a second message, you still get the draft and the visitor does not.
 
 ## 7. A safe test after deploy
 
