@@ -425,8 +425,6 @@ var S128Docgen = (function () {
       'Attached are sample documents for ' + plan.employer_name + '.',
       'They include the Section 128 sample program, this implementation guide' + (usesSalary(plan) && plan.cafeteria_plan_name ? ', and a sample Section 125 amendment' : '') + '.',
       '',
-      S128Terms.SHORT_NOTICE,
-      '',
       plainText(guideParagraphs(plan)),
       '',
       'Questions about DK Benefits’ services? 407-476-5076 · dan@dkbenefits.net',
