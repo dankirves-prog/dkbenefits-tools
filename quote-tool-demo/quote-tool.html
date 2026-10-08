@@ -77,10 +77,10 @@
           <div class="rf-customize-rows">
             <div class="mix-grid rf-counts">
               <label for="eligible">Eligible employees
-                <input id="eligible" type="number" min="1" step="1" inputmode="numeric" placeholder="Eligible" autocomplete="off" />
+                <input id="eligible" type="text" inputmode="numeric" placeholder="Eligible" autocomplete="off" />
               </label>
               <label for="enrolling">Enrolling
-                <input id="enrolling" type="number" min="1" step="1" inputmode="numeric" placeholder="Enrolling" autocomplete="off" />
+                <input id="enrolling" type="text" inputmode="numeric" placeholder="Enrolling" autocomplete="off" />
               </label>
             </div>
             <div class="rf-mix-block">
@@ -90,16 +90,16 @@
               </div>
               <div class="mix-grid">
                 <label for="mix-ee">Employee only
-                  <input id="mix-ee" data-mix="employeeOnly" type="number" min="0" step="1" inputmode="numeric" placeholder="0" autocomplete="off" />
+                  <input id="mix-ee" data-mix="employeeOnly" type="text" inputmode="numeric" placeholder="0" autocomplete="off" />
                 </label>
                 <label for="mix-es">Employee + spouse
-                  <input id="mix-es" data-mix="employeeSpouse" type="number" min="0" step="1" inputmode="numeric" placeholder="0" autocomplete="off" />
+                  <input id="mix-es" data-mix="employeeSpouse" type="text" inputmode="numeric" placeholder="0" autocomplete="off" />
                 </label>
                 <label for="mix-ec">Employee + child
-                  <input id="mix-ec" data-mix="employeeChildren" type="number" min="0" step="1" inputmode="numeric" placeholder="0" autocomplete="off" />
+                  <input id="mix-ec" data-mix="employeeChildren" type="text" inputmode="numeric" placeholder="0" autocomplete="off" />
                 </label>
                 <label for="mix-fam">Family
-                  <input id="mix-fam" data-mix="family" type="number" min="0" step="1" inputmode="numeric" placeholder="0" autocomplete="off" />
+                  <input id="mix-fam" data-mix="family" type="text" inputmode="numeric" placeholder="0" autocomplete="off" />
                 </label>
               </div>
               <p id="mix-note" class="hint" role="status"></p>
@@ -154,7 +154,7 @@
                     <button type="button" class="preset" data-flat="custom">Custom</button>
                   </div>
                   <label class="custom-flat" for="flat-custom-amount">Custom amount
-                    <input id="flat-custom-amount" type="number" min="1" step="1" inputmode="numeric" placeholder="Custom amount" hidden />
+                    <input id="flat-custom-amount" type="text" inputmode="numeric" placeholder="Custom amount" hidden />
                   </label>
                   <p id="flat-readout" class="readout"></p>
                 </div>
@@ -202,7 +202,7 @@
         <p id="lead-saved-note" class="hint"></p>
         <ul id="lead-plan-list" class="lead-plan-list"></ul>
         <form id="lead-form">
-          <fieldset class="state-bubbles">
+          <fieldset id="lead-state" class="state-bubbles" tabindex="-1">
             <legend>What state is your business in?</legend>
             <div class="mode-switch" role="radiogroup" aria-label="Business state">
               <button type="button" class="mode-btn" role="radio" data-state="Florida" aria-checked="false">Florida</button>
@@ -210,6 +210,7 @@
               <button type="button" class="mode-btn" role="radio" data-state="Other" aria-checked="false">Other</button>
             </div>
           </fieldset>
+          <p id="lead-error" class="message message-error" hidden></p>
           <fieldset class="state-bubbles">
             <legend>What can we help with?</legend>
             <div class="mode-switch" role="radiogroup" aria-label="What can we help with?">
@@ -219,7 +220,6 @@
               <button type="button" class="mode-btn" role="radio" data-help="Just learning more" aria-checked="false">Just learning more</button>
             </div>
           </fieldset>
-          <p id="lead-error" class="message message-error" hidden></p>
           <label for="first-name">First name
             <input id="first-name" name="firstName" type="text" autocomplete="given-name" required placeholder="First name" />
           </label>
