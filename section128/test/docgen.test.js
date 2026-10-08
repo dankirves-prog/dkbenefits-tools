@@ -388,3 +388,23 @@ test('LibreOffice renders each funding method and pdf-lib matches the text', asy
   }
   fs.copyFileSync(path.join(artifacts, 'combined-amendment-page-' + amendSignaturePage + '.png'), path.join(artifacts, 'amendment-signature.png'));
 });
+
+test('documents do not state a payroll notice above 30 days', function () {
+  const plan = planFor(Object.assign({
+    funding_mode: 'salary_reduction_only',
+    employer_annual_grant: ''
+  }, salaryFields, { election_cutoff_days: '30' }));
+  function joined(source) {
+    return S128Docgen.planParagraphs(source).concat(S128Docgen.amendmentParagraphs(source)).map(function (row) {
+      return row.text || '';
+    }).join('\n');
+  }
+  const okText = joined(plan);
+  assert.match(okText, /30 calendar days before payday/);
+  assert.match(okText, /subject to 30 calendar days of payroll processing notice/);
+  assert.match(okText, /provide 30 calendar days of payroll processing notice/);
+  const overText = joined(Object.assign({}, plan, { election_cutoff_days: 45 }));
+  assert.doesNotMatch(overText, /45 calendar days/);
+  assert.match(overText, /30 calendar days before payday/);
+  assert.match(overText, /subject to 30 calendar days of payroll processing notice/);
+});

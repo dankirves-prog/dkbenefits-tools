@@ -31,6 +31,15 @@ var S128Docgen = (function () {
     return days + ' calendar days of employment';
   }
 
+  function noticeDays(plan) {
+    var n = Number(plan.election_cutoff_days);
+    if (!isFinite(n)) n = 0;
+    n = Math.floor(n);
+    if (n < 0) n = 0;
+    if (n > 30) n = 30;
+    return String(n);
+  }
+
   function employersText(plan) {
     if (!plan.participating_employers || !plan.participating_employers.length) {
       return 'None (the sponsoring Employer is the sole participating employer)';
@@ -125,7 +134,7 @@ var S128Docgen = (function () {
     }
     return [
       { style: 'Heading2', text: 'Article 7 Salary reduction' },
-      { style: null, text: 'Salary reduction is elected in the Adoption Agreement. An employee may initiate, increase, decrease, or revoke an election prospectively at any time during the plan year, subject to ' + plan.election_cutoff_days + ' calendar days of payroll processing notice. Administration must permit changes and revocations to become effective at least monthly and only as to salary not yet currently available. No qualifying life event is required.' },
+      { style: null, text: 'Salary reduction is elected in the Adoption Agreement. An employee may initiate, increase, decrease, or revoke an election prospectively at any time during the plan year, subject to ' + noticeDays(plan) + ' calendar days of payroll processing notice. Administration must permit changes and revocations to become effective at least monthly and only as to salary not yet currently available. No qualifying life event is required.' },
       { style: null, text: 'Elections identify the amount per payroll and the effective payroll date. The administrator limits deductions to the available annual amount, applicable compensation, and verified eligible dependent accounts. No retroactive election is permitted. Salary reduction stops before the dependent’s growth period ends and when the employee revokes the election, employment or eligibility ends, or applicable limits require a stop.' },
       { style: null, text: 'The employer remits authorized salary reduction promptly under its regular payroll remittance process. Deductions continue only while they can be sent to valid eligible accounts. If a contribution is rejected, the administrator investigates, retries only when a lawful eligible transfer is available, and otherwise returns an untransferred deduction through payroll with the appropriate wage and withholding adjustments. ' + (plan.funding_mode === 'combined'
         ? 'A correction does not authorize retroactive salary reduction or a cash substitute for an employer grant.'
@@ -216,7 +225,7 @@ var S128Docgen = (function () {
       rows.push({ style: null, text: 'Employer grant recipients: ' + recipientText(plan) + '.' });
     }
     if (usesSalary(plan)) {
-      rows.push({ style: null, text: 'Salary reduction election processing notice: ' + plan.election_cutoff_days + ' calendar days before payday' });
+      rows.push({ style: null, text: 'Salary reduction election processing notice: ' + noticeDays(plan) + ' calendar days before payday' });
       if (plan.cafeteria_plan_name) {
         rows.push({ style: null, text: 'Section 125 plan name: ' + plan.cafeteria_plan_name });
         rows.push({ style: null, text: 'Section 125 amendment effective date: ' + longDate(plan.cafeteria_amendment_date) });
@@ -306,7 +315,7 @@ var S128Docgen = (function () {
       { style: 'Heading2', text: 'Eligibility and amounts' },
       { style: null, text: 'Participation requires eligibility under both this cafeteria plan and the separate Section 128 program named ' + plan.plan_name + ' (the Program). The Section 128 program annual cap is ' + S128Model.capText(plan) + '. ' + capShare + ' Account designation, certification, verification, allocation, notices, and corrections follow the Program.' },
       { style: 'Heading2', text: 'Prospective election changes' },
-      { style: null, text: 'A participant may initiate, increase, decrease, or revoke a salary reduction election for this benefit prospectively at any time during the plan year. No qualifying life event is required. The participant must provide ' + plan.election_cutoff_days + ' calendar days of payroll processing notice. Administration must permit changes and revocations to become effective at least monthly and only as to salary not yet currently available. No retroactive election or change is permitted. This provision controls over a general irrevocability or change-in-status restriction in the cafeteria plan solely for this benefit.' },
+      { style: null, text: 'A participant may initiate, increase, decrease, or revoke a salary reduction election for this benefit prospectively at any time during the plan year. No qualifying life event is required. The participant must provide ' + noticeDays(plan) + ' calendar days of payroll processing notice. Administration must permit changes and revocations to become effective at least monthly and only as to salary not yet currently available. No retroactive election or change is permitted. This provision controls over a general irrevocability or change-in-status restriction in the cafeteria plan solely for this benefit.' },
       { style: 'Heading2', text: 'Payment, tax treatment, and compliance' },
       { style: null, text: 'Authorized deductions are remitted directly to independently verified Trump account trustees under the Section 128 program. Elections end or are adjusted when the participant or account becomes ineligible, the beneficiary’s growth period ends, the participant revokes an election, the maximum is reached, or a compliance limit applies. Payroll will apply federal gross income exclusion only to qualifying amounts and will retain applicable Social Security, Medicare, unemployment, and other required wage treatment. This amendment creates no payroll-tax exclusion.' },
       { style: null, text: 'The employer will evaluate cafeteria plan nondiscrimination independently of Section 128 testing. The amendment does not establish an FSA grace period, carryover, uniform coverage rule, or prior-year contribution designation. Except for the specific benefit and election provisions above, the cafeteria plan remains governed by its existing terms and applicable law.' }

@@ -676,7 +676,7 @@
       }
     });
   }
-  function applyWaitingGate(input) {
+  function applyWholeDayGate(input, limit, messages) {
     var raw = String(input.value || '');
     var cut = raw.search(/[^\d]/);
     var digits = cut === -1 ? raw : raw.slice(0, cut);
@@ -684,27 +684,41 @@
     var message = '';
     if (/^\d+$/.test(digits)) {
       var n = Number(digits);
-      if (n > 365) {
+      if (n > limit) {
         digits = input.dataset.lastValid || '0';
-        message = 'Use 0 to 365 calendar days. A longer wait is outside this sample.';
+        message = messages.over;
       } else {
         digits = String(n);
         input.dataset.lastValid = digits;
-        if (invalidChars) message = 'Enter the waiting period as a whole number of days.';
+        if (invalidChars) message = messages.whole;
       }
     } else if (invalidChars) {
-      message = 'Enter the waiting period as a whole number of days.';
+      message = messages.whole;
     }
     if (input.value !== digits) input.value = digits;
     input.dataset.gateMessage = message;
+  }
+  function bindWholeDayGate(input, limit, messages) {
+    input.dataset.lastValid = /^\d+$/.test(input.value) && Number(input.value) <= limit ? String(Number(input.value)) : '0';
+    input.addEventListener('input', function () { applyWholeDayGate(input, limit, messages); });
+    input.addEventListener('keydown', function (event) {
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.key.length === 1 && !/\d/.test(event.key)) {
+        event.preventDefault();
+        input.dataset.gateMessage = messages.whole;
+        var box = $('err_' + input.id);
+        if (box) box.textContent = input.dataset.gateMessage;
+        input.setAttribute('aria-invalid', 'true');
+      }
+    });
   }
   function onFieldEdited(event) {
     var target = event.target;
     if (!target) return;
     clearFieldError(target.id);
     if (target.name) clearFieldError(target.name);
-    if (target.id === 'waiting_days' && target.dataset.gateMessage) {
-      var box = $('err_waiting_days');
+    if ((target.id === 'waiting_days' || target.id === 'election_cutoff_days') && target.dataset.gateMessage) {
+      var box = $('err_' + target.id);
       if (box) box.textContent = target.dataset.gateMessage;
       target.setAttribute('aria-invalid', 'true');
     }
@@ -719,18 +733,13 @@
     $('plan_name').addEventListener('input', function () { planNameTouched = true; });
     bindLiveMask($('employer_ein'), S128Model.formatEinLive);
     bindLiveMask($('contact_phone'), S128Model.formatPhoneLive);
-    var waiting = $('waiting_days');
-    waiting.dataset.lastValid = /^\d+$/.test(waiting.value) && Number(waiting.value) <= 365 ? String(Number(waiting.value)) : '0';
-    waiting.addEventListener('input', function () { applyWaitingGate(waiting); });
-    waiting.addEventListener('keydown', function (event) {
-      if (event.ctrlKey || event.metaKey || event.altKey) return;
-      if (event.key.length === 1 && !/\d/.test(event.key)) {
-        event.preventDefault();
-        waiting.dataset.gateMessage = 'Enter the waiting period as a whole number of days.';
-        var box = $('err_waiting_days');
-        if (box) box.textContent = waiting.dataset.gateMessage;
-        waiting.setAttribute('aria-invalid', 'true');
-      }
+    bindWholeDayGate($('waiting_days'), 365, {
+      over: 'Use 0 to 365 calendar days. A longer wait is outside this sample.',
+      whole: 'Enter the waiting period as a whole number of days.'
+    });
+    bindWholeDayGate($('election_cutoff_days'), 30, {
+      over: 'Use 0 to 30 days so employees can still change an election at least monthly.',
+      whole: 'Enter the payroll processing notice as a whole number of days.'
     });
     document.getElementById('wizard').addEventListener('change', onFieldEdited);
     document.getElementById('wizard').addEventListener('input', onFieldEdited);
