@@ -62,6 +62,7 @@ test('the wizard builds a premium-only plan in the browser and does not post', a
     });
     await page.goto('http://127.0.0.1:8815/index.html', { waitUntil: 'domcontentloaded' });
     await page.locator('#employer_name').waitFor();
+    assert.equal(await page.locator('#state option[value="FL"]').textContent(), 'Florida');
     await page.waitForTimeout(400);
     const loaded = await page.evaluate(function () {
       var el = document.activeElement;
@@ -117,6 +118,11 @@ test('the wizard builds a premium-only plan in the browser and does not post', a
     assert.match(review, /Medical, Dental, Vision/);
     await page.locator('#openTerms').click();
     await page.locator('#termsDialog').waitFor();
+    const termsFocus = await page.evaluate(function () {
+      var el = document.activeElement;
+      return el ? el.tagName + ' ' + (el.getAttribute('tabindex') || '') : '';
+    });
+    assert.equal(termsFocus, 'H2 -1');
     const terms = await page.locator('#termsDialogBody').innerText();
     assert.match(terms, /not legal advice/);
     assert.match(terms, /s125-terms-2026-10-10/);
@@ -131,9 +137,9 @@ test('the wizard builds a premium-only plan in the browser and does not post', a
     assert.match(status, /not turned on/i);
     const names = await page.locator('#downloadList button').allTextContents();
     assert.ok(names.some(function (name) { return /Section_125_Plan_v1\.0\.docx/.test(name); }));
-    assert.ok(names.some(function (name) { return /Implementation_Guide_v1\.0\.docx/.test(name); }));
+    assert.ok(names.some(function (name) { return /Implementation_Checklist_v1\.0\.docx/.test(name); }));
     assert.ok(names.some(function (name) { return /Section_125_Plan_v1\.0\.pdf/.test(name); }));
-    assert.ok(names.some(function (name) { return /Implementation_Guide_v1\.0\.pdf/.test(name); }));
+    assert.ok(names.some(function (name) { return /Implementation_Checklist_v1\.0\.pdf/.test(name); }));
     assert.equal(names.length, 4);
     assert.deepEqual(blocked, []);
     await page.screenshot({ path: path.join(artifactDir, 'wizard-download.png') });

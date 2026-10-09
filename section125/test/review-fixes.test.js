@@ -182,7 +182,7 @@ test('the template version is v1.0 and file names are derived from it', function
   assert.equal(S125Terms.VERSION, 's125-terms-2026-10-10');
   const plan = planFor();
   assert.equal(S125Docgen.planFileName(plan), 'Northwind_Benefits_Inc_Section_125_Plan_v1.0.docx');
-  assert.equal(S125Docgen.guideFileName(plan), 'Northwind_Benefits_Inc_Section_125_Implementation_Guide_v1.0.docx');
+  assert.equal(S125Docgen.guideFileName(plan), 'Northwind_Benefits_Inc_Section_125_Implementation_Checklist_v1.0.docx');
   assert.match(S125Terms.PARAGRAPHS.join('\n'), /The tool and the documents are free/);
   assert.match(S125Terms.PARAGRAPHS[1], /asking DK Benefits LLC for a copy/);
   const email = S125Docgen.followUpEmailText(plan, { contact_name: 'Ada Lopez' }, {
@@ -191,6 +191,97 @@ test('the template version is v1.0 and file names are derived from it', function
   });
   assert.match(email, /If you'd rather not get these emails from me, let me know and I'll take you off the list\./);
   assert.doesNotMatch(email, /just reply|just hit reply/i);
+});
+
+test('a name that already ends with a period does not gain a second one', function () {
+  const plan = planFor({ employer_name: 'Northwind Supply Inc.' });
+  const text = textOf(plan);
+  const guide = guideOf(plan);
+  assert.match(text, /Employer means Northwind Supply Inc\./);
+  assert.doesNotMatch(text, /Northwind Supply Inc\.\./);
+  assert.match(guide, /Northwind Supply Inc\. — Northwind Supply Inc\. Section 125 Cafeteria Plan\./);
+  assert.doesNotMatch(guide, /Inc\.\./);
+});
+
+test('a plan year that starts March 1 ends on the last day of February', function () {
+  const plan = planFor({
+    plan_year_type: 'custom',
+    plan_year_start_month: '3',
+    plan_year_start_day: '1',
+    effective_date: '2028-03-01'
+  });
+  const sentence = S125Model.planYearSentence(plan);
+  assert.match(sentence, /beginning March 1 and ending on the last day of February/);
+  assert.doesNotMatch(sentence, /February 28|February 29/);
+  assert.match(textOf(plan), /ending on the last day of February/);
+});
+
+test('dependent care uses the post-2025 exclusion and a plan-year election cap', function () {
+  const text = textOf(planFor({ benefits: ['dcap'], dcap_unused: 'forfeit' }));
+  assert.match(text, /For taxable years beginning after December 31, 2025/);
+  assert.doesNotMatch(text, /For a taxable year beginning in 2026/);
+  assert.match(text, /A Participant’s Dependent Care FSA election for a plan year may not exceed \$7,500, or \$3,750 for a married Participant filing separately\./);
+  assert.doesNotMatch(text, /remitting the elected premium/);
+  const selfFunded = textOf(planFor({ funding_type: 'self', benefits: ['medical'] }));
+  assert.match(selfFunded, /group medical plan/);
+  assert.match(selfFunded, /If the Employer changes that share/);
+  assert.doesNotMatch(selfFunded, /group medical contract|If the insurer changes/);
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  assert.match(html, /Dependent care FSA<small>\$7,500 a year, not indexed<\/small>/);
+});
+
+test('prior adoption is printed as a month name and cannot be before 1978 or after the effective date', function () {
+  const plan = planFor({ prior_plan: 'yes', prior_adoption: '01/2020', effective_date: '2027-01-01' });
+  assert.equal(plan.prior_adoption, '01/2020');
+  assert.match(textOf(plan), /originally adopted in January 2020\./);
+  assert.doesNotMatch(textOf(plan), /adopted in 01\/2020|adopted 01\/2020/);
+  const early = S125Model.validate(baseInput({ prior_plan: 'yes', prior_adoption: '12/1977' }), { asOf: ASOF });
+  assert.ok(early.errors.some(function (item) { return item.field === 'prior_adoption' && /1978/.test(item.message); }));
+  const later = S125Model.validate(baseInput({ prior_plan: 'yes', prior_adoption: '02/2027', effective_date: '2027-01-01' }), { asOf: ASOF });
+  assert.ok(later.errors.some(function (item) { return item.field === 'prior_adoption' && /after the effective date/.test(item.message); }));
+  const sameMonth = S125Model.validate(baseInput({ prior_plan: 'yes', prior_adoption: '01/2027', effective_date: '2027-01-15' }), { asOf: ASOF });
+  assert.equal(sameMonth.ok, true, JSON.stringify(sameMonth.errors));
+});
+
+test('the plan number stays a whole number from 501 to 999', function () {
+  assert.equal(planFor({ plan_number: '501' }).plan_number, '501');
+  assert.equal(planFor({ plan_number: '999' }).plan_number, '999');
+  ['500', '1000', '50', ''].forEach(function (value) {
+    const result = S125Model.validate(baseInput({ plan_number: value }), { asOf: ASOF });
+    const hit = result.errors.filter(function (item) { return item.field === 'plan_number'; });
+    assert.equal(hit.length, 1, value);
+    assert.match(hit[0].message, /501 to 999/);
+  });
+});
+
+test('review flags name the cases Dan should see, and a plain plan has none', function () {
+  const plain = S125Model.validate(baseInput(), { asOf: ASOF });
+  assert.equal(plain.review.required, false);
+  assert.equal(plain.review.reasons.length, 0);
+  const flagged = S125Model.validate(baseInput({
+    effective_date: '2026-10-20',
+    plan_year_type: 'custom',
+    plan_year_start_month: '11',
+    plan_year_start_day: '1',
+    prior_plan: 'yes',
+    prior_adoption: '01/2020',
+    plan_year_change: 'yes',
+    funding_type: 'level',
+    eligible_classes: ['part-time', 'other'],
+    eligible_class_other: 'Employees at the Tampa office',
+    benefits: ['health_fsa'],
+    health_fsa_design: 'general',
+    health_fsa_unused: 'forfeit'
+  }), { asOf: ASOF });
+  assert.equal(flagged.ok, true, JSON.stringify(flagged.errors));
+  assert.equal(flagged.review.required, true);
+  const reasons = flagged.review.reasons.join('\n');
+  assert.match(reasons, /Health FSA is offered without a medical benefit/);
+  assert.match(reasons, /part-time employees or another class/);
+  assert.match(reasons, /shorter than one month/);
+  assert.match(reasons, /within 14 days/);
+  assert.match(reasons, /changes the plan year/);
+  assert.match(reasons, /self-funded or level-funded/);
 });
 
 test('S02, S04, and S09 plan PDFs report a page count', async function () {

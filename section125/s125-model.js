@@ -175,7 +175,7 @@ var S125Model = (function () {
     if (!m) return '';
     var month = Number(m[1]);
     var year = Number(m[2]);
-    if (month < 1 || month > 12 || year < 1900 || year > 2100) return '';
+    if (month < 1 || month > 12 || year < 1000 || year > 2100) return '';
     return pad(month) + '/' + String(year);
   }
   function formatDateCanonical(raw) {
@@ -329,6 +329,14 @@ var S125Model = (function () {
     if (input.prior_plan === 'yes') {
       adoption = canonicalMonthYear(input.prior_adoption);
       if (!adoption) push(errors, 'prior_adoption', 'Enter the original adoption month and year, like 01/2020.');
+      else {
+        var adoptedYear = Number(adoption.slice(3));
+        var adoptedMonth = Number(adoption.slice(0, 2));
+        if (adoptedYear < 1978) push(errors, 'prior_adoption', 'Enter an adoption month in 1978 or later.');
+        else if (eff && adoptedYear * 12 + adoptedMonth > eff.getFullYear() * 12 + eff.getMonth() + 1) {
+          push(errors, 'prior_adoption', 'The original adoption month cannot be after the effective date.');
+        }
+      }
       input.prior_adoption = adoption;
     }
     var oe = wholeInRange(input.oe_window_days, 1, 90);
@@ -430,7 +438,8 @@ var S125Model = (function () {
       employee_count: count,
       entity_type: plan.entity_type
     };
-    return { ok: errors.length === 0, errors: errors, plan: plan, lead: lead, review: { required: false, reasons: [] } };
+    var reasons = reviewReasons(plan, asOf);
+    return { ok: errors.length === 0, errors: errors, plan: plan, lead: lead, review: { required: reasons.length > 0, reasons: reasons } };
   }
 
   function validateSubmission(payload, options) {
@@ -581,9 +590,37 @@ var S125Model = (function () {
     return notes;
   }
 
+  function formatAdoptionMonth(value) {
+    var match = /^(\d{2})\/(\d{4})$/.exec(String(value || ''));
+    if (!match) return String(value || '');
+    return (MONTHS[Number(match[1])] || match[1]) + ' ' + match[2];
+  }
+
+  function reviewReasons(plan, asOf) {
+    var reasons = [];
+    var benefits = plan.benefits || [];
+    var classes = plan.eligible_classes || [];
+    var health = benefits.indexOf('health_fsa') !== -1;
+    if (health && benefits.indexOf('medical') === -1) reasons.push('Health FSA is offered without a medical benefit.');
+    if (health && (classes.indexOf('part-time') !== -1 || classes.indexOf('other') !== -1)) {
+      reasons.push('Health FSA is offered to part-time employees or another class.');
+    }
+    if (plan.short_plan_year && shortYearMonths(plan.effective_date, plan.short_plan_year_end) < 1) {
+      reasons.push('The first plan year is shorter than one month.');
+    }
+    var days = daysUntil(plan.effective_date, asOf || todayIso());
+    if (days != null && days >= 0 && days < 14) reasons.push('The effective date is within 14 days.');
+    if (plan.plan_year_change) reasons.push('The restatement changes the plan year.');
+    if (plan.funding_type === 'self' || plan.funding_type === 'level') reasons.push('Medical coverage is self-funded or level-funded.');
+    return reasons;
+  }
+
   function planYearSentence(plan) {
     if (plan.plan_year_type === 'calendar') return 'the calendar year, January 1 through December 31';
     var start = MONTHS[plan.plan_year_start_month] + ' ' + plan.plan_year_start_day;
+    if (Number(plan.plan_year_start_month) === 3 && Number(plan.plan_year_start_day) === 1) {
+      return 'the 12-month period beginning ' + start + ' and ending on the last day of February';
+    }
     var end = MONTHS[plan.plan_year_end_month] + ' ' + plan.plan_year_end_day;
     return 'the 12-month period beginning ' + start + ' and ending ' + end;
   }
@@ -624,6 +661,7 @@ var S125Model = (function () {
     benefitLabel: benefitLabel,
     classSentence: classSentence,
     planYearSentence: planYearSentence,
+    formatAdoptionMonth: formatAdoptionMonth,
     shortYearMonths: shortYearMonths,
     dayBeforeIso: dayBeforeIso,
     planYearNote: planYearNote,

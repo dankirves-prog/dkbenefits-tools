@@ -4,7 +4,7 @@
 var S125Tips = (function () {
   var TEXT = {
     employer_name: 'The legal name is printed on the sample. The employer decides whether to adopt it. Printing the name does not adopt the plan.',
-    employer_ein: 'The EIN is printed so payroll and the sample refer to the same employer. This tool does not check the number with the IRS. The file stays in the browser and in the email to DK Benefits. It is not posted as a public file.',
+    employer_ein: 'This tool does not check the number with the IRS. The EIN is sent to DK Benefits with the documents. It is not posted as a public file.',
     plan_number: '501 is the usual cafeteria-plan number. Use another whole number from 501 to 999 if this employer already uses 501.',
     street: 'The street address is printed so the employer is identified. It does not adopt the plan.',
     city: 'The city is printed with the state and ZIP. The address identifies the employer.',

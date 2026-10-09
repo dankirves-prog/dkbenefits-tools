@@ -44,9 +44,11 @@ Opening that URL in a browser should show: `DK Benefits Section 125 lead service
 
 ## 5. Point the page at it
 
-In `section125/config.js`, set `endpoint` to that `/exec` URL. Commit that one-line change and let GitHub Pages publish it. Until then, `endpoint` stays empty and the page only downloads files.
+`section125/config.js` already sets `endpoint` to the deployed web app:
 
-After the endpoint is published, a submission on `https://dankirves-prog.github.io/dkbenefits-tools/section125/`:
+`https://script.google.com/macros/s/AKfycbxuK0N06PnBppBNlXyIhnIFT6oRwODUCxXMk_QY43xD29FsXQLtSdWimFriwi6y42beqA/exec`
+
+A submission on `https://dankirves-prog.github.io/dkbenefits-tools/section125/`:
 
 - emails **dan@dkbenefits.net** immediately, with the sample Word and PDF files attached
 - lets the employer download those files on the page

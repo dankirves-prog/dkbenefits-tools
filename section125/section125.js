@@ -245,7 +245,15 @@
       '<dt>Effective</dt><dd>' + escapeHtml(S125Model.formatLongDate(plan.effective_date)) + '</dd>' +
       '<dt>Plan year</dt><dd>' + escapeHtml(S125Model.planYearSentence(plan)) + '</dd>' +
       '<dt>Benefits</dt><dd>' + escapeHtml(benefits) + '</dd>' +
+      '<dt>Health FSA</dt><dd>' + escapeHtml((plan.benefits || []).indexOf('health_fsa') === -1 ? 'Not offered' : (S125Model.healthFsaDesignLabel(plan.health_fsa_design) + '. Unused amounts: ' + S125Model.unusedLabel(plan.health_fsa_unused) + '.')) + '</dd>' +
+      '<dt>Dependent care</dt><dd>' + escapeHtml((plan.benefits || []).indexOf('dcap') === -1 ? 'Not offered' : ('Unused amounts: ' + S125Model.unusedLabel(plan.dcap_unused) + '.')) + '</dd>' +
+      '<dt>Funding</dt><dd>' + escapeHtml(S125Model.fundingLabel(plan.funding_type)) + '</dd>' +
+      '<dt>Waiting period</dt><dd>' + escapeHtml(S125Model.waitingText(plan.waiting_period)) + '</dd>' +
+      '<dt>New-hire window</dt><dd>' + escapeHtml(String(plan.new_hire_window) + ' days') + '</dd>' +
+      '<dt>Open enrollment</dt><dd>' + escapeHtml(String(plan.oe_window_days) + ' days') + '</dd>' +
       '<dt>Eligible class</dt><dd>' + escapeHtml(S125Model.classSentence(plan)) + '</dd>' +
+      '<dt>Signer</dt><dd>' + escapeHtml(plan.signer_name) + '</dd>' +
+      '<dt>Email</dt><dd>' + escapeHtml(plan.signer_email) + '</dd>' +
       '</dl></section>';
   }
   function escapeHtml(value) {
@@ -285,7 +293,7 @@
   }
   function downloadLabel(name) {
     var pdf = /\.pdf$/i.test(name);
-    if (/Implementation_Guide/i.test(name)) return pdf ? 'Implementation checklist (PDF)' : 'Implementation checklist (Word)';
+    if (/Implementation_Checklist/i.test(name)) return pdf ? 'Implementation checklist (PDF)' : 'Implementation checklist (Word)';
     return pdf ? 'Plan document (PDF)' : 'Plan document (Word)';
   }
   function showDownloads(files) {
@@ -524,7 +532,13 @@
     $('termsDialogBody').innerHTML = S125Terms.PARAGRAPHS.map(function (p) { return '<p>' + escapeHtml(p) + '</p>'; }).join('');
     $('openTerms').addEventListener('click', function (event) {
       event.preventDefault();
-      if ($('termsDialog').showModal) $('termsDialog').showModal();
+      var dialog = $('termsDialog');
+      if (dialog.showModal) dialog.showModal();
+      var heading = dialog.querySelector('h2');
+      if (heading) {
+        heading.setAttribute('tabindex', '-1');
+        if (heading.focus) heading.focus();
+      }
     });
     $('closeTerms').addEventListener('click', function () { $('termsDialog').close(); });
   }
@@ -533,7 +547,7 @@
     S125Model.US_STATES.forEach(function (code) {
       var option = document.createElement('option');
       option.value = code;
-      option.textContent = code;
+      option.textContent = S125Model.stateName(code);
       state.appendChild(option);
     });
     var month = $('plan_year_start_month');
@@ -579,8 +593,12 @@
       range: 'Enter the new-hire window as a whole number of days from 1 to 30.',
       whole: 'Enter the new-hire window as a whole number of days.'
     });
-    $('wizard').addEventListener('change', syncConditional);
-    $('wizard').addEventListener('input', syncConditional);
+    function onWizardInput() {
+      syncConditional();
+      if (step === 5) renderReview();
+    }
+    $('wizard').addEventListener('change', onWizardInput);
+    $('wizard').addEventListener('input', onWizardInput);
     month.addEventListener('change', fillDays);
     $('btnNext').addEventListener('click', function () {
       if (step < 5) {

@@ -263,7 +263,7 @@ function s125LeadMessage_(payload, checked, files) {
     'New-hire enrollment: ' + plan.new_hire_window + ' days',
     'Open enrollment: ' + plan.oe_window_days + ' days',
     'Employees in more than one state: ' + (plan.multi_state ? 'Yes' : 'No'),
-    'Existing Section 125 plan: ' + (plan.prior_plan ? 'Yes, originally adopted ' + plan.prior_adoption : 'No'),
+    'Existing Section 125 plan: ' + (plan.prior_plan ? 'Yes, originally adopted in ' + S125Model.formatAdoptionMonth(plan.prior_adoption) : 'No'),
     'Benefits: ' + benefits,
     'Health FSA: ' + (health ? S125Model.healthFsaDesignLabel(plan.health_fsa_design) : 'Not offered'),
     'Unused Health FSA amounts: ' + (health ? S125Model.unusedLabel(plan.health_fsa_unused) : 'Not offered'),
@@ -274,12 +274,19 @@ function s125LeadMessage_(payload, checked, files) {
     'Officer title: ' + plan.signer_title,
     'Officer email: ' + plan.signer_email,
     '',
+    'Review flags'
+  ];
+  var reasons = (checked.review && checked.review.reasons) || [];
+  if (!reasons.length) lines.push('None');
+  else reasons.forEach(function (reason) { lines.push(reason); });
+  lines.push(
+    '',
     'Acknowledgement',
     'Terms version: ' + ((payload.acknowledgement && payload.acknowledgement.termsVersion) || ''),
     'Accepted at: ' + ((payload.acknowledgement && payload.acknowledgement.acceptedAt) || ''),
     '',
     'The attached files are sample drafts. They are not adopted until the employer signs them. They are not stored on a public link.'
-  ];
+  );
   if (plan.short_plan_year) {
     lines.splice(lines.indexOf('Plan year: ' + year) + 1, 0, 'First plan year: short year ending ' + S125Model.formatLongDate(plan.short_plan_year_end));
   }
