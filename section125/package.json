@@ -1,0 +1,10 @@
+{
+  "name": "dkb-section125",
+  "private": true,
+  "description": "Static Section 125 sample generator. Tests use Node. Browser checks use the Playwright install from section128.",
+  "scripts": {
+    "test:unit": "node --test test/model.test.js test/docgen.test.js test/apps-script.test.js",
+    "test:iframe": "node --test test/iframe-scroll.test.js",
+    "test:browser": "node --test test/browser.test.js"
+  }
+}

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; }
+    iframe { border: 0; width: 100%; height: 100%; display: block; }
+  </style>
+</head>
+<body>
+  <iframe id="tool" title="Section 125 cafeteria plan tool" src="https://dankirves-prog.github.io/dkbenefits-tools/section125/index.html"></iframe>
+  <script>
+    var frame = document.getElementById('tool');
+    window.addEventListener('message', function (event) {
+      if (event.source === frame.contentWindow) {
+        window.parent.postMessage(event.data, '*');
+      } else if (event.source === window.parent && frame.contentWindow) {
+        frame.contentWindow.postMessage(event.data, '*');
+      }
+    });
+  </script>
+</body>
+</html>

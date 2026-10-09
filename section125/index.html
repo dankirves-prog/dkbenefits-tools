@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Section 125 cafeteria plan | DK Benefits</title>
+  <meta name="description" content="A free educational tool to help employers prepare a sample Section 125 cafeteria plan. DK Benefits LLC.">
+  <link rel="stylesheet" href="section125.css">
+</head>
+<body>
+  <a class="skip" href="#stepTitle">Skip to the form</a>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <p class="brand">DK Benefits LLC</p>
+      <h1>Section 125 cafeteria plan</h1>
+      <p>A free educational tool to help an employer prepare a sample Section 125 plan. It is not legal or tax advice.</p>
+    </div>
+  </header>
+  <div class="draft-banner">
+    <div class="draft-banner-inner">Educational tool — not legal or tax advice. The sample is not effective until the employer signs it.</div>
+  </div>
+  <main class="wrap">
+    <nav class="progress" aria-label="Steps">
+      <ol class="progress-list" id="progressList"></ol>
+    </nav>
+    <form id="wizard" novalidate>
+      <div class="hp-wrap" aria-hidden="true">
+        <label for="company_website">Company website</label>
+        <input id="company_website" name="company_website" type="text" tabindex="-1" autocomplete="off">
+      </div>
+
+      <section class="card" data-step="1">
+        <h2 id="stepTitle">Company</h2>
+        <p class="lede">Use the employer’s legal name. It is printed on the sample plan.</p>
+        <div class="grid">
+          <div class="field span-2">
+            <label for="employer_name">Employer legal name<span class="tip-slot" data-tip="employer_name"></span></label>
+            <input id="employer_name" name="employer_name" type="text" autocomplete="organization" required>
+            <p class="hint">The name on the plan and on payroll.</p>
+            <p class="field-error" id="err_employer_name" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="employer_ein">EIN<span class="tip-slot" data-tip="employer_ein"></span></label>
+            <input id="employer_ein" name="employer_ein" type="text" inputmode="numeric" autocomplete="off" required>
+            <p class="hint">e.g. 12-3456789</p>
+            <p class="field-error" id="err_employer_ein" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="plan_number">Plan number<span class="tip-slot" data-tip="plan_number"></span></label>
+            <input id="plan_number" name="plan_number" type="text" inputmode="numeric" value="501" required>
+            <p class="hint">Three digits. 501 is the usual cafeteria plan number.</p>
+            <p class="field-error" id="err_plan_number" role="alert"></p>
+          </div>
+          <div class="field span-2">
+            <label for="street">Street address<span class="tip-slot" data-tip="street"></span></label>
+            <input id="street" name="street" type="text" autocomplete="street-address" required>
+            <p class="field-error" id="err_street" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="city">City<span class="tip-slot" data-tip="city"></span></label>
+            <input id="city" name="city" type="text" autocomplete="address-level2" required>
+            <p class="field-error" id="err_city" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="state">State<span class="tip-slot" data-tip="state"></span></label>
+            <select id="state" name="state" autocomplete="address-level1" required>
+              <option value="">Choose a state</option>
+            </select>
+            <p class="field-error" id="err_state" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="zip">ZIP code<span class="tip-slot" data-tip="zip"></span></label>
+            <input id="zip" name="zip" type="text" inputmode="numeric" autocomplete="postal-code" required>
+            <p class="hint">e.g. 32801</p>
+            <p class="field-error" id="err_zip" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="phone">Phone<span class="tip-slot" data-tip="phone"></span></label>
+            <input id="phone" name="phone" type="tel" autocomplete="tel" required>
+            <p class="hint">e.g. 407-476-5076</p>
+            <p class="field-error" id="err_phone" role="alert"></p>
+          </div>
+        </div>
+        <fieldset>
+          <legend class="choice-legend">Entity type<span class="tip-slot" data-tip="entity_type"></span></legend>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="entity_type" value="c-corp"><span>C corporation<small>Owner-employees can participate.</small></span></label>
+            <label class="choice"><input type="radio" name="entity_type" value="s-corp"><span>S corporation<small>More-than-2% shareholders are excluded, including attributed family stock.</small></span></label>
+            <label class="choice"><input type="radio" name="entity_type" value="llc"><span>LLC<small>The tax election decides who is excluded.</small></span></label>
+            <label class="choice"><input type="radio" name="entity_type" value="partnership"><span>Partnership<small>Partners are excluded.</small></span></label>
+            <label class="choice"><input type="radio" name="entity_type" value="sole-prop"><span>Sole proprietorship<small>The owner is excluded.</small></span></label>
+            <label class="choice"><input type="radio" name="entity_type" value="nonprofit"><span>Nonprofit<small>Common-law employees can participate.</small></span></label>
+          </div>
+          <p class="hint">The sample always applies the exclusion the entity requires. It does not ask whether owners will participate.</p>
+          <p class="field-error" id="err_entity_type" role="alert"></p>
+        </fieldset>
+        <fieldset class="only-llc hidden" id="llcTaxBlock">
+          <legend class="choice-legend">How is the LLC taxed?<span class="tip-slot" data-tip="llc_tax"></span></legend>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="llc_tax" value="s-corp"><span>S corporation<small>More-than-2% members are excluded, with section 318 attribution.</small></span></label>
+            <label class="choice"><input type="radio" name="llc_tax" value="partnership"><span>Partnership<small>Members are self-employed and excluded.</small></span></label>
+            <label class="choice"><input type="radio" name="llc_tax" value="c-corp"><span>C corporation<small>Member-employees can participate.</small></span></label>
+            <label class="choice"><input type="radio" name="llc_tax" value="disregarded"><span>Disregarded entity<small>Treated as a sole proprietorship. The owner is excluded.</small></span></label>
+          </div>
+          <p class="field-error" id="err_llc_tax" role="alert"></p>
+        </fieldset>
+      </section>
+
+      <section class="card hidden" data-step="2">
+        <h2>Plan year</h2>
+        <p class="lede">The plan year is 12 months. A short first year is used only when a new plan, or a restatement that changes the year, starts on another day.</p>
+        <div class="grid">
+          <div class="field">
+            <label for="effective_date">Effective date<span class="tip-slot" data-tip="effective_date"></span></label>
+            <input id="effective_date" name="effective_date" type="date" required>
+            <p class="hint">Today or a later date.</p>
+            <p class="field-error" id="err_effective_date" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="plan_year_type">Plan year<span class="tip-slot" data-tip="plan_year_type"></span></label>
+            <select id="plan_year_type" name="plan_year_type" required>
+              <option value="">Choose</option>
+              <option value="calendar">Calendar year (January 1 – December 31)</option>
+              <option value="custom">A different 12-month year</option>
+            </select>
+            <p class="field-error" id="err_plan_year_type" role="alert"></p>
+          </div>
+        </div>
+        <div class="only-custom hidden" id="customYear">
+          <div class="grid">
+            <div class="field">
+              <label for="plan_year_start_month">Plan year starts<span class="tip-slot" data-tip="plan_year_start"></span></label>
+              <div class="grid">
+                <select id="plan_year_start_month" name="plan_year_start_month"></select>
+                <select id="plan_year_start_day" name="plan_year_start_day"></select>
+              </div>
+              <p class="hint" id="planYearEndHelp">The end date fills in as the day before the start.</p>
+              <p class="field-error" id="err_plan_year_start" role="alert"></p>
+            </div>
+          </div>
+        </div>
+        <fieldset>
+          <legend class="choice-legend">Is a Section 125 plan already in place?<span class="tip-slot" data-tip="prior_plan"></span></legend>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="prior_plan" value="no"><span>No, this is a new plan</span></label>
+            <label class="choice"><input type="radio" name="prior_plan" value="yes"><span>Yes, this restates an existing plan</span></label>
+          </div>
+          <p class="field-error" id="err_prior_plan" role="alert"></p>
+        </fieldset>
+        <div class="only-prior hidden">
+          <div class="field">
+            <label for="prior_adoption">Original adoption month and year</label>
+            <input id="prior_adoption" name="prior_adoption" type="text" inputmode="numeric" placeholder="01/2020">
+            <p class="hint">e.g. 01/2020</p>
+            <p class="field-error" id="err_prior_adoption" role="alert"></p>
+          </div>
+          <label class="ack" for="plan_year_change">
+            <input id="plan_year_change" name="plan_year_change" type="checkbox" value="yes">
+            <span>This restatement also changes the plan year<span class="tip-slot" data-tip="plan_year_change"></span></span>
+          </label>
+        </div>
+        <p class="note hidden" id="shortYearNote"></p>
+        <fieldset>
+          <legend class="choice-legend">Annual open enrollment length<span class="tip-slot" data-tip="oe_window_days"></span></legend>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="oe_window_days" value="15"><span>15 days</span></label>
+            <label class="choice"><input type="radio" name="oe_window_days" value="30"><span>30 days</span></label>
+            <label class="choice"><input type="radio" name="oe_window_days" value="45"><span>45 days</span></label>
+          </div>
+          <p class="field-error" id="err_oe_window_days" role="alert"></p>
+        </fieldset>
+        <fieldset>
+          <legend class="choice-legend">New-hire enrollment window<span class="tip-slot" data-tip="new_hire_window"></span></legend>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="new_hire_window" value="7"><span>7 days</span></label>
+            <label class="choice"><input type="radio" name="new_hire_window" value="14"><span>14 days</span></label>
+            <label class="choice"><input type="radio" name="new_hire_window" value="30"><span>30 days</span></label>
+            <label class="choice"><input type="radio" name="new_hire_window" value="60"><span>60 days</span></label>
+          </div>
+          <p class="field-error" id="err_new_hire_window" role="alert"></p>
+        </fieldset>
+      </section>
+
+      <section class="card hidden" data-step="3">
+        <h2>Eligibility</h2>
+        <div class="grid">
+          <div class="field">
+            <label for="employee_count">Employees<span class="tip-slot" data-tip="employee_count"></span></label>
+            <input id="employee_count" name="employee_count" type="text" inputmode="numeric" required>
+            <p class="hint">Nondiscrimination testing applies at every size.</p>
+            <p class="field-error" id="err_employee_count" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="full_time_hours">Full-time hours per week<span class="tip-slot" data-tip="full_time_hours"></span></label>
+            <input id="full_time_hours" name="full_time_hours" type="text" inputmode="numeric" value="30" required>
+            <p class="hint">Whole number from 1 to 40. ACA full-time is often 30.</p>
+            <p class="field-error" id="err_full_time_hours" role="alert"></p>
+          </div>
+        </div>
+        <fieldset>
+          <legend class="choice-legend">Medical plan funding<span class="tip-slot" data-tip="funding_type"></span></legend>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="funding_type" value="insured"><span>Fully insured</span></label>
+            <label class="choice"><input type="radio" name="funding_type" value="level"><span>Level funded<small>Often self-insured for tax purposes. Section 105(h) can apply.</small></span></label>
+            <label class="choice"><input type="radio" name="funding_type" value="self"><span>Self-funded<small>Section 105(h) applies to self-insured medical benefits.</small></span></label>
+          </div>
+          <p class="field-error" id="err_funding_type" role="alert"></p>
+        </fieldset>
+        <div class="field">
+          <label for="waiting_period">Waiting period<span class="tip-slot" data-tip="waiting_period"></span></label>
+          <select id="waiting_period" name="waiting_period" required>
+            <option value="">Choose</option>
+            <option value="none">No waiting period (coverage starts on the date of hire)</option>
+            <option value="fom_hire">First of the month after the date of hire</option>
+            <option value="fom_30">First of the month after 30 days</option>
+            <option value="fom_60">First of the month after 60 days</option>
+            <option value="days_30">30 days (coverage begins on the 31st day)</option>
+            <option value="days_60">60 days (coverage begins on the 61st day)</option>
+            <option value="days_90">90 days (coverage begins on the 91st day)</option>
+          </select>
+          <p class="hint">The plan uses this same date as the election effective date. A group health plan generally cannot wait longer than 90 days.</p>
+          <p class="field-error" id="err_waiting_period" role="alert"></p>
+        </div>
+        <fieldset>
+          <legend class="choice-legend">Eligible classes<span class="tip-slot" data-tip="eligible_classes"></span></legend>
+          <div class="choices">
+            <label class="choice"><input type="checkbox" name="eligible_classes" value="full-time" checked><span>Full-time employees</span></label>
+            <label class="choice"><input type="checkbox" name="eligible_classes" value="part-time"><span>Part-time employees<small>Only if the plan and the carrier allow it.</small></span></label>
+            <label class="choice"><input type="checkbox" name="eligible_classes" value="other"><span>Other class<small>Describe it so the plan can name it.</small></span></label>
+          </div>
+          <p class="field-error" id="err_eligible_classes" role="alert"></p>
+        </fieldset>
+        <div class="field only-other hidden">
+          <label for="eligible_class_other">Describe the other class<span class="tip-slot" data-tip="eligible_class_other"></span></label>
+          <input id="eligible_class_other" name="eligible_class_other" type="text" maxlength="160">
+          <p class="hint">e.g. Salaried employees at the Orlando office. Do not list people by name.</p>
+          <p class="field-error" id="err_eligible_class_other" role="alert"></p>
+        </div>
+        <fieldset>
+          <legend class="choice-legend">Do employees work in more than one state?<span class="tip-slot" data-tip="multi_state"></span></legend>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="multi_state" value="no"><span>No</span></label>
+            <label class="choice"><input type="radio" name="multi_state" value="yes"><span>Yes</span></label>
+          </div>
+          <p class="field-error" id="err_multi_state" role="alert"></p>
+        </fieldset>
+      </section>
+
+      <section class="card hidden" data-step="4">
+        <h2>Benefits</h2>
+        <p class="lede">Choose every benefit that will be paid pre-tax. A health FSA and an HSA can both be on the plan. An employee covered by a general-purpose health FSA cannot contribute to an HSA.</p>
+        <fieldset>
+          <legend class="choice-legend">Pre-tax benefits<span class="tip-slot" data-tip="benefits"></span></legend>
+          <div class="choices">
+            <label class="choice"><input type="checkbox" name="benefits" value="medical"><span>Medical<small>The employee’s share of the group medical premium.</small></span></label>
+            <label class="choice"><input type="checkbox" name="benefits" value="dental"><span>Dental</span></label>
+            <label class="choice"><input type="checkbox" name="benefits" value="vision"><span>Vision</span></label>
+            <label class="choice"><input type="checkbox" name="benefits" value="health_fsa"><span>Health FSA<small>2026 salary-reduction limit $3,400.</small></span></label>
+            <label class="choice"><input type="checkbox" name="benefits" value="dcap"><span>Dependent care FSA<small>2026 exclusion $7,500, or $3,750 if married filing separately.</small></span></label>
+            <label class="choice"><input type="checkbox" name="benefits" value="hsa"><span>HSA<small>The election can be changed at least monthly.</small></span></label>
+          </div>
+          <p class="field-error" id="err_benefits" role="alert"></p>
+        </fieldset>
+        <div class="only-health hidden">
+          <fieldset>
+            <legend class="choice-legend">Health FSA design<span class="tip-slot" data-tip="health_fsa_design"></span></legend>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="health_fsa_design" value="general"><span>General purpose<small>Blocks HSA contributions for anyone it covers.</small></span></label>
+              <label class="choice"><input type="radio" name="health_fsa_design" value="limited"><span>Limited purpose<small>Dental, vision, and preventive care. HSA-compatible.</small></span></label>
+              <label class="choice"><input type="radio" name="health_fsa_design" value="both"><span>Both<small>HSA participants elect the limited-purpose option.</small></span></label>
+            </div>
+            <p class="field-error" id="err_health_fsa_design" role="alert"></p>
+          </fieldset>
+          <fieldset>
+            <legend class="choice-legend">Unused Health FSA amounts<span class="tip-slot" data-tip="health_fsa_unused"></span></legend>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="health_fsa_unused" value="forfeit"><span>Forfeiture<small>Unused amounts are lost at year-end.</small></span></label>
+              <label class="choice"><input type="radio" name="health_fsa_unused" value="grace"><span>Grace period<small>Through the 15th day of the third month. No carryover.</small></span></label>
+              <label class="choice"><input type="radio" name="health_fsa_unused" value="carryover"><span>Carryover<small>$680 from a plan year beginning in 2026. No grace period.</small></span></label>
+            </div>
+            <p class="field-error" id="err_health_fsa_unused" role="alert"></p>
+          </fieldset>
+        </div>
+        <div class="only-dcap hidden">
+          <fieldset>
+            <legend class="choice-legend">Unused dependent care amounts<span class="tip-slot" data-tip="dcap_unused"></span></legend>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="dcap_unused" value="forfeit"><span>Forfeiture<small>Carryover is not available for dependent care.</small></span></label>
+              <label class="choice"><input type="radio" name="dcap_unused" value="grace"><span>Grace period<small>Through the 15th day of the third month.</small></span></label>
+            </div>
+            <p class="field-error" id="err_dcap_unused" role="alert"></p>
+          </fieldset>
+        </div>
+        <p class="note hidden" id="hsaNote"></p>
+      </section>
+
+      <section class="card hidden" data-step="5">
+        <h2>Check and create</h2>
+        <p class="lede">The employer is the plan administrator. The officer signs for the employer. The signature line stays blank.</p>
+        <div class="grid">
+          <div class="field">
+            <label for="signer_name">Authorized officer<span class="tip-slot" data-tip="signer_name"></span></label>
+            <input id="signer_name" name="signer_name" type="text" autocomplete="name" required>
+            <p class="hint">Printed above the blank signature line. Not printed as a personal fiduciary.</p>
+            <p class="field-error" id="err_signer_name" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="signer_title">Title<span class="tip-slot" data-tip="signer_title"></span></label>
+            <input id="signer_title" name="signer_title" type="text" autocomplete="organization-title" required>
+            <p class="field-error" id="err_signer_title" role="alert"></p>
+          </div>
+          <div class="field span-2">
+            <label for="signer_email">Email<span class="tip-slot" data-tip="signer_email"></span></label>
+            <input id="signer_email" name="signer_email" type="email" autocomplete="email" required>
+            <p class="hint">We’ll use this to follow up with a short note. The documents download on this page.</p>
+            <p class="field-error" id="err_signer_email" role="alert"></p>
+          </div>
+        </div>
+        <div id="reviewSummary" class="summary"></div>
+        <label class="ack" for="terms_ack">
+          <input id="terms_ack" name="terms_ack" type="checkbox">
+          <span>I understand this is an educational tool, not legal or tax advice, and my company is responsible for what it adopts. I agree to the <button type="button" class="linkish" id="openTerms">Terms of use</button>.</span>
+        </label>
+        <p class="field-error" id="err_terms_ack" role="alert"></p>
+      </section>
+
+      <section class="card hidden" data-step="6">
+        <h2>Your documents</h2>
+        <div id="emailStatus" class="status" role="status"></div>
+        <div class="downloads" id="downloadList"></div>
+        <p class="note">Employee election forms are not included. Your payroll provider or FSA administrator can prepare them. Nothing from this tool is stored as a public file.</p>
+        <button class="btn-secondary hidden" id="btnRetry" type="button">Try again</button>
+      </section>
+
+      <div class="nav">
+        <button class="btn-secondary hidden" id="btnBack" type="button">Back</button>
+        <button class="btn-primary" id="btnNext" type="button">Continue</button>
+      </div>
+    </form>
+  </main>
+  <footer class="site-footer">
+    <p>Questions about DK Benefits’ services? <a href="tel:4074765076">407-476-5076</a> · <a href="mailto:dan@dkbenefits.net">dan@dkbenefits.net</a></p>
+    <p>The sample is built in your browser. It is not saved to a public link.</p>
+  </footer>
+  <dialog id="termsDialog" class="terms-dialog">
+    <h2>Terms of use</h2>
+    <div id="termsDialogBody"></div>
+    <button type="button" class="btn-primary" id="closeTerms">Close</button>
+  </dialog>
+  <script src="config.js"></script>
+  <script src="s125-model.js"></script>
+  <script src="s125-terms.js"></script>
+  <script src="s125-tips.js"></script>
+  <script src="s125-docgen.js"></script>
+  <script src="vendor/pdf-lib.min.js"></script>
+  <script src="s125-pdf.js"></script>
+  <script src="section125.js"></script>
+</body>
+</html>
