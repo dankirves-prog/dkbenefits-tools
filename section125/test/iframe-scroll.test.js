@@ -144,7 +144,8 @@ async function fillCompany(frame) {
       el.dispatchEvent(new Event('change', { bubbles: true }));
     }, fields[names[i]]);
   }
-  await frame.locator('input[name="entity_type"][value="c-corp"]').check();
+  await frame.locator('input[name="funding_type"][value="insured"]').check();
+  await frame.locator('input[name="multi_state"][value="no"]').check();
 }
 
 async function runInitialLoad(browser, engine, size) {

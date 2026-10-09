@@ -4,8 +4,8 @@
 var S125Tips = (function () {
   var TEXT = {
     employer_name: 'The legal name is printed on the sample. The employer decides whether to adopt it. Printing the name does not adopt the plan.',
-    employer_ein: 'The EIN is printed so payroll and the sample refer to the same employer. This tool does not check the number with the IRS. The file stays in the browser and in the email to DK Benefits. It is not posted as a public file.',
-    plan_number: '501 is the usual cafeteria-plan number. Use another 3-digit number if this employer already uses 501.',
+    employer_ein: 'This tool does not check the number with the IRS. The EIN is sent to DK Benefits with the documents. It is not posted as a public file.',
+    plan_number: '501 is the usual cafeteria-plan number. Use another whole number from 501 to 999 if this employer already uses 501.',
     street: 'The street address is printed so the employer is identified. It does not adopt the plan.',
     city: 'The city is printed with the state and ZIP. The address identifies the employer.',
     state: 'An employer in any U.S. state can prepare this sample. Federal cafeteria-plan rules do not decide state income tax.',
@@ -19,7 +19,7 @@ var S125Tips = (function () {
     prior_plan: 'A restatement continues the plan that is already in place. It is not treated as a brand-new short plan year unless you are also changing the plan year.',
     plan_year_change: 'Check this only if the restatement moves the plan year. The period from the effective date to the day before the new plan year starts is a short year.',
     oe_window_days: 'Open enrollment is the window before each plan year. The dates in the sample are the first window on or after this plan exists. They are not a window from a month that already passed.',
-    new_hire_window: 'A new hire who misses this window is treated as having elected cash. The sample does not default a missed election to after-tax coverage.',
+    new_hire_window: 'A new hire has 1 to 30 days to enroll. An election made within 30 days of hire can take effect when coverage begins. A later election is prospective. A missed window is treated as an election of cash, not after-tax coverage.',
     employee_count: 'Section 125 nondiscrimination tests apply at every size. This count does not by itself decide Applicable Large Employer status.',
     funding_type: 'Level-funded and self-funded medical benefits can also face the section 105(h) nondiscrimination rules. Fully insured medical coverage generally does not.',
     full_time_hours: 'Full-time in this plan means the weekly hours you enter. The Affordable Care Act uses 30 hours for a different purpose. The two definitions can match, and they do not have to.',
@@ -29,7 +29,7 @@ var S125Tips = (function () {
     multi_state: 'The sample states the federal cafeteria-plan rules. Some states add their own benefit rules for employees who work there.',
     benefits: 'Choose every benefit that will be paid pre-tax. Medical, dental, and vision mean the employee’s share of the premium. A health FSA and an HSA can both be offered. An employee covered by a general-purpose health FSA cannot contribute to an HSA.',
     health_fsa_design: 'A limited-purpose health FSA covers dental, vision, and preventive care, so an HSA contribution can still be allowed. A general-purpose health FSA blocks HSA contributions for the person it covers. A post-deductible FSA is another HSA-compatible design a TPA can add.',
-    health_fsa_unused: 'Pick one. A grace period runs through the 15th day of the third month. A carryover from a plan year beginning in 2026 is $680 into the next year. Amounts carried into 2026 from 2025 are limited to $660. The plan cannot have both.',
+    health_fsa_unused: 'Pick one. A grace period runs through the 15th day of the third month. Carryover is up to the maximum the IRS sets for that plan year ($680 from a plan year beginning in 2026). The plan cannot have both.',
     dcap_unused: 'Dependent care can be forfeited or given a grace period. The health FSA carryover does not apply. For 2026 the exclusion is $7,500, or $3,750 if married filing separately.',
     signer_name: 'This name is printed above a blank signature line. The employer, not the individual, is the plan administrator. The officer signs for the employer.',
     signer_title: 'The title is printed with the name. It is not a signature and it is not the adoption date.',

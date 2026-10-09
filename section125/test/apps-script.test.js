@@ -106,6 +106,19 @@ function boot() {
     }
   };
   context.Utilities = {
+    formatDate: function (date, zone, pattern) {
+      var dt = new Date(date);
+      var ms = dt.getTime();
+      if (zone === 'Pacific/Honolulu') ms -= 10 * 60 * 60 * 1000;
+      var z = new Date(ms);
+      var y = z.getUTCFullYear();
+      var m = String(z.getUTCMonth() + 1);
+      var d = String(z.getUTCDate());
+      if (m.length < 2) m = '0' + m;
+      if (d.length < 2) d = '0' + d;
+      if (pattern === 'yyyy-MM-dd') return y + '-' + m + '-' + d;
+      return y + '-' + m + '-' + d;
+    },
     newBlob: function (data, mime, name) {
       return { data: data, mime: mime, name: name };
     },
@@ -136,7 +149,7 @@ function payload(overrides, id) {
     startedAt: '2026-10-09T15:00:00.000Z',
     submittedAt: '2026-10-09T15:00:10.000Z',
     pageUrl: 'http://127.0.0.1/section125/index.html',
-    templateVersion: 's125-v1.0.0-2026-10-09',
+    templateVersion: 's125-v1.0-2026-10-10',
     test: true,
     hp: '',
     lead: checked.lead,
@@ -145,7 +158,7 @@ function payload(overrides, id) {
     acknowledgement: {
       accepted: true,
       acceptedAt: '2026-10-09T15:00:10.000Z',
-      termsVersion: 's125-terms-2026-10-09'
+      termsVersion: 's125-terms-2026-10-10'
     },
     sendVisitorCopy: true
   };
@@ -179,15 +192,33 @@ test('a valid lead emails Dan immediately and queues a follow-up with no visitor
   assert.equal(body.followUpQueued, true);
   assert.equal(ctx.sent.length, 1);
   assert.equal(ctx.sent[0].to, 'dan@dkbenefits.net');
-  assert.match(ctx.sent[0].subject, /^\[TEST\] New Section 125 Lead: Northwind Benefits Inc$/);
+  assert.match(ctx.sent[0].subject, /^\[TEST\] New Section 125 Lead: Northwind Benefits Inc \| C corporation \| 40 employees$/);
+  assert.match(ctx.sent[0].body, /State: Florida/);
+  assert.match(ctx.sent[0].body, /Entity: C corporation/);
+  assert.match(ctx.sent[0].body, /Employees: 40/);
+  assert.match(ctx.sent[0].body, /Effective date: January 1, 2027/);
+  assert.match(ctx.sent[0].body, /Plan year: The calendar year, January 1 through December 31/);
+  assert.match(ctx.sent[0].body, /Funding: Fully insured/);
+  assert.match(ctx.sent[0].body, /Eligible classes: Full-Time employees regularly scheduled to work at least 30 hours a week/);
+  assert.match(ctx.sent[0].body, /Waiting period: No waiting period\. Coverage starts on the date of hire\./);
+  assert.match(ctx.sent[0].body, /Benefits: Medical, Dental, Vision/);
+  assert.match(ctx.sent[0].body, /Health FSA: Not offered/);
+  assert.match(ctx.sent[0].body, /Unused Health FSA amounts: Not offered/);
+  assert.match(ctx.sent[0].body, /Dependent Care FSA: Not offered/);
+  assert.match(ctx.sent[0].body, /HSA: Not offered/);
+  assert.match(ctx.sent[0].body, /Authorized officer: Ada Lopez/);
+  assert.match(ctx.sent[0].body, /Officer title: President/);
+  assert.match(ctx.sent[0].body, /Officer email: ada@northwind\.example/);
+  assert.doesNotMatch(ctx.sent[0].body, /health_fsa|s-corp|c-corp|\bdcap\b|dcap_unused/);
   assert.equal(ctx.sent[0].attachments.length, 2);
   assert.match(ctx.sent[0].attachments[0].name, /Section_125_Plan_v1\.0\.docx$/);
-  assert.match(ctx.sent[0].attachments[1].name, /Implementation_Guide_v1\.0\.docx$/);
+  assert.match(ctx.sent[0].attachments[1].name, /Implementation_Checklist_v1\.0\.docx$/);
+  assert.match(ctx.sent[0].body, /Review flags\nNone/);
   assert.equal(ctx.sent[0].attachments[0].data[0], 0x50);
   assert.equal(ctx.sent[0].attachments[0].data[1], 0x4b);
   assert.equal(ctx.sheets.Submissions.rows[1][14], 'yes');
   assert.equal(ctx.sheets.Submissions.rows[1][15], 'no');
-  assert.equal(ctx.sheets.Submissions.rows[1][18], 's125-terms-2026-10-09');
+  assert.equal(ctx.sheets.Submissions.rows[1][18], 's125-terms-2026-10-10');
   assert.equal(ctx.sheets.FollowUps.rows[1][5], 'pending');
   assert.equal(ctx.triggers[0], 's125SendDueFollowUps');
   ctx.setupFollowUpTrigger();
@@ -208,6 +239,14 @@ test('the follow-up waits ten minutes, has two links, and has no attachments', f
     dcap_unused: 'grace'
   };
   assert.equal(ctx.post(payload(rich, '77777770-7777-4777-8777-777777777777')).ok, true);
+  assert.match(ctx.sent[0].body, /Entity: S corporation/);
+  assert.match(ctx.sent[0].body, /Benefits: Medical, Health FSA, Dependent Care FSA, HSA/);
+  assert.match(ctx.sent[0].body, /Health FSA: Limited purpose/);
+  assert.match(ctx.sent[0].body, /Unused Health FSA amounts: Carryover/);
+  assert.match(ctx.sent[0].body, /Dependent Care FSA: Offered/);
+  assert.match(ctx.sent[0].body, /Unused dependent care amounts: Grace period/);
+  assert.match(ctx.sent[0].body, /HSA: Offered\. The election can be changed at least monthly\./);
+  assert.doesNotMatch(ctx.sent[0].body, /health_fsa|s-corp|\bdcap\b/);
   assert.equal(ctx.post(payload(rich, '77777771-7777-4777-8777-777777777777')).ok, true);
   ctx.s125SendDueFollowUps();
   assert.equal(ctx.sent.filter(function (message) { return message.to === 'ada@northwind.example'; }).length, 0);
@@ -220,9 +259,11 @@ test('the follow-up waits ten minutes, has two links, and has no attachments', f
   assert.equal(notes[0].replyTo, 'dan@dkbenefits.net');
   assert.equal(notes[0].subject, '[TEST] Thanks for using my Section 125 tool!');
   assert.match(notes[0].body, /^Hi Ada,/);
-  assert.match(notes[0].body, /officially called "Trump accounts"/);
+  assert.match(notes[0].body, /kids' Trump accounts \(employers can contribute under the new Section 128\)/);
   assert.match(notes[0].body, /Just so it's clear, legally I have to mention that the tool is educational and isn't legal or tax advice\./);
-  assert.doesNotMatch(notes[0].body, /I don't sell, market, open, or administer Trump accounts/);
+  assert.match(notes[0].body, /If you'd rather not get these emails from me, let me know and I'll take you off the list\./);
+  assert.doesNotMatch(notes[0].body, /just reply|just hit reply/i);
+  assert.match(notes[0].body, /I don't sell, market, open, or administer Trump accounts/);
   assert.deepEqual(notes[0].body.match(/https?:\/\/\S+/g), [LINKS.section128Url, LINKS.ratesUrl]);
   assert.equal((notes[0].htmlBody.match(/<a /g) || []).length, 2);
   assert.match(notes[0].htmlBody, /407-476-5076 \| www\.dkbenefits\.net/);
@@ -230,6 +271,24 @@ test('the follow-up waits ten minutes, has two links, and has no attachments', f
   assert.doesNotMatch(notes[0].body, /dan@dkbenefits\.net|Thanks again|P\.S\./);
   assert.equal(ctx.sheets.FollowUps.rows[1][5], 'sent');
   assert.equal(ctx.sheets.FollowUps.rows[2][5], 'skipped');
+});
+
+test('an evening submission dated today in Hawaii still emails Dan', function () {
+  const ctx = boot();
+  ctx.S125_TEST_NOW = Date.parse('2026-10-10T01:30:00.000Z');
+  const body = payload({ effective_date: '2026-10-09' }, '56565656-5656-4565-8565-565656565656');
+  const result = ctx.post(body);
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(result.leadEmailed, true);
+  assert.equal(ctx.sent.length, 1);
+});
+
+test('the previous terms version is still accepted', function () {
+  const ctx = boot();
+  const body = payload(null, '57575757-5757-4575-8575-575757575757');
+  body.acknowledgement.termsVersion = 's125-terms-2026-10-09';
+  assert.equal(ctx.post(body).ok, true);
+  assert.equal(ctx.sent.length, 1);
 });
 
 test('a honeypot, a fast submit, and a wrong terms version are rejected without email', function () {
@@ -271,6 +330,21 @@ test('client files that fail the signature check are dropped and the script rebu
   assert.equal(again.duplicate, true);
   assert.equal(again.visitorEmailed, false);
   assert.equal(ctx.sent.length, 1);
+});
+
+test('Dan’s lead email lists the review flags', function () {
+  const ctx = boot();
+  ctx.S125_TEST_NOW = Date.parse('2026-10-09T18:00:00.000Z');
+  const body = ctx.post(payload({
+    effective_date: '2026-10-20',
+    funding_type: 'self',
+    benefits: ['health_fsa'],
+    health_fsa_design: 'limited',
+    health_fsa_unused: 'grace',
+    eligible_classes: ['part-time']
+  }, '19191919-1919-4191-8191-191919191919'));
+  assert.equal(body.ok, true, body.error);
+  assert.match(ctx.sent[0].body, /Review flags\nHealth FSA is offered without a medical benefit\.\nHealth FSA is offered to part-time employees or another class\.\nThe effective date is within 14 days\.\nMedical coverage is self-funded or level-funded\./);
 });
 
 test('the daily cap blocks a new lead and a fresh pending row is left alone', function () {
