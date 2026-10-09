@@ -203,6 +203,11 @@ test('submission requires body.ok, blocks a double post, and retries with the sa
   assert.match(await page.$eval('#err_terms_ack', function (el) { return el.textContent; }), /Terms of use/);
   await page.click('#openTerms');
   await page.waitForSelector('#termsDialog[open]');
+  const termsFocus = await page.evaluate(function () {
+    var el = document.activeElement;
+    return el ? el.tagName + ' ' + (el.getAttribute('tabindex') || '') : '';
+  });
+  assert.equal(termsFocus, 'H2 -1');
   const termsText = await page.$eval('#termsDialogBody', function (el) { return el.textContent; });
   assert.match(termsText, /The tool and the documents are free\. The employer can download the documents on the final screen at no charge/);
   assert.match(termsText, /asking DK Benefits LLC for a copy/);
