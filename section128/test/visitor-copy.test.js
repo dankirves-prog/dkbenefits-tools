@@ -60,13 +60,13 @@ test('combined visitor email and guide stay educational', function () {
   BANNED.forEach(function (pattern) { assert.doesNotMatch(email, pattern); });
   assert.doesNotMatch(email, /attorney|does not review|attached|lowest|savings/i);
   assert.match(email, /^Hi Ada,/);
-  assert.match(email, /isn't final until your company adopts it/);
+  assert.match(email, /A few quick reminders to make the plan official/);
   assert.match(email, /Your tax advisor can help/);
-  assert.match(email, /I just saw you finished the Section 128 document builder/);
-  assert.match(email, /instant group health rates on our site here/);
-  assert.match(email, /When we take a group to market with full underwriting/);
-  assert.equal((email.match(/premium-only/g) || []).length, 1);
-  assert.doesNotMatch(email, /shop and negotiate/);
+  assert.match(email, /I just saw you used my Section 128 tool/);
+  assert.match(email, /some rates you can see online right now/);
+  assert.match(email, /shop and negotiate your group health/);
+  assert.doesNotMatch(email, /premium-only/);
+  assert.doesNotMatch(email, /dan@dkbenefits\.net/);
   assert.deepEqual(email.match(/https?:\/\/\S+/g), [
     'https://www.dkbenefits.net/section125plantool',
     'https://www.dkbenefits.net/instant-group-quote'

@@ -1052,9 +1052,9 @@ var S128Docgen = (function () {
     var lines = [
       first ? ('Hi ' + first + ',') : 'Hi there,',
       '',
-      'I just saw you finished the Section 128 document builder for ' + employer + ', and I wanted to make sure you got everything you needed.',
+      'I just saw you used my Section 128 tool for ' + employer + '. Thank you! I really appreciate it.',
       '',
-      'Just a reminder that the program isn\'t final until your company adopts it. Here\'s a quick checklist to make it official:',
+      'A few quick reminders to make the plan official:',
       ''
     ];
     checklistLines(plan).forEach(function (line, index) {
@@ -1064,23 +1064,22 @@ var S128Docgen = (function () {
       '',
       'Your tax advisor can help with anything specific to your situation.',
       '',
-      'If you don\'t have a Section 125 plan yet, or yours needs to be restated, our free tool can help with that too. It builds either a premium-only plan or a full cafeteria plan:',
+      'By the way, if you need a Section 125 plan, or yours needs a refresh, I have a free tool for that too:',
       section125,
       '',
-      'And no pressure at all, but in case it\'s useful: we\'re an employee benefits broker. You can see instant group health rates on our site here:',
+      'And just so you know, I\'m an employee benefits broker. No pressure at all, but I can help you shop and negotiate your group health and other benefits. I even have some rates you can see online right now:',
       rates,
-      'Those are a quick starting point. When we take a group to market with full underwriting, we can often find better options. We also stay with you year-round, with Employee Navigator connected to your carriers and payroll so enrollments and changes are handled for you.',
       '',
-      'If you\'d ever like to talk through your benefits, just reply to this email. I\'m happy to help.',
+      'If you ever want to chat about your benefits, just hit reply.',
       '',
-      'Thanks,',
+      'Thanks again,',
+      'Daniel',
       '',
       'Daniel Kirves',
       'DK Benefits',
       '407-476-5076',
-      'dan@dkbenefits.net',
       '',
-      'DK Benefits doesn\'t sell, market, open, or administer Trump accounts. The Section 128 tool is educational and isn\'t legal or tax advice.'
+      'DK Benefits doesn\'t sell, market, open, or administer Trump accounts. This tool is educational and isn\'t legal or tax advice.'
     );
     return lines.join('\n');
   }
@@ -1760,7 +1759,7 @@ function s128AppendFollowUp_(payload, checked) {
 function s128FollowUpMessage_(row) {
   var plan = {};
   try { plan = JSON.parse(String(row[4] || '{}')); } catch (err) { plan = {}; }
-  var subject = 'Your Section 128 documents';
+  var subject = 'Thanks for using my Section 128 tool';
   if (String(row[6]) === 'yes') subject = '[TEST] ' + subject;
   var links = { section125Url: SECTION125_URL, ratesUrl: RATES_URL };
   var lead = { contact_name: String(row[2] || '') };
