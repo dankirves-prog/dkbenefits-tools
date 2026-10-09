@@ -304,8 +304,8 @@ test('implementation guide matches the funding design and the visitor email', fu
   assert.match(email, /I'd be happy to help you shop and negotiate your group health and other benefits/);
   assert.match(email, /some rates you can check out online right now/);
   assert.match(email, /Would you mind giving me a shot to see what I can do for you\? I'd love to hear from you\./);
-  assert.match(email, /Thanks again,\nDaniel\n/);
-  assert.match(email, /P\.S\. Just so it's clear, I don't sell, market, open, or administer Trump accounts\./);
+  assert.doesNotMatch(email, /Thanks again|P\.S\./);
+  assert.match(email, /Also, just so it's clear, I don't sell, market, open, or administer Trump accounts\. And legally I have to mention that the tool is educational and isn't legal or tax advice\.\n\nDaniel Kirves\n/);
   assert.match(email, /the tool is educational and isn't legal or tax advice/);
   assert.match(email, /Daniel Kirves/);
   assert.match(email, /Benefits Broker \| 20 Years Exp \| DK Benefits/);
