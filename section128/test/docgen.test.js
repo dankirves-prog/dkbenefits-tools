@@ -298,8 +298,10 @@ test('implementation guide matches the funding design and the visitor email', fu
   assert.match(email, /Your tax advisor can help with anything specific to your situation/);
   assert.match(email, /It builds either a premium-only plan or a full cafeteria plan/);
   assert.equal((email.match(/premium-only/g) || []).length, 1);
-  assert.match(email, /shop and negotiate their group health and other benefits/);
+  assert.match(email, /You can see instant group health rates on our site here/);
+  assert.match(email, /Those are a quick starting point\. When we take a group to market with full underwriting, we can often find better options\./);
   assert.match(email, /Employee Navigator connected to your carriers and payroll/);
+  assert.doesNotMatch(email, /shop and negotiate/);
   assert.match(email, /just reply to this email\. I'm happy to help/);
   assert.match(email, /Thanks,/);
   assert.match(email, /Daniel Kirves/);
@@ -307,14 +309,15 @@ test('implementation guide matches the funding design and the visitor email', fu
   assert.match(email, /dan@dkbenefits.net/);
   assert.match(email, /The Section 128 tool is educational and isn't legal or tax advice/);
   assert.match(email, /doesn't sell, market, open, or administer Trump accounts/);
-  assert.doesNotMatch(email, /attorney|SAMPLE DRAFT|does not review|received your draft|attached|lowest|savings|cheapest|guarantee|instant-group-quote|quote-tool-demo/i);
+  assert.doesNotMatch(email, /attorney|SAMPLE DRAFT|does not review|received your draft|attached|lowest|savings|cheapest|guarantee|quote-tool-demo/i);
   assert.deepEqual(email.match(/https?:\/\/\S+/g), [
-    'https://www.dkbenefits.net/section125plantool'
+    'https://www.dkbenefits.net/section125plantool',
+    'https://www.dkbenefits.net/instant-group-quote'
   ]);
   assert.match(S128Docgen.followUpEmailText(combined, { contact_name: '   ' }, links), /^Hi there,/);
-  assert.equal((html.match(/<a /g) || []).length, 1);
+  assert.equal((html.match(/<a /g) || []).length, 2);
   assert.match(html, /<a href="https:\/\/www\.dkbenefits\.net\/section125plantool">https:\/\/www\.dkbenefits\.net\/section125plantool<\/a>/);
-  assert.doesNotMatch(html, /instant-group-quote/);
+  assert.match(html, /<a href="https:\/\/www\.dkbenefits\.net\/instant-group-quote">https:\/\/www\.dkbenefits\.net\/instant-group-quote<\/a>/);
   assert.doesNotMatch(html, /mailto:|tel:|<img|utm_|bit\.ly|tinyurl/i);
   assert.match(html, /407-476-5076/);
   assert.match(html, /dan@dkbenefits\.net/);

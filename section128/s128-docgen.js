@@ -410,6 +410,7 @@ var S128Docgen = (function () {
     lead = lead || {};
     plan = plan || {};
     var section125 = links.section125Url || '';
+    var rates = links.ratesUrl || '';
     var first = followUpFirstName(lead);
     var employer = plan.employer_name || 'your company';
     var lines = [
@@ -430,7 +431,9 @@ var S128Docgen = (function () {
       'If you don\'t have a Section 125 plan yet, or yours needs to be restated, our free tool can help with that too. It builds either a premium-only plan or a full cafeteria plan:',
       section125,
       '',
-      'And no pressure at all, but in case it\'s useful: we\'re an employee benefits broker. We help employers shop and negotiate their group health and other benefits, and we stay with you year-round, with Employee Navigator connected to your carriers and payroll so enrollments and changes are handled for you.',
+      'And no pressure at all, but in case it\'s useful: we\'re an employee benefits broker. You can see instant group health rates on our site here:',
+      rates,
+      'Those are a quick starting point. When we take a group to market with full underwriting, we can often find better options. We also stay with you year-round, with Employee Navigator connected to your carriers and payroll so enrollments and changes are handled for you.',
       '',
       'If you\'d ever like to talk through your benefits, just reply to this email. I\'m happy to help.',
       '',
@@ -458,6 +461,7 @@ var S128Docgen = (function () {
     links = links || {};
     var allowed = {};
     if (links.section125Url) allowed[links.section125Url] = true;
+    if (links.ratesUrl) allowed[links.ratesUrl] = true;
     var html = followUpEmailText(plan, lead, links).split('\n').map(function (line) {
       if (allowed[line]) {
         var safe = escapeHtml(line);

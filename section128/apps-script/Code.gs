@@ -26,7 +26,6 @@ var S128_FOLLOWUPS_SHEET = 'FollowUps';
 var S128_FOLLOWUP_DELAY_MS = 10 * 60 * 1000;
 var S128_FOLLOWUP_HANDLER = 's128SendDueFollowUps';
 var SECTION125_URL = 'https://www.dkbenefits.net/section125plantool';
-// Not used in the follow-up email.
 var RATES_URL = 'https://www.dkbenefits.net/instant-group-quote';
 
 var S128_FOLLOWUP_HEADERS = [
@@ -351,7 +350,7 @@ function s128FollowUpMessage_(row) {
   try { plan = JSON.parse(String(row[4] || '{}')); } catch (err) { plan = {}; }
   var subject = 'Your Section 128 documents';
   if (String(row[6]) === 'yes') subject = '[TEST] ' + subject;
-  var links = { section125Url: SECTION125_URL };
+  var links = { section125Url: SECTION125_URL, ratesUrl: RATES_URL };
   var lead = { contact_name: String(row[2] || '') };
   return {
     to: String(row[1] || ''),

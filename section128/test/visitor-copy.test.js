@@ -63,13 +63,15 @@ test('combined visitor email and guide stay educational', function () {
   assert.match(email, /isn't final until your company adopts it/);
   assert.match(email, /Your tax advisor can help/);
   assert.match(email, /I just saw you finished the Section 128 document builder/);
-  assert.match(email, /shop and negotiate their group health/);
+  assert.match(email, /instant group health rates on our site here/);
+  assert.match(email, /When we take a group to market with full underwriting/);
   assert.equal((email.match(/premium-only/g) || []).length, 1);
-  assert.doesNotMatch(email, /instant-group-quote/);
+  assert.doesNotMatch(email, /shop and negotiate/);
   assert.deepEqual(email.match(/https?:\/\/\S+/g), [
-    'https://www.dkbenefits.net/section125plantool'
+    'https://www.dkbenefits.net/section125plantool',
+    'https://www.dkbenefits.net/instant-group-quote'
   ]);
-  assert.equal((html.match(/<a /g) || []).length, 1);
+  assert.equal((html.match(/<a /g) || []).length, 2);
   assert.doesNotMatch(html, /mailto:|tel:|<img|utm_/i);
   assert.equal(S128Terms.CHECKBOX, 'I understand this is an educational tool, not legal or tax advice, and my company is responsible for what it adopts. I agree to the Terms of use.');
   assert.match(S128Terms.PARAGRAPHS.join('\n'), /hold harmless/);
