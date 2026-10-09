@@ -294,8 +294,11 @@ test('salary reduction attaches the amendment for Dan, and one follow-up goes ou
   assert.match(notes[0].htmlBody, /<a href="https:\/\/www\.dkbenefits\.net\/section125plantool">https:\/\/www\.dkbenefits\.net\/section125plantool<\/a>/);
   assert.match(notes[0].htmlBody, /<a href="https:\/\/www\.dkbenefits\.net\/instant-group-quote">https:\/\/www\.dkbenefits\.net\/instant-group-quote<\/a>/);
   assert.doesNotMatch(notes[0].htmlBody, /mailto:|tel:|<img|utm_|bit\.ly|dan@dkbenefits\.net/i);
-  assert.match(notes[0].htmlBody, /407-476-5076/);
+  assert.match(notes[0].body, /P\.S\. Just so it's clear, I don't sell, market, open, or administer Trump accounts/);
+  assert.match(notes[0].htmlBody, /407-476-5076 \| www\.dkbenefits\.net/);
+  assert.match(notes[0].htmlBody, /Agency Lic# L109331/);
   assert.doesNotMatch(notes[0].htmlBody, /<a [^>]*>407-476-5076<\/a>/);
+  assert.doesNotMatch(notes[0].htmlBody, /<a [^>]*>[^<]*www\.dkbenefits\.net<\/a>/);
   assert.equal(ctx.sheets.FollowUps.rows[1][5], 'sent');
   assert.equal(ctx.sheets.FollowUps.rows[2][5], 'skipped');
   assert.match(String(ctx.sheets.FollowUps.rows[2][8]), /already sent today/);

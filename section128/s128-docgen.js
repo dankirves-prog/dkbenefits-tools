@@ -439,11 +439,14 @@ var S128Docgen = (function () {
       'Thanks again,',
       'Daniel',
       '',
-      'Daniel Kirves',
-      'DK Benefits',
-      '407-476-5076',
+      'P.S. Just so it\'s clear, I don\'t sell, market, open, or administer Trump accounts. And legally I have to mention that the tool is educational and isn\'t legal or tax advice.',
       '',
-      'DK Benefits doesn\'t sell, market, open, or administer Trump accounts. This tool is educational and isn\'t legal or tax advice.'
+      'Daniel Kirves',
+      'Benefits Broker | 20 Years Exp | DK Benefits',
+      '407-476-5076 | www.dkbenefits.net',
+      '6000 Metrowest Blvd #200 Orlando, FL 32835',
+      '',
+      'Agency Lic# L109331'
     );
     return lines.join('\n');
   }

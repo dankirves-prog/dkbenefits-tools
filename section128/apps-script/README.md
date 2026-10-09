@@ -67,7 +67,7 @@ The script never attaches visitor-supplied files to the address the visitor type
 
 The note is queued on a `FollowUps` sheet. The trigger sends rows that are still `pending` and at least 10 minutes old, then marks them `sent`, `failed`, or `skipped`. One note per address per day. The same address is also limited to 3 notes an hour. A `[TEST]` submission uses the subject `[TEST] Thanks for using my Section 128 tool`.
 
-`SECTION125_URL` is `https://www.dkbenefits.net/section125plantool`. `RATES_URL` is `https://www.dkbenefits.net/instant-group-quote`. Those are the only two links in the follow-up, Section 125 first. The follow-up is plain text plus an HTML alternative. The greeting uses the first word of the contact name, or “Hi there,” when that name is blank. Reply-To is dan@dkbenefits.net. The signature phone is text, not a link, and the note does not print the email address. There are no images, tracking parameters, or shortened links.
+`SECTION125_URL` is `https://www.dkbenefits.net/section125plantool`. `RATES_URL` is `https://www.dkbenefits.net/instant-group-quote`. Those are the only two links in the follow-up, Section 125 first. The follow-up is plain text plus an HTML alternative. The greeting uses the first word of the contact name, or “Hi there,” when that name is blank. Reply-To is dan@dkbenefits.net. The signature, including the phone and www.dkbenefits.net, is plain text. The site name is not a third link, and the note does not print the email address. There are no images, tracking parameters, or shortened links.
 
 ## 7. What the script does
 

@@ -302,11 +302,14 @@ test('implementation guide matches the funding design and the visitor email', fu
   assert.match(email, /some rates you can see online right now/);
   assert.match(email, /just hit reply/);
   assert.match(email, /Thanks again,\nDaniel\n/);
+  assert.match(email, /P\.S\. Just so it's clear, I don't sell, market, open, or administer Trump accounts\./);
+  assert.match(email, /the tool is educational and isn't legal or tax advice/);
   assert.match(email, /Daniel Kirves/);
-  assert.match(email, /407-476-5076/);
+  assert.match(email, /Benefits Broker \| 20 Years Exp \| DK Benefits/);
+  assert.match(email, /407-476-5076 \| www\.dkbenefits\.net/);
+  assert.match(email, /6000 Metrowest Blvd #200 Orlando, FL 32835/);
+  assert.match(email, /Agency Lic# L109331/);
   assert.doesNotMatch(email, /dan@dkbenefits\.net/);
-  assert.match(email, /This tool is educational and isn't legal or tax advice/);
-  assert.match(email, /doesn't sell, market, open, or administer Trump accounts/);
   assert.doesNotMatch(email, /attorney|SAMPLE DRAFT|does not review|received your draft|attached|lowest|savings|cheapest|guarantee|quote-tool-demo/i);
   assert.deepEqual(email.match(/https?:\/\/\S+/g), [
     'https://www.dkbenefits.net/section125plantool',
@@ -317,9 +320,10 @@ test('implementation guide matches the funding design and the visitor email', fu
   assert.match(html, /<a href="https:\/\/www\.dkbenefits\.net\/section125plantool">https:\/\/www\.dkbenefits\.net\/section125plantool<\/a>/);
   assert.match(html, /<a href="https:\/\/www\.dkbenefits\.net\/instant-group-quote">https:\/\/www\.dkbenefits\.net\/instant-group-quote<\/a>/);
   assert.doesNotMatch(html, /mailto:|tel:|<img|utm_|bit\.ly|tinyurl/i);
-  assert.match(html, /407-476-5076/);
+  assert.match(html, /407-476-5076 \| www\.dkbenefits\.net/);
   assert.doesNotMatch(html, /dan@dkbenefits\.net/);
   assert.doesNotMatch(html, /<a [^>]*>407-476-5076<\/a>/);
+  assert.doesNotMatch(html, /<a [^>]*>[^<]*www\.dkbenefits\.net<\/a>/);
   const grantOnly = planFor({ funding_mode: 'employer_only' });
   assert.equal(S128Docgen.checklistLines(grantOnly).length, 5);
   assert.doesNotMatch(S128Docgen.plainText(S128Docgen.guideParagraphs(grantOnly)), /Section 125 amendment/);
