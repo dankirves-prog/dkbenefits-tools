@@ -280,6 +280,8 @@ test('salary reduction attaches the amendment for Dan, and one follow-up goes ou
   assert.match(notes[0].body, /Pay the \$1,000 grant/);
   assert.match(notes[0].body, /\$2,500 per employee per year/);
   assert.match(notes[0].body, /Add the Section 125 amendment/);
+  assert.match(notes[0].body, /https:\/\/www\.dkbenefits\.net\/section125plantool/);
+  assert.match(notes[0].body, /https:\/\/dankirves-prog\.github\.io\/dkbenefits-tools\/quote-tool-demo\//);
   assert.doesNotMatch(notes[0].body, /attorney|lowest|attached/i);
   assert.equal(ctx.sheets.FollowUps.rows[1][5], 'sent');
   assert.equal(ctx.sheets.FollowUps.rows[2][5], 'skipped');

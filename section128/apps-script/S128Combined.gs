@@ -1397,7 +1397,7 @@ var S128_PDF_MIME = 'application/pdf';
 var S128_FOLLOWUPS_SHEET = 'FollowUps';
 var S128_FOLLOWUP_DELAY_MS = 10 * 60 * 1000;
 var S128_FOLLOWUP_HANDLER = 's128SendDueFollowUps';
-var SECTION125_URL = 'https://dankirves-prog.github.io/dkbenefits-tools/section125.html';
+var SECTION125_URL = 'https://www.dkbenefits.net/section125plantool';
 var RATES_URL = 'https://dankirves-prog.github.io/dkbenefits-tools/quote-tool-demo/';
 
 var S128_FOLLOWUP_HEADERS = [

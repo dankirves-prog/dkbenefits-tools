@@ -67,7 +67,7 @@ The script never attaches visitor-supplied files to the address the visitor type
 
 The note is queued on a `FollowUps` sheet. The trigger sends rows that are still `pending` and at least 10 minutes old, then marks them `sent`, `failed`, or `skipped`. One note per address per day. The same address is also limited to 3 notes an hour. A `[TEST]` submission uses the subject `[TEST] Thanks for using our Section 128 tool`.
 
-`SECTION125_URL` and `RATES_URL` at the top of `Code.gs` are the GitHub Pages links used in that note. Replace them with the dkbenefits.net pages when those slugs are final, then repaste and redeploy.
+`SECTION125_URL` is `https://www.dkbenefits.net/section125plantool`. `RATES_URL` is still the GitHub Pages quote tool, `https://dankirves-prog.github.io/dkbenefits-tools/quote-tool-demo/`, until the live rates slug is known. Change that constant and repaste when it is.
 
 ## 7. What the script does
 

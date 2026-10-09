@@ -52,14 +52,14 @@ test('combined visitor email and guide stay educational', function () {
   const checked = S128Model.validate(input, { asOf: ASOF });
   assert.equal(checked.ok, true, JSON.stringify(checked.errors));
   const email = S128Docgen.followUpEmailText(checked.plan, checked.lead, {
-    section125Url: 'https://dankirves-prog.github.io/dkbenefits-tools/section125.html',
+    section125Url: 'https://www.dkbenefits.net/section125plantool',
     ratesUrl: 'https://dankirves-prog.github.io/dkbenefits-tools/quote-tool-demo/'
   });
   BANNED.forEach(function (pattern) { assert.doesNotMatch(email, pattern); });
   assert.doesNotMatch(email, /attorney|does not review|attached|lowest/i);
   assert.match(email, /Your tax advisor can help/);
   assert.match(email, /Thanks for using our Section 128 tool/);
-  assert.match(email, /section125\.html/);
+  assert.match(email, /https:\/\/www\.dkbenefits\.net\/section125plantool/);
   assert.match(email, /quote-tool-demo/);
   assert.equal(S128Terms.CHECKBOX, 'I understand this is an educational tool, not legal or tax advice, and my company is responsible for what it adopts. I agree to the Terms of use.');
   assert.match(S128Terms.PARAGRAPHS.join('\n'), /hold harmless/);

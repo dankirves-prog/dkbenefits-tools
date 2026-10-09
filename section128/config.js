@@ -8,7 +8,7 @@ window.S128_CONFIG = {
   templateVersion: 's128-v0.5.1-2026-10-09',
   phoneDisplay: '407-476-5076',
   phoneTel: '4074765076',
-  // Public GitHub Pages copies. Swap these for the dkbenefits.net pages when the slugs are final.
-  section125Url: 'https://dankirves-prog.github.io/dkbenefits-tools/section125.html',
+  // Section 125 tool is the live Wix page. Rates stay on GitHub Pages until the Wix slug is known.
+  section125Url: 'https://www.dkbenefits.net/section125plantool',
   ratesUrl: 'https://dankirves-prog.github.io/dkbenefits-tools/quote-tool-demo/'
 };

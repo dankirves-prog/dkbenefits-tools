@@ -276,7 +276,7 @@ test('implementation guide matches the funding design and the visitor email', fu
   const combined = planFor(Object.assign({ funding_mode: 'combined', employer_annual_grant: '1000' }, salaryFields));
   const guide = S128Docgen.plainText(S128Docgen.guideParagraphs(combined));
   const email = S128Docgen.followUpEmailText(combined, { contact_name: 'Ada Lopez' }, {
-    section125Url: 'https://dankirves-prog.github.io/dkbenefits-tools/section125.html',
+    section125Url: 'https://www.dkbenefits.net/section125plantool',
     ratesUrl: 'https://dankirves-prog.github.io/dkbenefits-tools/quote-tool-demo/'
   });
   const lines = S128Docgen.checklistLines(combined);
