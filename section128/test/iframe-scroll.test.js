@@ -224,6 +224,40 @@ async function runEmbedded(browser, engine, size) {
   };
 }
 
+async function runInitialLoad(browser, engine, size) {
+  const page = await browser.newPage({ viewport: { width: size.width, height: size.height } });
+  const src = toolOrigin + '/section128/';
+  await page.goto(parentOrigin + '/iframe-harness.html?src=' + encodeURIComponent(src), { waitUntil: 'domcontentloaded' });
+  const frame = await toolFrame(page);
+  await page.waitForTimeout(400);
+  const state = await page.evaluate(function () {
+    var messages = window.__s128Messages || [];
+    var frameEl = document.getElementById('tool');
+    var frameTop = frameEl.getBoundingClientRect().top + window.scrollY;
+    // The Wix page scrolls when it receives s128-scroll. WebKit does not move the
+    // parent on scrollIntoView, so apply that parent scroll here before measuring.
+    if (messages.length) {
+      var top = messages[messages.length - 1].top;
+      window.scrollTo(0, Math.max(0, frameTop + top - 90));
+    }
+    return { scrollY: window.scrollY, messages: messages.length };
+  });
+  const focused = await frame.evaluate(function () {
+    var el = document.activeElement;
+    if (!el || el === document.body || el === document.documentElement) return '';
+    return el.id || el.tagName;
+  });
+  await page.close();
+  return {
+    engine: engine,
+    size: size.name,
+    initialLoad: true,
+    scrollY: state.scrollY,
+    messages: state.messages,
+    focused: focused
+  };
+}
+
 async function runStandalone(browser) {
   const page = await browser.newPage({ viewport: { width: 980, height: 800 } });
   await page.goto(toolOrigin + '/section128/', { waitUntil: 'domcontentloaded' });
@@ -278,6 +312,7 @@ test('embedded step and error scrolling', async function () {
       headless: true,
       args: ['--no-sandbox', '--disable-dev-shm-usage']
     });
+    for (let i = 0; i < sizes.length; i++) results.push(await runInitialLoad(chrome, 'chromium', sizes[i]));
     for (let i = 0; i < sizes.length; i++) results.push(await runEmbedded(chrome, 'chromium', sizes[i]));
     results.push({ engine: 'chromium', size: 'standalone', standalone: await runStandalone(chrome) });
     try {
@@ -287,11 +322,18 @@ test('embedded step and error scrolling', async function () {
       results.push({ engine: 'webkit', available: false, error: webkitError });
     }
     if (webkitBrowser) {
+      for (let i = 0; i < sizes.length; i++) results.push(await runInitialLoad(webkitBrowser, 'webkit', sizes[i]));
       for (let i = 0; i < sizes.length; i++) results.push(await runEmbedded(webkitBrowser, 'webkit', sizes[i]));
     }
     console.log(JSON.stringify(results, null, 2));
     results.forEach(function (row) {
-      if (row.engine !== 'chromium' || row.size === 'standalone') return;
+      if (!row.initialLoad) return;
+      assert.equal(row.messages, 0, JSON.stringify(row));
+      assert.equal(row.scrollY, 0, JSON.stringify(row));
+      assert.equal(row.focused, '', JSON.stringify(row));
+    });
+    results.forEach(function (row) {
+      if (row.initialLoad || row.engine !== 'chromium' || row.size === 'standalone') return;
       assert.equal(row.scrollMarginTop, '90px', JSON.stringify(row));
       assert.ok(row.iframeHeight > row.viewportHeight, JSON.stringify(row));
       assert.ok(row.beforeNextHeadingTop < 0, JSON.stringify(row));
@@ -307,7 +349,7 @@ test('embedded step and error scrolling', async function () {
     assert.match(standalone.standalone.title, /Benefit design/);
     assert.ok(standalone.standalone.scrollY < 5, JSON.stringify(standalone));
     assert.equal(standalone.standalone.messages, 0);
-    const webkitRows = results.filter(function (row) { return row.engine === 'webkit' && row.size !== 'standalone'; });
+      const webkitRows = results.filter(function (row) { return row.engine === 'webkit' && !row.initialLoad && row.size !== 'standalone'; });
     if (!webkitRows.length || webkitRows[0].available === false) {
       console.log('WebKit unavailable: ' + webkitError);
     } else {
