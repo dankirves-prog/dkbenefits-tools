@@ -72,7 +72,8 @@ function assertClean(xml, mode) {
   }
   assert.match(text, /Articles 1 through 12/);
   assert.match(text, /on or before January 31/);
-  assert.match(text, /claimed and activated cannot receive Program contributions/);
+  assert.match(text, /\(an auto account\) cannot receive Program contributions/);
+  assert.match(text, /only to the claimed Trump account that receives its balance, once that account is activated/);
   assert.doesNotMatch(text, /SAMPLE DRAFT|signature and date above are blank/i);
   if (mode === 'employer_only') {
     const rest = text.split('\n').filter(function (line) { return line.indexOf('Reserved:') === -1; }).join('\n');
@@ -121,7 +122,7 @@ for (const [name, overrides, mode] of cases) {
     assert.match(plain(packed.document), /Testing, corrections, and employer authority/);
     assert.match(plain(packed.document), /Designation, certification, and verification/);
     assert.match(plain(packed.document), /Amendment, termination, and individual ownership/);
-    assert.match(plain(packed.document), /cannot receive Program contributions until a parent or guardian claims it/);
+    assert.match(plain(packed.document), /cannot receive Program contributions; after a parent or guardian claims it, contributions can go only to the claimed account/);
     const capLine = plain(packed.document).split('\n').find(function (line) { return line.indexOf('The program annual cap is') === 0; });
     assert.equal((capLine.match(/\$2,500/g) || []).length, 1);
     if (overrides.annual_cap_mode === 'fixed') assert.match(capLine, /fixed employer cap does not increase automatically/);
@@ -180,7 +181,7 @@ test('salary reduction without a confirmed cafeteria plan does not build an amen
   assert.match(text, /Salary reduction/);
   assert.doesNotMatch(text, /Section 125 plan name:/);
   assert.equal(S128Docgen.buildAmendmentDocx(plan), null);
-  assert.match(text, /cannot receive Program contributions until a parent or guardian claims it/);
+  assert.match(text, /cannot receive Program contributions; after a parent or guardian claims it, contributions can go only to the claimed account/);
 });
 
 test('amendment signature stays on one page, including a long employer and plan name', function () {
@@ -274,11 +275,12 @@ test('implementation guide matches the funding design and the visitor email', fu
   const email = S128Docgen.visitorEmailText(combined, { contact_name: 'Ada Lopez' });
   const lines = S128Docgen.checklistLines(combined);
   assert.equal(lines.length, 6);
-  assert.match(guide, /1\. Sign and date the plan \(page 1\) before the effective date/);
+  assert.match(guide, /1\. Sign and date the plan \(page 1\)\. It takes effect on January 1, 2027\. Sign it before any contribution is made\./);
   assert.match(guide, /2\. Add the Section 125 amendment to your cafeteria plan and sign it/);
   assert.match(guide, /box 12 code TA/);
   assert.match(guide, /Collect each employee’s child’s Trump account information and make sure the account is active\. Accounts the Treasury opened automatically must be claimed by a parent first\./);
-  assert.match(guide, /Start contributions through payroll, up to \$2,500 per employee per year\./);
+  assert.match(guide, /Pay the \$1,000 grant once a year and start payroll deductions once the cafeteria plan permits them\. Together they can’t exceed \$2,500 per employee per year\./);
+  assert.doesNotMatch(guide, /Start contributions through payroll/);
   assert.doesNotMatch(guide, /July 4, 2026/);
   assert.doesNotMatch(guide, /Who:|What:|When:|REG-101355|attorney|SAMPLE DRAFT/);
   lines.forEach(function (line) { assert.ok(email.indexOf(line) !== -1, line); });
@@ -407,4 +409,27 @@ test('documents do not state a payroll notice above 30 days', function () {
   assert.doesNotMatch(overText, /45 calendar days/);
   assert.match(overText, /30 calendar days before payday/);
   assert.match(overText, /subject to 30 calendar days of payroll processing notice/);
+});
+
+test('checklist states the plan’s own amounts and only mentions an amendment that was prepared', function () {
+  const lastLine = function (plan) { const lines = S128Docgen.checklistLines(plan); return lines[lines.length - 1]; };
+  const grantOnly = planFor({ funding_mode: 'employer_only', employer_annual_grant: '500', annual_cap_mode: 'fixed', fixed_annual_cap: '500' });
+  assert.equal(lastLine(grantOnly), 'Pay the $500 grant once a year for each participating employee, directly to the verified Trump account.');
+  const salaryFixed = planFor(Object.assign({ funding_mode: 'salary_reduction_only', employer_annual_grant: '', annual_cap_mode: 'fixed', fixed_annual_cap: '2000' }, salaryFields));
+  assert.match(lastLine(salaryFixed), /up to \$2,000 per employee per year\.$/);
+  const salary2028 = planFor(Object.assign({ funding_mode: 'salary_reduction_only', employer_annual_grant: '', effective_date: '2028-01-01' }, salaryFields, { cafeteria_amendment_date: '2028-01-01' }));
+  assert.match(lastLine(salary2028), /the per-employee Section 128 limit the IRS publishes for that year\.$/);
+  S128Docgen.checklistLines(salary2028).forEach(function (line) { assert.doesNotMatch(line, /\$2,500/); });
+  const noCafeteria = planFor({ funding_mode: 'combined', employer_annual_grant: '1000', has_existing_125_plan: 'no', election_cutoff_days: '5' });
+  assert.equal(S128Docgen.amendmentParagraphs(noCafeteria), null);
+  const guide = S128Docgen.plainText(S128Docgen.guideParagraphs(noCafeteria));
+  assert.doesNotMatch(guide, /Add the Section 125 amendment/);
+  assert.match(guide, /Adopt or confirm a Section 125 cafeteria plan and amend it for this benefit before any payroll deductions start\. No amendment was prepared\./);
+  const ownAccount = planFor({ funding_mode: 'employer_only', allow_employee_account: 'yes' });
+  assert.match(S128Docgen.plainText(S128Docgen.guideParagraphs(ownAccount)), /or the employee’s own account, if the employee is 17 or younger/);
+});
+
+test('file names keep accented and special letters readable', function () {
+  const plan = planFor({ employer_name: 'Café Łódź & Søn, Inc.', plan_name: 'Café Łódź Trump Account Program' });
+  assert.equal(S128Docgen.planFileName(plan), 'Cafe_Lodz_Son_Inc_Section_128_Plan_v0.5.docx');
 });

@@ -517,7 +517,7 @@ var S128Model = (function () {
       if (lead.entity_type === 's_corp') {
         reasons.push('An owner or family member wants to participate in an S corporation. A 2-percent shareholder, with ownership attribution, is not treated as an employee for this program under the proposed-regulation preamble.');
       } else if (lead.entity_type === 'llc_partnership' || lead.entity_type === 'sole_prop') {
-        reasons.push('An owner wants to participate, but partners and sole proprietors are not eligible employees.');
+        reasons.push('An owner or family member wants to participate. Partners and sole proprietors are not eligible employees. A family member who is a common-law employee of the business may be eligible.');
       } else if (lead.entity_type === 'c_corp') {
         reasons.push('A C corporation owner-employee may participate if the person is a common-law employee. That person is usually highly compensated for testing.');
       } else {
@@ -531,7 +531,7 @@ var S128Model = (function () {
       reasons.push('Salary reduction has to run through a Section 125 cafeteria plan. No cafeteria plan was confirmed, so this sample does not include an amendment. A cafeteria plan must be adopted or confirmed before salary reduction can start.');
     }
     if (isIsoDate(plan.effective_date) && plan.effective_date < asOf) {
-      reasons.push('The effective date is before today. The sample can be used prospectively only if that date is still available.');
+      reasons.push('The effective date is before today. Contributions made before the plan is signed may not qualify. Consider using today or a later date.');
     }
     if (isIsoDate(plan.effective_date) && +plan.effective_date.slice(0, 4) >= 2028) {
       reasons.push('The Section 128 limit for ' + plan.effective_date.slice(0, 4) + ' has not been published. This sample does not invent an indexed dollar amount. Confirm the published limit before any contribution is made for that year.');

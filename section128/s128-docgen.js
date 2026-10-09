@@ -134,7 +134,7 @@ var S128Docgen = (function () {
     }
     return [
       { style: 'Heading2', text: 'Article 7 Salary reduction' },
-      { style: null, text: 'Salary reduction is elected in the Adoption Agreement. An employee may initiate, increase, decrease, or revoke an election prospectively at any time during the plan year, subject to ' + noticeDays(plan) + ' calendar days of payroll processing notice. Administration must permit changes and revocations to become effective at least monthly and only as to salary not yet currently available. No qualifying life event is required.' },
+      { style: null, text: 'The Adoption Agreement makes salary reduction available under this Program. An employee may initiate, increase, decrease, or revoke an election prospectively at any time during the plan year, subject to ' + noticeDays(plan) + ' calendar days of payroll processing notice. Administration must permit changes and revocations to become effective at least monthly and only as to salary not yet currently available. No qualifying life event is required.' },
       { style: null, text: 'Elections identify the amount per payroll and the effective payroll date. The administrator limits deductions to the available annual amount, applicable compensation, and verified eligible dependent accounts. No retroactive election is permitted. Salary reduction stops before the dependent’s growth period ends and when the employee revokes the election, employment or eligibility ends, or applicable limits require a stop.' },
       { style: null, text: 'The employer remits authorized salary reduction promptly under its regular payroll remittance process. Deductions continue only while they can be sent to valid eligible accounts. If a contribution is rejected, the administrator investigates, retries only when a lawful eligible transfer is available, and otherwise returns an untransferred deduction through payroll with the appropriate wage and withholding adjustments. ' + (plan.funding_mode === 'combined'
         ? 'A correction does not authorize retroactive salary reduction or a cash substitute for an employer grant.'
@@ -145,7 +145,7 @@ var S128Docgen = (function () {
   function article8Notice(plan) {
     var items = 'eligibility, funding, contribution limits, designation requirements, ';
     if (usesSalary(plan)) items += 'available election changes, ';
-    items += 'tax treatment, the administrator contact, and that an account automatically created by the Treasury Department cannot receive Program contributions until a parent or guardian claims it and the account is activated';
+    items += 'tax treatment, the administrator contact, and that an account automatically created by the Treasury Department cannot receive Program contributions; after a parent or guardian claims it, contributions can go only to the claimed account, once that account is activated';
     return 'The employer gives all eligible employees reasonable written notice of the program’s availability and terms before participation and when material terms change. The notice identifies ' + items + '. Electronic delivery must provide a practical way for employees to obtain the terms.';
   }
 
@@ -272,7 +272,7 @@ var S128Docgen = (function () {
     rows.push({ style: 'Heading2', text: 'Article 6 Designation, certification, and verification' });
     rows.push({ style: null, text: 'Before any contribution, an employee submits a paper or electronic designation identifying the contribution year, each beneficiary and date of birth, the relationship to the employee, the trustee, secure payment instructions, and the allocation percentage. The employee certifies in writing that each beneficiary is the employee or an anticipated Section 152 dependent for that contribution year and that no facts known to the employee make the beneficiary ineligible for that calendar year.' });
     rows.push({ style: null, text: 'The employee renews the certification for each contribution year and promptly reports changes affecting eligibility, dependency, trustee, account status, allocation, or contributions from other employers. The employer may rely on the relationship and eligibility certifications unless it has actual knowledge they are incorrect. Dependency or ownership questions requiring interpretation are resolved before payment.' });
-    rows.push({ style: null, text: 'The employer will independently verify that each destination is a valid Trump account using information supplied by the trustee, payroll processor, or another service provider through a method reasonably designed for that purpose. An employee’s assertion that an account is valid, standing alone, is insufficient. Verification confirms that the account can accept contributions under this Program. An account automatically established by the Secretary that has not been claimed and activated cannot receive Program contributions. Verification is documented before initial payment and refreshed when an account or trustee changes or contrary information arises.' });
+    rows.push({ style: null, text: 'The employer will independently verify that each destination is a valid Trump account using information supplied by the trustee, payroll processor, or another service provider through a method reasonably designed for that purpose. An employee’s assertion that an account is valid, standing alone, is insufficient. Verification confirms that the account can accept contributions under this Program. An account automatically established by the Secretary (an auto account) cannot receive Program contributions. After an auto account is claimed, Program contributions may be made only to the claimed Trump account that receives its balance, once that account is activated. Verification is documented before initial payment and refreshed when an account or trustee changes or contrary information arises.' });
     rows.push({ style: null, text: 'The employer will not restrict contributions to accounts maintained by a selected trustee or list of trustees. A payroll vendor’s limited trustee support does not change that rule. The administrator will arrange a workable alternative transfer process for a valid designated account. Contributions pending verification or transfer are tracked and resolved. The employer does not promise tax qualification or retroactive dating for delayed deposits.' });
     article7(plan).forEach(function (row) { rows.push(row); });
 
@@ -341,17 +341,41 @@ var S128Docgen = (function () {
     ];
   }
 
+  function checklistLimitText(plan) {
+    if (plan.annual_cap_mode === 'fixed' && plan.fixed_annual_cap) return money(plan, plan.fixed_annual_cap) + ' per employee per year';
+    var year = +String(plan.effective_date || '').slice(0, 4);
+    var known = S128Model.limitForYear(year);
+    if (known) return money(plan, known.s128) + ' per employee per year';
+    return 'the per-employee Section 128 limit the IRS publishes for that year';
+  }
+
+  function checklistContributionLine(plan) {
+    var limit = checklistLimitText(plan);
+    var grant = usesGrant(plan) ? money(plan, plan.employer_annual_grant) : '';
+    if (plan.funding_mode === 'employer_only') {
+      return 'Pay the ' + grant + ' grant once a year for each participating employee, directly to the verified Trump account.';
+    }
+    if (plan.funding_mode === 'salary_reduction_only') {
+      return 'Start payroll deductions once the cafeteria plan permits them, up to ' + limit + '.';
+    }
+    return 'Pay the ' + grant + ' grant once a year and start payroll deductions once the cafeteria plan permits them. Together they can’t exceed ' + limit + '.';
+  }
+
   function checklistLines(plan) {
     var lines = [
-      'Sign and date the plan (page 1) before the effective date (' + longDate(plan.effective_date) + ').'
+      'Sign and date the plan (page 1). It takes effect on ' + longDate(plan.effective_date) + '. Sign it before any contribution is made.'
     ];
     if (usesSalary(plan)) {
-      lines.push('Add the Section 125 amendment to your cafeteria plan and sign it.');
+      lines.push(plan.cafeteria_plan_name
+        ? 'Add the Section 125 amendment to your cafeteria plan and sign it.'
+        : 'Adopt or confirm a Section 125 cafeteria plan and amend it for this benefit before any payroll deductions start. No amendment was prepared.');
     }
     lines.push('Tell payroll: contributions are excluded from income tax but still subject to Social Security and Medicare, reported on W-2 box 12 code TA.');
     lines.push('Give employees a short written notice of the program.');
-    lines.push('Collect each employee’s child’s Trump account information and make sure the account is active. Accounts the Treasury opened automatically must be claimed by a parent first.');
-    lines.push('Start contributions through payroll, up to $2,500 per employee per year.');
+    lines.push(plan.allow_employee_account
+      ? 'Collect Trump account information for each employee’s child (or the employee’s own account, if the employee is 17 or younger) and make sure the account is active. Accounts the Treasury opened automatically must be claimed by a parent first.'
+      : 'Collect each employee’s child’s Trump account information and make sure the account is active. Accounts the Treasury opened automatically must be claimed by a parent first.');
+    lines.push(checklistContributionLine(plan));
     return lines;
   }
 
@@ -605,8 +629,16 @@ var S128Docgen = (function () {
     return zipStore(packageParts(rows, props || {}));
   }
 
+  var FILE_LETTERS = { 'Ł': 'L', 'ł': 'l', 'Ø': 'O', 'ø': 'o', 'Đ': 'D', 'đ': 'd', 'ß': 'ss', 'Æ': 'AE', 'æ': 'ae', 'Œ': 'OE', 'œ': 'oe', 'Þ': 'Th', 'þ': 'th' };
+
+  function asciiLetters(value) {
+    var s = String(value || '');
+    if (s.normalize) s = s.normalize('NFD').replace(/[̀-ͯ]/g, '');
+    return s.replace(/[ŁłØøĐđßÆæŒœÞþ]/g, function (ch) { return FILE_LETTERS[ch]; });
+  }
+
   function safeFilePart(name) {
-    var s = String(name || 'Employer').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 50);
+    var s = asciiLetters(name || 'Employer').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 50);
     return s || 'Employer';
   }
 

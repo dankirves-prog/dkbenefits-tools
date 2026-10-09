@@ -18,6 +18,7 @@
   var inFlight = false;
   var planNameTouched = false;
   var lastFiles = null;
+  var lastPdfError = '';
   var utm = readUtm();
 
   function $(id) { return document.getElementById(id); }
@@ -284,7 +285,7 @@
         ['Effective date', S128Model.formatLongDate(plan.effective_date)],
         ['Funding', S128Model.fundingLabel(plan.funding_mode)],
         ['Employer grant', plan.employer_annual_grant ? S128Model.formatMoney(plan.employer_annual_grant) : 'None'],
-        ['Annual cap', S128Model.capText(plan)],
+        ['Annual cap', upperFirst(S128Model.capText(plan))],
         ['Salary reduction room', cap || 'Not used'],
         ['Eligible class', plan.eligibility_class],
         ['Waiting period', plan.waiting_days === 0 ? 'Eligible on hire' : plan.waiting_days + ' days'],
@@ -308,6 +309,10 @@
       return '<dt>' + escapeHtml(row[0]) + '</dt><dd>' + escapeHtml(row[1] == null ? '' : row[1]) + '</dd>';
     }).join('');
     return '<section><h3>' + escapeHtml(title) + ' <button type="button" class="linkish" data-edit="' + stepNo + '">Edit</button></h3><dl>' + body + '</dl></section>';
+  }
+  function upperFirst(value) {
+    var s = String(value || '');
+    return s.charAt(0).toUpperCase() + s.slice(1);
   }
   function escapeHtml(value) {
     return String(value == null ? '' : value).replace(/[&<>"]/g, function (ch) {
@@ -450,12 +455,17 @@
       return job.promise.then(function (bytes) {
         return { name: job.name, bytes: bytes, mime: 'application/pdf', label: job.label };
       });
-    })).catch(function () { return []; });
+    })).catch(function (err) {
+      lastPdfError = String((err && err.message) || '');
+      return [];
+    });
   }
   function notePdfMissing() {
     var note = document.createElement('p');
     note.className = 'hint';
-    note.textContent = 'A matching PDF could not be created in this browser. Use the Word file.';
+    note.textContent = /cannot encode/i.test(lastPdfError)
+      ? 'A PDF copy could not be made because some characters you entered (such as letters with special marks) cannot be shown in the PDF font. The Word file shows them correctly.'
+      : 'A matching PDF could not be created in this browser. Use the Word file.';
     $('downloadList').appendChild(note);
   }
   function setStatus(kind, html) {
