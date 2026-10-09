@@ -387,6 +387,39 @@ var S125Model = (function () {
   function waitingText(code) { return WAITING[code] || ''; }
   function benefitLabel(code) { return BENEFIT_LABEL[code] || code; }
 
+  function entityLabel(plan) {
+    plan = plan || {};
+    if (plan.entity_type === 'llc') {
+      if (plan.llc_tax === 's-corp') return 'Limited liability company taxed as an S corporation';
+      if (plan.llc_tax === 'c-corp') return 'Limited liability company taxed as a C corporation';
+      if (plan.llc_tax === 'partnership') return 'Limited liability company taxed as a partnership';
+      if (plan.llc_tax === 'disregarded') return 'Limited liability company disregarded as separate from its owner';
+      return 'Limited liability company';
+    }
+    return ENTITY[plan.entity_type] || '';
+  }
+
+  function fundingLabel(code) {
+    if (code === 'insured') return 'Fully insured';
+    if (code === 'level') return 'Level funded';
+    if (code === 'self') return 'Self-funded';
+    return '';
+  }
+
+  function healthFsaDesignLabel(code) {
+    if (code === 'general') return 'General purpose';
+    if (code === 'limited') return 'Limited purpose';
+    if (code === 'both') return 'General purpose and limited purpose';
+    return '';
+  }
+
+  function unusedLabel(code) {
+    if (code === 'forfeit') return 'Forfeiture';
+    if (code === 'grace') return 'Grace period';
+    if (code === 'carryover') return 'Carryover';
+    return '';
+  }
+
   function classSentence(plan) {
     var bits = [];
     if (plan.eligible_classes.indexOf('full-time') !== -1) {
@@ -428,6 +461,10 @@ var S125Model = (function () {
     todayIso: todayIso,
     stateName: stateName,
     entitySentence: entitySentence,
+    entityLabel: entityLabel,
+    fundingLabel: fundingLabel,
+    healthFsaDesignLabel: healthFsaDesignLabel,
+    unusedLabel: unusedLabel,
     waitingText: waitingText,
     benefitLabel: benefitLabel,
     classSentence: classSentence,

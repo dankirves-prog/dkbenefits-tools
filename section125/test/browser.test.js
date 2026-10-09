@@ -124,13 +124,16 @@ test('the wizard builds a premium-only plan in the browser and does not post', a
     await page.locator('#terms_ack').check();
     await page.locator('#btnNext').click();
     await page.locator('#stepTitle', { hasText: 'Your documents' }).waitFor();
-    await page.locator('#emailStatus').waitFor();
+    await page.locator('#downloadList button', { hasText: 'Section_125_Plan_v1.0.pdf' }).waitFor();
     const status = await page.locator('#emailStatus').innerText();
     assert.match(status, /ready to download/i);
     assert.match(status, /not turned on/i);
     const names = await page.locator('#downloadList button').allTextContents();
     assert.ok(names.some(function (name) { return /Section_125_Plan_v1\.0\.docx/.test(name); }));
     assert.ok(names.some(function (name) { return /Implementation_Guide_v1\.0\.docx/.test(name); }));
+    assert.ok(names.some(function (name) { return /Section_125_Plan_v1\.0\.pdf/.test(name); }));
+    assert.ok(names.some(function (name) { return /Implementation_Guide_v1\.0\.pdf/.test(name); }));
+    assert.equal(names.length, 4);
     assert.deepEqual(blocked, []);
     await page.screenshot({ path: path.join(artifactDir, 'wizard-download.png') });
 

@@ -332,15 +332,17 @@
     lastFiles.forEach(function (file) {
       if (/\.docx$/i.test(file.name)) triggerDownload(file.bytes, file.name, file.mime);
     });
-    if (!shouldPost()) {
-      setStatus('<strong>Your documents are ready to download.</strong> Email delivery is not turned on for this copy of the page.');
-      return;
-    }
     inFlight = true;
     setStatus('Preparing your documents…');
     pdfFiles(result.plan).then(function (pdfs) {
       var all = lastFiles.concat(pdfs);
+      lastFiles = all;
       showDownloads(all);
+      if (!shouldPost()) {
+        inFlight = false;
+        setStatus('<strong>Your documents are ready to download.</strong> Email delivery is not turned on for this copy of the page.');
+        return;
+      }
       var cfg = window.S125_CONFIG || {};
       return fetch(cfg.endpoint, { method: 'POST', body: JSON.stringify(payloadFrom(result, id, all)) })
         .then(function (response) { return response.json(); })
@@ -356,7 +358,9 @@
     }).catch(function () {
       inFlight = false;
       $('btnRetry').classList.remove('hidden');
-      setStatus('<strong>The request could not be sent.</strong> You can still download the documents below.');
+      setStatus(shouldPost()
+        ? '<strong>The request could not be sent.</strong> You can still download the documents below.'
+        : '<strong>The PDF could not be prepared.</strong> The Word files are still available below.');
     });
   }
   function mountTerms() {

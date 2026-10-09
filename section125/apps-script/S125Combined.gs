@@ -395,6 +395,39 @@ var S125Model = (function () {
   function waitingText(code) { return WAITING[code] || ''; }
   function benefitLabel(code) { return BENEFIT_LABEL[code] || code; }
 
+  function entityLabel(plan) {
+    plan = plan || {};
+    if (plan.entity_type === 'llc') {
+      if (plan.llc_tax === 's-corp') return 'Limited liability company taxed as an S corporation';
+      if (plan.llc_tax === 'c-corp') return 'Limited liability company taxed as a C corporation';
+      if (plan.llc_tax === 'partnership') return 'Limited liability company taxed as a partnership';
+      if (plan.llc_tax === 'disregarded') return 'Limited liability company disregarded as separate from its owner';
+      return 'Limited liability company';
+    }
+    return ENTITY[plan.entity_type] || '';
+  }
+
+  function fundingLabel(code) {
+    if (code === 'insured') return 'Fully insured';
+    if (code === 'level') return 'Level funded';
+    if (code === 'self') return 'Self-funded';
+    return '';
+  }
+
+  function healthFsaDesignLabel(code) {
+    if (code === 'general') return 'General purpose';
+    if (code === 'limited') return 'Limited purpose';
+    if (code === 'both') return 'General purpose and limited purpose';
+    return '';
+  }
+
+  function unusedLabel(code) {
+    if (code === 'forfeit') return 'Forfeiture';
+    if (code === 'grace') return 'Grace period';
+    if (code === 'carryover') return 'Carryover';
+    return '';
+  }
+
   function classSentence(plan) {
     var bits = [];
     if (plan.eligible_classes.indexOf('full-time') !== -1) {
@@ -436,6 +469,10 @@ var S125Model = (function () {
     todayIso: todayIso,
     stateName: stateName,
     entitySentence: entitySentence,
+    entityLabel: entityLabel,
+    fundingLabel: fundingLabel,
+    healthFsaDesignLabel: healthFsaDesignLabel,
+    unusedLabel: unusedLabel,
     waitingText: waitingText,
     benefitLabel: benefitLabel,
     classSentence: classSentence,
@@ -1418,31 +1455,74 @@ function s125BytesBlob_(bytes, mime, name) {
   return Utilities.newBlob(data, mime, name);
 }
 
+function s125Has_(plan, code) {
+  return (plan.benefits || []).indexOf(code) !== -1;
+}
+
 function s125LeadMessage_(payload, checked, files) {
   var plan = checked.plan;
   var lead = checked.lead;
+  var health = s125Has_(plan, 'health_fsa');
+  var dcap = s125Has_(plan, 'dcap');
+  var hsa = s125Has_(plan, 'hsa');
+  var benefits = (plan.benefits || []).map(function (code) { return S125Model.benefitLabel(code); }).join(', ');
+  var year = S125Model.planYearSentence(plan);
+  if (year) year = year.charAt(0).toUpperCase() + year.slice(1);
   var bits = [];
   if (payload.test) bits.push('[TEST]');
-  bits.push('New Section 125 Lead: ' + plan.employer_name);
+  bits.push('New Section 125 Lead: ' + plan.employer_name + ' | ' + S125Model.entityLabel(plan) + ' | ' + plan.employee_count + ' employees');
   var lines = [
     'Section 125 cafeteria plan — sample lead',
     'Template: ' + (payload.templateVersion || S125Model.TEMPLATE_VERSION),
     'Submission id: ' + payload.submissionId,
     'Source page: ' + (payload.pageUrl || ''),
     '',
-    'Company: ' + plan.employer_name,
+    'Company',
+    'Legal name: ' + plan.employer_name,
     'EIN: ' + plan.employer_ein,
     'Address: ' + plan.employer_address,
-    'Entity: ' + plan.entity_type + (plan.llc_tax ? ' / ' + plan.llc_tax : ''),
-    'Benefits: ' + (plan.benefits || []).join(', '),
-    'Effective date: ' + plan.effective_date,
-    'Contact: ' + lead.contact_name + ' <' + lead.contact_email + '> ' + lead.contact_phone,
+    'State: ' + S125Model.stateName(plan.state),
+    'Entity: ' + S125Model.entityLabel(plan),
+    'Employees: ' + plan.employee_count,
     '',
+    'Contact',
+    'Name: ' + (lead.contact_name || plan.signer_name),
+    'Title: ' + (lead.contact_title || plan.signer_title),
+    'Email: ' + (lead.contact_email || plan.signer_email),
+    'Phone: ' + (lead.contact_phone || plan.phone),
+    '',
+    'Design',
+    'Plan: ' + plan.plan_name,
+    'Plan number: ' + plan.plan_number,
+    'Effective date: ' + S125Model.formatLongDate(plan.effective_date),
+    'Plan year: ' + year,
+    'Funding: ' + S125Model.fundingLabel(plan.funding_type),
+    'Eligible classes: ' + S125Model.classSentence(plan),
+    'Waiting period: ' + S125Model.waitingText(plan.waiting_period),
+    'Full-time hours: ' + plan.full_time_hours,
+    'New-hire enrollment: ' + plan.new_hire_window + ' days',
+    'Open enrollment: ' + plan.oe_window_days + ' days',
+    'Employees in more than one state: ' + (plan.multi_state ? 'Yes' : 'No'),
+    'Existing Section 125 plan: ' + (plan.prior_plan ? 'Yes, originally adopted ' + plan.prior_adoption : 'No'),
+    'Benefits: ' + benefits,
+    'Health FSA: ' + (health ? S125Model.healthFsaDesignLabel(plan.health_fsa_design) : 'Not offered'),
+    'Unused Health FSA amounts: ' + (health ? S125Model.unusedLabel(plan.health_fsa_unused) : 'Not offered'),
+    'Dependent Care FSA: ' + (dcap ? 'Offered' : 'Not offered'),
+    'Unused dependent care amounts: ' + (dcap ? S125Model.unusedLabel(plan.dcap_unused) : 'Not offered'),
+    'HSA: ' + (hsa ? 'Offered. The election can be changed at least monthly.' : 'Not offered'),
+    'Authorized officer: ' + plan.signer_name,
+    'Officer title: ' + plan.signer_title,
+    'Officer email: ' + plan.signer_email,
+    '',
+    'Acknowledgement',
     'Terms version: ' + ((payload.acknowledgement && payload.acknowledgement.termsVersion) || ''),
     'Accepted at: ' + ((payload.acknowledgement && payload.acknowledgement.acceptedAt) || ''),
     '',
     'The attached files are sample drafts. They are not adopted until the employer signs them. They are not stored on a public link.'
   ];
+  if (plan.short_plan_year) {
+    lines.splice(lines.indexOf('Plan year: ' + year) + 1, 0, 'First plan year: short year ending ' + S125Model.formatLongDate(plan.short_plan_year_end));
+  }
   return {
     to: S125_NOTIFY_EMAIL,
     subject: bits.join(' '),
