@@ -201,6 +201,14 @@ test('submission requires body.ok, blocks a double post, and retries with the sa
   await page.click('#btnNext');
   await page.click('#btnNext');
   assert.match(await page.$eval('#err_terms_ack', function (el) { return el.textContent; }), /Terms of use/);
+  await page.click('#openTerms');
+  await page.waitForSelector('#termsDialog[open]');
+  const termsText = await page.$eval('#termsDialogBody', function (el) { return el.textContent; });
+  assert.match(termsText, /The tool and the documents are free\. The employer can download the documents on the final screen at no charge/);
+  assert.match(termsText, /asking DK Benefits LLC for a copy/);
+  assert.match(termsText, /version s128-terms-2026-10-09/);
+  assert.doesNotMatch(termsText, /receiving a copy by email/);
+  await page.click('#closeTerms');
   await page.click('#terms_ack');
   await page.screenshot({ path: path.join(artifactDir, 'acknowledgement-1440.png'), fullPage: true });
   await page.screenshot({ path: path.join(artifactDir, 'check-step-1440.png'), fullPage: true });
@@ -233,7 +241,8 @@ test('submission requires body.ok, blocks a double post, and retries with the sa
   }));
   assert.ok(posts[0].files.some(function (file) { return /wordprocessingml/.test(file.mime); }));
   assert.equal(posts[0].acknowledgement.accepted, true);
-  assert.equal(posts[0].acknowledgement.termsVersion, 's128-terms-2026-10-08b');
+  assert.equal(posts[0].acknowledgement.termsVersion, 's128-terms-2026-10-09');
+  assert.ok(posts[0].files.every(function (file) { return /_v1\.0\.(docx|pdf)$/.test(file.name); }));
   assert.ok(posts[0].files.some(function (file) { return /Implementation_Guide/.test(file.name) && /pdf/.test(file.mime); }));
   assert.equal(posts[0].lead.contact_email, 'mia@harbor.example');
   assert.equal(posts[0].lead.contact_phone, '(813) 555-0199');

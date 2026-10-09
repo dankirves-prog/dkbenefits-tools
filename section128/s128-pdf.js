@@ -199,19 +199,19 @@ var S128Pdf = (function () {
       }
 
       pages.forEach(function (pg, index) {
-        var label = S128Docgen.FOOTER;
         var size = 8;
-        var lines = wrap(label, font, size, maxWidth);
+        var pageLabel = 'Page ' + (index + 1);
+        var pageWidthText = font.widthOfTextAtSize(pageLabel, size);
+        var label = S128Docgen.FOOTER;
+        var lines = wrap(label, font, size, Math.max(80, maxWidth - pageWidthText - 16));
         var fy = 32 + (lines.length - 1) * 10;
         lines.forEach(function (line) {
           pg.drawText(line, { x: left, y: fy, size: size, font: font, color: muted });
           fy -= 10;
         });
-        var pageLabel = 'Page ' + (index + 1);
-        var pageWidthText = font.widthOfTextAtSize(pageLabel, size);
         pg.drawText(pageLabel, {
           x: pageWidth - right - pageWidthText,
-          y: 16,
+          y: 32,
           size: size,
           font: font,
           color: muted

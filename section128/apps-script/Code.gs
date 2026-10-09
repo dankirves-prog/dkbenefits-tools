@@ -25,6 +25,7 @@ var S128_PDF_MIME = 'application/pdf';
 var S128_FOLLOWUPS_SHEET = 'FollowUps';
 var S128_FOLLOWUP_DELAY_MS = 10 * 60 * 1000;
 var S128_FOLLOWUP_HANDLER = 's128SendDueFollowUps';
+var S128_ACCEPTED_TERMS_VERSIONS = [S128Terms.VERSION, 's128-terms-2026-10-08b'];
 var SECTION125_URL = 'https://www.dkbenefits.net/section125plantool';
 var RATES_URL = 'https://www.dkbenefits.net/instant-group-quote';
 
@@ -83,7 +84,7 @@ function s128Handle_(payload) {
   }
 
   var ack = payload.acknowledgement || {};
-  if (ack.accepted !== true || !ack.acceptedAt || !Date.parse(ack.acceptedAt) || ack.termsVersion !== S128Terms.VERSION) {
+  if (ack.accepted !== true || !ack.acceptedAt || !Date.parse(ack.acceptedAt) || S128_ACCEPTED_TERMS_VERSIONS.indexOf(ack.termsVersion) === -1) {
     s128LogEvent_('rejected_terms', payload.submissionId, 'terms');
     return { ok: false, error: 'The terms acknowledgement is missing.' };
   }

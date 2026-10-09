@@ -76,7 +76,7 @@ test('combined visitor email and guide stay educational', function () {
   assert.equal(S128Terms.CHECKBOX, 'I understand this is an educational tool, not legal or tax advice, and my company is responsible for what it adopts. I agree to the Terms of use.');
   assert.match(S128Terms.PARAGRAPHS.join('\n'), /hold harmless/);
   assert.match(S128Terms.PARAGRAPHS.join('\n'), /attorney-client/);
-  assert.equal(S128Terms.VERSION, 's128-terms-2026-10-08b');
+  assert.equal(S128Terms.VERSION, 's128-terms-2026-10-09');
   assert.match(S128Docgen.FOOTER, /Prepared with DK Benefits/);
   assert.match(S128Docgen.FOOTER, /Not effective until signed by the employer/);
 });

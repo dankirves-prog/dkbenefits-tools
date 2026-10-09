@@ -5,15 +5,16 @@ const vm = require('vm');
 const root = path.join(__dirname, '..');
 
 function artifactDir() {
-  if (process.env.S128_ARTIFACT_DIR) return process.env.S128_ARTIFACT_DIR;
-  const preferred = '/opt/cursor/artifacts/section128';
+  var dir = process.env.S128_ARTIFACT_DIR || '/opt/cursor/artifacts/section128';
   try {
-    fs.mkdirSync(preferred, { recursive: true });
-    fs.accessSync(preferred, fs.constants.W_OK);
-    return preferred;
+    fs.mkdirSync(dir, { recursive: true });
+    fs.accessSync(dir, fs.constants.W_OK);
+    return dir;
   } catch (err) {
     const os = require('os');
-    return fs.mkdtempSync(path.join(os.tmpdir(), 's128-artifacts-'));
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 's128-artifacts-'));
+    fs.mkdirSync(dir, { recursive: true });
+    return dir;
   }
 }
 

@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const { loadBrowserScripts, baseInput, ASOF } = require('./helpers');
+const { S128Model, S128Terms } = loadBrowserScripts();
 
 function boot() {
   const context = loadBrowserScripts();
@@ -142,7 +143,7 @@ function payload(overrides, id) {
     startedAt: '2026-10-08T15:00:00.000Z',
     submittedAt: '2026-10-08T15:00:10.000Z',
     pageUrl: 'https://dankirves-prog.github.io/dkbenefits-tools/section128/',
-    templateVersion: 's128-v0.5.1-2026-10-09',
+    templateVersion: S128Model.TEMPLATE_VERSION,
     test: true,
     hp: '',
     lead: checked.lead,
@@ -151,7 +152,7 @@ function payload(overrides, id) {
     acknowledgement: {
       accepted: true,
       acceptedAt: '2026-10-08T15:00:10.000Z',
-      termsVersion: 's128-terms-2026-10-08b'
+      termsVersion: S128Terms.VERSION
     },
     sendVisitorCopy: true
   }, overrides && overrides.payload || {});
@@ -177,11 +178,11 @@ test('a valid lead emails Dan immediately and queues a follow-up with no visitor
   assert.match(ctx.sent[0].attachments[1].name, /Implementation_Guide/);
   assert.equal(ctx.sent[0].attachments[0].data[0], 0x50);
   assert.equal(ctx.sent[0].attachments[0].data[1], 0x4b);
-  assert.match(ctx.sent[0].body, /s128-terms-2026-10-08b/);
+  assert.match(ctx.sent[0].body, new RegExp(S128Terms.VERSION));
   assert.match(ctx.sent[0].body, /2026-10-08T15:00:10.000Z/);
   assert.equal(ctx.sheets.Submissions.rows[1][2], 'sent');
   assert.equal(ctx.sheets.Submissions.rows[1][17], 'no');
-  assert.equal(ctx.sheets.Submissions.rows[1][20], 's128-terms-2026-10-08b');
+  assert.equal(ctx.sheets.Submissions.rows[1][20], S128Terms.VERSION);
   assert.equal(ctx.sheets.Submissions.rows[1][21], '2026-10-08T15:00:10.000Z');
   assert.equal(ctx.sheets.FollowUps.rows[1][5], 'pending');
   assert.equal(ctx.sheets.FollowUps.rows[1][1], 'ada@northwind.example');
@@ -396,6 +397,24 @@ test('the daily lead cap stops a new email and a recent pending row is not stuck
   const busy = ctx.post(payload(null, fresh[1]));
   assert.equal(busy.ok, false);
   assert.match(busy.error, /already being sent/);
+});
+
+test('the current terms version and the previous version are accepted, and an unknown version is rejected', function () {
+  const ctx = boot();
+  const current = payload(null, '14141414-1414-4414-8414-141414141414');
+  current.acknowledgement.termsVersion = S128Terms.VERSION;
+  assert.equal(ctx.post(current).ok, true);
+  assert.equal(ctx.sheets.Submissions.rows[1][20], S128Terms.VERSION);
+  const previous = payload(null, '15151515-1515-4515-8515-151515151515');
+  previous.acknowledgement.termsVersion = 's128-terms-2026-10-08b';
+  assert.equal(ctx.post(previous).ok, true);
+  assert.equal(ctx.sheets.Submissions.rows[2][20], 's128-terms-2026-10-08b');
+  const unknown = payload(null, '16161616-1616-4616-8616-161616161616');
+  unknown.acknowledgement.termsVersion = 's128-terms-1999-01-01';
+  const rejected = ctx.post(unknown);
+  assert.equal(rejected.ok, false);
+  assert.match(rejected.error, /acknowledgement/i);
+  assert.equal(ctx.sent.length, 2);
 });
 
 test('a submission without the terms acknowledgement is rejected', function () {
