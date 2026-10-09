@@ -218,7 +218,8 @@
       list.appendChild(li);
     });
   }
-  function showStep(next) {
+  function showStep(next, options) {
+    var allowScroll = !options || options.scroll !== false;
     step = next;
     document.querySelectorAll('[data-step]').forEach(function (section) {
       section.classList.toggle('hidden', Number(section.getAttribute('data-step')) !== step);
@@ -230,13 +231,16 @@
     if (heading) {
       heading.id = 'stepTitle';
       heading.setAttribute('tabindex', '-1');
-      if (heading.focus) heading.focus({ preventScroll: true });
+      // Initial paint must not focus or scroll. A focus, even with preventScroll,
+      // and scrollIntoView both move the Wix page down to the first field.
+      if (allowScroll && heading.focus) heading.focus({ preventScroll: true });
     }
     $('btnBack').classList.toggle('hidden', step === 1);
     $('btnNext').textContent = step === 4 ? 'Create documents' : 'Continue';
     $('btnNext').classList.toggle('hidden', step === 5);
     renderProgress();
     syncConditional();
+    if (!allowScroll) return;
     var target = heading || document.querySelector('[data-step="' + step + '"]');
     if (embeddedFrame()) {
       if (target && target.scrollIntoView) target.scrollIntoView({ block: 'start', behavior: 'auto' });
@@ -757,7 +761,7 @@
       if (step > 1) go(step - 1);
     });
     $('btnRetry').addEventListener('click', function () { finishGenerate(true); });
-    showStep(1);
+    showStep(1, { scroll: false });
     showSavedBanner();
     window.__s128SetStartedAt = function (value) { startedAt = value; };
   }
