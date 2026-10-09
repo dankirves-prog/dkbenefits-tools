@@ -151,11 +151,22 @@ function payload(overrides, id) {
   };
 }
 
-test('the script source does not call a live endpoint', function () {
+test('the page config points at the Section 125 web app and the script does not call it', function () {
   const source = fs.readFileSync(path.join(__dirname, '..', 'apps-script', 'Code.gs'), 'utf8');
   const page = fs.readFileSync(path.join(__dirname, '..', 'config.js'), 'utf8');
-  assert.doesNotMatch(source + page, /section125pdf|AKfycb|script\.google\.com\/macros/);
-  assert.match(page, /endpoint: ''/);
+  const endpoint = 'https://script.google.com/macros/s/AKfycbxuK0N06PnBppBNlXyIhnIFT6oRwODUCxXMk_QY43xD29FsXQLtSdWimFriwi6y42beqA/exec';
+  assert.match(page, new RegExp("endpoint: '" + endpoint.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "'"));
+  assert.doesNotMatch(source, /section125pdf|script\.google\.com|UrlFetchApp|fetch\s*\(/);
+  const s125 = fs.readFileSync(path.join(__dirname, '..', 'section125.js'), 'utf8');
+  const s128 = fs.readFileSync(path.join(__dirname, '..', '..', 'section128', 'section128.js'), 'utf8');
+  function gate(text) {
+    const start = text.indexOf('function shouldPost()');
+    const end = text.indexOf('function ', start + 20);
+    return text.slice(start, end)
+      .replace(/S125_CONFIG|S128_CONFIG/g, 'CFG')
+      .replace(/__s125Live|__s128Live/g, '__live');
+  }
+  assert.equal(gate(s125), gate(s128));
 });
 
 test('a valid lead emails Dan immediately and queues a follow-up with no visitor email', function () {
