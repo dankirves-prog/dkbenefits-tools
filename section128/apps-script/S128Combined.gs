@@ -2,17 +2,17 @@
  * Combined Section 128 Apps Script deploy file.
  * Generated from s128-model.js + s128-terms.js + s128-docgen.js + apps-script/Code.gs.
  * Paste this whole file into Apps Script as Code.gs. Do not edit by hand.
- * Template s128-v0.5.1-2026-10-09. Terms s128-terms-2026-10-08b.
+ * Template s128-v1.0-2026-10-09. Terms s128-terms-2026-10-09.
  * The Terms of use are a draft for DK Benefits LLC counsel before go-live. They are not legal advice.
  */
 
 /**
  * Section 128 Trump Account Contribution Program — validation, limits, review flags.
- * Template s128-v0.5.1-2026-10-09. Guidance as of October 8, 2026.
+ * Template s128-v1.0-2026-10-09. Guidance as of October 8, 2026.
  * Same rules run in the browser and in the Apps Script.
  */
 var S128Model = (function () {
-  var TEMPLATE_VERSION = 's128-v0.5.1-2026-10-09';
+  var TEMPLATE_VERSION = 's128-v1.0-2026-10-09';
   var GUIDANCE_AS_OF = '2026-10-08';
   var FIRST_CONTRIBUTION_DATE = '2026-07-04';
   var PUBLISHED_S128_CEILING = 2500;
@@ -601,21 +601,25 @@ var S128Model = (function () {
   };
 })();
 /**
- * Educational-tool terms. Version s128-terms-2026-10-08b.
+ * Educational-tool terms. Version s128-terms-2026-10-09.
  * Draft wording for DK Benefits LLC's own attorney to review before go-live.
- * Not itself legal advice. The paragraph text is unchanged from s128-terms-2026-10-08
- * except the version string. The checkbox sentence is the shorter v0.4 label.
+ * Not itself legal advice. Paragraph 2 says asking DK Benefits LLC for a copy
+ * does not create an advisory relationship. The paragraph after the sample-draft
+ * sentence says the documents are free to download on the final screen, are not
+ * emailed to the employer, and that a later copy is a request to DK Benefits LLC.
+ * AS_OF is unchanged. The checkbox sentence is the shorter v0.4 label.
  */
 var S128Terms = (function () {
-  var VERSION = 's128-terms-2026-10-08b';
+  var VERSION = 's128-terms-2026-10-09';
   var AS_OF = 'October 8, 2026';
 
   var PARAGRAPHS = [
     'DK Benefits LLC provides this Section 128 Trump Account contribution program tool as an educational resource to help employers. It produces a sample template only.',
-    'The tool and the documents are not legal advice, tax advice, accounting advice, or ERISA advice. Using the tool, downloading a document, or receiving a copy by email does not create an attorney-client relationship, a tax-advisor relationship, or any other advisory relationship.',
+    'The tool and the documents are not legal advice, tax advice, accounting advice, or ERISA advice. Using the tool, downloading a document, or asking DK Benefits LLC for a copy does not create an attorney-client relationship, a tax-advisor relationship, or any other advisory relationship.',
     'DK Benefits LLC and Daniel Kirves do not review, approve, or verify the documents or the information the employer enters. The employer is solely responsible for the accuracy of that information, for deciding whether to adopt a program, for customizing the documents, for adoption and implementation, and for ongoing compliance and operation.',
     'Consult your own attorney and tax advisor before adopting or operating any program. Final Section 128 regulations have not been issued. This sample reflects guidance as of ' + AS_OF + ', including the proposed regulations in REG-101355-26 and Treasury Decision 10056. Law and guidance may change.',
     'The documents are a sample draft for the employer’s review with its own advisors. They are not adopted until the employer signs them. The signature line and the date line are left blank. Generating or downloading a file does not adopt a program and does not amend a cafeteria plan.',
+    'The tool and the documents are free. The employer can download the documents on the final screen at no charge. The documents are not emailed to the employer. When the documents are created, the employer’s answers and a copy of the documents are sent to DK Benefits LLC. If the employer needs a copy later, it may contact DK Benefits LLC at 407-476-5076 or dan@dkbenefits.net. DK Benefits LLC will try to provide one but does not guarantee that a copy is kept or can be retrieved.',
     'The tool and the documents are provided “as is” and “as available,” without warranties of any kind, express or implied, including warranties of accuracy, fitness for a particular purpose, and non-infringement.',
     'To the fullest extent permitted by law, DK Benefits LLC and Daniel Kirves have no liability for any use of, or reliance on, the tool or the documents, including a decision to adopt, not to adopt, or to operate a program.',
     'The employer agrees to indemnify and hold harmless DK Benefits LLC and Daniel Kirves from claims, damages, losses, and reasonable expenses arising out of the employer’s use of the tool, reliance on the sample documents, or adoption or operation of a program, except to the extent caused by DK Benefits LLC’s intentional misconduct. This indemnity applies only to the extent the law allows.',
@@ -635,7 +639,7 @@ var S128Terms = (function () {
   };
 })();
 /**
- * Deterministic Section 128 DOCX builder. Template s128-v0.5.1-2026-10-09.
+ * Deterministic Section 128 DOCX builder. Template s128-v1.0-2026-10-09.
  * Language is the Employer Plan (Articles 1–12 and the adoption agreement),
  * with the October 8, 2026 research edits applied. No live drafting.
  */
@@ -1001,7 +1005,7 @@ var S128Docgen = (function () {
     var when = longDate(plan.effective_date);
     var today = S128Model.todayIso();
     if (plan.effective_date && today && plan.effective_date < today) {
-      return 'Sign and date the plan (page 1) promptly, as soon as possible. It takes effect on ' + when + '.';
+      return 'Sign and date the plan (page 1) as soon as possible. It takes effect on ' + when + '.';
     }
     return 'Sign and date the plan (page 1) before the effective date (' + when + ').';
   }
@@ -1110,6 +1114,8 @@ var S128Docgen = (function () {
       'Would you mind giving me a shot to see what I can do for you? I\'d love to hear from you.',
       '',
       'Also, just so it\'s clear, I don\'t sell, market, open, or administer Trump accounts. And legally I have to mention that the tool is educational and isn\'t legal or tax advice.',
+      '',
+      'If you\'d rather not get these emails from me, let me know and I\'ll take you off the list.',
       '',
       'Daniel Kirves',
       'Benefits Broker | 20 Years Exp | DK Benefits',
@@ -1382,16 +1388,21 @@ var S128Docgen = (function () {
     return s || 'Employer';
   }
 
+  function fileVersion() {
+    var m = /^s128-(v[\d.]+)-/.exec(S128Model.TEMPLATE_VERSION);
+    return m ? '_' + m[1] : '';
+  }
+
   function planFileName(plan) {
-    return safeFilePart(plan.employer_name) + '_Section_128_Plan_v0.5.docx';
+    return safeFilePart(plan.employer_name) + '_Section_128_Plan' + fileVersion() + '.docx';
   }
 
   function amendmentFileName(plan) {
-    return safeFilePart(plan.employer_name) + '_Section_125_Amendment_v0.5.docx';
+    return safeFilePart(plan.employer_name) + '_Section_125_Amendment' + fileVersion() + '.docx';
   }
 
   function guideFileName(plan) {
-    return safeFilePart(plan.employer_name) + '_Section_128_Implementation_Guide_v0.5.docx';
+    return safeFilePart(plan.employer_name) + '_Section_128_Implementation_Guide' + fileVersion() + '.docx';
   }
 
   function pdfFileName(docxName) {
@@ -1474,6 +1485,7 @@ var S128_PDF_MIME = 'application/pdf';
 var S128_FOLLOWUPS_SHEET = 'FollowUps';
 var S128_FOLLOWUP_DELAY_MS = 10 * 60 * 1000;
 var S128_FOLLOWUP_HANDLER = 's128SendDueFollowUps';
+var S128_ACCEPTED_TERMS_VERSIONS = [S128Terms.VERSION, 's128-terms-2026-10-08b'];
 var SECTION125_URL = 'https://www.dkbenefits.net/section125plantool';
 var RATES_URL = 'https://www.dkbenefits.net/instant-group-quote';
 
@@ -1532,7 +1544,7 @@ function s128Handle_(payload) {
   }
 
   var ack = payload.acknowledgement || {};
-  if (ack.accepted !== true || !ack.acceptedAt || !Date.parse(ack.acceptedAt) || ack.termsVersion !== S128Terms.VERSION) {
+  if (ack.accepted !== true || !ack.acceptedAt || !Date.parse(ack.acceptedAt) || S128_ACCEPTED_TERMS_VERSIONS.indexOf(ack.termsVersion) === -1) {
     s128LogEvent_('rejected_terms', payload.submissionId, 'terms');
     return { ok: false, error: 'The terms acknowledgement is missing.' };
   }

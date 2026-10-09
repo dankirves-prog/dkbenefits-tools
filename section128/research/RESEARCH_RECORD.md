@@ -7,6 +7,8 @@
 
 **Template v0.4 (October 8, 2026):** Visitor-facing documents use one footer line, “Prepared with DK Benefits' educational tool. Not effective until signed by the employer.” The full Terms of use stay in the on-screen dialog (version s128-terms-2026-10-08b). The research findings below are unchanged.
 
+**Version 1.0 (October 9, 2026): first public release. Terms s128-terms-2026-10-09 add free download and copy-on-request wording. Legal findings unchanged.**
+
 **Template v0.5 (October 8, 2026):** The dependents tooltip says the separate $1,000 Treasury contribution is only for children born in 2025 through 2028. A child who did not receive it can still have a Trump account and can still receive an employer Section 128 contribution while under 18, if the account is opened and active. Anyone under 18 with a Social Security number can have an account opened. The growth period still ends on December 31 of the year the child turns 17. An unclaimed Treasury auto account still cannot receive an employer contribution until it is claimed and activated.
 
 ## Verification for the generator build (October 8, 2026)

@@ -1,5 +1,5 @@
 /**
- * Deterministic Section 128 DOCX builder. Template s128-v0.5.1-2026-10-09.
+ * Deterministic Section 128 DOCX builder. Template s128-v1.0-2026-10-09.
  * Language is the Employer Plan (Articles 1–12 and the adoption agreement),
  * with the October 8, 2026 research edits applied. No live drafting.
  */
@@ -365,7 +365,7 @@ var S128Docgen = (function () {
     var when = longDate(plan.effective_date);
     var today = S128Model.todayIso();
     if (plan.effective_date && today && plan.effective_date < today) {
-      return 'Sign and date the plan (page 1) promptly, as soon as possible. It takes effect on ' + when + '.';
+      return 'Sign and date the plan (page 1) as soon as possible. It takes effect on ' + when + '.';
     }
     return 'Sign and date the plan (page 1) before the effective date (' + when + ').';
   }
@@ -474,6 +474,8 @@ var S128Docgen = (function () {
       'Would you mind giving me a shot to see what I can do for you? I\'d love to hear from you.',
       '',
       'Also, just so it\'s clear, I don\'t sell, market, open, or administer Trump accounts. And legally I have to mention that the tool is educational and isn\'t legal or tax advice.',
+      '',
+      'If you\'d rather not get these emails from me, let me know and I\'ll take you off the list.',
       '',
       'Daniel Kirves',
       'Benefits Broker | 20 Years Exp | DK Benefits',
@@ -746,16 +748,21 @@ var S128Docgen = (function () {
     return s || 'Employer';
   }
 
+  function fileVersion() {
+    var m = /^s128-(v[\d.]+)-/.exec(S128Model.TEMPLATE_VERSION);
+    return m ? '_' + m[1] : '';
+  }
+
   function planFileName(plan) {
-    return safeFilePart(plan.employer_name) + '_Section_128_Plan_v0.5.docx';
+    return safeFilePart(plan.employer_name) + '_Section_128_Plan' + fileVersion() + '.docx';
   }
 
   function amendmentFileName(plan) {
-    return safeFilePart(plan.employer_name) + '_Section_125_Amendment_v0.5.docx';
+    return safeFilePart(plan.employer_name) + '_Section_125_Amendment' + fileVersion() + '.docx';
   }
 
   function guideFileName(plan) {
-    return safeFilePart(plan.employer_name) + '_Section_128_Implementation_Guide_v0.5.docx';
+    return safeFilePart(plan.employer_name) + '_Section_128_Implementation_Guide' + fileVersion() + '.docx';
   }
 
   function pdfFileName(docxName) {

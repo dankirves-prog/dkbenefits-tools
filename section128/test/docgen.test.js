@@ -11,6 +11,11 @@ vmPdf(ctx);
 const { S128Model, S128Docgen, S128Pdf } = ctx;
 const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 's128-docs-'));
 
+function fileVersion() {
+  const m = /^s128-(v[\d.]+)-/.exec(S128Model.TEMPLATE_VERSION);
+  return m ? '_' + m[1] : '';
+}
+
 function vmPdf(context) {
   const vm = require('vm');
   const pdfPath = path.join(__dirname, '..', 'vendor', 'pdf-lib.min.js');
@@ -107,9 +112,9 @@ for (const [name, overrides, mode] of cases) {
     assert.match(packed.footer, /Not effective until signed by the employer/);
     assert.match(packed.footer, /PAGE/);
     assert.doesNotMatch(packed.footer, /Sample draft/);
-    assert.match(packed.core, /s128-v0\.5\.1-2026-10-09/);
+    assert.match(packed.core, new RegExp(S128Model.TEMPLATE_VERSION.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
     assert.doesNotMatch(S128Docgen.planFileName(plan), /DRAFT/);
-    assert.match(S128Docgen.planFileName(plan), /_v0\.5\.docx$/);
+    assert.match(S128Docgen.planFileName(plan), new RegExp(fileVersion().replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.docx$'));
     assert.match(packed.core, /DK Benefits LLC/);
     assert.doesNotMatch(packed.core, /python-docx/);
     assert.match(packed.core, new RegExp(plan.plan_name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
@@ -305,7 +310,8 @@ test('implementation guide matches the funding design and the visitor email', fu
   assert.match(email, /some rates you can check out online right now/);
   assert.match(email, /Would you mind giving me a shot to see what I can do for you\? I'd love to hear from you\./);
   assert.doesNotMatch(email, /Thanks again|P\.S\./);
-  assert.match(email, /Also, just so it's clear, I don't sell, market, open, or administer Trump accounts\. And legally I have to mention that the tool is educational and isn't legal or tax advice\.\n\nDaniel Kirves\n/);
+  assert.match(email, /Also, just so it's clear, I don't sell, market, open, or administer Trump accounts\. And legally I have to mention that the tool is educational and isn't legal or tax advice\.\n\nIf you'd rather not get these emails from me, let me know and I'll take you off the list\.\n\nDaniel Kirves\n/);
+  assert.doesNotMatch(email, /just reply/i);
   assert.match(email, /the tool is educational and isn't legal or tax advice/);
   assert.match(email, /Daniel Kirves/);
   assert.match(email, /Benefits Broker \| 20 Years Exp \| DK Benefits/);
@@ -330,7 +336,7 @@ test('implementation guide matches the funding design and the visitor email', fu
   const grantOnly = planFor({ funding_mode: 'employer_only' });
   assert.equal(S128Docgen.checklistLines(grantOnly).length, 5);
   assert.doesNotMatch(S128Docgen.plainText(S128Docgen.guideParagraphs(grantOnly)), /Section 125 amendment/);
-  assert.match(S128Docgen.guideFileName(combined), /Northwind_Benefits_LLC_Section_128_Implementation_Guide_v0\.5\.docx/);
+  assert.equal(S128Docgen.guideFileName(combined), 'Northwind_Benefits_LLC_Section_128_Implementation_Guide' + fileVersion() + '.docx');
   assert.doesNotMatch(S128Docgen.guideFileName(combined), /DRAFT/);
   fs.writeFileSync(path.join(outDir, 'combined-guide.docx'), Buffer.from(S128Docgen.buildGuideDocx(combined)));
   fs.writeFileSync(path.join(artifactDir(), 'visitor-email-combined.txt'), email);
@@ -480,7 +486,7 @@ test('checklist states the plan’s own amounts and only mentions an amendment t
 test('a past effective date tells the employer to sign promptly', function () {
   const past = planFor({ effective_date: '2026-08-01' });
   const line = S128Docgen.checklistLines(past)[0];
-  assert.match(line, /promptly, as soon as possible/);
+  assert.equal(line, 'Sign and date the plan (page 1) as soon as possible. It takes effect on August 1, 2026.');
   assert.match(line, /August 1, 2026/);
   assert.doesNotMatch(line, /before the effective date/);
   assert.equal(S128Docgen.emailChecklistLines(past)[0], 'Sign and date the plan (page 1) as soon as you can.');
@@ -492,7 +498,7 @@ test('a name outside the PDF font still produces a PDF', async function () {
     signer_name: 'Łukasz Café',
     plan_name: 'Łukasz Café Trump Account Program'
   });
-  assert.equal(S128Docgen.planFileName(plan), 'Lukasz_Cafe_LLC_Section_128_Plan_v0.5.docx');
+  assert.equal(S128Docgen.planFileName(plan), 'Lukasz_Cafe_LLC_Section_128_Plan' + fileVersion() + '.docx');
   const bytes = await S128Pdf.buildPdf(S128Docgen.planParagraphs(plan), { title: plan.plan_name });
   const pdfPath = path.join(outDir, 'lukasz.pdf');
   fs.writeFileSync(pdfPath, Buffer.from(bytes));
@@ -504,5 +510,5 @@ test('a name outside the PDF font still produces a PDF', async function () {
 
 test('file names keep accented and special letters readable', function () {
   const plan = planFor({ employer_name: 'Café Łódź & Søn, Inc.', plan_name: 'Café Łódź Trump Account Program' });
-  assert.equal(S128Docgen.planFileName(plan), 'Cafe_Lodz_Son_Inc_Section_128_Plan_v0.5.docx');
+  assert.equal(S128Docgen.planFileName(plan), 'Cafe_Lodz_Son_Inc_Section_128_Plan' + fileVersion() + '.docx');
 });
