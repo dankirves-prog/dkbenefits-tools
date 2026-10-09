@@ -399,16 +399,24 @@ var S128Docgen = (function () {
     return rows;
   }
 
+  function followUpFirstName(lead) {
+    var name = String(lead && lead.contact_name || '').trim();
+    var first = name.split(/\s+/)[0] || '';
+    return first;
+  }
+
   function followUpEmailText(plan, lead, links) {
     links = links || {};
+    lead = lead || {};
+    plan = plan || {};
     var section125 = links.section125Url || '';
     var rates = links.ratesUrl || '';
+    var first = followUpFirstName(lead);
+    var employer = plan.employer_name || 'your company';
     var lines = [
-      'Hello ' + (lead.contact_name || '') + ',',
+      first ? ('Hi ' + first + ',') : 'Hi there,',
       '',
-      'Thanks for using our Section 128 tool.',
-      '',
-      'Here is a short checklist for ' + (plan.employer_name || 'your company') + ':',
+      'Thank you for using the DK Benefits Section 128 tool. Your documents for ' + employer + ' are ready on the download page. Here are the steps to put the program in place:',
       ''
     ];
     checklistLines(plan).forEach(function (line, index) {
@@ -418,22 +426,24 @@ var S128Docgen = (function () {
       '',
       'Your tax advisor can help with anything specific to your situation.',
       '',
-      'We also help employers with group health and other employee benefits. Our free Section 125 premium-only plan document tool is here:',
-      section125,
-      '',
-      'You can see instant rates right away:',
+      'If it\'s helpful, here\'s a little more about what we do. DK Benefits helps employers shop and compare group health coverage. You can see instant rates for your group here:',
       rates,
       '',
-      'By going to market, with underwriting, we can often find better options than the instant rates.',
+      'Those instant rates are a quick starting point. When we take a group to market with full underwriting, we can often find better options.',
       '',
-      'DK Benefits doesn\'t sell, market, open, or administer Trump accounts.',
+      'We also offer a free Section 125 plan document tool that creates either a premium-only plan (POP) or a full cafeteria plan:',
+      section125,
+      '',
+      'If you\'d like a hand with any of this, just reply to this email or call me.',
+      '',
+      'Best regards,',
       '',
       'Daniel Kirves',
       'DK Benefits',
       '407-476-5076',
       'dan@dkbenefits.net',
       '',
-      'This tool is educational and is not legal or tax advice.'
+      'DK Benefits doesn\'t sell, market, open, or administer Trump accounts. This tool is educational and isn\'t legal or tax advice.'
     );
     return lines.join('\n');
   }

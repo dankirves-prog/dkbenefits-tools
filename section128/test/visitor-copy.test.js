@@ -59,13 +59,16 @@ test('combined visitor email and guide stay educational', function () {
   const html = S128Docgen.followUpEmailHtml(checked.plan, checked.lead, links);
   BANNED.forEach(function (pattern) { assert.doesNotMatch(email, pattern); });
   assert.doesNotMatch(email, /attorney|does not review|attached|lowest|savings/i);
+  assert.match(email, /^Hi Ada,/);
+  assert.match(email, /ready on the download page/);
   assert.match(email, /Your tax advisor can help/);
-  assert.match(email, /Thanks for using our Section 128 tool/);
-  assert.match(email, /You can see instant rates right away/);
-  assert.match(email, /By going to market, with underwriting, we can often find better options than the instant rates/);
+  assert.match(email, /Thank you for using the DK Benefits Section 128 tool/);
+  assert.match(email, /You can see instant rates for your group here/);
+  assert.match(email, /When we take a group to market with full underwriting, we can often find better options/);
+  assert.equal((email.match(/premium-only/g) || []).length, 1);
   assert.deepEqual(email.match(/https?:\/\/\S+/g), [
-    'https://www.dkbenefits.net/section125plantool',
-    'https://www.dkbenefits.net/instant-group-quote'
+    'https://www.dkbenefits.net/instant-group-quote',
+    'https://www.dkbenefits.net/section125plantool'
   ]);
   assert.equal((html.match(/<a /g) || []).length, 2);
   assert.doesNotMatch(html, /mailto:|tel:|<img|utm_/i);

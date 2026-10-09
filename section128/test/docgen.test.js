@@ -292,22 +292,26 @@ test('implementation guide matches the funding design and the visitor email', fu
   assert.doesNotMatch(guide, /July 4, 2026/);
   assert.doesNotMatch(guide, /Who:|What:|When:|REG-101355|attorney|SAMPLE DRAFT/);
   lines.forEach(function (line) { assert.ok(email.indexOf(line) !== -1, line); });
-  assert.match(email, /Hello Ada Lopez/);
-  assert.match(email, /Thanks for using our Section 128 tool/);
+  assert.match(email, /^Hi Ada,/);
+  assert.match(email, /Thank you for using the DK Benefits Section 128 tool\. Your documents for Northwind Benefits LLC are ready on the download page/);
   assert.match(email, /Your tax advisor can help with anything specific to your situation/);
+  assert.match(email, /You can see instant rates for your group here/);
+  assert.match(email, /When we take a group to market with full underwriting, we can often find better options\./);
+  assert.match(email, /creates either a premium-only plan \(POP\) or a full cafeteria plan/);
+  assert.equal((email.match(/premium-only/g) || []).length, 1);
+  assert.match(email, /just reply to this email or call me/);
+  assert.match(email, /Best regards,/);
   assert.match(email, /Daniel Kirves/);
   assert.match(email, /407-476-5076/);
   assert.match(email, /dan@dkbenefits.net/);
-  assert.match(email, /is not legal or tax advice/);
+  assert.match(email, /isn't legal or tax advice/);
   assert.match(email, /doesn't sell, market, open, or administer Trump accounts/);
-  assert.match(email, /You can see instant rates right away/);
-  assert.match(email, /https:\/\/www\.dkbenefits\.net\/instant-group-quote/);
-  assert.match(email, /By going to market, with underwriting, we can often find better options than the instant rates\./);
   assert.doesNotMatch(email, /attorney|SAMPLE DRAFT|does not review|received your draft|attached|lowest|savings|cheapest|guarantee|shop and negotiate/i);
   assert.deepEqual(email.match(/https?:\/\/\S+/g), [
-    'https://www.dkbenefits.net/section125plantool',
-    'https://www.dkbenefits.net/instant-group-quote'
+    'https://www.dkbenefits.net/instant-group-quote',
+    'https://www.dkbenefits.net/section125plantool'
   ]);
+  assert.match(S128Docgen.followUpEmailText(combined, { contact_name: '   ' }, links), /^Hi there,/);
   assert.equal((html.match(/<a /g) || []).length, 2);
   assert.match(html, /<a href="https:\/\/www\.dkbenefits\.net\/section125plantool">https:\/\/www\.dkbenefits\.net\/section125plantool<\/a>/);
   assert.match(html, /<a href="https:\/\/www\.dkbenefits\.net\/instant-group-quote">https:\/\/www\.dkbenefits\.net\/instant-group-quote<\/a>/);
