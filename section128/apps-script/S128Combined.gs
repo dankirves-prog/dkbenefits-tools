@@ -1823,13 +1823,53 @@ function s128FollowUpMessage_(row) {
   };
 }
 
+function s128CellTime_(value) {
+  if (value && typeof value.getTime === 'function') {
+    var ms = value.getTime();
+    if (typeof ms === 'number' && isFinite(ms)) return ms;
+  }
+  if (typeof value === 'number' && isFinite(value) && value > 20000 && value < 100000) {
+    return Math.round((value - 25569) * 86400 * 1000);
+  }
+  return Date.parse(String(value || ''));
+}
+
+function s128CellDay_(value) {
+  if (value && typeof value.getTime === 'function') {
+    var ms = value.getTime();
+    if (typeof ms === 'number' && isFinite(ms)) return new Date(ms).toISOString().slice(0, 10);
+  }
+  return String(value || '').slice(0, 10);
+}
+
+function s128Log_(message) {
+  var line = String(message);
+  try {
+    if (typeof Logger !== 'undefined' && Logger && Logger.log) Logger.log(line);
+  } catch (err) {}
+  try {
+    if (typeof console !== 'undefined' && console && console.log) console.log(line);
+  } catch (err) {}
+}
+
+function s128TsPreview_(value) {
+  var kind = 'empty';
+  if (value && typeof value.getTime === 'function') kind = 'Date';
+  else if (value != null && value !== '') kind = typeof value;
+  var text = '';
+  try { text = String(value == null ? '' : value); } catch (err) { text = ''; }
+  if (text.length > 80) text = text.slice(0, 80);
+  return kind + ':' + text;
+}
+
 function s128FollowUpSentToday_(values, email) {
   var day = s128Today_();
   var target = String(email || '').toLowerCase();
   for (var i = 1; i < values.length; i++) {
     if (String(values[i][1] || '').toLowerCase() !== target) continue;
+    if (String(values[i][6] || '') === 'yes') continue;
     if (String(values[i][5]) !== 'sent') continue;
-    if (String(values[i][9] || '').slice(0, 10) === day) return true;
+    if (s128CellDay_(values[i][9]) === day) return true;
   }
   return false;
 }
@@ -1841,22 +1881,62 @@ function s128SendDueFollowUps() {
     var sheet = s128Sheet_(S128_FOLLOWUPS_SHEET, S128_FOLLOWUP_HEADERS);
     var values = sheet.getDataRange().getValues();
     var now = s128Now_();
+    var found = Math.max(0, values.length - 1);
+    var sent = 0;
+    var skipped = 0;
+    var waiting = 0;
+    var ignored = 0;
+    var header = values.length ? values[0] : [];
+    var headerText = [];
+    var headerOk = true;
+    for (var h = 0; h < S128_FOLLOWUP_HEADERS.length; h++) {
+      headerText.push(String(header[h] || ''));
+      if (headerText[h] !== S128_FOLLOWUP_HEADERS[h]) headerOk = false;
+    }
+    s128Log_('s128SendDueFollowUps: found ' + found + ' follow-up row(s)');
+    if (!headerOk) {
+      s128Log_('s128SendDueFollowUps: header is [' + headerText.join(', ') + '] expected [' + S128_FOLLOWUP_HEADERS.join(', ') + ']');
+    }
     for (var i = 1; i < values.length; i++) {
-      if (String(values[i][5]) !== 'pending') continue;
-      var ts = Date.parse(String(values[i][0] || ''));
-      if (isNaN(ts) || now - ts < S128_FOLLOWUP_DELAY_MS) continue;
-      var email = String(values[i][1] || '');
+      var status = String(values[i][5] || '');
+      var testRow = String(values[i][6] || '') === 'yes';
+      var retryTest = testRow && status === 'skipped' && String(values[i][8] || '') === 'already sent today';
       var rowNumber = i + 1;
-      if (s128FollowUpSentToday_(values, email)) {
+      var label = 'row ' + rowNumber + ' ' + String(values[i][1] || '(no email)') + ' id=' + String(values[i][7] || '') + ' status=' + (status || '(blank)') + ' test=' + (testRow ? 'yes' : 'no');
+      if (status !== 'pending' && !retryTest) {
+        ignored++;
+        s128Log_(label + ' reason=not pending');
+        continue;
+      }
+      // The sheet returns this cell as a Date or a serial, not the ISO text that was stored.
+      var ts = s128CellTime_(values[i][0]);
+      if (isNaN(ts)) {
+        waiting++;
+        s128Log_(label + ' reason=timestamp not readable value=' + s128TsPreview_(values[i][0]));
+        continue;
+      }
+      var ageMs = now - ts;
+      if (ageMs < S128_FOLLOWUP_DELAY_MS) {
+        waiting++;
+        s128Log_(label + ' reason=not due for ' + Math.ceil((S128_FOLLOWUP_DELAY_MS - ageMs) / 60000) + ' more minute(s)');
+        continue;
+      }
+      var email = String(values[i][1] || '');
+      if (!testRow && s128FollowUpSentToday_(values, email)) {
         sheet.getRange(rowNumber, 6).setValue('skipped');
         sheet.getRange(rowNumber, 9).setValue('already sent today');
         values[i][5] = 'skipped';
+        values[i][8] = 'already sent today';
+        skipped++;
+        s128Log_(label + ' reason=already sent today');
         continue;
       }
       if (!s128VisitorAllowed_(email)) {
         sheet.getRange(rowNumber, 6).setValue('skipped');
         sheet.getRange(rowNumber, 9).setValue('hourly limit');
         values[i][5] = 'skipped';
+        skipped++;
+        s128Log_(label + ' reason=hourly limit');
         continue;
       }
       try {
@@ -1869,12 +1949,21 @@ function s128SendDueFollowUps() {
         sheet.getRange(rowNumber, 10).setValue(sentAt);
         values[i][5] = 'sent';
         values[i][9] = sentAt;
+        sent++;
+        s128Log_(label + ' reason=sent');
       } catch (err) {
+        var mailError = err && err.message ? String(err.message).slice(0, 300) : 'mail failed';
         sheet.getRange(rowNumber, 6).setValue('failed');
-        sheet.getRange(rowNumber, 9).setValue(err && err.message ? String(err.message).slice(0, 300) : 'mail failed');
+        sheet.getRange(rowNumber, 9).setValue(mailError);
         values[i][5] = 'failed';
+        skipped++;
+        s128Log_(label + ' reason=mail failed ' + mailError);
       }
     }
+    s128Log_('s128SendDueFollowUps: sent=' + sent + ' skipped=' + skipped + ' waiting=' + waiting + ' ignored=' + ignored);
+  } catch (err) {
+    s128Log_('s128SendDueFollowUps: failed ' + (err && err.message ? String(err.message) : err));
+    throw err;
   } finally {
     lock.releaseLock();
   }
