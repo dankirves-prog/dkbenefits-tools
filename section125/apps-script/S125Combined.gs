@@ -4,15 +4,16 @@
  * "DK Benefits Section 125 Leads".
  * Do not paste it into the Section 128 project or the quote-tool project.
  * Order: s125-model.js, s125-terms.js, s125-docgen.js, apps-script/Code.gs.
+ * Generated from those files. Do not edit by hand.
+ * Template s125-v1.0-2026-10-10. Terms s125-terms-2026-10-10.
  */
-
 /**
  * Section 125 sample plan rules.
  * Dollar figures follow IR-2025-103 / Rev. Proc. 2025-32 and the OBBBA change to §129.
  * Draft for the employer's own advisors. Not legal advice.
  */
 var S125Model = (function () {
-  var TEMPLATE_VERSION = 's125-v1.1.0-2026-10-09';
+  var TEMPLATE_VERSION = 's125-v1.0-2026-10-10';
   var GUIDANCE_AS_OF = '2026-10-09';
   var HEALTH_FSA_LIMIT_2026 = 3400;
   var CARRYOVER_FROM_2026 = 680;
@@ -251,7 +252,7 @@ var S125Model = (function () {
     var oe = Number(input.oe_window_days);
     if (oe !== 15 && oe !== 30 && oe !== 45) push(errors, 'oe_window_days', 'Choose a 15, 30, or 45 day open enrollment window.');
     var hire = Number(input.new_hire_window);
-    if ([7, 14, 30, 60].indexOf(hire) === -1) push(errors, 'new_hire_window', 'Choose how many days a new hire has to enroll.');
+    if ([7, 14, 30].indexOf(hire) === -1) push(errors, 'new_hire_window', 'Choose 7, 14, or 30 days for a new hire to enroll.');
 
     var count = Number(input.employee_count);
     if (!/^\d+$/.test(clean(input.employee_count)) || count < 1 || count > 100000) {
@@ -318,6 +319,7 @@ var S125Model = (function () {
       prior_plan: derived.prior_plan,
       prior_adoption: derived.prior_plan ? clean(input.prior_adoption) : '',
       plan_year_change: derived.plan_year_change,
+      on_plan_year_start: derived.on_plan_year_start,
       short_plan_year: derived.short_plan_year,
       short_plan_year_end: derived.short_plan_year_end,
       next_plan_year_start: derived.next_plan_year_start,
@@ -362,9 +364,9 @@ var S125Model = (function () {
   }
 
   function stepFields(step) {
-    if (step === 1) return ['employer_name', 'employer_ein', 'plan_number', 'street', 'city', 'state', 'zip', 'phone', 'entity_type', 'llc_tax'];
+    if (step === 1) return ['employer_name', 'employer_ein', 'plan_number', 'street', 'city', 'state', 'zip', 'phone', 'funding_type', 'multi_state'];
     if (step === 2) return ['effective_date', 'plan_year_type', 'plan_year_start', 'prior_plan', 'prior_adoption', 'oe_window_days', 'new_hire_window'];
-    if (step === 3) return ['employee_count', 'funding_type', 'full_time_hours', 'waiting_period', 'eligible_classes', 'eligible_class_other', 'multi_state'];
+    if (step === 3) return ['entity_type', 'llc_tax', 'employee_count', 'full_time_hours', 'waiting_period', 'eligible_classes', 'eligible_class_other'];
     if (step === 4) return ['benefits', 'health_fsa_design', 'health_fsa_unused', 'dcap_unused'];
     return ['signer_name', 'signer_title', 'signer_email'];
   }
@@ -440,6 +442,67 @@ var S125Model = (function () {
     return bits.join('; ');
   }
 
+  function shortYearMonths(startIso, endIso) {
+    var start = parseIso(startIso);
+    var end = parseIso(endIso);
+    if (!start || !end || end < start) return 0;
+    var count = 0;
+    var y = start.getFullYear();
+    var m = start.getMonth() + 1;
+    var endY = end.getFullYear();
+    var endM = end.getMonth() + 1;
+    while (y < endY || (y === endY && m <= endM)) {
+      var dim = new Date(y, m, 0).getDate();
+      var monthEnd = new Date(y, m - 1, dim);
+      var partialStart = y === start.getFullYear() && m === start.getMonth() + 1 && start.getDate() !== 1;
+      if (!partialStart && monthEnd <= end) count++;
+      m += 1;
+      if (m > 12) { m = 1; y += 1; }
+    }
+    return count;
+  }
+
+  function dayBeforeIso(iso) {
+    var dt = parseIso(iso);
+    if (!dt) return '';
+    return toIso(addDays(dt, -1));
+  }
+
+  function daysUntil(iso, asOf) {
+    var target = parseIso(iso);
+    var from = parseIso(asOf);
+    if (!target || !from) return null;
+    return Math.round((target.getTime() - from.getTime()) / 86400000);
+  }
+
+  function planYearNote(plan) {
+    plan = plan || {};
+    if (plan.plan_year_change && plan.on_plan_year_start) {
+      return 'This restatement changes the plan year. The plan year in effect before ' + formatLongDate(plan.effective_date) + ' ends on ' + formatLongDate(dayBeforeIso(plan.effective_date)) + ', and that period is a short plan year. Beginning ' + formatLongDate(plan.effective_date) + ', each plan year is ' + planYearSentence(plan) + '.';
+    }
+    if (plan.short_plan_year && plan.plan_year_change) {
+      return 'This restatement changes the plan year. The short plan year begins ' + formatLongDate(plan.effective_date) + ' and ends ' + formatLongDate(plan.short_plan_year_end) + '. Each later plan year is ' + planYearSentence(plan) + '.';
+    }
+    if (plan.short_plan_year) {
+      return 'This is a short first plan year, from ' + formatLongDate(plan.effective_date) + ' through ' + formatLongDate(plan.short_plan_year_end) + '.';
+    }
+    if (plan.prior_plan && !plan.plan_year_change) return 'This restatement continues the existing plan year.';
+    return '';
+  }
+
+  function stepTwoNotices(plan, asOf) {
+    plan = plan || {};
+    var notes = [];
+    if (plan.short_plan_year && shortYearMonths(plan.effective_date, plan.short_plan_year_end) === 0) {
+      notes.push('The first plan year is less than a month. Consider an effective date on the plan-year start.');
+    }
+    var days = daysUntil(plan.effective_date, asOf || todayIso());
+    if (days != null && days >= 0 && days < 14) {
+      notes.push('Leave time to sign the plan and enroll employees before this date.');
+    }
+    return notes;
+  }
+
   function planYearSentence(plan) {
     if (plan.plan_year_type === 'calendar') return 'the calendar year, January 1 through December 31';
     var start = MONTHS[plan.plan_year_start_month] + ' ' + plan.plan_year_start_day;
@@ -477,24 +540,30 @@ var S125Model = (function () {
     benefitLabel: benefitLabel,
     classSentence: classSentence,
     planYearSentence: planYearSentence,
+    shortYearMonths: shortYearMonths,
+    dayBeforeIso: dayBeforeIso,
+    planYearNote: planYearNote,
+    stepTwoNotices: stepTwoNotices,
     ownerRule: ownerRule
   };
 })();
+
 /**
- * Educational-tool terms. Version s125-terms-2026-10-09.
+ * Educational-tool terms. Version s125-terms-2026-10-10.
  * Draft wording for DK Benefits LLC's own attorney to review before go-live.
  * Not itself legal advice.
  */
 var S125Terms = (function () {
-  var VERSION = 's125-terms-2026-10-09';
+  var VERSION = 's125-terms-2026-10-10';
   var AS_OF = 'October 9, 2026';
 
   var PARAGRAPHS = [
     'DK Benefits LLC provides this Section 125 cafeteria plan tool as an educational resource to help employers. It produces a sample template only.',
-    'The tool and the documents are not legal advice, tax advice, accounting advice, or ERISA advice. Using the tool, downloading a document, or receiving a note by email does not create an attorney-client relationship, a tax-advisor relationship, or any other advisory relationship.',
+    'The tool and the documents are not legal advice, tax advice, accounting advice, or ERISA advice. Using the tool, downloading a document, or asking DK Benefits LLC for a copy does not create an attorney-client relationship, a tax-advisor relationship, or any other advisory relationship.',
     'DK Benefits LLC and Daniel Kirves do not review, approve, or verify the documents or the information the employer enters. The employer is solely responsible for the accuracy of that information, for deciding whether to adopt a plan, for customizing the documents, for adoption and implementation, and for ongoing compliance and operation.',
     'Consult your own attorney, tax advisor, and third-party administrator before adopting or operating a cafeteria plan. This sample reflects publicly available rules as of ' + AS_OF + ', including the 2007 proposed cafeteria plan regulations (which taxpayers may rely on), IRC §§105, 125, 129, 1372, and 223, and IRS notices and revenue rulings cited in the research record. Law and guidance may change. Dollar limits change by year.',
     'The documents are a sample draft for the employer’s review with its own advisors. They are not adopted until the employer signs them. The signature line and the date line are left blank. Generating or downloading a file does not adopt a plan.',
+    'The tool and the documents are free. The employer can download the documents on the final screen at no charge. The documents are not emailed to the employer. When the documents are created, the employer’s answers and a copy of the documents are sent to DK Benefits LLC. If the employer needs a copy later, it may contact DK Benefits LLC at 407-476-5076 or dan@dkbenefits.net. DK Benefits LLC will try to provide one but does not guarantee that a copy is kept or can be retrieved.',
     'A health FSA or dependent care FSA also needs the administrator’s claims procedures. This sample states the cafeteria-plan election rules and the unused-funds rule the employer chose. It does not replace a carrier contract, a stop-loss policy, or an insurance certificate.',
     'The tool and the documents are provided “as is” and “as available,” without warranties of any kind, express or implied, including warranties of accuracy, fitness for a particular purpose, and non-infringement.',
     'To the fullest extent permitted by law, DK Benefits LLC and Daniel Kirves have no liability for any use of, or reliance on, the tool or the documents, including a decision to adopt, not to adopt, or to operate a plan.',
@@ -514,6 +583,7 @@ var S125Terms = (function () {
     FOOTER: FOOTER
   };
 })();
+
 /**
  * Section 125 sample cafeteria plan, checklist, and follow-up note.
  * Word uses Calibri. The PDF uses Times because the vendored pdf-lib has no fontkit.
@@ -583,12 +653,13 @@ var S125Docgen = (function () {
       if (plan.health_fsa_unused === 'grace') {
         unused = 'The Health FSA has a grace period that ends on the 15th day of the third month after the plan year. A Health FSA expense incurred in the grace period may be paid from the amount unused at the end of the prior plan year. Any Health FSA amount still unused when the grace period and the run-out period end is forfeited to the Employer. The Health FSA does not also carry unused amounts into the next plan year.';
       } else if (plan.health_fsa_unused === 'carryover') {
-        unused = 'The Health FSA carries unused amounts into the next plan year, up to the indexed carryover limit. From a plan year that begins in 2026, the carryover is ' + money(S125Model.CARRYOVER_FROM_2026) + '. Amounts carried into a plan year that begins in 2026, from a plan year that begins in 2025, are limited to ' + money(S125Model.CARRYOVER_INTO_2026) + '. Any Health FSA amount above that limit is forfeited to the Employer. The Health FSA does not also have a grace period.';
+        unused = carryoverSentence(plan);
       } else {
         unused = 'A Health FSA amount still unused when the plan year and the run-out period end is forfeited to the Employer. The Health FSA has neither a grace period nor a carryover.';
       }
       rows.push(h2('Health FSA'));
-      rows.push(row(null, what + ' For a plan year beginning in 2026, salary reduction contributions to the Health FSA may not exceed ' + money(S125Model.HEALTH_FSA_LIMIT_2026) + ', the limit in Code §125(i).'));
+      rows.push(row(null, what + ' ' + healthFsaLimitSentence(plan)));
+      rows.push(row(null, 'Only an Eligible Employee who is eligible for the Employer\'s group major medical plan for the plan year, whether or not the Employee enrolls in it, may elect the Health FSA.'));
       rows.push(row(null, 'The Health FSA is self-insured medical reimbursement. The amount elected for the period of coverage is available on the first day of that coverage, without regard to how much has been withheld from pay by the date of the claim.'));
       rows.push(row(null, 'An expense is incurred when the care is furnished, not when the Participant is billed and not when the Participant pays. Only an expense incurred while Health FSA coverage is in effect may be reimbursed, and only after the Participant substantiates it.'));
       rows.push(row(null, unused));
@@ -643,11 +714,8 @@ var S125Docgen = (function () {
     } else {
       rows.push(row(null, 'This Plan is effective ' + S125Model.formatLongDate(plan.effective_date) + '. The Employer adopts it prospectively. Benefits are not provided for a period before the effective date.'));
     }
-    if (plan.short_plan_year) {
-      rows.push(row(null, 'The first plan year is a short plan year beginning ' + S125Model.formatLongDate(plan.effective_date) + ' and ending ' + S125Model.formatLongDate(plan.short_plan_year_end) + '. Each later plan year is ' + S125Model.planYearSentence(plan) + '.'));
-    } else if (plan.prior_plan) {
-      rows.push(row(null, 'This restatement continues the existing plan year.'));
-    }
+    var yearSentence = establishmentYearSentence(plan);
+    if (yearSentence) rows.push(row(null, yearSentence));
     rows.push(row(null, 'The purpose of this Plan is to let an Eligible Employee choose, before the compensation is currently available, between cash and the qualified benefits in Article 5. The Employer intends the Plan to meet Code §125 and the regulations under it.'));
     rows.push(row(null, 'Where a benefit is also described in a separate contract or account agreement, that document controls the coverage or the account, and this Plan controls the pre-tax election.'));
 
@@ -666,17 +734,17 @@ var S125Docgen = (function () {
 
     rows.push(h1('Article 3. Eligibility'));
     rows.push(row(null, 'The eligible classes are: ' + S125Model.classSentence(plan) + '.'));
-    rows.push(row(null, 'Waiting period. ' + S125Model.waitingText(plan.waiting_period) + ' An election takes effect on the date coverage begins under that waiting period.'));
+    rows.push(row(null, 'Waiting period. ' + S125Model.waitingText(plan.waiting_period)));
     rows.push(row(null, 'An Employee who has not completed the waiting period is not an Eligible Employee. A temporary employee, a leased employee, and an independent contractor who is not a common-law employee are not Eligible Employees. A person excluded from the definition of Employee is not an Eligible Employee.'));
     rows.push(h2('Loss of eligibility'));
     rows.push(row(null, 'Eligibility ends when employment ends or when the person no longer belongs to an eligible class. From that date the person cannot make a new pre-tax election. A claim for care or dependent care furnished before that date is still presented under Article 9.'));
-    rows.push(row(null, 'An Employee who returns after a separation of thirty days or more completes the waiting period again, unless the coverage contract or a statute requires coverage to resume sooner.'));
+    rows.push(row(null, 'An Employee who terminates employment and is rehired within 30 days, or who returns from an unpaid leave of absence of less than 30 days, is not a new employee under Article 4. The election in effect before the separation or leave is reinstated for the rest of the plan year, unless Article 6 permits a change. An Employee who returns after 30 days or more is treated as a new hire, unless the group health plan or applicable law requires coverage to resume sooner.'));
     if (plan.multi_state) {
       rows.push(row(null, 'Eligible Employees may work in more than one state. This Plan applies the federal cafeteria-plan rules. State insurance law and state employment law may also apply in a state where an Employee works.'));
     }
 
     rows.push(h1('Article 4. Participation'));
-    rows.push(row(null, 'An Eligible Employee enters the Plan on the date the waiting period ends, by making an election within ' + plan.new_hire_window + ' days after becoming eligible. An Employee who does not elect in that period, or during open enrollment, is treated as having waived every pre-tax benefit and elected cash. The missed election does not default to after-tax coverage.'));
+    rows.push(row(null, 'An Eligible Employee may make an election within ' + plan.new_hire_window + ' days after becoming eligible. An election received on or before the date coverage begins under Article 3 takes effect on that date. An election received later takes effect prospectively, on the first day of the first pay period that begins after the Plan Administrator receives it. The exception is an election made within 30 days after the date of hire, which may take effect as of the date coverage begins (Prop. Treas. Reg. §1.125-2(d)). Salary reduction applies only to compensation not yet currently available when the election is made. An Employee who does not elect in that period, or during open enrollment, is treated as having waived every pre-tax benefit and elected cash. The missed election does not default to after-tax coverage.'));
     rows.push(row(null, 'Participation ends on the earliest of the day employment ends, the day the person ceases to be an Eligible Employee, the day no pre-tax election remains in effect, and the day this Plan ends. The Employer takes no salary reduction for pay earned after that day.'));
     if (Number(plan.employee_count) >= 50) {
       rows.push(row(null, 'While a Participant is on leave protected by the Family and Medical Leave Act, the Participant may continue, revoke, or resume a salary-reduction election as that Act and the cafeteria-plan regulations require.'));
@@ -695,7 +763,12 @@ var S125Docgen = (function () {
     if (has(plan, 'hsa')) {
       rows.push(row(null, 'An election to contribute to a health savings account changes only as the Health savings account section provides.'));
     }
-    rows.push(row(null, 'Open enrollment lasts ' + plan.oe_window_days + ' days and ends on the day before the plan year begins. An election made in open enrollment takes effect on the first day of the coming plan year. The first open enrollment period under this Plan is ' + S125Model.formatLongDate(plan.oe_start_date) + ' through ' + S125Model.formatLongDate(plan.oe_end_date) + '.'));
+    if (!plan.prior_plan) {
+      rows.push(row(null, 'Initial enrollment. Each Employee who will be an Eligible Employee on the Effective Date may make an election during an initial enrollment period the Plan Administrator sets, ending no later than the day before the Effective Date. Those elections take effect on the Effective Date and remain in effect through the end of the first plan year.'));
+    } else {
+      rows.push(row(null, 'Elections in effect under the plan being restated continue under this restatement for the rest of the plan year in which the restatement takes effect.'));
+    }
+    rows.push(row(null, 'Open enrollment lasts ' + plan.oe_window_days + ' days and ends on the day before the plan year begins. An election made in open enrollment takes effect on the first day of the coming plan year. The first' + (plan.short_plan_year ? ' annual' : '') + ' open enrollment period under this Plan is ' + S125Model.formatLongDate(plan.oe_start_date) + ' through ' + S125Model.formatLongDate(plan.oe_end_date) + '.'));
 
     rows.push(h1('Article 7. Salary reduction'));
     rows.push(row(null, 'The Employer reduces a Participant’s compensation, before federal income tax and, where the Code allows, before Social Security and Medicare tax, by the amount required to pay the elected benefits. The reduction applies only to compensation that is not yet currently available to the Participant. The Employer then pays that amount toward the elected benefit.'));
@@ -756,8 +829,8 @@ var S125Docgen = (function () {
     if (has(plan, 'dcap')) {
       rows.push(row(null, 'Dependent care assistance is also tested under Code §129(d), including the 55 percent average-benefits test and the limit on benefits provided to more-than-5-percent owners. The Plan Administrator will complete that testing before the Employer relies on the ' + money(S125Model.DCAP_LIMIT_2026) + ' exclusion.'));
     }
-    if (plan.funding_type === 'self' || plan.funding_type === 'level') {
-      rows.push(row(null, 'Self-insured medical reimbursement, including a level-funded arrangement that is self-insured for tax purposes, must also satisfy Code §105(h).'));
+    if (plan.funding_type === 'self' || plan.funding_type === 'level' || has(plan, 'health_fsa')) {
+      rows.push(row(null, 'Self-insured medical reimbursement, including the Health FSA and any level-funded medical arrangement that is self-insured for tax purposes, must also satisfy Code §105(h).'));
     }
     if (Number(plan.employee_count) >= 50) {
       rows.push(row(null, 'Whether the Employer is an applicable large employer under the Affordable Care Act is determined from full-time employees and full-time-equivalent employees.'));
@@ -794,18 +867,56 @@ var S125Docgen = (function () {
   }
 
   function signLine(plan) {
-    var when = S125Model.formatLongDate(plan.effective_date);
-    var today = S125Model.todayIso();
-    if (plan.effective_date && plan.effective_date < today) return 'Sign and date the plan as soon as you can.';
-    return 'Sign and date the plan before ' + when + '.';
+    return 'Sign and date the plan on or before ' + S125Model.formatLongDate(plan.effective_date) + '.';
+  }
+
+  function firstPlanYear(plan) {
+    if (plan.short_plan_year && plan.effective_date) return Number(String(plan.effective_date).slice(0, 4));
+    if (plan.on_plan_year_start && plan.effective_date) return Number(String(plan.effective_date).slice(0, 4));
+    if (plan.next_plan_year_start) return Number(String(plan.next_plan_year_start).slice(0, 4)) - (plan.effective_date === plan.next_plan_year_start ? 0 : 1);
+    return Number(String(plan.effective_date || '').slice(0, 4)) || 2026;
+  }
+
+  function healthFsaLimitSentence(plan) {
+    var sentence = 'Salary reduction contributions to the Health FSA for a plan year may not exceed the dollar limit in Code §125(i) for that plan year, as adjusted for inflation. For a plan year beginning in 2026, the limit is ' + money(S125Model.HEALTH_FSA_LIMIT_2026) + '.';
+    if (!plan.short_plan_year || !plan.effective_date || !plan.short_plan_year_end) return sentence;
+    var months = S125Model.shortYearMonths(plan.effective_date, plan.short_plan_year_end);
+    var year = Number(String(plan.effective_date).slice(0, 4));
+    var amount = year === 2026
+      ? money(Math.floor(S125Model.HEALTH_FSA_LIMIT_2026 * months / 12))
+      : (months + '/12 of the §125(i) limit for ' + year);
+    return sentence + ' For the short plan year from ' + S125Model.formatLongDate(plan.effective_date) + ' through ' + S125Model.formatLongDate(plan.short_plan_year_end) + ', the limit is prorated by the number of months in that short plan year, as Notice 2012-40 requires: ' + amount + '.';
+  }
+
+  function carryoverSentence(plan) {
+    var text = 'The Health FSA carries unused amounts into the next plan year, up to the maximum carryover the IRS sets for that plan year, as adjusted for inflation ($680 from a plan year beginning in 2026).';
+    if (firstPlanYear(plan) < 2027) {
+      text += ' Amounts carried into a plan year that begins in 2026, from a plan year that begins in 2025, are limited to ' + money(S125Model.CARRYOVER_INTO_2026) + '.';
+    }
+    return text + ' Any Health FSA amount above that limit is forfeited to the Employer. The Health FSA does not also have a grace period.';
+  }
+
+  function establishmentYearSentence(plan) {
+    if (plan.plan_year_change && plan.on_plan_year_start) return S125Model.planYearNote(plan);
+    if (plan.short_plan_year && plan.plan_year_change) {
+      return 'The short plan year begins ' + S125Model.formatLongDate(plan.effective_date) + ' and ends ' + S125Model.formatLongDate(plan.short_plan_year_end) + '. Each later plan year is ' + S125Model.planYearSentence(plan) + '.';
+    }
+    if (plan.short_plan_year) {
+      return 'The first plan year is a short plan year beginning ' + S125Model.formatLongDate(plan.effective_date) + ' and ending ' + S125Model.formatLongDate(plan.short_plan_year_end) + '. Each later plan year is ' + S125Model.planYearSentence(plan) + '.';
+    }
+    if (plan.prior_plan && !plan.plan_year_change) return 'This restatement continues the existing plan year.';
+    return '';
   }
 
   function checklistLines(plan) {
-    var lines = [signLine(plan).replace(/\.$/, '') + '.'];
+    var lines = [signLine(plan)];
+    if (!plan.prior_plan) lines.push('Hold enrollment for current employees before ' + S125Model.formatLongDate(plan.effective_date) + '.');
+    if (plan.plan_year_change) lines.push('Changing the plan year needs a valid business reason (Notice 2012-40). Write it down. Prorate the Health FSA limit for any short plan year, including the year that ends early.');
     lines.push('Give payroll the signed plan so pre-tax deductions start on or after the effective date.');
     if (has(plan, 'health_fsa') || has(plan, 'dcap')) {
       lines.push('Tell the FSA administrator the unused-amount rule in the plan. Do not leave that rule only in side materials.');
     }
+    if (has(plan, 'health_fsa')) lines.push('Offer the Health FSA only to employees eligible for your major medical plan.');
     if (has(plan, 'hsa')) lines.push('Tell payroll that HSA salary-reduction elections can be changed at least monthly, prospectively.');
     lines.push('Send employees a short note with the eligible classes, the waiting period, and the open enrollment dates in the plan.');
     if (plan.owner_rule === 's-corp') lines.push('Keep more-than-2% S corporation shareholders, including attributed family owners, off the pre-tax plan.');
@@ -885,6 +996,8 @@ var S125Docgen = (function () {
       'Would you mind giving me a shot to see what I can do for you? I\'d love to hear from you.',
       '',
       'Just so it\'s clear, legally I have to mention that the tool is educational and isn\'t legal or tax advice.',
+      '',
+      'If you\'d rather not get these emails from me, let me know and I\'ll take you off the list.',
       '',
       'Daniel Kirves',
       'Benefits Broker | 20 Years Exp | DK Benefits',
@@ -1183,12 +1296,17 @@ var S125Docgen = (function () {
     return s || 'Employer';
   }
 
+  function fileVersion() {
+    var match = String(S125Model.TEMPLATE_VERSION || '').match(/v(\d+\.\d+(?:\.\d+)?)/);
+    return match ? ('_v' + match[1]) : '';
+  }
+
   function planFileName(plan) {
-    return safeFilePart(plan.employer_name) + '_Section_125_Plan_v1.0.docx';
+    return safeFilePart(plan.employer_name) + '_Section_125_Plan' + fileVersion() + '.docx';
   }
 
   function guideFileName(plan) {
-    return safeFilePart(plan.employer_name) + '_Section_125_Implementation_Guide_v1.0.docx';
+    return safeFilePart(plan.employer_name) + '_Section_125_Implementation_Guide' + fileVersion() + '.docx';
   }
 
   function pdfFileName(docxName) {
@@ -1339,11 +1457,12 @@ function s125Handle_(payload) {
     return { ok: false, error: 'The submission id is missing.' };
   }
   var ack = payload.acknowledgement || {};
-  if (ack.accepted !== true || !ack.acceptedAt || !Date.parse(ack.acceptedAt) || ack.termsVersion !== S125Terms.VERSION) {
+  var termsOk = ack.termsVersion === S125Terms.VERSION || ack.termsVersion === 's125-terms-2026-10-09';
+  if (ack.accepted !== true || !ack.acceptedAt || !Date.parse(ack.acceptedAt) || !termsOk) {
     s125LogEvent_('rejected_terms', payload.submissionId, 'terms');
     return { ok: false, error: 'The terms acknowledgement is missing.' };
   }
-  var checked = S125Model.validateSubmission(payload, { asOf: s125Today_() });
+  var checked = S125Model.validateSubmission(payload, { asOf: s125AsOf_() });
   if (!checked.ok) {
     s125LogEvent_('rejected_validation', payload.submissionId, checked.errors.map(function (item) { return item.field; }).join(','));
     return { ok: false, error: checked.errors[0] ? checked.errors[0].message : 'Check the form and try again.' };
@@ -1645,6 +1764,17 @@ function s125SendDueFollowUps() {
 function s125Now_() {
   if (typeof S125_TEST_NOW === 'number' && isFinite(S125_TEST_NOW)) return S125_TEST_NOW;
   return Date.now();
+}
+function s125AsOf_() {
+  try {
+    if (typeof Utilities !== 'undefined' && Utilities.formatDate) {
+      return Utilities.formatDate(new Date(s125Now_()), 'Pacific/Honolulu', 'yyyy-MM-dd');
+    }
+  } catch (err) {}
+  var shifted = new Date(s125Now_() - 10 * 60 * 60 * 1000);
+  var month = shifted.getUTCMonth() + 1;
+  var day = shifted.getUTCDate();
+  return shifted.getUTCFullYear() + '-' + (month < 10 ? '0' : '') + month + '-' + (day < 10 ? '0' : '') + day;
 }
 function s125Today_() {
   var dt = new Date(s125Now_());

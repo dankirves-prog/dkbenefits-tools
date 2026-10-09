@@ -7,6 +7,7 @@
   var sessionId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('s125-' + Date.now());
   var inFlight = false;
   var lastFiles = [];
+  var autoDownloaded = false;
 
   function $(id) { return document.getElementById(id); }
   function fieldValue(name) {
@@ -134,14 +135,40 @@
     }
     var result = S125Model.validate(readForm(), { asOf: S125Model.todayIso() });
     var short = $('shortYearNote');
-    if (result.plan.short_plan_year) {
-      short.textContent = 'This is a short first plan year, from ' + S125Model.formatLongDate(result.plan.effective_date) + ' through ' + S125Model.formatLongDate(result.plan.short_plan_year_end) + '.';
-      short.classList.remove('hidden');
-    } else if (result.plan.prior_plan && result.plan.effective_date) {
-      short.textContent = 'This restatement keeps the existing plan year. It is not marked as a new short year.';
+    var yearNote = result.plan && result.plan.effective_date ? S125Model.planYearNote(result.plan) : '';
+    if (yearNote) {
+      short.textContent = yearNote;
       short.classList.remove('hidden');
     } else {
+      short.textContent = '';
       short.classList.add('hidden');
+    }
+    var hint = $('planYearHint');
+    var notices = S125Model.stepTwoNotices(result.plan, S125Model.todayIso());
+    if (notices.length) {
+      hint.textContent = notices.join(' ');
+      hint.classList.remove('hidden');
+    } else {
+      hint.textContent = '';
+      hint.classList.add('hidden');
+    }
+    var medical = benefits.indexOf('medical') !== -1;
+    var partOrOther = checkedAll('eligible_classes').indexOf('part-time') !== -1 || checkedAll('eligible_classes').indexOf('other') !== -1;
+    var fsaMedical = $('fsaMedicalNote');
+    var fsaClass = $('fsaClassNote');
+    if (health && !medical) {
+      fsaMedical.textContent = 'A Health FSA should be offered only to employees who are eligible for your group major medical plan. Without one, a Health FSA can trigger ACA excise taxes. Check with your advisor.';
+      fsaMedical.classList.remove('hidden');
+    } else {
+      fsaMedical.textContent = '';
+      fsaMedical.classList.add('hidden');
+    }
+    if (health && partOrOther) {
+      fsaClass.textContent = 'Part-time or other employees who aren\'t eligible for your medical plan can\'t have the Health FSA.';
+      fsaClass.classList.remove('hidden');
+    } else {
+      fsaClass.textContent = '';
+      fsaClass.classList.add('hidden');
     }
     fillDays();
   }
@@ -254,6 +281,11 @@
     link.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
+  function downloadLabel(name) {
+    var pdf = /\.pdf$/i.test(name);
+    if (/Implementation_Guide/i.test(name)) return pdf ? 'Implementation checklist (PDF)' : 'Implementation checklist (Word)';
+    return pdf ? 'Plan document (PDF)' : 'Plan document (Word)';
+  }
   function showDownloads(files) {
     var list = $('downloadList');
     list.innerHTML = '';
@@ -261,7 +293,14 @@
       var button = document.createElement('button');
       button.type = 'button';
       button.className = 'btn-secondary';
-      button.textContent = 'Download ' + file.name;
+      var label = document.createElement('span');
+      label.className = 'download-label';
+      label.textContent = downloadLabel(file.name);
+      var fileName = document.createElement('span');
+      fileName.className = 'download-file';
+      fileName.textContent = file.name;
+      button.appendChild(label);
+      button.appendChild(fileName);
       button.addEventListener('click', function () { triggerDownload(file.bytes, file.name, file.mime); });
       list.appendChild(button);
     });
@@ -306,13 +345,37 @@
     };
   }
   function setStatus(html) { $('emailStatus').innerHTML = html; }
+  function stepForField(field) {
+    var n;
+    for (n = 1; n <= 5; n++) {
+      if (S125Model.stepFields(n).indexOf(field) !== -1) return n;
+    }
+    return 1;
+  }
+  function postFiles(result, id, files) {
+    var cfg = window.S125_CONFIG || {};
+    return fetch(cfg.endpoint, { method: 'POST', body: JSON.stringify(payloadFrom(result, id, files)) })
+      .then(function (response) { return response.json(); })
+      .then(function (body) {
+        inFlight = false;
+        $('btnRetry').classList.add('hidden');
+        if (body && body.ok) {
+          setStatus('<strong>Your documents are ready to download.</strong> A short note will come to your email shortly.');
+        } else {
+          $('btnRetry').classList.remove('hidden');
+          var message = body && body.error ? body.error : 'The request could not be sent.';
+          setStatus('<strong>' + escapeHtml(message) + '</strong> You can still download the documents below.');
+        }
+      });
+  }
   function finishGenerate() {
     if (inFlight) return;
     clearErrors();
+    $('btnRetry').classList.add('hidden');
     var result = S125Model.validate(readForm(), { asOf: S125Model.todayIso() });
     if (!result.ok) {
       showErrors(result.errors);
-      showStep(1);
+      showStep(stepForField(result.errors[0] && result.errors[0].field));
       return;
     }
     if (!$('terms_ack').checked) {
@@ -329,9 +392,12 @@
     lastFiles = buildFiles(result.plan);
     showStep(6);
     showDownloads(lastFiles);
-    lastFiles.forEach(function (file) {
-      if (/\.docx$/i.test(file.name)) triggerDownload(file.bytes, file.name, file.mime);
-    });
+    if (!autoDownloaded) {
+      lastFiles.forEach(function (file) {
+        if (/\.docx$/i.test(file.name)) triggerDownload(file.bytes, file.name, file.mime);
+      });
+      autoDownloaded = true;
+    }
     inFlight = true;
     setStatus('Preparing your documents…');
     pdfFiles(result.plan).then(function (pdfs) {
@@ -340,27 +406,23 @@
       showDownloads(all);
       if (!shouldPost()) {
         inFlight = false;
+        $('btnRetry').classList.add('hidden');
         setStatus('<strong>Your documents are ready to download.</strong> Email delivery is not turned on for this copy of the page.');
         return;
       }
-      var cfg = window.S125_CONFIG || {};
-      return fetch(cfg.endpoint, { method: 'POST', body: JSON.stringify(payloadFrom(result, id, all)) })
-        .then(function (response) { return response.json(); })
-        .then(function (body) {
-          inFlight = false;
-          if (body && body.ok) {
-            setStatus('<strong>Your documents are ready to download.</strong> A short note will come to your email shortly.');
-          } else {
-            $('btnRetry').classList.remove('hidden');
-            setStatus('<strong>The request could not be sent.</strong> You can still download the documents below.');
-          }
-        });
+      return postFiles(result, id, all);
     }).catch(function () {
+      if (shouldPost()) {
+        setStatus('<strong>PDFs could not be built. Your Word files are below.</strong>');
+        return postFiles(result, id, lastFiles).catch(function () {
+          inFlight = false;
+          $('btnRetry').classList.remove('hidden');
+          setStatus('<strong>PDFs could not be built. Your Word files are below.</strong> The request could not be sent.');
+        });
+      }
       inFlight = false;
       $('btnRetry').classList.remove('hidden');
-      setStatus(shouldPost()
-        ? '<strong>The request could not be sent.</strong> You can still download the documents below.'
-        : '<strong>The PDF could not be prepared.</strong> The Word files are still available below.');
+      setStatus('<strong>The PDF could not be prepared.</strong> The Word files are still available below.');
     });
   }
   function mountTerms() {
@@ -405,6 +467,13 @@
     });
     $('btnBack').addEventListener('click', function () { if (step > 1 && step < 6) showStep(step - 1); });
     $('btnRetry').addEventListener('click', finishGenerate);
+    $('btnEdit').addEventListener('click', function () {
+      submissionId = '';
+      autoDownloaded = false;
+      inFlight = false;
+      $('btnRetry').classList.add('hidden');
+      showStep(5);
+    });
     showStep(1, { scroll: false });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

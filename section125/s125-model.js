@@ -4,7 +4,7 @@
  * Draft for the employer's own advisors. Not legal advice.
  */
 var S125Model = (function () {
-  var TEMPLATE_VERSION = 's125-v1.1.0-2026-10-09';
+  var TEMPLATE_VERSION = 's125-v1.0-2026-10-10';
   var GUIDANCE_AS_OF = '2026-10-09';
   var HEALTH_FSA_LIMIT_2026 = 3400;
   var CARRYOVER_FROM_2026 = 680;
@@ -243,7 +243,7 @@ var S125Model = (function () {
     var oe = Number(input.oe_window_days);
     if (oe !== 15 && oe !== 30 && oe !== 45) push(errors, 'oe_window_days', 'Choose a 15, 30, or 45 day open enrollment window.');
     var hire = Number(input.new_hire_window);
-    if ([7, 14, 30, 60].indexOf(hire) === -1) push(errors, 'new_hire_window', 'Choose how many days a new hire has to enroll.');
+    if ([7, 14, 30].indexOf(hire) === -1) push(errors, 'new_hire_window', 'Choose 7, 14, or 30 days for a new hire to enroll.');
 
     var count = Number(input.employee_count);
     if (!/^\d+$/.test(clean(input.employee_count)) || count < 1 || count > 100000) {
@@ -310,6 +310,7 @@ var S125Model = (function () {
       prior_plan: derived.prior_plan,
       prior_adoption: derived.prior_plan ? clean(input.prior_adoption) : '',
       plan_year_change: derived.plan_year_change,
+      on_plan_year_start: derived.on_plan_year_start,
       short_plan_year: derived.short_plan_year,
       short_plan_year_end: derived.short_plan_year_end,
       next_plan_year_start: derived.next_plan_year_start,
@@ -354,9 +355,9 @@ var S125Model = (function () {
   }
 
   function stepFields(step) {
-    if (step === 1) return ['employer_name', 'employer_ein', 'plan_number', 'street', 'city', 'state', 'zip', 'phone', 'entity_type', 'llc_tax'];
+    if (step === 1) return ['employer_name', 'employer_ein', 'plan_number', 'street', 'city', 'state', 'zip', 'phone', 'funding_type', 'multi_state'];
     if (step === 2) return ['effective_date', 'plan_year_type', 'plan_year_start', 'prior_plan', 'prior_adoption', 'oe_window_days', 'new_hire_window'];
-    if (step === 3) return ['employee_count', 'funding_type', 'full_time_hours', 'waiting_period', 'eligible_classes', 'eligible_class_other', 'multi_state'];
+    if (step === 3) return ['entity_type', 'llc_tax', 'employee_count', 'full_time_hours', 'waiting_period', 'eligible_classes', 'eligible_class_other'];
     if (step === 4) return ['benefits', 'health_fsa_design', 'health_fsa_unused', 'dcap_unused'];
     return ['signer_name', 'signer_title', 'signer_email'];
   }
@@ -432,6 +433,67 @@ var S125Model = (function () {
     return bits.join('; ');
   }
 
+  function shortYearMonths(startIso, endIso) {
+    var start = parseIso(startIso);
+    var end = parseIso(endIso);
+    if (!start || !end || end < start) return 0;
+    var count = 0;
+    var y = start.getFullYear();
+    var m = start.getMonth() + 1;
+    var endY = end.getFullYear();
+    var endM = end.getMonth() + 1;
+    while (y < endY || (y === endY && m <= endM)) {
+      var dim = new Date(y, m, 0).getDate();
+      var monthEnd = new Date(y, m - 1, dim);
+      var partialStart = y === start.getFullYear() && m === start.getMonth() + 1 && start.getDate() !== 1;
+      if (!partialStart && monthEnd <= end) count++;
+      m += 1;
+      if (m > 12) { m = 1; y += 1; }
+    }
+    return count;
+  }
+
+  function dayBeforeIso(iso) {
+    var dt = parseIso(iso);
+    if (!dt) return '';
+    return toIso(addDays(dt, -1));
+  }
+
+  function daysUntil(iso, asOf) {
+    var target = parseIso(iso);
+    var from = parseIso(asOf);
+    if (!target || !from) return null;
+    return Math.round((target.getTime() - from.getTime()) / 86400000);
+  }
+
+  function planYearNote(plan) {
+    plan = plan || {};
+    if (plan.plan_year_change && plan.on_plan_year_start) {
+      return 'This restatement changes the plan year. The plan year in effect before ' + formatLongDate(plan.effective_date) + ' ends on ' + formatLongDate(dayBeforeIso(plan.effective_date)) + ', and that period is a short plan year. Beginning ' + formatLongDate(plan.effective_date) + ', each plan year is ' + planYearSentence(plan) + '.';
+    }
+    if (plan.short_plan_year && plan.plan_year_change) {
+      return 'This restatement changes the plan year. The short plan year begins ' + formatLongDate(plan.effective_date) + ' and ends ' + formatLongDate(plan.short_plan_year_end) + '. Each later plan year is ' + planYearSentence(plan) + '.';
+    }
+    if (plan.short_plan_year) {
+      return 'This is a short first plan year, from ' + formatLongDate(plan.effective_date) + ' through ' + formatLongDate(plan.short_plan_year_end) + '.';
+    }
+    if (plan.prior_plan && !plan.plan_year_change) return 'This restatement continues the existing plan year.';
+    return '';
+  }
+
+  function stepTwoNotices(plan, asOf) {
+    plan = plan || {};
+    var notes = [];
+    if (plan.short_plan_year && shortYearMonths(plan.effective_date, plan.short_plan_year_end) === 0) {
+      notes.push('The first plan year is less than a month. Consider an effective date on the plan-year start.');
+    }
+    var days = daysUntil(plan.effective_date, asOf || todayIso());
+    if (days != null && days >= 0 && days < 14) {
+      notes.push('Leave time to sign the plan and enroll employees before this date.');
+    }
+    return notes;
+  }
+
   function planYearSentence(plan) {
     if (plan.plan_year_type === 'calendar') return 'the calendar year, January 1 through December 31';
     var start = MONTHS[plan.plan_year_start_month] + ' ' + plan.plan_year_start_day;
@@ -469,6 +531,10 @@ var S125Model = (function () {
     benefitLabel: benefitLabel,
     classSentence: classSentence,
     planYearSentence: planYearSentence,
+    shortYearMonths: shortYearMonths,
+    dayBeforeIso: dayBeforeIso,
+    planYearNote: planYearNote,
+    stepTwoNotices: stepTwoNotices,
     ownerRule: ownerRule
   };
 })();

@@ -152,7 +152,7 @@ test('the follow-up note has exactly two links and a plain-text signature', func
   assert.match(email, /Section 125 plan for Northwind Benefits Inc/);
   assert.match(email, /Oh, and if you're looking at contributing to your employees' kids' new child savings accounts \(the Section 128 accounts, officially called "Trump accounts"\), I have a free tool that creates that plan too\. I don't sell or administer the accounts themselves, but the tool is there if you need it:\nhttps:\/\/www\.dkbenefits\.net\/section-128-tool/);
   assert.match(email, /I'd be happy to help you shop and negotiate your group health and other benefits/);
-  assert.match(email, /Just so it's clear, legally I have to mention that the tool is educational and isn't legal or tax advice\.\n\nDaniel Kirves\n/);
+  assert.match(email, /Just so it's clear, legally I have to mention that the tool is educational and isn't legal or tax advice\.\n\nIf you'd rather not get these emails from me, let me know and I'll take you off the list\.\n\nDaniel Kirves\n/);
   assert.doesNotMatch(email, /I don't sell, market, open, or administer Trump accounts/);
   assert.match(email, /Benefits Broker \| 20 Years Exp \| DK Benefits\n407-476-5076 \| www\.dkbenefits\.net\n6000 Metrowest Blvd #200 Orlando, FL 32835\n\nAgency Lic# L109331$/);
   assert.match(email, /\$680 from a 2026 plan year/);
@@ -169,7 +169,9 @@ test('the follow-up note has exactly two links and a plain-text signature', func
   assert.doesNotMatch(html, /<a [^>]*>[^<]*www\.dkbenefits\.net<\/a>/);
   assert.doesNotMatch(html, /mailto:|tel:|<img|utm_|bit\.ly/i);
   assert.match(S125Docgen.followUpEmailText(plan, { contact_name: '   ' }, LINKS), /^Hi there,/);
-  assert.equal(S125Terms.VERSION, 's125-terms-2026-10-09');
+  assert.equal(S125Terms.VERSION, 's125-terms-2026-10-10');
+  assert.match(email, /If you'd rather not get these emails from me, let me know and I'll take you off the list\./);
+  assert.doesNotMatch(email, /just reply|just hit reply/i);
   assert.match(S125Terms.FOOTER, /educational tool/);
   fs.writeFileSync(path.join(artifactDir(), 'follow-up-email.txt'), email);
 });

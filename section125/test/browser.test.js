@@ -85,7 +85,8 @@ test('the wizard builds a premium-only plan in the browser and does not post', a
     await setField(page, 'state', 'FL');
     await setField(page, 'zip', '33602');
     await setField(page, 'phone', '8135550199');
-    await page.locator('input[name="entity_type"][value="c-corp"]').check();
+    await page.locator('input[name="funding_type"][value="insured"]').check();
+    await page.locator('input[name="multi_state"][value="no"]').check();
     await page.locator('#btnNext').click();
     await page.locator('#stepTitle', { hasText: 'Plan year' }).waitFor();
 
@@ -97,10 +98,9 @@ test('the wizard builds a premium-only plan in the browser and does not post', a
     await page.locator('#btnNext').click();
     await page.locator('#stepTitle', { hasText: 'Eligibility' }).waitFor();
 
+    await page.locator('input[name="entity_type"][value="c-corp"]').check();
     await setField(page, 'employee_count', '40');
-    await page.locator('input[name="funding_type"][value="insured"]').check();
     await setField(page, 'waiting_period', 'none');
-    await page.locator('input[name="multi_state"][value="no"]').check();
     await page.locator('#btnNext').click();
     await page.locator('#stepTitle', { hasText: 'Benefits' }).waitFor();
 
@@ -119,12 +119,13 @@ test('the wizard builds a premium-only plan in the browser and does not post', a
     await page.locator('#termsDialog').waitFor();
     const terms = await page.locator('#termsDialogBody').innerText();
     assert.match(terms, /not legal advice/);
-    assert.match(terms, /s125-terms-2026-10-09/);
+    assert.match(terms, /s125-terms-2026-10-10/);
+    assert.match(terms, /The tool and the documents are free/);
     await page.locator('#closeTerms').click();
     await page.locator('#terms_ack').check();
     await page.locator('#btnNext').click();
     await page.locator('#stepTitle', { hasText: 'Your documents' }).waitFor();
-    await page.locator('#downloadList button', { hasText: 'Section_125_Plan_v1.0.pdf' }).waitFor();
+    await page.locator('#downloadList button', { hasText: 'Plan document (PDF)' }).waitFor();
     const status = await page.locator('#emailStatus').innerText();
     assert.match(status, /ready to download/i);
     assert.match(status, /not turned on/i);

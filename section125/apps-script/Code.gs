@@ -98,11 +98,12 @@ function s125Handle_(payload) {
     return { ok: false, error: 'The submission id is missing.' };
   }
   var ack = payload.acknowledgement || {};
-  if (ack.accepted !== true || !ack.acceptedAt || !Date.parse(ack.acceptedAt) || ack.termsVersion !== S125Terms.VERSION) {
+  var termsOk = ack.termsVersion === S125Terms.VERSION || ack.termsVersion === 's125-terms-2026-10-09';
+  if (ack.accepted !== true || !ack.acceptedAt || !Date.parse(ack.acceptedAt) || !termsOk) {
     s125LogEvent_('rejected_terms', payload.submissionId, 'terms');
     return { ok: false, error: 'The terms acknowledgement is missing.' };
   }
-  var checked = S125Model.validateSubmission(payload, { asOf: s125Today_() });
+  var checked = S125Model.validateSubmission(payload, { asOf: s125AsOf_() });
   if (!checked.ok) {
     s125LogEvent_('rejected_validation', payload.submissionId, checked.errors.map(function (item) { return item.field; }).join(','));
     return { ok: false, error: checked.errors[0] ? checked.errors[0].message : 'Check the form and try again.' };
@@ -404,6 +405,17 @@ function s125SendDueFollowUps() {
 function s125Now_() {
   if (typeof S125_TEST_NOW === 'number' && isFinite(S125_TEST_NOW)) return S125_TEST_NOW;
   return Date.now();
+}
+function s125AsOf_() {
+  try {
+    if (typeof Utilities !== 'undefined' && Utilities.formatDate) {
+      return Utilities.formatDate(new Date(s125Now_()), 'Pacific/Honolulu', 'yyyy-MM-dd');
+    }
+  } catch (err) {}
+  var shifted = new Date(s125Now_() - 10 * 60 * 60 * 1000);
+  var month = shifted.getUTCMonth() + 1;
+  var day = shifted.getUTCDate();
+  return shifted.getUTCFullYear() + '-' + (month < 10 ? '0' : '') + month + '-' + (day < 10 ? '0' : '') + day;
 }
 function s125Today_() {
   var dt = new Date(s125Now_());

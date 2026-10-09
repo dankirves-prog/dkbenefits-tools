@@ -82,27 +82,21 @@
           </div>
         </div>
         <fieldset>
-          <legend class="choice-legend">Entity type<span class="tip-slot" data-tip="entity_type"></span></legend>
+          <legend class="choice-legend">Medical plan funding<span class="tip-slot" data-tip="funding_type"></span></legend>
           <div class="choices">
-            <label class="choice"><input type="radio" name="entity_type" value="c-corp"><span>C corporation<small>Owner-employees can participate.</small></span></label>
-            <label class="choice"><input type="radio" name="entity_type" value="s-corp"><span>S corporation<small>More-than-2% shareholders are excluded, including attributed family stock.</small></span></label>
-            <label class="choice"><input type="radio" name="entity_type" value="llc"><span>LLC<small>The tax election decides who is excluded.</small></span></label>
-            <label class="choice"><input type="radio" name="entity_type" value="partnership"><span>Partnership<small>Partners are excluded.</small></span></label>
-            <label class="choice"><input type="radio" name="entity_type" value="sole-prop"><span>Sole proprietorship<small>The owner is excluded.</small></span></label>
-            <label class="choice"><input type="radio" name="entity_type" value="nonprofit"><span>Nonprofit<small>Common-law employees can participate.</small></span></label>
+            <label class="choice"><input type="radio" name="funding_type" value="insured"><span>Fully insured</span></label>
+            <label class="choice"><input type="radio" name="funding_type" value="level"><span>Level funded<small>Often self-insured for tax purposes. Section 105(h) can apply.</small></span></label>
+            <label class="choice"><input type="radio" name="funding_type" value="self"><span>Self-funded<small>Section 105(h) applies to self-insured medical benefits.</small></span></label>
           </div>
-          <p class="hint">The sample always applies the exclusion the entity requires. It does not ask whether owners will participate.</p>
-          <p class="field-error" id="err_entity_type" role="alert"></p>
+          <p class="field-error" id="err_funding_type" role="alert"></p>
         </fieldset>
-        <fieldset class="only-llc hidden" id="llcTaxBlock">
-          <legend class="choice-legend">How is the LLC taxed?<span class="tip-slot" data-tip="llc_tax"></span></legend>
+        <fieldset>
+          <legend class="choice-legend">Do employees work in more than one state?<span class="tip-slot" data-tip="multi_state"></span></legend>
           <div class="choices">
-            <label class="choice"><input type="radio" name="llc_tax" value="s-corp"><span>S corporation<small>More-than-2% members are excluded, with section 318 attribution.</small></span></label>
-            <label class="choice"><input type="radio" name="llc_tax" value="partnership"><span>Partnership<small>Members are self-employed and excluded.</small></span></label>
-            <label class="choice"><input type="radio" name="llc_tax" value="c-corp"><span>C corporation<small>Member-employees can participate.</small></span></label>
-            <label class="choice"><input type="radio" name="llc_tax" value="disregarded"><span>Disregarded entity<small>Treated as a sole proprietorship. The owner is excluded.</small></span></label>
+            <label class="choice"><input type="radio" name="multi_state" value="no"><span>No</span></label>
+            <label class="choice"><input type="radio" name="multi_state" value="yes"><span>Yes</span></label>
           </div>
-          <p class="field-error" id="err_llc_tax" role="alert"></p>
+          <p class="field-error" id="err_multi_state" role="alert"></p>
         </fieldset>
       </section>
 
@@ -160,6 +154,7 @@
           </label>
         </div>
         <p class="note hidden" id="shortYearNote"></p>
+        <p class="note hidden" id="planYearHint"></p>
         <fieldset>
           <legend class="choice-legend">Annual open enrollment length<span class="tip-slot" data-tip="oe_window_days"></span></legend>
           <div class="choices">
@@ -175,7 +170,6 @@
             <label class="choice"><input type="radio" name="new_hire_window" value="7"><span>7 days</span></label>
             <label class="choice"><input type="radio" name="new_hire_window" value="14"><span>14 days</span></label>
             <label class="choice"><input type="radio" name="new_hire_window" value="30"><span>30 days</span></label>
-            <label class="choice"><input type="radio" name="new_hire_window" value="60"><span>60 days</span></label>
           </div>
           <p class="field-error" id="err_new_hire_window" role="alert"></p>
         </fieldset>
@@ -183,6 +177,29 @@
 
       <section class="card hidden" data-step="3">
         <h2>Eligibility</h2>
+        <fieldset>
+          <legend class="choice-legend">Entity type<span class="tip-slot" data-tip="entity_type"></span></legend>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="entity_type" value="c-corp"><span>C corporation<small>Owner-employees can participate.</small></span></label>
+            <label class="choice"><input type="radio" name="entity_type" value="s-corp"><span>S corporation<small>More-than-2% shareholders are excluded, including attributed family stock.</small></span></label>
+            <label class="choice"><input type="radio" name="entity_type" value="llc"><span>LLC<small>The tax election decides who is excluded.</small></span></label>
+            <label class="choice"><input type="radio" name="entity_type" value="partnership"><span>Partnership<small>Partners are excluded.</small></span></label>
+            <label class="choice"><input type="radio" name="entity_type" value="sole-prop"><span>Sole proprietorship<small>The owner is excluded.</small></span></label>
+            <label class="choice"><input type="radio" name="entity_type" value="nonprofit"><span>Nonprofit<small>Common-law employees can participate.</small></span></label>
+          </div>
+          <p class="hint">The sample always applies the exclusion the entity requires. It does not ask whether owners will participate.</p>
+          <p class="field-error" id="err_entity_type" role="alert"></p>
+        </fieldset>
+        <fieldset class="only-llc hidden" id="llcTaxBlock">
+          <legend class="choice-legend">How is the LLC taxed?<span class="tip-slot" data-tip="llc_tax"></span></legend>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="llc_tax" value="s-corp"><span>S corporation<small>More-than-2% members are excluded, with section 318 attribution.</small></span></label>
+            <label class="choice"><input type="radio" name="llc_tax" value="partnership"><span>Partnership<small>Members are self-employed and excluded.</small></span></label>
+            <label class="choice"><input type="radio" name="llc_tax" value="c-corp"><span>C corporation<small>Member-employees can participate.</small></span></label>
+            <label class="choice"><input type="radio" name="llc_tax" value="disregarded"><span>Disregarded entity<small>Treated as a sole proprietorship. The owner is excluded.</small></span></label>
+          </div>
+          <p class="field-error" id="err_llc_tax" role="alert"></p>
+        </fieldset>
         <div class="grid">
           <div class="field">
             <label for="employee_count">Employees<span class="tip-slot" data-tip="employee_count"></span></label>
@@ -197,15 +214,6 @@
             <p class="field-error" id="err_full_time_hours" role="alert"></p>
           </div>
         </div>
-        <fieldset>
-          <legend class="choice-legend">Medical plan funding<span class="tip-slot" data-tip="funding_type"></span></legend>
-          <div class="choices">
-            <label class="choice"><input type="radio" name="funding_type" value="insured"><span>Fully insured</span></label>
-            <label class="choice"><input type="radio" name="funding_type" value="level"><span>Level funded<small>Often self-insured for tax purposes. Section 105(h) can apply.</small></span></label>
-            <label class="choice"><input type="radio" name="funding_type" value="self"><span>Self-funded<small>Section 105(h) applies to self-insured medical benefits.</small></span></label>
-          </div>
-          <p class="field-error" id="err_funding_type" role="alert"></p>
-        </fieldset>
         <div class="field">
           <label for="waiting_period">Waiting period<span class="tip-slot" data-tip="waiting_period"></span></label>
           <select id="waiting_period" name="waiting_period" required>
@@ -236,14 +244,6 @@
           <p class="hint">e.g. Salaried employees at the Orlando office. Do not list people by name.</p>
           <p class="field-error" id="err_eligible_class_other" role="alert"></p>
         </div>
-        <fieldset>
-          <legend class="choice-legend">Do employees work in more than one state?<span class="tip-slot" data-tip="multi_state"></span></legend>
-          <div class="choices">
-            <label class="choice"><input type="radio" name="multi_state" value="no"><span>No</span></label>
-            <label class="choice"><input type="radio" name="multi_state" value="yes"><span>Yes</span></label>
-          </div>
-          <p class="field-error" id="err_multi_state" role="alert"></p>
-        </fieldset>
       </section>
 
       <section class="card hidden" data-step="4">
@@ -255,7 +255,7 @@
             <label class="choice"><input type="checkbox" name="benefits" value="medical"><span>Medical<small>The employee’s share of the group medical premium.</small></span></label>
             <label class="choice"><input type="checkbox" name="benefits" value="dental"><span>Dental</span></label>
             <label class="choice"><input type="checkbox" name="benefits" value="vision"><span>Vision</span></label>
-            <label class="choice"><input type="checkbox" name="benefits" value="health_fsa"><span>Health FSA<small>2026 salary-reduction limit $3,400.</small></span></label>
+            <label class="choice"><input type="checkbox" name="benefits" value="health_fsa"><span>Health FSA<small>Limit is indexed each year ($3,400 for 2026).</small></span></label>
             <label class="choice"><input type="checkbox" name="benefits" value="dcap"><span>Dependent care FSA<small>2026 exclusion $7,500, or $3,750 if married filing separately.</small></span></label>
             <label class="choice"><input type="checkbox" name="benefits" value="hsa"><span>HSA<small>The election can be changed at least monthly.</small></span></label>
           </div>
@@ -276,7 +276,7 @@
             <div class="choices">
               <label class="choice"><input type="radio" name="health_fsa_unused" value="forfeit"><span>Forfeiture<small>Unused amounts are lost at year-end.</small></span></label>
               <label class="choice"><input type="radio" name="health_fsa_unused" value="grace"><span>Grace period<small>Through the 15th day of the third month. No carryover.</small></span></label>
-              <label class="choice"><input type="radio" name="health_fsa_unused" value="carryover"><span>Carryover<small>$680 from a plan year beginning in 2026. No grace period.</small></span></label>
+              <label class="choice"><input type="radio" name="health_fsa_unused" value="carryover"><span>Carryover<small>Up to the IRS maximum for that plan year ($680 from a plan year beginning in 2026). No grace period.</small></span></label>
             </div>
             <p class="field-error" id="err_health_fsa_unused" role="alert"></p>
           </fieldset>
@@ -292,6 +292,8 @@
           </fieldset>
         </div>
         <p class="note hidden" id="hsaNote"></p>
+        <p class="note hidden" id="fsaMedicalNote"></p>
+        <p class="note hidden" id="fsaClassNote"></p>
       </section>
 
       <section class="card hidden" data-step="5">
@@ -329,6 +331,7 @@
         <div id="emailStatus" class="status" role="status"></div>
         <div class="downloads" id="downloadList"></div>
         <p class="note">Employee election forms are not included. Your payroll provider or FSA administrator can prepare them. Nothing from this tool is stored as a public file.</p>
+        <button class="btn-secondary" id="btnEdit" type="button">Edit answers</button>
         <button class="btn-secondary hidden" id="btnRetry" type="button">Try again</button>
       </section>
 
@@ -340,7 +343,7 @@
   </main>
   <footer class="site-footer">
     <p>Questions about DK Benefits’ services? <a href="tel:4074765076">407-476-5076</a> · <a href="mailto:dan@dkbenefits.net">dan@dkbenefits.net</a></p>
-    <p>The sample is built in your browser. It is not saved to a public link.</p>
+    <p>The documents download on this page at no charge. They are not emailed. Your answers and a copy of the documents are sent to DK Benefits LLC. Nothing from this tool is stored as a public file.</p>
   </footer>
   <dialog id="termsDialog" class="terms-dialog">
     <h2>Terms of use</h2>
