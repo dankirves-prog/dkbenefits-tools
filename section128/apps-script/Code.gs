@@ -89,7 +89,7 @@ function s128Handle_(payload) {
     return { ok: false, error: 'The terms acknowledgement is missing.' };
   }
 
-  var checked = S128Model.validateSubmission(payload, { asOf: s128Today_() });
+  var checked = S128Model.validateSubmission(payload, { asOf: s128AsOf_() });
   if (!checked.ok) {
     s128LogEvent_('rejected_validation', payload.submissionId, checked.errors.map(function (item) { return item.field; }).join(','));
     return { ok: false, error: checked.errors[0] ? checked.errors[0].message : 'Check the form and try again.', fields: checked.errors };
@@ -649,6 +649,21 @@ function s128Mark_(id, status, error, leadEmailed, visitorEmailed) {
 function s128LogEvent_(kind, submissionId, detail) {
   var sheet = s128Sheet_(S128_EVENTS_SHEET, ['timestamp', 'kind', 'submission_id', 'detail']);
   sheet.appendRow([new Date().toISOString(), kind, submissionId || '', String(detail || '').slice(0, 500)]);
+}
+
+// Prospective-date check only. Hawaii is the westernmost U.S. calendar day.
+// Follow-up "today" and the daily cap are unchanged.
+function s128AsOf_() {
+  var instant = new Date(s128Now_());
+  try {
+    if (typeof Utilities !== 'undefined' && Utilities.formatDate) {
+      return Utilities.formatDate(instant, 'Pacific/Honolulu', 'yyyy-MM-dd');
+    }
+  } catch (err) {}
+  var dt = new Date(instant.getTime() - 10 * 60 * 60 * 1000);
+  var month = dt.getUTCMonth() + 1;
+  var day = dt.getUTCDate();
+  return dt.getUTCFullYear() + '-' + (month < 10 ? '0' : '') + month + '-' + (day < 10 ? '0' : '') + day;
 }
 
 function s128Today_() {

@@ -112,6 +112,12 @@ function boot() {
       return { data: data, mime: mime, name: name, setName: function (next) { this.name = next; return this; } };
     },
     formatDate: function (date, zone, pattern) {
+      if (zone === 'Pacific/Honolulu' && pattern === 'yyyy-MM-dd' && date && typeof date.getTime === 'function') {
+        const shifted = new Date(date.getTime() - 10 * 60 * 60 * 1000);
+        const month = String(shifted.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(shifted.getUTCDate()).padStart(2, '0');
+        return shifted.getUTCFullYear() + '-' + month + '-' + day;
+      }
       if (pattern === 'yyyy-MM-dd') return ASOF;
       return ASOF + ' 12:00 ET';
     },
@@ -554,6 +560,38 @@ test('a submission without the terms acknowledgement is rejected', function () {
   assert.equal(rejected.ok, false);
   assert.match(rejected.error, /acknowledgement/i);
   assert.equal(ctx.sent.length, 0);
+});
+
+test('a Pacific evening amendment date is accepted when the script timezone is already the next day', function () {
+  const ctx = boot();
+  const instant = Date.parse('2026-10-10T04:30:00.000Z');
+  ctx.S128_TEST_NOW = instant;
+  let honoluluAt = null;
+  ctx.Utilities.formatDate = function (date, zone, pattern) {
+    if (zone === 'Pacific/Honolulu' && pattern === 'yyyy-MM-dd' && date && typeof date.getTime === 'function') {
+      honoluluAt = date.getTime();
+      const shifted = new Date(date.getTime() - 10 * 60 * 60 * 1000);
+      const month = String(shifted.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(shifted.getUTCDate()).padStart(2, '0');
+      return shifted.getUTCFullYear() + '-' + month + '-' + day;
+    }
+    if (pattern === 'yyyy-MM-dd') return '2026-10-10';
+    return '2026-10-10 00:30 ET';
+  };
+  const body = ctx.post(payload({
+    funding_mode: 'combined',
+    employer_annual_grant: '1000',
+    cafeteria_plan_name: 'Northwind Cafeteria Plan',
+    cafeteria_amendment_date: '2026-10-09',
+    effective_date: '2026-10-09',
+    election_cutoff_days: '5',
+    has_existing_125_plan: 'yes'
+  }, '18181818-1818-4181-8181-181818181818'));
+  assert.equal(honoluluAt, instant);
+  assert.equal(body.ok, true, body.error);
+  assert.equal(body.leadEmailed, true);
+  assert.equal(ctx.sent.length, 1);
+  assert.equal(ctx.sent[0].to, 'dan@dkbenefits.net');
 });
 
 test('an existing sheet header gains only the acknowledgement columns', function () {
