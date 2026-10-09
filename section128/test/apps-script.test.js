@@ -277,22 +277,20 @@ test('salary reduction attaches the amendment for Dan, and one follow-up goes ou
   assert.equal(notes[0].attachments, undefined);
   assert.equal(notes[0].name, 'Daniel Kirves');
   assert.equal(notes[0].replyTo, 'dan@dkbenefits.net');
-  assert.equal(notes[0].subject, '[TEST] Thanks for using our Section 128 tool');
+  assert.equal(notes[0].subject, '[TEST] Your Section 128 documents');
   assert.match(notes[0].body, /^Hi Ada,/);
-  assert.match(notes[0].body, /ready on the download page/);
+  assert.match(notes[0].body, /isn't final until your company adopts it/);
   assert.match(notes[0].body, /Pay the \$1,000 grant/);
   assert.match(notes[0].body, /\$2,500 per employee per year/);
   assert.match(notes[0].body, /Add the Section 125 amendment/);
-  assert.match(notes[0].body, /You can see instant rates for your group here/);
-  assert.match(notes[0].body, /When we take a group to market with full underwriting, we can often find better options/);
+  assert.match(notes[0].body, /shop and negotiate their group health/);
   assert.deepEqual(notes[0].body.match(/https?:\/\/\S+/g), [
-    'https://www.dkbenefits.net/instant-group-quote',
     'https://www.dkbenefits.net/section125plantool'
   ]);
-  assert.doesNotMatch(notes[0].body, /attorney|lowest|attached|savings|quote-tool-demo/i);
-  assert.equal((notes[0].htmlBody.match(/<a /g) || []).length, 2);
+  assert.doesNotMatch(notes[0].body, /attorney|lowest|attached|savings|quote-tool-demo|instant-group-quote/i);
+  assert.equal((notes[0].htmlBody.match(/<a /g) || []).length, 1);
   assert.match(notes[0].htmlBody, /<a href="https:\/\/www\.dkbenefits\.net\/section125plantool">https:\/\/www\.dkbenefits\.net\/section125plantool<\/a>/);
-  assert.match(notes[0].htmlBody, /<a href="https:\/\/www\.dkbenefits\.net\/instant-group-quote">https:\/\/www\.dkbenefits\.net\/instant-group-quote<\/a>/);
+  assert.doesNotMatch(notes[0].htmlBody, /instant-group-quote/);
   assert.doesNotMatch(notes[0].htmlBody, /mailto:|tel:|<img|utm_|bit\.ly/i);
   assert.match(notes[0].htmlBody, /407-476-5076/);
   assert.match(notes[0].htmlBody, /dan@dkbenefits\.net/);

@@ -410,13 +410,14 @@ var S128Docgen = (function () {
     lead = lead || {};
     plan = plan || {};
     var section125 = links.section125Url || '';
-    var rates = links.ratesUrl || '';
     var first = followUpFirstName(lead);
     var employer = plan.employer_name || 'your company';
     var lines = [
       first ? ('Hi ' + first + ',') : 'Hi there,',
       '',
-      'Thank you for using the DK Benefits Section 128 tool. Your documents for ' + employer + ' are ready on the download page. Here are the steps to put the program in place:',
+      'I just saw you finished the Section 128 document builder for ' + employer + ', and I wanted to make sure you got everything you needed.',
+      '',
+      'Just a reminder that the program isn\'t final until your company adopts it. Here\'s a quick checklist to make it official:',
       ''
     ];
     checklistLines(plan).forEach(function (line, index) {
@@ -426,24 +427,21 @@ var S128Docgen = (function () {
       '',
       'Your tax advisor can help with anything specific to your situation.',
       '',
-      'If it\'s helpful, here\'s a little more about what we do. DK Benefits helps employers shop and compare group health coverage. You can see instant rates for your group here:',
-      rates,
-      '',
-      'Those instant rates are a quick starting point. When we take a group to market with full underwriting, we can often find better options.',
-      '',
-      'We also offer a free Section 125 plan document tool that creates either a premium-only plan (POP) or a full cafeteria plan:',
+      'If you don\'t have a Section 125 plan yet, or yours needs to be restated, our free tool can help with that too. It builds either a premium-only plan or a full cafeteria plan:',
       section125,
       '',
-      'If you\'d like a hand with any of this, just reply to this email or call me.',
+      'And no pressure at all, but in case it\'s useful: we\'re an employee benefits broker. We help employers shop and negotiate their group health and other benefits, and we stay with you year-round, with Employee Navigator connected to your carriers and payroll so enrollments and changes are handled for you.',
       '',
-      'Best regards,',
+      'If you\'d ever like to talk through your benefits, just reply to this email. I\'m happy to help.',
+      '',
+      'Thanks,',
       '',
       'Daniel Kirves',
       'DK Benefits',
       '407-476-5076',
       'dan@dkbenefits.net',
       '',
-      'DK Benefits doesn\'t sell, market, open, or administer Trump accounts. This tool is educational and isn\'t legal or tax advice.'
+      'DK Benefits doesn\'t sell, market, open, or administer Trump accounts. The Section 128 tool is educational and isn\'t legal or tax advice.'
     );
     return lines.join('\n');
   }
@@ -460,7 +458,6 @@ var S128Docgen = (function () {
     links = links || {};
     var allowed = {};
     if (links.section125Url) allowed[links.section125Url] = true;
-    if (links.ratesUrl) allowed[links.ratesUrl] = true;
     var html = followUpEmailText(plan, lead, links).split('\n').map(function (line) {
       if (allowed[line]) {
         var safe = escapeHtml(line);
