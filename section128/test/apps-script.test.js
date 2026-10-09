@@ -238,7 +238,7 @@ test('honeypot, fast submit, invalid grant, and mail failure do not report succe
   assert.equal(ctx.sent.length, 0);
 });
 
-test('salary reduction attaches the amendment for Dan, and one follow-up goes out after ten minutes', function () {
+test('salary reduction attaches the amendment for Dan, and each test follow-up goes out after ten minutes', function () {
   const ctx = boot();
   const base = Date.parse('2026-10-08T15:00:00.000Z');
   ctx.S128_TEST_NOW = base;
@@ -274,7 +274,7 @@ test('salary reduction attaches the amendment for Dan, and one follow-up goes ou
   ctx.S128_TEST_NOW = base + 11 * 60 * 1000;
   ctx.s128SendDueFollowUps();
   const notes = ctx.sent.filter(function (message) { return message.to === 'ada@northwind.example'; });
-  assert.equal(notes.length, 1);
+  assert.equal(notes.length, 2);
   assert.equal(notes[0].attachments, undefined);
   assert.equal(notes[0].name, 'Daniel Kirves');
   assert.equal(notes[0].replyTo, 'dan@dkbenefits.net');
@@ -302,8 +302,89 @@ test('salary reduction attaches the amendment for Dan, and one follow-up goes ou
   assert.doesNotMatch(notes[0].htmlBody, /<a [^>]*>407-476-5076<\/a>/);
   assert.doesNotMatch(notes[0].htmlBody, /<a [^>]*>[^<]*www\.dkbenefits\.net<\/a>/);
   assert.equal(ctx.sheets.FollowUps.rows[1][5], 'sent');
+  assert.equal(ctx.sheets.FollowUps.rows[2][5], 'sent');
+  assert.equal(notes[1].subject, '[TEST] Thanks for using my Section 128 tool!');
+});
+
+test('a second real follow-up to the same address is skipped the same day', function () {
+  const ctx = boot();
+  const base = Date.parse('2026-10-08T18:00:00.000Z');
+  ctx.S128_TEST_NOW = base;
+  for (let i = 0; i < 2; i++) {
+    const body = payload(null, '1919191' + i + '-1919-4191-8191-191919191919');
+    body.test = false;
+    body.lead.contact_email = 'pat@example.com';
+    assert.equal(ctx.post(body).followUpQueued, true);
+  }
+  ctx.S128_TEST_NOW = base + 11 * 60 * 1000;
+  ctx.s128SendDueFollowUps();
+  const notes = ctx.sent.filter(function (message) { return message.to === 'pat@example.com'; });
+  assert.equal(notes.length, 1);
+  assert.equal(notes[0].subject, 'Thanks for using my Section 128 tool!');
+  assert.equal(ctx.sheets.FollowUps.rows[1][5], 'sent');
   assert.equal(ctx.sheets.FollowUps.rows[2][5], 'skipped');
   assert.match(String(ctx.sheets.FollowUps.rows[2][8]), /already sent today/);
+});
+
+test('a v1.0 test submission queues and then sends after an earlier note the same day', function () {
+  const ctx = boot();
+  const base = Date.parse('2026-10-08T15:00:00.000Z');
+  ctx.S128_TEST_NOW = base;
+  const earlier = payload(null, '12121212-1212-4121-8121-121212121212');
+  earlier.test = false;
+  earlier.lead.contact_email = 'dankirves@gmail.com';
+  assert.equal(ctx.post(earlier).followUpQueued, true);
+  ctx.S128_TEST_NOW = base + 11 * 60 * 1000;
+  ctx.s128SendDueFollowUps();
+  assert.equal(ctx.sent.filter(function (message) { return message.to === 'dankirves@gmail.com'; }).length, 1);
+
+  const queuedAt = base + 12 * 60 * 1000;
+  ctx.S128_TEST_NOW = queuedAt;
+  const next = payload(null, '13131313-1313-4131-8131-131313131313');
+  next.test = true;
+  next.lead.contact_email = 'dankirves@gmail.com';
+  next.acknowledgement.termsVersion = S128Terms.VERSION;
+  const queued = ctx.post(next);
+  assert.equal(S128Terms.VERSION, 's128-terms-2026-10-09');
+  assert.equal(queued.ok, true);
+  assert.equal(queued.followUpQueued, true);
+  assert.equal(queued.leadEmailed, true);
+  assert.equal(ctx.sheets.FollowUps.rows[2][5], 'pending');
+  assert.equal(ctx.sheets.FollowUps.rows[2][6], 'yes');
+  ctx.s128SendDueFollowUps();
+  assert.equal(ctx.sent.filter(function (message) { return message.to === 'dankirves@gmail.com'; }).length, 1);
+
+  ctx.sheets.FollowUps.rows[2][0] = (queuedAt / 86400000) + 25569;
+  ctx.S128_TEST_NOW = queuedAt + 11 * 60 * 1000;
+  ctx.s128SendDueFollowUps();
+  const notes = ctx.sent.filter(function (message) { return message.to === 'dankirves@gmail.com'; });
+  assert.equal(notes.length, 2);
+  assert.equal(notes[1].subject, '[TEST] Thanks for using my Section 128 tool!');
+  assert.match(notes[1].body, /Northwind Benefits LLC/);
+  assert.match(notes[1].body, /If you'd rather not get these emails from me/);
+  assert.equal(notes[1].attachments, undefined);
+  assert.equal(ctx.sheets.FollowUps.rows[2][5], 'sent');
+});
+
+test('a test row already skipped for today is sent on the next trigger', function () {
+  const ctx = boot();
+  const base = Date.parse('2026-10-08T19:56:00.000Z');
+  ctx.S128_TEST_NOW = base;
+  const body = payload(null, '20202020-2020-4202-8202-202020202020');
+  body.test = true;
+  body.lead.contact_email = 'dankirves@gmail.com';
+  body.plan.employer_name = 'Northwind Benefits LLC';
+  assert.equal(ctx.post(body).followUpQueued, true);
+  ctx.sheets.FollowUps.rows[1][0] = new Date(base);
+  ctx.sheets.FollowUps.rows[1][5] = 'skipped';
+  ctx.sheets.FollowUps.rows[1][8] = 'already sent today';
+  ctx.S128_TEST_NOW = base + 11 * 60 * 1000;
+  ctx.s128SendDueFollowUps();
+  const notes = ctx.sent.filter(function (message) { return message.to === 'dankirves@gmail.com'; });
+  assert.equal(notes.length, 1);
+  assert.equal(notes[0].subject, '[TEST] Thanks for using my Section 128 tool!');
+  assert.match(notes[0].body, /Northwind Benefits LLC/);
+  assert.equal(ctx.sheets.FollowUps.rows[1][5], 'sent');
 });
 
 test('a follow-up is skipped when the address already used the hourly limit', function () {

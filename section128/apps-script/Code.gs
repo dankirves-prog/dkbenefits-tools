@@ -363,13 +363,33 @@ function s128FollowUpMessage_(row) {
   };
 }
 
+function s128CellTime_(value) {
+  if (value && typeof value.getTime === 'function') {
+    var ms = value.getTime();
+    if (typeof ms === 'number' && isFinite(ms)) return ms;
+  }
+  if (typeof value === 'number' && isFinite(value) && value > 20000 && value < 100000) {
+    return Math.round((value - 25569) * 86400 * 1000);
+  }
+  return Date.parse(String(value || ''));
+}
+
+function s128CellDay_(value) {
+  if (value && typeof value.getTime === 'function') {
+    var ms = value.getTime();
+    if (typeof ms === 'number' && isFinite(ms)) return new Date(ms).toISOString().slice(0, 10);
+  }
+  return String(value || '').slice(0, 10);
+}
+
 function s128FollowUpSentToday_(values, email) {
   var day = s128Today_();
   var target = String(email || '').toLowerCase();
   for (var i = 1; i < values.length; i++) {
     if (String(values[i][1] || '').toLowerCase() !== target) continue;
+    if (String(values[i][6] || '') === 'yes') continue;
     if (String(values[i][5]) !== 'sent') continue;
-    if (String(values[i][9] || '').slice(0, 10) === day) return true;
+    if (s128CellDay_(values[i][9]) === day) return true;
   }
   return false;
 }
@@ -382,15 +402,20 @@ function s128SendDueFollowUps() {
     var values = sheet.getDataRange().getValues();
     var now = s128Now_();
     for (var i = 1; i < values.length; i++) {
-      if (String(values[i][5]) !== 'pending') continue;
-      var ts = Date.parse(String(values[i][0] || ''));
+      var status = String(values[i][5] || '');
+      var testRow = String(values[i][6] || '') === 'yes';
+      var retryTest = testRow && status === 'skipped' && String(values[i][8] || '') === 'already sent today';
+      if (status !== 'pending' && !retryTest) continue;
+      // The sheet returns this cell as a Date or a serial, not the ISO text that was stored.
+      var ts = s128CellTime_(values[i][0]);
       if (isNaN(ts) || now - ts < S128_FOLLOWUP_DELAY_MS) continue;
       var email = String(values[i][1] || '');
       var rowNumber = i + 1;
-      if (s128FollowUpSentToday_(values, email)) {
+      if (!testRow && s128FollowUpSentToday_(values, email)) {
         sheet.getRange(rowNumber, 6).setValue('skipped');
         sheet.getRange(rowNumber, 9).setValue('already sent today');
         values[i][5] = 'skipped';
+        values[i][8] = 'already sent today';
         continue;
       }
       if (!s128VisitorAllowed_(email)) {
