@@ -1,5 +1,10 @@
 /**
- * Matching PDF for the Section 128 draft. Uses pdf-lib standard fonts.
+ * Matching PDF for the Section 128 draft.
+ * The Word file uses Calibri. This vendored pdf-lib build can embed only the
+ * standard fonts (it has no fontkit), so Carlito or another Calibri-like file
+ * cannot be embedded. Times is the closest built-in serif. Letters outside
+ * that font, such as Ł, are transliterated so the PDF still builds. The Word
+ * file keeps the original characters.
  * Page size and margins follow the employer plan (letter, 0.65 in top/bottom, 0.8 in sides).
  */
 var S128Pdf = (function () {
@@ -8,8 +13,36 @@ var S128Pdf = (function () {
     return root.PDFLib || null;
   }
 
+  var FOLD = { 'Ł': 'L', 'ł': 'l', 'Đ': 'D', 'đ': 'd', 'Œ': 'OE', 'œ': 'oe', 'Ø': 'O', 'ø': 'o', 'Æ': 'AE', 'æ': 'ae', 'Þ': 'Th', 'þ': 'th', 'ß': 'ss' };
+  var encodeCache = {};
+
+  function foldChar(ch) {
+    if (FOLD[ch]) return FOLD[ch];
+    var base = ch.normalize ? ch.normalize('NFD').replace(/[̀-ͯ]/g, '') : '';
+    if (base && base !== ch && /^[\u0020-\u007E]+$/.test(base)) return base;
+    return '';
+  }
+
+  function pdfSafe(text, font) {
+    var s = String(text || '');
+    var out = '';
+    for (var i = 0; i < s.length; i++) {
+      var ch = s.charAt(i);
+      if (!Object.prototype.hasOwnProperty.call(encodeCache, ch)) {
+        try {
+          font.widthOfTextAtSize(ch, 10);
+          encodeCache[ch] = ch;
+        } catch (err) {
+          encodeCache[ch] = foldChar(ch);
+        }
+      }
+      out += encodeCache[ch];
+    }
+    return out;
+  }
+
   function wrap(text, font, size, maxWidth) {
-    var words = String(text || '').split(/\s+/).filter(Boolean);
+    var words = pdfSafe(text, font).split(/\s+/).filter(Boolean);
     var lines = [];
     var line = '';
     for (var i = 0; i < words.length; i++) {
@@ -165,14 +198,23 @@ var S128Pdf = (function () {
         index++;
       }
 
-      pages.forEach(function (pg) {
+      pages.forEach(function (pg, index) {
         var label = S128Docgen.FOOTER;
         var size = 8;
         var lines = wrap(label, font, size, maxWidth);
-        var fy = 28 + (lines.length - 1) * 10;
+        var fy = 32 + (lines.length - 1) * 10;
         lines.forEach(function (line) {
           pg.drawText(line, { x: left, y: fy, size: size, font: font, color: muted });
           fy -= 10;
+        });
+        var pageLabel = 'Page ' + (index + 1);
+        var pageWidthText = font.widthOfTextAtSize(pageLabel, size);
+        pg.drawText(pageLabel, {
+          x: pageWidth - right - pageWidthText,
+          y: 16,
+          size: size,
+          font: font,
+          color: muted
         });
       });
       return doc.save();

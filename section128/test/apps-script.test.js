@@ -76,6 +76,25 @@ function boot() {
       };
     }
   };
+  context.triggers = [];
+  context.ScriptApp = {
+    getProjectTriggers: function () {
+      return context.triggers.map(function (name) {
+        return { getHandlerFunction: function () { return name; } };
+      });
+    },
+    newTrigger: function (name) {
+      return {
+        timeBased: function () {
+          return {
+            everyMinutes: function () {
+              return { create: function () { context.triggers.push(name); } };
+            }
+          };
+        }
+      };
+    }
+  };
   context.LockService = {
     getScriptLock: function () {
       return { waitLock: function () {}, releaseLock: function () {} };
@@ -123,7 +142,7 @@ function payload(overrides, id) {
     startedAt: '2026-10-08T15:00:00.000Z',
     submittedAt: '2026-10-08T15:00:10.000Z',
     pageUrl: 'https://dankirves-prog.github.io/dkbenefits-tools/section128/',
-    templateVersion: 's128-v0.5-2026-10-08',
+    templateVersion: 's128-v0.5.1-2026-10-09',
     test: true,
     hp: '',
     lead: checked.lead,
@@ -138,13 +157,15 @@ function payload(overrides, id) {
   }, overrides && overrides.payload || {});
 }
 
-test('a valid lead emails Dan and the visitor and returns ok only after MailApp accepts it', function () {
+test('a valid lead emails Dan immediately and queues a follow-up with no visitor attachments', function () {
   const ctx = boot();
+  ctx.S128_TEST_NOW = Date.parse('2026-10-08T15:00:00.000Z');
   const body = ctx.post(payload());
   assert.equal(body.ok, true);
   assert.equal(body.leadEmailed, true);
-  assert.equal(body.visitorEmailed, true);
-  assert.equal(ctx.sent.length, 2);
+  assert.equal(body.visitorEmailed, false);
+  assert.equal(body.followUpQueued, true);
+  assert.equal(ctx.sent.length, 1);
   assert.equal(ctx.sent[0].to, 'dan@dkbenefits.net');
   assert.match(ctx.sent[0].subject, /\[TEST\]/);
   assert.match(ctx.sent[0].body, /Northwind Benefits LLC/);
@@ -158,14 +179,18 @@ test('a valid lead emails Dan and the visitor and returns ok only after MailApp 
   assert.equal(ctx.sent[0].attachments[0].data[1], 0x4b);
   assert.match(ctx.sent[0].body, /s128-terms-2026-10-08b/);
   assert.match(ctx.sent[0].body, /2026-10-08T15:00:10.000Z/);
-  assert.equal(ctx.sent[1].to, 'ada@northwind.example');
-  assert.match(ctx.sent[1].subject, /^\[TEST\] Your Section 128 program documents — Northwind Benefits LLC$/);
-  assert.match(ctx.sent[1].body, /Tell payroll/);
-  assert.match(ctx.sent[1].body, /isn't legal or tax advice/);
-  assert.doesNotMatch(ctx.sent[1].body, /received your draft|will follow up|Daniel Kirves will|attorney|SAMPLE DRAFT/i);
   assert.equal(ctx.sheets.Submissions.rows[1][2], 'sent');
+  assert.equal(ctx.sheets.Submissions.rows[1][17], 'no');
   assert.equal(ctx.sheets.Submissions.rows[1][20], 's128-terms-2026-10-08b');
   assert.equal(ctx.sheets.Submissions.rows[1][21], '2026-10-08T15:00:10.000Z');
+  assert.equal(ctx.sheets.FollowUps.rows[1][5], 'pending');
+  assert.equal(ctx.sheets.FollowUps.rows[1][1], 'ada@northwind.example');
+  assert.equal(ctx.triggers.length, 1);
+  ctx.setupFollowUpTrigger();
+  assert.equal(ctx.triggers.length, 1);
+  ctx.s128SendDueFollowUps();
+  assert.equal(ctx.sent.length, 1);
+  assert.equal(ctx.sheets.FollowUps.rows[1][5], 'pending');
 });
 
 test('duplicate submission id does not send a second email', function () {
@@ -175,7 +200,9 @@ test('duplicate submission id does not send a second email', function () {
   const again = ctx.post(first);
   assert.equal(again.ok, true);
   assert.equal(again.duplicate, true);
-  assert.equal(ctx.sent.length, 2);
+  assert.equal(again.visitorEmailed, false);
+  assert.equal(ctx.sent.length, 1);
+  assert.equal(ctx.sheets.FollowUps.rows.length, 2);
 });
 
 test('honeypot, fast submit, invalid grant, and mail failure do not report success', function () {
@@ -210,8 +237,10 @@ test('honeypot, fast submit, invalid grant, and mail failure do not report succe
   assert.equal(ctx.sent.length, 0);
 });
 
-test('visitor copies are limited to three an hour and salary reduction attaches the amendment', function () {
+test('salary reduction attaches the amendment for Dan, and one follow-up goes out after ten minutes', function () {
   const ctx = boot();
+  const base = Date.parse('2026-10-08T15:00:00.000Z');
+  ctx.S128_TEST_NOW = base;
   const salary = {
     funding_mode: 'combined',
     employer_annual_grant: '1000',
@@ -223,29 +252,60 @@ test('visitor copies are limited to three an hour and salary reduction attaches 
     city: 'Charlotte',
     zip: '28202'
   };
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 2; i++) {
     const body = ctx.post(payload(salary, '7777777' + i + '-7777-4777-8777-777777777777'));
     assert.equal(body.ok, true);
     assert.equal(body.leadEmailed, true);
-    if (i < 3) assert.equal(body.visitorEmailed, true);
-    else {
-      assert.equal(body.visitorEmailed, false);
-      assert.equal(body.visitorRateLimited, true);
-    }
+    assert.equal(body.visitorEmailed, false);
+    assert.equal(body.followUpQueued, true);
   }
   const danMessages = ctx.sent.filter(function (message) { return message.to === 'dan@dkbenefits.net'; });
-  assert.equal(danMessages.length, 4);
+  assert.equal(danMessages.length, 2);
   assert.match(danMessages[0].subject, /\[TEST\]/);
   assert.match(danMessages[0].subject, /\[REVIEW\]/);
   assert.match(danMessages[0].body, /State: NC/);
   assert.equal(danMessages[0].attachments.length, 3);
   assert.match(danMessages[0].attachments[1].name, /Section_125_Amendment/);
   assert.match(danMessages[0].attachments[2].name, /Implementation_Guide/);
-  assert.equal(ctx.sent.filter(function (message) { return message.to === 'ada@northwind.example'; }).length, 3);
+  assert.equal(ctx.sent.filter(function (message) { return message.to === 'ada@northwind.example'; }).length, 0);
+  ctx.s128SendDueFollowUps();
+  assert.equal(ctx.sent.filter(function (message) { return message.to === 'ada@northwind.example'; }).length, 0);
+  ctx.S128_TEST_NOW = base + 11 * 60 * 1000;
+  ctx.s128SendDueFollowUps();
+  const notes = ctx.sent.filter(function (message) { return message.to === 'ada@northwind.example'; });
+  assert.equal(notes.length, 1);
+  assert.equal(notes[0].attachments, undefined);
+  assert.equal(notes[0].name, 'Daniel Kirves');
+  assert.equal(notes[0].subject, '[TEST] Thanks for using our Section 128 tool');
+  assert.match(notes[0].body, /Pay the \$1,000 grant/);
+  assert.match(notes[0].body, /\$2,500 per employee per year/);
+  assert.match(notes[0].body, /Add the Section 125 amendment/);
+  assert.doesNotMatch(notes[0].body, /attorney|lowest|attached/i);
+  assert.equal(ctx.sheets.FollowUps.rows[1][5], 'sent');
+  assert.equal(ctx.sheets.FollowUps.rows[2][5], 'skipped');
+  assert.match(String(ctx.sheets.FollowUps.rows[2][8]), /already sent today/);
 });
 
-test('checked client files are attached, and a missing visitor copy can be retried without emailing Dan again', function () {
+test('a follow-up is skipped when the address already used the hourly limit', function () {
   const ctx = boot();
+  const base = Date.parse('2026-10-08T16:00:00.000Z');
+  ctx.S128_TEST_NOW = base;
+  assert.equal(ctx.post(payload(null, '78787878-7878-4787-8787-787878787878')).followUpQueued, true);
+  assert.equal(ctx.s128VisitorAllowed_('ada@northwind.example'), true);
+  assert.equal(ctx.s128VisitorAllowed_('ada@northwind.example'), true);
+  assert.equal(ctx.s128VisitorAllowed_('ada@northwind.example'), true);
+  assert.equal(ctx.s128VisitorAllowed_('ada@northwind.example'), false);
+  ctx.S128_TEST_NOW = base + 11 * 60 * 1000;
+  ctx.s128SendDueFollowUps();
+  assert.equal(ctx.sent.filter(function (message) { return message.to === 'ada@northwind.example'; }).length, 0);
+  assert.equal(ctx.sheets.FollowUps.rows[1][5], 'skipped');
+  assert.match(String(ctx.sheets.FollowUps.rows[1][8]), /hourly limit/);
+});
+
+test('checked client files are attached only to Dan, never to the visitor address', function () {
+  const ctx = boot();
+  const base = Date.parse('2026-10-08T17:00:00.000Z');
+  ctx.S128_TEST_NOW = base;
   const pdf = Buffer.from('%PDF-1.4\n%test\n').toString('base64');
   const docx = Buffer.from('PK\u0003\u0004not-a-real-zip').toString('base64');
   const id = '88888888-8888-4888-8888-888888888888';
@@ -257,30 +317,28 @@ test('checked client files are attached, and a missing visitor copy can be retri
       { name: 'bad.pdf', mime: 'application/pdf', dataBase64: Buffer.from('not a pdf').toString('base64') }
     ]
   });
-  ctx.failVisitor = true;
   const first = ctx.post(body);
   assert.equal(first.ok, true);
   assert.equal(first.leadEmailed, true);
   assert.equal(first.visitorEmailed, false);
-  assert.equal(first.duplicate, false);
+  assert.equal(first.followUpQueued, true);
   const dan = ctx.sent.filter(function (message) { return message.to === 'dan@dkbenefits.net'; });
   assert.equal(dan.length, 1);
   assert.equal(dan[0].attachments.length, 2);
   assert.equal(dan[0].attachments[1].data[0], 0x25);
   assert.match(dan[0].attachments[1].name, /\.pdf$/);
-  ctx.failVisitor = false;
   const second = ctx.post(body);
   assert.equal(second.ok, true);
-  assert.equal(second.leadEmailed, true);
-  assert.equal(second.visitorEmailed, true);
-  assert.equal(second.duplicate, false);
+  assert.equal(second.duplicate, true);
+  assert.equal(second.visitorEmailed, false);
   assert.equal(ctx.sent.filter(function (message) { return message.to === 'dan@dkbenefits.net'; }).length, 1);
-  assert.equal(ctx.sent.filter(function (message) { return message.to === 'ada@northwind.example'; }).length, 1);
-  const third = ctx.post(body);
-  assert.equal(third.ok, true);
-  assert.equal(third.duplicate, true);
-  assert.equal(third.visitorEmailed, true);
-  assert.equal(ctx.sent.length, 2);
+  assert.equal(ctx.sent.filter(function (message) { return message.to === 'ada@northwind.example'; }).length, 0);
+  ctx.S128_TEST_NOW = base + 11 * 60 * 1000;
+  ctx.s128SendDueFollowUps();
+  const note = ctx.sent.filter(function (message) { return message.to === 'ada@northwind.example'; });
+  assert.equal(note.length, 1);
+  assert.equal(note[0].attachments, undefined);
+  assert.doesNotMatch(JSON.stringify(note[0]), /dataBase64|Plan\.pdf/);
 });
 
 test('the daily lead cap stops a new email and a recent pending row is not stuck after Dan was already sent', function () {
@@ -302,9 +360,12 @@ test('the daily lead cap stops a new email and a recent pending row is not stuck
   sheet.rows.push(pending);
   const resumed = ctx.post(payload(null, pending[1]));
   assert.equal(resumed.ok, true);
+  assert.equal(resumed.duplicate, true);
   assert.equal(resumed.leadEmailed, true);
-  assert.equal(resumed.visitorEmailed, true);
+  assert.equal(resumed.visitorEmailed, false);
+  assert.equal(resumed.followUpQueued, true);
   assert.equal(ctx.sent.filter(function (message) { return message.to === 'dan@dkbenefits.net'; }).length, 1);
+  assert.equal(ctx.sent.filter(function (message) { return message.to === 'ada@northwind.example'; }).length, 0);
 
   const fresh = sheet.rows[1].slice();
   fresh[0] = new Date().toISOString();

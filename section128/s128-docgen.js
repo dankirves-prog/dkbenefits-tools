@@ -1,5 +1,5 @@
 /**
- * Deterministic Section 128 DOCX builder. Template s128-v0.5-2026-10-08.
+ * Deterministic Section 128 DOCX builder. Template s128-v0.5.1-2026-10-09.
  * Language is the Employer Plan (Articles 1–12 and the adoption agreement),
  * with the October 8, 2026 research edits applied. No live drafting.
  */
@@ -57,7 +57,7 @@ var S128Docgen = (function () {
   function accountLimitSentence(plan) {
     var year = +String(plan.effective_date).slice(0, 4);
     if (year >= 2028) {
-      return 'Section 530A imposes a separate account-level annual contribution limit. The base amount is adjusted after 2027. The indexed amount is not stated here because it has not been published. Section 128 contributions count toward that limit. Qualified pilot, qualified general, and qualified rollover contributions receive their applicable statutory treatment. The employee and responsible party must coordinate other account deposits. The administrator processes trustee rejections and known errors. The Employer is not required to enforce the separate account-level limit.';
+      return 'Section 530A imposes a separate account-level annual contribution limit. The base amount is adjusted after 2027. Section 128 contributions count toward that limit. Qualified pilot, qualified general, and qualified rollover contributions receive their applicable statutory treatment. The employee and responsible party must coordinate other account deposits. The administrator processes trustee rejections and known errors. The Employer is not required to enforce the separate account-level limit.';
     }
     return 'Section 530A imposes a separate account-level annual contribution limit, generally $5,000 for 2026 and 2027, adjusted after 2027. Section 128 contributions count toward that limit. Qualified pilot, qualified general, and qualified rollover contributions receive their applicable statutory treatment. The employee and responsible party must coordinate other account deposits. The administrator processes trustee rejections and known errors. The Employer is not required to enforce the separate account-level limit.';
   }
@@ -361,9 +361,18 @@ var S128Docgen = (function () {
     return 'Pay the ' + grant + ' grant once a year and start payroll deductions once the cafeteria plan permits them. Together they can’t exceed ' + limit + '.';
   }
 
+  function signChecklistLine(plan) {
+    var when = longDate(plan.effective_date);
+    var today = S128Model.todayIso();
+    if (plan.effective_date && today && plan.effective_date < today) {
+      return 'Sign and date the plan (page 1) promptly, as soon as possible. It takes effect on ' + when + '.';
+    }
+    return 'Sign and date the plan (page 1) before the effective date (' + when + ').';
+  }
+
   function checklistLines(plan) {
     var lines = [
-      'Sign and date the plan (page 1). It takes effect on ' + longDate(plan.effective_date) + '. Sign it before any contribution is made.'
+      signChecklistLine(plan)
     ];
     if (usesSalary(plan)) {
       lines.push(plan.cafeteria_plan_name
@@ -390,17 +399,16 @@ var S128Docgen = (function () {
     return rows;
   }
 
-  function visitorEmailText(plan, lead) {
-    var attached = usesSalary(plan) && plan.cafeteria_plan_name
-      ? 'Your plan, Section 125 amendment, and implementation checklist are attached.'
-      : 'Your plan and implementation checklist are attached.';
+  function followUpEmailText(plan, lead, links) {
+    links = links || {};
+    var section125 = links.section125Url || '';
+    var rates = links.ratesUrl || '';
     var lines = [
       'Hello ' + (lead.contact_name || '') + ',',
       '',
-      'Here are the Section 128 program documents for ' + plan.employer_name + '.',
-      attached,
+      'Thanks for using our Section 128 tool.',
       '',
-      'Employee notices, salary-reduction election forms, and account designation forms aren\'t included.',
+      'Here is a short checklist for ' + (plan.employer_name || 'your company') + ':',
       ''
     ];
     checklistLines(plan).forEach(function (line, index) {
@@ -410,11 +418,23 @@ var S128Docgen = (function () {
       '',
       'Your tax advisor can help with anything specific to your situation.',
       '',
-      'Questions about DK Benefits’ services? 407-476-5076 · dan@dkbenefits.net',
+      'We also help employers with group health and other employee benefits. Our free Section 125 premium-only plan document tool is here: ' + section125,
+      'Live rates are on our website if you want a quick look: ' + rates + '. We can also help you shop and negotiate rates with carriers.',
       '',
-      'This was created with an educational tool and isn\'t legal or tax advice.'
+      'DK Benefits doesn\'t sell, market, open, or administer Trump accounts.',
+      '',
+      'Daniel Kirves',
+      'DK Benefits',
+      '407-476-5076',
+      'dan@dkbenefits.net',
+      '',
+      'This tool is educational and is not legal or tax advice.'
     );
     return lines.join('\n');
+  }
+
+  function visitorEmailText(plan, lead, links) {
+    return followUpEmailText(plan, lead, links);
   }
 
   function paragraphXml(row) {
@@ -455,8 +475,17 @@ var S128Docgen = (function () {
 
   function footerXml() {
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-      '<w:ftr xmlns:w="' + W + '"><w:p><w:pPr><w:pStyle w:val="Footer"/></w:pPr>' +
-      '<w:r><w:t xml:space="preserve">' + xml(FOOTER) + '</w:t></w:r></w:p></w:ftr>';
+      '<w:ftr xmlns:w="' + W + '">' +
+      '<w:p><w:pPr><w:pStyle w:val="Footer"/></w:pPr>' +
+      '<w:r><w:t xml:space="preserve">' + xml(FOOTER) + '</w:t></w:r></w:p>' +
+      '<w:p><w:pPr><w:pStyle w:val="Footer"/><w:jc w:val="right"/></w:pPr>' +
+      '<w:r><w:t xml:space="preserve">Page </w:t></w:r>' +
+      '<w:r><w:fldChar w:fldCharType="begin"/></w:r>' +
+      '<w:r><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r>' +
+      '<w:r><w:fldChar w:fldCharType="separate"/></w:r>' +
+      '<w:r><w:t>1</w:t></w:r>' +
+      '<w:r><w:fldChar w:fldCharType="end"/></w:r>' +
+      '</w:p></w:ftr>';
   }
 
   function stylesXml() {
@@ -537,7 +566,7 @@ var S128Docgen = (function () {
 
   function settingsXml() {
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-      '<w:settings xmlns:w="' + W + '"><w:compat><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/></w:compat></w:settings>';
+      '<w:settings xmlns:w="' + W + '"><w:compat><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/></w:compat><w:updateFields w:val="true"/></w:settings>';
   }
 
   function packageParts(rows, props) {
@@ -692,6 +721,7 @@ var S128Docgen = (function () {
     amendmentParagraphs: amendmentParagraphs,
     guideParagraphs: guideParagraphs,
     visitorEmailText: visitorEmailText,
+    followUpEmailText: followUpEmailText,
     buildDocx: buildDocx,
     buildPlanDocx: buildPlanDocx,
     buildAmendmentDocx: buildAmendmentDocx,

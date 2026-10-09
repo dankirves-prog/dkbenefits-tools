@@ -18,7 +18,6 @@
   var inFlight = false;
   var planNameTouched = false;
   var lastFiles = null;
-  var lastPdfError = '';
   var utm = readUtm();
 
   function $(id) { return document.getElementById(id); }
@@ -455,17 +454,14 @@
       return job.promise.then(function (bytes) {
         return { name: job.name, bytes: bytes, mime: 'application/pdf', label: job.label };
       });
-    })).catch(function (err) {
-      lastPdfError = String((err && err.message) || '');
+    })).catch(function () {
       return [];
     });
   }
   function notePdfMissing() {
     var note = document.createElement('p');
     note.className = 'hint';
-    note.textContent = /cannot encode/i.test(lastPdfError)
-      ? 'A PDF copy could not be made because some characters you entered (such as letters with special marks) cannot be shown in the PDF font. The Word file shows them correctly.'
-      : 'A matching PDF could not be created in this browser. Use the Word file.';
+    note.textContent = 'A matching PDF could not be created. Use the Word file.';
     $('downloadList').appendChild(note);
   }
   function setStatus(kind, html) {
@@ -483,20 +479,15 @@
       setStatus('neutral', '<strong>Your documents are ready to download.</strong>');
       return;
     }
-    if (body && body.ok === true && body.leadEmailed === true && body.visitorEmailed === true) {
+    if (body && body.ok === true && body.leadEmailed === true) {
       var already = body.duplicate === true;
       setStatus(already ? 'duplicate' : 'sent', already
-        ? '<strong>This request was already emailed.</strong> You can download the documents again below.'
-        : '<strong>Emailed.</strong> A copy was emailed to you.');
-      return;
-    }
-    if (body && body.ok === true && body.leadEmailed === true) {
-      $('btnRetry').classList.remove('hidden');
-      setStatus('partial', '<strong>A copy could not be emailed to you</strong>' + (body.visitorRateLimited ? ' because that address has reached the hourly limit' : '') + '. Retry sends your copy only. Questions about DK Benefits’ services? ' + phoneLine() + ' · dan@dkbenefits.net.');
+        ? '<strong>This request was already received.</strong> You can download the documents again below.'
+        : '<strong>Your documents are ready to download.</strong> A short note will come to your email shortly.');
       return;
     }
     $('btnRetry').classList.remove('hidden');
-    setStatus('failed', '<strong>The copy could not be emailed.</strong> ' + escapeHtml(errorText || (body && body.error) || 'The delivery service did not accept the message.') + ' Your answers are saved in this browser. Retry, or use the contact line below. Questions about DK Benefits’ services? ' + phoneLine() + ' · dan@dkbenefits.net.');
+    setStatus('failed', '<strong>The request could not be sent.</strong> ' + escapeHtml(errorText || (body && body.error) || 'The delivery service did not accept the message.') + ' Your answers are saved in this browser. Try again, or use the contact line below. Questions about DK Benefits’ services? ' + phoneLine() + ' · dan@dkbenefits.net.');
   }
   function postLead(record) {
     var cfg = window.S128_CONFIG || {};
@@ -556,11 +547,11 @@
       record.emailAttempted = true;
       savePending(record);
       $('btnRetry').disabled = true;
-      setStatus('neutral', 'Sending your documents…');
+      setStatus('neutral', 'Sending your request…');
       postLead(record).then(function (body) {
         inFlight = false;
         $('btnRetry').disabled = false;
-        if (body.leadEmailed && body.visitorEmailed) clearPending(id);
+        if (body.leadEmailed) clearPending(id);
         else {
           record.leadDelivered = !!body.leadEmailed;
           savePending(record);
@@ -588,8 +579,8 @@
     var banner = $('savedBanner');
     banner.classList.remove('hidden');
     var headline = saved.leadDelivered
-      ? 'An earlier request was recorded. Your copy was not emailed.'
-      : 'An earlier request was not emailed.';
+      ? 'An earlier request was recorded. Download the documents again from this browser if you still need them.'
+      : 'An earlier request was not sent.';
     banner.innerHTML = '<strong>' + headline + '</strong> It is saved in this browser. <button type="button" class="linkish" id="btnRestore">Open the saved answers</button>';
     $('btnRestore').addEventListener('click', function () {
       restore(saved);
@@ -636,7 +627,7 @@
   }
   function syncEmailCopy() {
     var hint = $('contactEmailHint');
-    if (hint) hint.textContent = 'A copy of the sample documents is emailed to this address when delivery is on.';
+    if (hint) hint.textContent = 'We\'ll use this to follow up with a short note.';
   }
   function digitsBeforeCaret(value, caret) {
     return (String(value || '').slice(0, caret).match(/\d/g) || []).length;

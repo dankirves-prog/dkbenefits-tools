@@ -174,7 +174,7 @@ test('submission requires body.ok, blocks a double post, and retries with the sa
       posts.push(JSON.parse(request.postData()));
       const body = posts.length === 1
         ? { ok: false, error: 'mailbox unavailable' }
-        : { ok: true, leadEmailed: true, visitorEmailed: true };
+        : { ok: true, leadEmailed: true, visitorEmailed: false, followUpQueued: true };
       request.respond({
         status: 200,
         contentType: 'application/json',
@@ -215,16 +215,16 @@ test('submission requires body.ok, blocks a double post, and retries with the sa
     document.getElementById('btnNext').click();
   });
   await page.waitForFunction(function () {
-    return /could not be emailed/i.test(document.getElementById('emailStatus').textContent);
+    return /could not be sent/i.test(document.getElementById('emailStatus').textContent);
   });
   const failureText = await page.$eval('#emailStatus', function (el) { return el.textContent; });
-  assert.match(failureText, /could not be emailed/i);
+  assert.match(failureText, /could not be sent/i);
   assert.doesNotMatch(failureText, /A copy was emailed/);
   assert.equal(posts.length, 1);
   const firstId = posts[0].submissionId;
   await page.click('#btnRetry');
   await page.waitForFunction(function () {
-    return /A copy was emailed to you/.test(document.getElementById('emailStatus').textContent);
+    return /short note will come to your email shortly/.test(document.getElementById('emailStatus').textContent);
   });
   assert.equal(posts.length, 2);
   assert.equal(posts[1].submissionId, firstId);
@@ -480,7 +480,7 @@ test('examples sit below the fields, and payroll notice cannot be typed above 30
   assert.equal(await page.$eval('#employer_ein', function (el) { return el.getAttribute('aria-describedby'); }), 'hint_employer_ein');
   assert.equal(await page.$eval('#hint_employer_ein', function (el) { return el.textContent; }), 'e.g. 12-3456789');
   assert.equal(await page.$eval('#hint_contact_email', function (el) { return el.textContent; }), 'e.g. name@company.com');
-  assert.match(await page.$eval('#contactEmailHint', function (el) { return el.textContent; }), /emailed to this address/);
+  assert.match(await page.$eval('#contactEmailHint', function (el) { return el.textContent; }), /follow up with a short note/);
   await page.screenshot({ path: path.join(artifactDir, 'hints-step1-1440.png'), fullPage: true });
   await page.setViewport({ width: 390, height: 844 });
   await page.screenshot({ path: path.join(artifactDir, 'hints-step1-390.png'), fullPage: true });

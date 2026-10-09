@@ -87,6 +87,31 @@ test('grant above the cap, combined grant equal to the cap, and a fixed cap abov
   assert.ok(fields(combined).includes('employer_annual_grant'));
 });
 
+test('an amendment date earlier than the program effective date is rejected', function () {
+  const early = check({
+    funding_mode: 'salary_reduction_only',
+    employer_annual_grant: '',
+    cafeteria_plan_name: 'Northwind Cafeteria Plan',
+    cafeteria_amendment_date: '2027-01-01',
+    election_cutoff_days: '5',
+    has_existing_125_plan: 'yes',
+    effective_date: '2027-06-01'
+  });
+  assert.equal(early.ok, false);
+  assert.ok(fields(early).includes('cafeteria_amendment_date'));
+  assert.match(early.errors.map(function (err) { return err.message; }).join(' '), /cannot be earlier than the program effective date/);
+  const aligned = check({
+    funding_mode: 'salary_reduction_only',
+    employer_annual_grant: '',
+    cafeteria_plan_name: 'Northwind Cafeteria Plan',
+    cafeteria_amendment_date: '2027-06-01',
+    election_cutoff_days: '5',
+    has_existing_125_plan: 'yes',
+    effective_date: '2027-01-01'
+  });
+  assert.equal(aligned.ok, true, JSON.stringify(aligned.errors));
+});
+
 test('effective date before July 4 2026 is rejected and a past date is only a review flag', function () {
   assert.ok(fields(check({ effective_date: '2026-07-03' })).includes('effective_date'));
   const past = check({ effective_date: '2026-08-01' });
@@ -98,7 +123,8 @@ test('effective date before July 4 2026 is rejected and a past date is only a re
 test('2028 does not invent an indexed limit', function () {
   const result = check({ effective_date: '2028-01-01', employer_annual_grant: '1000' });
   assert.equal(result.ok, true, JSON.stringify(result.errors));
-  assert.match(S128Model.capText(result.plan), /not been published|not stated/i);
+  assert.match(S128Model.capText(result.plan), /as adjusted under Section 128\(b\)\(2\)/);
+  assert.doesNotMatch(S128Model.capText(result.plan), /not been published|not stated until/);
   assert.doesNotMatch(S128Model.capText(result.plan), /\$2,500/);
   assert.equal(result.review.required, true);
   assert.match(result.review.reasons.join(' '), /has not been published/);
@@ -270,5 +296,5 @@ test('server wrapper accepts plan and lead objects', function () {
   const flat = baseInput();
   const result = S128Model.validateSubmission({ plan: flat, lead: flat }, { asOf: ASOF });
   assert.equal(result.ok, true, JSON.stringify(result.errors));
-  assert.equal(result.templateVersion, 's128-v0.5-2026-10-08');
+  assert.equal(result.templateVersion, 's128-v0.5.1-2026-10-09');
 });

@@ -22,6 +22,15 @@ var S128_MAX_FILE_BYTES = 1500000;
 var S128_MAX_FILES = 8;
 var S128_DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 var S128_PDF_MIME = 'application/pdf';
+var S128_FOLLOWUPS_SHEET = 'FollowUps';
+var S128_FOLLOWUP_DELAY_MS = 10 * 60 * 1000;
+var S128_FOLLOWUP_HANDLER = 's128SendDueFollowUps';
+var SECTION125_URL = 'https://dankirves-prog.github.io/dkbenefits-tools/section125.html';
+var RATES_URL = 'https://dankirves-prog.github.io/dkbenefits-tools/quote-tool-demo/';
+
+var S128_FOLLOWUP_HEADERS = [
+  'timestamp', 'email', 'name', 'company', 'plan_json', 'status', 'test', 'submission_id', 'error', 'sent_at'
+];
 
 var S128_SUBMISSION_HEADERS = [
   'timestamp', 'submission_id', 'status', 'test', 'company', 'state', 'contact_name',
@@ -85,19 +94,21 @@ function s128Handle_(payload) {
     return { ok: false, error: checked.errors[0] ? checked.errors[0].message : 'Check the form and try again.', fields: checked.errors };
   }
 
+  s128EnsureFollowUpTrigger_();
+
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
   var existing;
   var sendLead = true;
-  var wantVisitor = payload.sendVisitorCopy !== false;
   try {
     existing = s128FindSubmission_(String(payload.submissionId));
-    if (existing && existing.leadEmailed && (existing.visitorEmailed || !wantVisitor)) {
+    if (existing && existing.leadEmailed) {
       return {
         ok: true,
         duplicate: true,
         leadEmailed: true,
-        visitorEmailed: !!existing.visitorEmailed
+        visitorEmailed: false,
+        followUpQueued: s128AppendFollowUp_(payload, checked)
       };
     }
     if (existing && existing.status === 'pending' && !existing.leadEmailed) {
@@ -107,7 +118,6 @@ function s128Handle_(payload) {
       }
     }
     sendLead = !(existing && existing.leadEmailed);
-    wantVisitor = wantVisitor && !(existing && existing.visitorEmailed);
     if (sendLead && s128CountLeadsToday_(String(payload.submissionId)) >= S128_DAILY_LEAD_CAP) {
       s128LogEvent_('rejected_daily_cap', payload.submissionId, 'cap');
       return { ok: false, error: 'The daily email limit has been reached. Questions about DK Benefits’ services? 407-476-5076 · dan@dkbenefits.net' };
@@ -141,41 +151,37 @@ function s128Handle_(payload) {
   }
 
   var leadSent = !!(existing && existing.leadEmailed);
-  var visitorSent = !!(existing && existing.visitorEmailed);
   if (sendLead) {
     try {
       MailApp.sendEmail(s128LeadMessage_(payload, checked, files));
       leadSent = true;
-      s128Mark_(String(payload.submissionId), 'partial', '', true, visitorSent);
+      s128Mark_(String(payload.submissionId), 'partial', '', true, false);
     } catch (mailErr) {
-      s128Mark_(String(payload.submissionId), 'failed', mailErr.message || 'mail failed', false, visitorSent);
-      return { ok: false, error: 'The sample could not be emailed.' };
+      s128Mark_(String(payload.submissionId), 'failed', mailErr.message || 'mail failed', false, false);
+      return { ok: false, error: 'The request could not be sent.' };
     }
   }
 
-  var visitorLimited = false;
-  if (wantVisitor) {
-    if (quota < (sendLead ? 2 : 1)) {
-      visitorLimited = true;
-    } else if (!s128VisitorAllowed_(checked.lead.contact_email)) {
-      visitorLimited = true;
-    } else {
-      try {
-        MailApp.sendEmail(s128VisitorMessage_(payload, checked, files));
-        visitorSent = true;
-      } catch (visitorErr) {
-        visitorSent = false;
-      }
+  var followQueued = false;
+  if (leadSent && payload.sendVisitorCopy !== false) {
+    var queueLock = LockService.getScriptLock();
+    queueLock.waitLock(20000);
+    try {
+      followQueued = s128AppendFollowUp_(payload, checked);
+    } catch (queueErr) {
+      followQueued = false;
+    } finally {
+      queueLock.releaseLock();
     }
   }
 
-  s128Mark_(String(payload.submissionId), 'sent', '', leadSent, visitorSent);
-  s128LogEvent_('sent', payload.submissionId, (leadSent ? 'dan' : '') + (visitorSent ? '+visitor' : ''));
+  s128Mark_(String(payload.submissionId), 'sent', '', leadSent, false);
+  s128LogEvent_('sent', payload.submissionId, (leadSent ? 'dan' : '') + (followQueued ? '+queued' : ''));
   return {
     ok: true,
     leadEmailed: leadSent,
-    visitorEmailed: visitorSent,
-    visitorRateLimited: visitorLimited,
+    visitorEmailed: false,
+    followUpQueued: followQueued,
     duplicate: false
   };
 }
@@ -301,18 +307,133 @@ function s128LeadMessage_(payload, checked, files) {
   };
 }
 
-function s128VisitorMessage_(payload, checked, files) {
-  var plan = checked.plan;
-  var subject = 'Your Section 128 program documents — ' + plan.employer_name;
-  if (payload && payload.test) subject = '[TEST] ' + subject;
+function s128FollowUpPlan_(plan) {
   return {
-    to: checked.lead.contact_email,
-    subject: subject,
-    body: S128Docgen.visitorEmailText(plan, checked.lead),
-    name: 'DK Benefits LLC',
-    replyTo: S128_NOTIFY_EMAIL,
-    attachments: files
+    employer_name: plan.employer_name,
+    funding_mode: plan.funding_mode,
+    employer_annual_grant: plan.employer_annual_grant,
+    annual_cap_mode: plan.annual_cap_mode,
+    fixed_annual_cap: plan.fixed_annual_cap,
+    effective_date: plan.effective_date,
+    cafeteria_plan_name: plan.cafeteria_plan_name || '',
+    allow_employee_account: !!plan.allow_employee_account
   };
+}
+
+function s128AppendFollowUp_(payload, checked) {
+  if (payload.sendVisitorCopy === false) return false;
+  var email = checked.lead && checked.lead.contact_email;
+  if (!email) return false;
+  var sheet = s128Sheet_(S128_FOLLOWUPS_SHEET, S128_FOLLOWUP_HEADERS);
+  var values = sheet.getDataRange().getValues();
+  var id = String(payload.submissionId);
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][7]) === id) return true;
+  }
+  sheet.appendRow([
+    new Date(s128Now_()).toISOString(),
+    email,
+    checked.lead.contact_name || '',
+    checked.plan.employer_name || '',
+    JSON.stringify(s128FollowUpPlan_(checked.plan)),
+    'pending',
+    payload.test ? 'yes' : 'no',
+    id,
+    '',
+    ''
+  ]);
+  return true;
+}
+
+function s128FollowUpMessage_(row) {
+  var plan = {};
+  try { plan = JSON.parse(String(row[4] || '{}')); } catch (err) { plan = {}; }
+  var subject = 'Thanks for using our Section 128 tool';
+  if (String(row[6]) === 'yes') subject = '[TEST] ' + subject;
+  return {
+    to: String(row[1] || ''),
+    subject: subject,
+    body: S128Docgen.followUpEmailText(plan, { contact_name: String(row[2] || '') }, {
+      section125Url: SECTION125_URL,
+      ratesUrl: RATES_URL
+    }),
+    name: 'Daniel Kirves',
+    replyTo: S128_NOTIFY_EMAIL
+  };
+}
+
+function s128FollowUpSentToday_(values, email) {
+  var day = s128Today_();
+  var target = String(email || '').toLowerCase();
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][1] || '').toLowerCase() !== target) continue;
+    if (String(values[i][5]) !== 'sent') continue;
+    if (String(values[i][9] || '').slice(0, 10) === day) return true;
+  }
+  return false;
+}
+
+function s128SendDueFollowUps() {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var sheet = s128Sheet_(S128_FOLLOWUPS_SHEET, S128_FOLLOWUP_HEADERS);
+    var values = sheet.getDataRange().getValues();
+    var now = s128Now_();
+    for (var i = 1; i < values.length; i++) {
+      if (String(values[i][5]) !== 'pending') continue;
+      var ts = Date.parse(String(values[i][0] || ''));
+      if (isNaN(ts) || now - ts < S128_FOLLOWUP_DELAY_MS) continue;
+      var email = String(values[i][1] || '');
+      var rowNumber = i + 1;
+      if (s128FollowUpSentToday_(values, email)) {
+        sheet.getRange(rowNumber, 6).setValue('skipped');
+        sheet.getRange(rowNumber, 9).setValue('already sent today');
+        values[i][5] = 'skipped';
+        continue;
+      }
+      if (!s128VisitorAllowed_(email)) {
+        sheet.getRange(rowNumber, 6).setValue('skipped');
+        sheet.getRange(rowNumber, 9).setValue('hourly limit');
+        values[i][5] = 'skipped';
+        continue;
+      }
+      try {
+        var message = s128FollowUpMessage_(values[i]);
+        if (message.attachments) delete message.attachments;
+        MailApp.sendEmail(message);
+        var sentAt = new Date(s128Now_()).toISOString();
+        sheet.getRange(rowNumber, 6).setValue('sent');
+        sheet.getRange(rowNumber, 9).setValue('');
+        sheet.getRange(rowNumber, 10).setValue(sentAt);
+        values[i][5] = 'sent';
+        values[i][9] = sentAt;
+      } catch (err) {
+        sheet.getRange(rowNumber, 6).setValue('failed');
+        sheet.getRange(rowNumber, 9).setValue(err && err.message ? String(err.message).slice(0, 300) : 'mail failed');
+        values[i][5] = 'failed';
+      }
+    }
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function setupFollowUpTrigger() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === S128_FOLLOWUP_HANDLER) return;
+  }
+  ScriptApp.newTrigger(S128_FOLLOWUP_HANDLER).timeBased().everyMinutes(5).create();
+}
+
+function s128EnsureFollowUpTrigger_() {
+  try { setupFollowUpTrigger(); } catch (err) {}
+}
+
+function s128Now_() {
+  if (typeof S128_TEST_NOW === 'number' && isFinite(S128_TEST_NOW)) return S128_TEST_NOW;
+  return Date.now();
 }
 
 function s128VisitorAllowed_(email) {
