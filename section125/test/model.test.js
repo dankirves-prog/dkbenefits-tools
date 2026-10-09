@@ -162,5 +162,5 @@ test('dollar limits and the 90-day waiting label stay on the published figures',
   assert.equal(S125Model.DCAP_LIMIT_2026, 7500);
   assert.equal(S125Model.DCAP_MFS_2026, 3750);
   assert.equal(S125Model.WAITING.days_90, 'The 91st day of employment.');
-  assert.equal(S125Model.TEMPLATE_VERSION, 's125-v1.0.0-2026-10-09');
+  assert.equal(S125Model.TEMPLATE_VERSION, 's125-v1.1.0-2026-10-09');
 });

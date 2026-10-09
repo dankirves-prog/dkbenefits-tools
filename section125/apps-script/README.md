@@ -4,7 +4,7 @@ This is a **new** Apps Script and a **new** spreadsheet. Do not paste it into th
 
 The page reads the web-app URL from `section125/config.js` (`endpoint`). Until that value is a real `/exec` URL, the page still builds the Word and PDF samples in the browser and lets the employer download them. It does not email anyone.
 
-Template version `s125-v1.0.0-2026-10-09`. Terms version `s125-terms-2026-10-09`. The Terms of use in `s125-terms.js` are a draft for DK Benefits LLC’s own attorney to review before go-live. They are not themselves legal advice.
+Template version `s125-v1.1.0-2026-10-09`. Terms version `s125-terms-2026-10-09`. The Terms of use in `s125-terms.js` are a draft for DK Benefits LLC’s own attorney to review before go-live. They are not themselves legal advice.
 
 The live Wix page that posts to `/_functions/section125pdf` is a different tool. Leave `section125.html` and `section125-embed.html` in place until this replacement is ready to swap in.
 

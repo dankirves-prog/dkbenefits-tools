@@ -279,7 +279,7 @@
       { rows: S125Docgen.guideParagraphs(plan), name: S125Docgen.pdfFileName(S125Docgen.guideFileName(plan)), title: 'Section 125 implementation checklist' }
     ];
     return Promise.all(jobs.map(function (job) {
-      return S125Pdf.buildPdf(job.rows, { title: job.title }).then(function (bytes) {
+      return S125Pdf.buildPdf(job.rows, { title: job.title, footer: job.title }).then(function (bytes) {
         return { name: job.name, mime: 'application/pdf', bytes: bytes };
       });
     }));
