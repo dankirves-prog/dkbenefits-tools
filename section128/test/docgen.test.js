@@ -275,10 +275,12 @@ test('pdf keeps a long-name signature block together', async function () {
 test('implementation guide matches the funding design and the visitor email', function () {
   const combined = planFor(Object.assign({ funding_mode: 'combined', employer_annual_grant: '1000' }, salaryFields));
   const guide = S128Docgen.plainText(S128Docgen.guideParagraphs(combined));
-  const email = S128Docgen.followUpEmailText(combined, { contact_name: 'Ada Lopez' }, {
+  const links = {
     section125Url: 'https://www.dkbenefits.net/section125plantool',
-    ratesUrl: 'https://dankirves-prog.github.io/dkbenefits-tools/quote-tool-demo/'
-  });
+    ratesUrl: 'https://www.dkbenefits.net/instant-group-quote'
+  };
+  const email = S128Docgen.followUpEmailText(combined, { contact_name: 'Ada Lopez' }, links);
+  const html = S128Docgen.followUpEmailHtml(combined, { contact_name: 'Ada Lopez' }, links);
   const lines = S128Docgen.checklistLines(combined);
   assert.equal(lines.length, 6);
   assert.match(guide, /1\. Sign and date the plan \(page 1\) before the effective date \(January 1, 2027\)\./);
@@ -298,7 +300,22 @@ test('implementation guide matches the funding design and the visitor email', fu
   assert.match(email, /dan@dkbenefits.net/);
   assert.match(email, /is not legal or tax advice/);
   assert.match(email, /doesn't sell, market, open, or administer Trump accounts/);
-  assert.doesNotMatch(email, /attorney|SAMPLE DRAFT|does not review|received your draft|attached|lowest/i);
+  assert.match(email, /You can see instant rates right away/);
+  assert.match(email, /https:\/\/www\.dkbenefits\.net\/instant-group-quote/);
+  assert.match(email, /By going to market, with underwriting, we can often find better options than the instant rates\./);
+  assert.doesNotMatch(email, /attorney|SAMPLE DRAFT|does not review|received your draft|attached|lowest|savings|cheapest|guarantee|shop and negotiate/i);
+  assert.deepEqual(email.match(/https?:\/\/\S+/g), [
+    'https://www.dkbenefits.net/section125plantool',
+    'https://www.dkbenefits.net/instant-group-quote'
+  ]);
+  assert.equal((html.match(/<a /g) || []).length, 2);
+  assert.match(html, /<a href="https:\/\/www\.dkbenefits\.net\/section125plantool">https:\/\/www\.dkbenefits\.net\/section125plantool<\/a>/);
+  assert.match(html, /<a href="https:\/\/www\.dkbenefits\.net\/instant-group-quote">https:\/\/www\.dkbenefits\.net\/instant-group-quote<\/a>/);
+  assert.doesNotMatch(html, /mailto:|tel:|<img|utm_|bit\.ly|tinyurl/i);
+  assert.match(html, /407-476-5076/);
+  assert.match(html, /dan@dkbenefits\.net/);
+  assert.doesNotMatch(html, /<a [^>]*>407-476-5076<\/a>/);
+  assert.doesNotMatch(html, /<a [^>]*>dan@dkbenefits\.net<\/a>/);
   const grantOnly = planFor({ funding_mode: 'employer_only' });
   assert.equal(S128Docgen.checklistLines(grantOnly).length, 5);
   assert.doesNotMatch(S128Docgen.plainText(S128Docgen.guideParagraphs(grantOnly)), /Section 125 amendment/);

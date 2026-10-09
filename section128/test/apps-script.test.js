@@ -280,9 +280,21 @@ test('salary reduction attaches the amendment for Dan, and one follow-up goes ou
   assert.match(notes[0].body, /Pay the \$1,000 grant/);
   assert.match(notes[0].body, /\$2,500 per employee per year/);
   assert.match(notes[0].body, /Add the Section 125 amendment/);
-  assert.match(notes[0].body, /https:\/\/www\.dkbenefits\.net\/section125plantool/);
-  assert.match(notes[0].body, /https:\/\/dankirves-prog\.github\.io\/dkbenefits-tools\/quote-tool-demo\//);
-  assert.doesNotMatch(notes[0].body, /attorney|lowest|attached/i);
+  assert.match(notes[0].body, /You can see instant rates right away/);
+  assert.match(notes[0].body, /By going to market, with underwriting, we can often find better options than the instant rates/);
+  assert.deepEqual(notes[0].body.match(/https?:\/\/\S+/g), [
+    'https://www.dkbenefits.net/section125plantool',
+    'https://www.dkbenefits.net/instant-group-quote'
+  ]);
+  assert.doesNotMatch(notes[0].body, /attorney|lowest|attached|savings|quote-tool-demo/i);
+  assert.equal((notes[0].htmlBody.match(/<a /g) || []).length, 2);
+  assert.match(notes[0].htmlBody, /<a href="https:\/\/www\.dkbenefits\.net\/section125plantool">https:\/\/www\.dkbenefits\.net\/section125plantool<\/a>/);
+  assert.match(notes[0].htmlBody, /<a href="https:\/\/www\.dkbenefits\.net\/instant-group-quote">https:\/\/www\.dkbenefits\.net\/instant-group-quote<\/a>/);
+  assert.doesNotMatch(notes[0].htmlBody, /mailto:|tel:|<img|utm_|bit\.ly/i);
+  assert.match(notes[0].htmlBody, /407-476-5076/);
+  assert.match(notes[0].htmlBody, /dan@dkbenefits\.net/);
+  assert.doesNotMatch(notes[0].htmlBody, /<a [^>]*>407-476-5076<\/a>/);
+  assert.doesNotMatch(notes[0].htmlBody, /<a [^>]*>dan@dkbenefits\.net<\/a>/);
   assert.equal(ctx.sheets.FollowUps.rows[1][5], 'sent');
   assert.equal(ctx.sheets.FollowUps.rows[2][5], 'skipped');
   assert.match(String(ctx.sheets.FollowUps.rows[2][8]), /already sent today/);

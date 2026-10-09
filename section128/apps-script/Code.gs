@@ -26,7 +26,7 @@ var S128_FOLLOWUPS_SHEET = 'FollowUps';
 var S128_FOLLOWUP_DELAY_MS = 10 * 60 * 1000;
 var S128_FOLLOWUP_HANDLER = 's128SendDueFollowUps';
 var SECTION125_URL = 'https://www.dkbenefits.net/section125plantool';
-var RATES_URL = 'https://dankirves-prog.github.io/dkbenefits-tools/quote-tool-demo/';
+var RATES_URL = 'https://www.dkbenefits.net/instant-group-quote';
 
 var S128_FOLLOWUP_HEADERS = [
   'timestamp', 'email', 'name', 'company', 'plan_json', 'status', 'test', 'submission_id', 'error', 'sent_at'
@@ -350,13 +350,13 @@ function s128FollowUpMessage_(row) {
   try { plan = JSON.parse(String(row[4] || '{}')); } catch (err) { plan = {}; }
   var subject = 'Thanks for using our Section 128 tool';
   if (String(row[6]) === 'yes') subject = '[TEST] ' + subject;
+  var links = { section125Url: SECTION125_URL, ratesUrl: RATES_URL };
+  var lead = { contact_name: String(row[2] || '') };
   return {
     to: String(row[1] || ''),
     subject: subject,
-    body: S128Docgen.followUpEmailText(plan, { contact_name: String(row[2] || '') }, {
-      section125Url: SECTION125_URL,
-      ratesUrl: RATES_URL
-    }),
+    body: S128Docgen.followUpEmailText(plan, lead, links),
+    htmlBody: S128Docgen.followUpEmailHtml(plan, lead, links),
     name: 'Daniel Kirves',
     replyTo: S128_NOTIFY_EMAIL
   };

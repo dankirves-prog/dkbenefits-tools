@@ -418,8 +418,13 @@ var S128Docgen = (function () {
       '',
       'Your tax advisor can help with anything specific to your situation.',
       '',
-      'We also help employers with group health and other employee benefits. Our free Section 125 premium-only plan document tool is here: ' + section125,
-      'Live rates are on our website if you want a quick look: ' + rates + '. We can also help you shop and negotiate rates with carriers.',
+      'We also help employers with group health and other employee benefits. Our free Section 125 premium-only plan document tool is here:',
+      section125,
+      '',
+      'You can see instant rates right away:',
+      rates,
+      '',
+      'By going to market, with underwriting, we can often find better options than the instant rates.',
       '',
       'DK Benefits doesn\'t sell, market, open, or administer Trump accounts.',
       '',
@@ -431,6 +436,29 @@ var S128Docgen = (function () {
       'This tool is educational and is not legal or tax advice.'
     );
     return lines.join('\n');
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function followUpEmailHtml(plan, lead, links) {
+    links = links || {};
+    var allowed = {};
+    if (links.section125Url) allowed[links.section125Url] = true;
+    if (links.ratesUrl) allowed[links.ratesUrl] = true;
+    var html = followUpEmailText(plan, lead, links).split('\n').map(function (line) {
+      if (allowed[line]) {
+        var safe = escapeHtml(line);
+        return '<a href="' + safe + '">' + safe + '</a>';
+      }
+      return escapeHtml(line);
+    }).join('<br>\n');
+    return '<div>' + html + '</div>';
   }
 
   function visitorEmailText(plan, lead, links) {
@@ -722,6 +750,7 @@ var S128Docgen = (function () {
     guideParagraphs: guideParagraphs,
     visitorEmailText: visitorEmailText,
     followUpEmailText: followUpEmailText,
+    followUpEmailHtml: followUpEmailHtml,
     buildDocx: buildDocx,
     buildPlanDocx: buildPlanDocx,
     buildAmendmentDocx: buildAmendmentDocx,

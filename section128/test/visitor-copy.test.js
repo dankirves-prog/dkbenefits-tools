@@ -51,16 +51,24 @@ test('combined visitor email and guide stay educational', function () {
   });
   const checked = S128Model.validate(input, { asOf: ASOF });
   assert.equal(checked.ok, true, JSON.stringify(checked.errors));
-  const email = S128Docgen.followUpEmailText(checked.plan, checked.lead, {
+  const links = {
     section125Url: 'https://www.dkbenefits.net/section125plantool',
-    ratesUrl: 'https://dankirves-prog.github.io/dkbenefits-tools/quote-tool-demo/'
-  });
+    ratesUrl: 'https://www.dkbenefits.net/instant-group-quote'
+  };
+  const email = S128Docgen.followUpEmailText(checked.plan, checked.lead, links);
+  const html = S128Docgen.followUpEmailHtml(checked.plan, checked.lead, links);
   BANNED.forEach(function (pattern) { assert.doesNotMatch(email, pattern); });
-  assert.doesNotMatch(email, /attorney|does not review|attached|lowest/i);
+  assert.doesNotMatch(email, /attorney|does not review|attached|lowest|savings/i);
   assert.match(email, /Your tax advisor can help/);
   assert.match(email, /Thanks for using our Section 128 tool/);
-  assert.match(email, /https:\/\/www\.dkbenefits\.net\/section125plantool/);
-  assert.match(email, /quote-tool-demo/);
+  assert.match(email, /You can see instant rates right away/);
+  assert.match(email, /By going to market, with underwriting, we can often find better options than the instant rates/);
+  assert.deepEqual(email.match(/https?:\/\/\S+/g), [
+    'https://www.dkbenefits.net/section125plantool',
+    'https://www.dkbenefits.net/instant-group-quote'
+  ]);
+  assert.equal((html.match(/<a /g) || []).length, 2);
+  assert.doesNotMatch(html, /mailto:|tel:|<img|utm_/i);
   assert.equal(S128Terms.CHECKBOX, 'I understand this is an educational tool, not legal or tax advice, and my company is responsible for what it adopts. I agree to the Terms of use.');
   assert.match(S128Terms.PARAGRAPHS.join('\n'), /hold harmless/);
   assert.match(S128Terms.PARAGRAPHS.join('\n'), /attorney-client/);
