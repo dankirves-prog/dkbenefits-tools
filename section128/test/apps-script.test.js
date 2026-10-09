@@ -387,6 +387,54 @@ test('a test row already skipped for today is sent on the next trigger', functio
   assert.equal(ctx.sheets.FollowUps.rows[1][5], 'sent');
 });
 
+test('the follow-up sender logs how many rows it found and why each was skipped', function () {
+  const ctx = boot();
+  const lines = [];
+  function capture(line) { lines.push(String(line)); }
+  ctx.console = { log: capture };
+  ctx.Logger = { log: capture };
+  const base = Date.parse('2026-10-08T15:56:43.000Z');
+  ctx.S128_TEST_NOW = base;
+  const body = payload(null, '31313131-3131-4131-8131-313131313131');
+  body.test = true;
+  body.lead.contact_email = 'dankirves@gmail.com';
+  assert.equal(ctx.post(body).followUpQueued, true);
+  lines.length = 0;
+  ctx.s128SendDueFollowUps();
+  assert.match(lines.join('\n'), /found 1 follow-up row\(s\)/);
+  assert.match(lines.join('\n'), /dankirves@gmail.com/);
+  assert.match(lines.join('\n'), /reason=not due for \d+ more minute\(s\)/);
+  assert.match(lines.join('\n'), /waiting=1/);
+  assert.equal(ctx.sheets.FollowUps.rows[1][5], 'pending');
+
+  ctx.sheets.FollowUps.rows[1][0] = 'not-a-time';
+  ctx.S128_TEST_NOW = base + 11 * 60 * 1000;
+  lines.length = 0;
+  ctx.s128SendDueFollowUps();
+  assert.match(lines.join('\n'), /reason=timestamp not readable value=string:not-a-time/);
+  assert.equal(ctx.sheets.FollowUps.rows[1][5], 'pending');
+
+  ctx.sheets.FollowUps.rows[1][0] = new Date(base).toISOString();
+  ctx.sheets.FollowUps.rows[1][5] = 'sent';
+  ctx.sheets.FollowUps.rows[1][6] = 'no';
+  ctx.sheets.FollowUps.rows[1][9] = new Date(base).toISOString();
+  ctx.sheets.FollowUps.rows.push(ctx.sheets.FollowUps.rows[1].slice());
+  const again = ctx.sheets.FollowUps.rows[2];
+  again[5] = 'pending';
+  again[6] = 'no';
+  again[7] = '32323232-3232-4232-8232-323232323232';
+  again[8] = '';
+  again[9] = '';
+  lines.length = 0;
+  ctx.s128SendDueFollowUps();
+  const text = lines.join('\n');
+  assert.match(text, /found 2 follow-up row\(s\)/);
+  assert.match(text, /id=31313131-3131-4131-8131-313131313131 status=sent test=no reason=not pending/);
+  assert.match(text, /id=32323232-3232-4232-8232-323232323232 status=pending test=no reason=already sent today/);
+  assert.match(text, /sent=0 skipped=1 waiting=0 ignored=1/);
+  assert.equal(ctx.sheets.FollowUps.rows[2][5], 'skipped');
+});
+
 test('a follow-up is skipped when the address already used the hourly limit', function () {
   const ctx = boot();
   const base = Date.parse('2026-10-08T16:00:00.000Z');
