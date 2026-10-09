@@ -277,14 +277,14 @@ test('salary reduction attaches the amendment for Dan, and one follow-up goes ou
   assert.equal(notes[0].attachments, undefined);
   assert.equal(notes[0].name, 'Daniel Kirves');
   assert.equal(notes[0].replyTo, 'dan@dkbenefits.net');
-  assert.equal(notes[0].subject, '[TEST] Thanks for using my Section 128 tool');
+  assert.equal(notes[0].subject, '[TEST] Thanks for using my Section 128 tool!');
   assert.match(notes[0].body, /^Hi Ada,/);
-  assert.match(notes[0].body, /A few quick reminders to make the plan official/);
+  assert.match(notes[0].body, /Just a few quick reminders so you can get it up and running/);
   assert.match(notes[0].body, /Pay the \$1,000 grant/);
-  assert.match(notes[0].body, /\$2,500 per employee per year/);
+  assert.match(notes[0].body, /can't go over \$2,500 per employee per year/);
   assert.match(notes[0].body, /Add the Section 125 amendment/);
-  assert.match(notes[0].body, /shop and negotiate your group health/);
-  assert.match(notes[0].body, /some rates you can see online right now/);
+  assert.match(notes[0].body, /I'd be happy to help you shop and negotiate your group health/);
+  assert.match(notes[0].body, /some rates you can check out online right now/);
   assert.deepEqual(notes[0].body.match(/https?:\/\/\S+/g), [
     'https://www.dkbenefits.net/section125plantool',
     'https://www.dkbenefits.net/instant-group-quote'

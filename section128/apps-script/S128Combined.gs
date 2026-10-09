@@ -1006,6 +1006,43 @@ var S128Docgen = (function () {
     return 'Sign and date the plan (page 1) before the effective date (' + when + ').';
   }
 
+  function emailSignLine(plan) {
+    var when = longDate(plan.effective_date);
+    var today = S128Model.todayIso();
+    if (plan.effective_date && today && plan.effective_date < today) {
+      return 'Sign and date the plan (page 1) as soon as you can.';
+    }
+    return 'Sign and date the plan (page 1) before ' + when + '.';
+  }
+
+  function emailContributionLine(plan) {
+    var limit = checklistLimitText(plan);
+    var grant = usesGrant(plan) ? money(plan, plan.employer_annual_grant) : '';
+    if (plan.funding_mode === 'employer_only') {
+      return 'Pay the ' + grant + ' grant once a year for each participating employee, straight to their verified Trump account.';
+    }
+    if (plan.funding_mode === 'salary_reduction_only') {
+      return 'Start payroll deductions once your cafeteria plan allows them, up to ' + limit + '.';
+    }
+    return 'Pay the ' + grant + ' grant once a year and start payroll deductions once your cafeteria plan allows them. Together they can\'t go over ' + limit + '.';
+  }
+
+  function emailChecklistLines(plan) {
+    var lines = [emailSignLine(plan)];
+    if (usesSalary(plan)) {
+      lines.push(plan.cafeteria_plan_name
+        ? 'Add the Section 125 amendment to your cafeteria plan and sign it.'
+        : 'Adopt or confirm a Section 125 cafeteria plan and amend it for this benefit before any payroll deductions start. No amendment was prepared.');
+    }
+    lines.push('Let payroll know the contributions aren\'t subject to income tax, but Social Security and Medicare still apply. They go on the W-2 in box 12, code TA.');
+    lines.push('Send your employees a short note letting them know about the program.');
+    lines.push(plan.allow_employee_account
+      ? 'Get each employee\'s child\'s Trump account info (or the employee\'s own account, if the employee is 17 or younger) and make sure the account is active. If the Treasury opened it automatically, a parent has to claim it first.'
+      : 'Get each employee\'s child\'s Trump account info and make sure the account is active. If the Treasury opened it automatically, a parent has to claim it first.');
+    lines.push(emailContributionLine(plan));
+    return lines;
+  }
+
   function checklistLines(plan) {
     var lines = [
       signChecklistLine(plan)
@@ -1052,25 +1089,25 @@ var S128Docgen = (function () {
     var lines = [
       first ? ('Hi ' + first + ',') : 'Hi there,',
       '',
-      'I just saw you used my Section 128 tool for ' + employer + '. Thank you! I really appreciate it.',
+      'I just saw you put together your Section 128 plan for ' + employer + '. Thanks so much for giving my tool a try. I really appreciate it!',
       '',
-      'A few quick reminders to make the plan official:',
+      'Just a few quick reminders so you can get it up and running:',
       ''
     ];
-    checklistLines(plan).forEach(function (line, index) {
+    emailChecklistLines(plan).forEach(function (line, index) {
       lines.push((index + 1) + '. ' + line);
     });
     lines.push(
       '',
       'Your tax advisor can help with anything specific to your situation.',
       '',
-      'By the way, if you need a Section 125 plan, or yours needs a refresh, I have a free tool for that too:',
+      'Oh, and if you ever need a Section 125 plan, or yours could use a refresh, I\'ve got a free tool for that too:',
       section125,
       '',
-      'And just so you know, I\'m an employee benefits broker. No pressure at all, but I can help you shop and negotiate your group health and other benefits. I even have some rates you can see online right now:',
+      'Also, just so you know, I\'m an employee benefits broker. No pressure at all, but I\'d be happy to help you shop and negotiate your group health and other benefits. I even have some rates you can check out online right now:',
       rates,
       '',
-      'If you ever want to chat about your benefits, just hit reply.',
+      'Would you mind giving me a shot to see what I can do for you? I\'d love to hear from you.',
       '',
       'Thanks again,',
       'Daniel',
@@ -1394,6 +1431,7 @@ var S128Docgen = (function () {
   return {
     FOOTER: FOOTER,
     checklistLines: checklistLines,
+    emailChecklistLines: emailChecklistLines,
     planParagraphs: planParagraphs,
     amendmentParagraphs: amendmentParagraphs,
     guideParagraphs: guideParagraphs,
@@ -1762,7 +1800,7 @@ function s128AppendFollowUp_(payload, checked) {
 function s128FollowUpMessage_(row) {
   var plan = {};
   try { plan = JSON.parse(String(row[4] || '{}')); } catch (err) { plan = {}; }
-  var subject = 'Thanks for using my Section 128 tool';
+  var subject = 'Thanks for using my Section 128 tool!';
   if (String(row[6]) === 'yes') subject = '[TEST] ' + subject;
   var links = { section125Url: SECTION125_URL, ratesUrl: RATES_URL };
   var lead = { contact_name: String(row[2] || '') };

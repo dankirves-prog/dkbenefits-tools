@@ -291,16 +291,19 @@ test('implementation guide matches the funding design and the visitor email', fu
   assert.doesNotMatch(guide, /Start contributions through payroll/);
   assert.doesNotMatch(guide, /July 4, 2026/);
   assert.doesNotMatch(guide, /Who:|What:|When:|REG-101355|attorney|SAMPLE DRAFT/);
-  lines.forEach(function (line) { assert.ok(email.indexOf(line) !== -1, line); });
+  const emailLines = S128Docgen.emailChecklistLines(combined);
+  assert.equal(emailLines.length, 6);
+  emailLines.forEach(function (line) { assert.ok(email.indexOf(line) !== -1, line); });
+  assert.match(emailLines[5], /Pay the \$1,000 grant once a year and start payroll deductions once your cafeteria plan allows them\. Together they can't go over \$2,500 per employee per year\./);
   assert.match(email, /^Hi Ada,/);
-  assert.match(email, /I just saw you used my Section 128 tool for Northwind Benefits LLC\. Thank you! I really appreciate it\./);
-  assert.match(email, /A few quick reminders to make the plan official/);
+  assert.match(email, /I just saw you put together your Section 128 plan for Northwind Benefits LLC\. Thanks so much for giving my tool a try\. I really appreciate it!/);
+  assert.match(email, /Just a few quick reminders so you can get it up and running/);
   assert.match(email, /Your tax advisor can help with anything specific to your situation/);
-  assert.match(email, /I have a free tool for that too/);
+  assert.match(email, /I've got a free tool for that too/);
   assert.doesNotMatch(email, /premium-only/);
-  assert.match(email, /I can help you shop and negotiate your group health and other benefits/);
-  assert.match(email, /some rates you can see online right now/);
-  assert.match(email, /just hit reply/);
+  assert.match(email, /I'd be happy to help you shop and negotiate your group health and other benefits/);
+  assert.match(email, /some rates you can check out online right now/);
+  assert.match(email, /Would you mind giving me a shot to see what I can do for you\? I'd love to hear from you\./);
   assert.match(email, /Thanks again,\nDaniel\n/);
   assert.match(email, /P\.S\. Just so it's clear, I don't sell, market, open, or administer Trump accounts\./);
   assert.match(email, /the tool is educational and isn't legal or tax advice/);
@@ -464,6 +467,14 @@ test('checklist states the plan’s own amounts and only mentions an amendment t
   assert.match(guide, /Adopt or confirm a Section 125 cafeteria plan and amend it for this benefit before any payroll deductions start\. No amendment was prepared\./);
   const ownAccount = planFor({ funding_mode: 'employer_only', allow_employee_account: 'yes' });
   assert.match(S128Docgen.plainText(S128Docgen.guideParagraphs(ownAccount)), /or the employee’s own account, if the employee is 17 or younger/);
+  const emailLast = function (plan) { const rows = S128Docgen.emailChecklistLines(plan); return rows[rows.length - 1]; };
+  assert.equal(emailLast(grantOnly), 'Pay the $500 grant once a year for each participating employee, straight to their verified Trump account.');
+  assert.equal(emailLast(salaryFixed), 'Start payroll deductions once your cafeteria plan allows them, up to $2,000 per employee per year.');
+  assert.match(emailLast(salary2028), /up to the per-employee Section 128 limit the IRS publishes for that year\.$/);
+  S128Docgen.emailChecklistLines(salary2028).forEach(function (line) { assert.doesNotMatch(line, /\$2,500/); });
+  assert.match(S128Docgen.emailChecklistLines(noCafeteria).join('\n'), /No amendment was prepared/);
+  assert.doesNotMatch(S128Docgen.emailChecklistLines(noCafeteria).join('\n'), /Add the Section 125 amendment/);
+  assert.match(S128Docgen.emailChecklistLines(ownAccount).join('\n'), /or the employee's own account, if the employee is 17 or younger/);
 });
 
 test('a past effective date tells the employer to sign promptly', function () {
@@ -472,6 +483,7 @@ test('a past effective date tells the employer to sign promptly', function () {
   assert.match(line, /promptly, as soon as possible/);
   assert.match(line, /August 1, 2026/);
   assert.doesNotMatch(line, /before the effective date/);
+  assert.equal(S128Docgen.emailChecklistLines(past)[0], 'Sign and date the plan (page 1) as soon as you can.');
 });
 
 test('a name outside the PDF font still produces a PDF', async function () {

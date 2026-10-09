@@ -60,10 +60,10 @@ test('combined visitor email and guide stay educational', function () {
   BANNED.forEach(function (pattern) { assert.doesNotMatch(email, pattern); });
   assert.doesNotMatch(email, /attorney|does not review|attached|lowest|savings/i);
   assert.match(email, /^Hi Ada,/);
-  assert.match(email, /A few quick reminders to make the plan official/);
+  assert.match(email, /Just a few quick reminders so you can get it up and running/);
   assert.match(email, /Your tax advisor can help/);
-  assert.match(email, /I just saw you used my Section 128 tool/);
-  assert.match(email, /some rates you can see online right now/);
+  assert.match(email, /I just saw you put together your Section 128 plan/);
+  assert.match(email, /some rates you can check out online right now/);
   assert.match(email, /shop and negotiate your group health/);
   assert.doesNotMatch(email, /premium-only/);
   assert.doesNotMatch(email, /dan@dkbenefits\.net/);

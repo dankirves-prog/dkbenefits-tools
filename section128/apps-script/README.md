@@ -65,7 +65,7 @@ The script never attaches visitor-supplied files to the address the visitor type
 3. Confirm **Triggers** shows `s128SendDueFollowUps` every 5 minutes. Running the function again does not add a second trigger.
 4. `doPost` also tries to create that trigger if it is missing. If Apps Script blocks that from the web app, the Run step above is the one that installs it.
 
-The note is queued on a `FollowUps` sheet. The trigger sends rows that are still `pending` and at least 10 minutes old, then marks them `sent`, `failed`, or `skipped`. One note per address per day. The same address is also limited to 3 notes an hour. A `[TEST]` submission uses the subject `[TEST] Thanks for using my Section 128 tool`.
+The note is queued on a `FollowUps` sheet. The trigger sends rows that are still `pending` and at least 10 minutes old, then marks them `sent`, `failed`, or `skipped`. One note per address per day. The same address is also limited to 3 notes an hour. A `[TEST]` submission uses the subject `[TEST] Thanks for using my Section 128 tool!`.
 
 `SECTION125_URL` is `https://www.dkbenefits.net/section125plantool`. `RATES_URL` is `https://www.dkbenefits.net/instant-group-quote`. Those are the only two links in the follow-up, Section 125 first. The follow-up is plain text plus an HTML alternative. The greeting uses the first word of the contact name, or “Hi there,” when that name is blank. Reply-To is dan@dkbenefits.net. The signature, including the phone and www.dkbenefits.net, is plain text. The site name is not a third link, and the note does not print the email address. There are no images, tracking parameters, or shortened links.
 
@@ -79,7 +79,7 @@ The note is queued on a `FollowUps` sheet. The trigger sends rows that are still
 
 ## 8. A safe test after deploy
 
-Open the page with `?live=1&test=1`, use a real address you can check, and submit one employer-grant draft. Dan’s subject should start with `[TEST]`, and the files should be on that message only. About 10 minutes later the visitor note should arrive with `[TEST] Thanks for using my Section 128 tool` and no attachments. Do not use the quote-tool URL for this.
+Open the page with `?live=1&test=1`, use a real address you can check, and submit one employer-grant draft. Dan’s subject should start with `[TEST]`, and the files should be on that message only. About 10 minutes later the visitor note should arrive with `[TEST] Thanks for using my Section 128 tool!` and no attachments. Do not use the quote-tool URL for this.
 
 ## Repaste after this change
 

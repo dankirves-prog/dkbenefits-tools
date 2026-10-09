@@ -348,7 +348,7 @@ function s128AppendFollowUp_(payload, checked) {
 function s128FollowUpMessage_(row) {
   var plan = {};
   try { plan = JSON.parse(String(row[4] || '{}')); } catch (err) { plan = {}; }
-  var subject = 'Thanks for using my Section 128 tool';
+  var subject = 'Thanks for using my Section 128 tool!';
   if (String(row[6]) === 'yes') subject = '[TEST] ' + subject;
   var links = { section125Url: SECTION125_URL, ratesUrl: RATES_URL };
   var lead = { contact_name: String(row[2] || '') };
