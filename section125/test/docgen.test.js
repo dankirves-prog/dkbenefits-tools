@@ -123,9 +123,10 @@ test('the follow-up note has exactly two links and a plain-text signature', func
   const html = S125Docgen.followUpEmailHtml(plan, lead, LINKS);
   assert.match(email, /^Hi Ada,/);
   assert.match(email, /Section 125 plan for Northwind Benefits Inc/);
-  assert.match(email, /employer contributions to Trump accounts under Section 128/);
+  assert.match(email, /Oh, and if you're looking at contributing to your employees' kids' new child savings accounts \(the Section 128 accounts, officially called "Trump accounts"\), I have a free tool that creates that plan too\. I don't sell or administer the accounts themselves, but the tool is there if you need it:\nhttps:\/\/www\.dkbenefits\.net\/section-128-tool/);
   assert.match(email, /I'd be happy to help you shop and negotiate your group health and other benefits/);
-  assert.match(email, /Also, just so it's clear, I don't sell, market, open, or administer Trump accounts\. And legally I have to mention that the tool is educational and isn't legal or tax advice\.\n\nDaniel Kirves\n/);
+  assert.match(email, /Just so it's clear, legally I have to mention that the tool is educational and isn't legal or tax advice\.\n\nDaniel Kirves\n/);
+  assert.doesNotMatch(email, /I don't sell, market, open, or administer Trump accounts/);
   assert.match(email, /Benefits Broker \| 20 Years Exp \| DK Benefits\n407-476-5076 \| www\.dkbenefits\.net\n6000 Metrowest Blvd #200 Orlando, FL 32835\n\nAgency Lic# L109331$/);
   assert.match(email, /\$680 from a 2026 plan year/);
   assert.match(email, /at least once a month/);

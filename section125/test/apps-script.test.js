@@ -209,7 +209,9 @@ test('the follow-up waits ten minutes, has two links, and has no attachments', f
   assert.equal(notes[0].replyTo, 'dan@dkbenefits.net');
   assert.equal(notes[0].subject, '[TEST] Thanks for using my Section 125 tool!');
   assert.match(notes[0].body, /^Hi Ada,/);
-  assert.match(notes[0].body, /employer contributions to Trump accounts under Section 128/);
+  assert.match(notes[0].body, /officially called "Trump accounts"/);
+  assert.match(notes[0].body, /Just so it's clear, legally I have to mention that the tool is educational and isn't legal or tax advice\./);
+  assert.doesNotMatch(notes[0].body, /I don't sell, market, open, or administer Trump accounts/);
   assert.deepEqual(notes[0].body.match(/https?:\/\/\S+/g), [LINKS.section128Url, LINKS.ratesUrl]);
   assert.equal((notes[0].htmlBody.match(/<a /g) || []).length, 2);
   assert.match(notes[0].htmlBody, /407-476-5076 \| www\.dkbenefits\.net/);
