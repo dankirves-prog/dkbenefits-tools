@@ -72,7 +72,8 @@ function assertClean(xml, mode) {
   }
   assert.match(text, /Articles 1 through 12/);
   assert.match(text, /on or before January 31/);
-  assert.match(text, /claimed and activated cannot receive Program contributions/);
+  assert.match(text, /\(an auto account\) cannot receive Program contributions/);
+  assert.match(text, /only to the claimed Trump account that receives its balance, once that account is activated/);
   assert.doesNotMatch(text, /SAMPLE DRAFT|signature and date above are blank/i);
   if (mode === 'employer_only') {
     const rest = text.split('\n').filter(function (line) { return line.indexOf('Reserved:') === -1; }).join('\n');
@@ -104,8 +105,9 @@ for (const [name, overrides, mode] of cases) {
     assert.doesNotMatch(packed.header, /SAMPLE|DRAFT|Prepared with/);
     assert.match(packed.footer, /Prepared with DK Benefits/);
     assert.match(packed.footer, /Not effective until signed by the employer/);
-    assert.doesNotMatch(packed.footer, /PAGE|Sample draft/);
-    assert.match(packed.core, /s128-v0\.5-2026-10-08/);
+    assert.match(packed.footer, /PAGE/);
+    assert.doesNotMatch(packed.footer, /Sample draft/);
+    assert.match(packed.core, /s128-v0\.5\.1-2026-10-09/);
     assert.doesNotMatch(S128Docgen.planFileName(plan), /DRAFT/);
     assert.match(S128Docgen.planFileName(plan), /_v0\.5\.docx$/);
     assert.match(packed.core, /DK Benefits LLC/);
@@ -121,7 +123,7 @@ for (const [name, overrides, mode] of cases) {
     assert.match(plain(packed.document), /Testing, corrections, and employer authority/);
     assert.match(plain(packed.document), /Designation, certification, and verification/);
     assert.match(plain(packed.document), /Amendment, termination, and individual ownership/);
-    assert.match(plain(packed.document), /cannot receive Program contributions until a parent or guardian claims it/);
+    assert.match(plain(packed.document), /cannot receive Program contributions; after a parent or guardian claims it, contributions can go only to the claimed account/);
     const capLine = plain(packed.document).split('\n').find(function (line) { return line.indexOf('The program annual cap is') === 0; });
     assert.equal((capLine.match(/\$2,500/g) || []).length, 1);
     if (overrides.annual_cap_mode === 'fixed') assert.match(capLine, /fixed employer cap does not increase automatically/);
@@ -164,7 +166,9 @@ test('2028 plan does not print unpublished indexed amounts', function () {
   const text = plain(textOf(S128Docgen.buildPlanDocx(plan)).document);
   assert.doesNotMatch(text, /\$2,500/);
   assert.doesNotMatch(text, /\$5,000/);
-  assert.match(text, /has not been published|not been published|none has been published/i);
+  assert.doesNotMatch(text, /has not been published|not stated until|none has been published/i);
+  assert.match(text, /as adjusted under Section 128\(b\)\(2\)/);
+  assert.match(text, /The base amount is adjusted after 2027/);
   assert.match(text, /\$1,000/);
 });
 
@@ -180,7 +184,7 @@ test('salary reduction without a confirmed cafeteria plan does not build an amen
   assert.match(text, /Salary reduction/);
   assert.doesNotMatch(text, /Section 125 plan name:/);
   assert.equal(S128Docgen.buildAmendmentDocx(plan), null);
-  assert.match(text, /cannot receive Program contributions until a parent or guardian claims it/);
+  assert.match(text, /cannot receive Program contributions; after a parent or guardian claims it, contributions can go only to the claimed account/);
 });
 
 test('amendment signature stays on one page, including a long employer and plan name', function () {
@@ -271,23 +275,58 @@ test('pdf keeps a long-name signature block together', async function () {
 test('implementation guide matches the funding design and the visitor email', function () {
   const combined = planFor(Object.assign({ funding_mode: 'combined', employer_annual_grant: '1000' }, salaryFields));
   const guide = S128Docgen.plainText(S128Docgen.guideParagraphs(combined));
-  const email = S128Docgen.visitorEmailText(combined, { contact_name: 'Ada Lopez' });
+  const links = {
+    section125Url: 'https://www.dkbenefits.net/section125plantool',
+    ratesUrl: 'https://www.dkbenefits.net/instant-group-quote'
+  };
+  const email = S128Docgen.followUpEmailText(combined, { contact_name: 'Ada Lopez' }, links);
+  const html = S128Docgen.followUpEmailHtml(combined, { contact_name: 'Ada Lopez' }, links);
   const lines = S128Docgen.checklistLines(combined);
   assert.equal(lines.length, 6);
-  assert.match(guide, /1\. Sign and date the plan \(page 1\) before the effective date/);
+  assert.match(guide, /1\. Sign and date the plan \(page 1\) before the effective date \(January 1, 2027\)\./);
   assert.match(guide, /2\. Add the Section 125 amendment to your cafeteria plan and sign it/);
   assert.match(guide, /box 12 code TA/);
   assert.match(guide, /Collect each employee’s child’s Trump account information and make sure the account is active\. Accounts the Treasury opened automatically must be claimed by a parent first\./);
-  assert.match(guide, /Start contributions through payroll, up to \$2,500 per employee per year\./);
+  assert.match(guide, /Pay the \$1,000 grant once a year and start payroll deductions once the cafeteria plan permits them\. Together they can’t exceed \$2,500 per employee per year\./);
+  assert.doesNotMatch(guide, /Start contributions through payroll/);
   assert.doesNotMatch(guide, /July 4, 2026/);
   assert.doesNotMatch(guide, /Who:|What:|When:|REG-101355|attorney|SAMPLE DRAFT/);
-  lines.forEach(function (line) { assert.ok(email.indexOf(line) !== -1, line); });
-  assert.match(email, /Hello Ada Lopez/);
-  assert.match(email, /Employee notices, salary-reduction election forms, and account designation forms aren't included/);
+  const emailLines = S128Docgen.emailChecklistLines(combined);
+  assert.equal(emailLines.length, 6);
+  emailLines.forEach(function (line) { assert.ok(email.indexOf(line) !== -1, line); });
+  assert.match(emailLines[5], /Pay the \$1,000 grant once a year and start payroll deductions once your cafeteria plan allows them\. Together they can't go over \$2,500 per employee per year\./);
+  assert.match(email, /^Hi Ada,/);
+  assert.match(email, /I just saw you put together your Section 128 plan for Northwind Benefits LLC\. Thanks so much for giving my tool a try\. I really appreciate it!/);
+  assert.match(email, /Just a few quick reminders so you can get it up and running/);
   assert.match(email, /Your tax advisor can help with anything specific to your situation/);
-  assert.match(email, /Questions about DK Benefits’ services\? 407-476-5076/);
-  assert.match(email, /isn't legal or tax advice/);
-  assert.doesNotMatch(email, /attorney|SAMPLE DRAFT|does not review|received your draft/i);
+  assert.match(email, /I've got a free tool for that too/);
+  assert.doesNotMatch(email, /premium-only/);
+  assert.match(email, /I'd be happy to help you shop and negotiate your group health and other benefits/);
+  assert.match(email, /some rates you can check out online right now/);
+  assert.match(email, /Would you mind giving me a shot to see what I can do for you\? I'd love to hear from you\./);
+  assert.doesNotMatch(email, /Thanks again|P\.S\./);
+  assert.match(email, /Also, just so it's clear, I don't sell, market, open, or administer Trump accounts\. And legally I have to mention that the tool is educational and isn't legal or tax advice\.\n\nDaniel Kirves\n/);
+  assert.match(email, /the tool is educational and isn't legal or tax advice/);
+  assert.match(email, /Daniel Kirves/);
+  assert.match(email, /Benefits Broker \| 20 Years Exp \| DK Benefits/);
+  assert.match(email, /407-476-5076 \| www\.dkbenefits\.net/);
+  assert.match(email, /6000 Metrowest Blvd #200 Orlando, FL 32835/);
+  assert.match(email, /Agency Lic# L109331/);
+  assert.doesNotMatch(email, /dan@dkbenefits\.net/);
+  assert.doesNotMatch(email, /attorney|SAMPLE DRAFT|does not review|received your draft|attached|lowest|savings|cheapest|guarantee|quote-tool-demo/i);
+  assert.deepEqual(email.match(/https?:\/\/\S+/g), [
+    'https://www.dkbenefits.net/section125plantool',
+    'https://www.dkbenefits.net/instant-group-quote'
+  ]);
+  assert.match(S128Docgen.followUpEmailText(combined, { contact_name: '   ' }, links), /^Hi there,/);
+  assert.equal((html.match(/<a /g) || []).length, 2);
+  assert.match(html, /<a href="https:\/\/www\.dkbenefits\.net\/section125plantool">https:\/\/www\.dkbenefits\.net\/section125plantool<\/a>/);
+  assert.match(html, /<a href="https:\/\/www\.dkbenefits\.net\/instant-group-quote">https:\/\/www\.dkbenefits\.net\/instant-group-quote<\/a>/);
+  assert.doesNotMatch(html, /mailto:|tel:|<img|utm_|bit\.ly|tinyurl/i);
+  assert.match(html, /407-476-5076 \| www\.dkbenefits\.net/);
+  assert.doesNotMatch(html, /dan@dkbenefits\.net/);
+  assert.doesNotMatch(html, /<a [^>]*>407-476-5076<\/a>/);
+  assert.doesNotMatch(html, /<a [^>]*>[^<]*www\.dkbenefits\.net<\/a>/);
   const grantOnly = planFor({ funding_mode: 'employer_only' });
   assert.equal(S128Docgen.checklistLines(grantOnly).length, 5);
   assert.doesNotMatch(S128Docgen.plainText(S128Docgen.guideParagraphs(grantOnly)), /Section 125 amendment/);
@@ -314,6 +353,7 @@ test('LibreOffice renders each funding method and pdf-lib matches the text', asy
     const rendered = execFileSync('pdftotext', ['-layout', renderedPdf, '-'], { encoding: 'utf8' });
     assert.match(rendered, /Northwind Benefits LLC/);
     assert.match(rendered, /Prepared with DK Benefits/);
+    assert.match(rendered, /Page\s+1/);
     assert.doesNotMatch(rendered, /SAMPLE DRAFT/);
     assert.match(rendered, /Article 12/);
     assert.match(rendered, /January 31/);
@@ -331,6 +371,7 @@ test('LibreOffice renders each funding method and pdf-lib matches the text', asy
   assert.match(pdfText, /together cannot\s+exceed the annual limit/);
   assert.match(pdfText, /Prepared with DK Benefits/);
   assert.match(pdfText, /Not effective until signed by the employer/);
+  assert.match(pdfText, /Page 1/);
   assert.doesNotMatch(pdfText, /SAMPLE DRAFT/);
   assert.match(pdfText, /Ada Lopez/);
   const einLine = pdfText.split('\n').find(function (line) { return line.indexOf('Employer EIN:') !== -1; });
@@ -347,6 +388,7 @@ test('LibreOffice renders each funding method and pdf-lib matches the text', asy
   assert.match(amendmentText, /Authorized representative/);
   assert.match(amendmentText, /Signature:/);
   assert.match(amendmentText, /Date:/);
+  assert.match(amendmentText, /Page 1/);
   const guidePdf = await S128Pdf.buildPdf(S128Docgen.guideParagraphs(plan), { title: 'Section 128 implementation guide' });
   const guidePath = path.join(artifacts, 'combined-guide-pdflib.pdf');
   fs.writeFileSync(guidePath, Buffer.from(guidePdf));
@@ -407,4 +449,60 @@ test('documents do not state a payroll notice above 30 days', function () {
   assert.doesNotMatch(overText, /45 calendar days/);
   assert.match(overText, /30 calendar days before payday/);
   assert.match(overText, /subject to 30 calendar days of payroll processing notice/);
+});
+
+test('checklist states the plan’s own amounts and only mentions an amendment that was prepared', function () {
+  const lastLine = function (plan) { const lines = S128Docgen.checklistLines(plan); return lines[lines.length - 1]; };
+  const grantOnly = planFor({ funding_mode: 'employer_only', employer_annual_grant: '500', annual_cap_mode: 'fixed', fixed_annual_cap: '500' });
+  assert.equal(lastLine(grantOnly), 'Pay the $500 grant once a year for each participating employee, directly to the verified Trump account.');
+  const salaryFixed = planFor(Object.assign({ funding_mode: 'salary_reduction_only', employer_annual_grant: '', annual_cap_mode: 'fixed', fixed_annual_cap: '2000' }, salaryFields));
+  assert.match(lastLine(salaryFixed), /up to \$2,000 per employee per year\.$/);
+  const salary2028 = planFor(Object.assign({ funding_mode: 'salary_reduction_only', employer_annual_grant: '', effective_date: '2028-01-01' }, salaryFields, { cafeteria_amendment_date: '2028-01-01' }));
+  assert.match(lastLine(salary2028), /the per-employee Section 128 limit the IRS publishes for that year\.$/);
+  S128Docgen.checklistLines(salary2028).forEach(function (line) { assert.doesNotMatch(line, /\$2,500/); });
+  const noCafeteria = planFor({ funding_mode: 'combined', employer_annual_grant: '1000', has_existing_125_plan: 'no', election_cutoff_days: '5' });
+  assert.equal(S128Docgen.amendmentParagraphs(noCafeteria), null);
+  const guide = S128Docgen.plainText(S128Docgen.guideParagraphs(noCafeteria));
+  assert.doesNotMatch(guide, /Add the Section 125 amendment/);
+  assert.match(guide, /Adopt or confirm a Section 125 cafeteria plan and amend it for this benefit before any payroll deductions start\. No amendment was prepared\./);
+  const ownAccount = planFor({ funding_mode: 'employer_only', allow_employee_account: 'yes' });
+  assert.match(S128Docgen.plainText(S128Docgen.guideParagraphs(ownAccount)), /or the employee’s own account, if the employee is 17 or younger/);
+  const emailLast = function (plan) { const rows = S128Docgen.emailChecklistLines(plan); return rows[rows.length - 1]; };
+  assert.equal(emailLast(grantOnly), 'Pay the $500 grant once a year for each participating employee, straight to their verified Trump account.');
+  assert.equal(emailLast(salaryFixed), 'Start payroll deductions once your cafeteria plan allows them, up to $2,000 per employee per year.');
+  assert.match(emailLast(salary2028), /up to the per-employee Section 128 limit the IRS publishes for that year\.$/);
+  S128Docgen.emailChecklistLines(salary2028).forEach(function (line) { assert.doesNotMatch(line, /\$2,500/); });
+  assert.match(S128Docgen.emailChecklistLines(noCafeteria).join('\n'), /No amendment was prepared/);
+  assert.doesNotMatch(S128Docgen.emailChecklistLines(noCafeteria).join('\n'), /Add the Section 125 amendment/);
+  assert.match(S128Docgen.emailChecklistLines(ownAccount).join('\n'), /or the employee's own account, if the employee is 17 or younger/);
+});
+
+test('a past effective date tells the employer to sign promptly', function () {
+  const past = planFor({ effective_date: '2026-08-01' });
+  const line = S128Docgen.checklistLines(past)[0];
+  assert.match(line, /promptly, as soon as possible/);
+  assert.match(line, /August 1, 2026/);
+  assert.doesNotMatch(line, /before the effective date/);
+  assert.equal(S128Docgen.emailChecklistLines(past)[0], 'Sign and date the plan (page 1) as soon as you can.');
+});
+
+test('a name outside the PDF font still produces a PDF', async function () {
+  const plan = planFor({
+    employer_name: 'Łukasz Café LLC',
+    signer_name: 'Łukasz Café',
+    plan_name: 'Łukasz Café Trump Account Program'
+  });
+  assert.equal(S128Docgen.planFileName(plan), 'Lukasz_Cafe_LLC_Section_128_Plan_v0.5.docx');
+  const bytes = await S128Pdf.buildPdf(S128Docgen.planParagraphs(plan), { title: plan.plan_name });
+  const pdfPath = path.join(outDir, 'lukasz.pdf');
+  fs.writeFileSync(pdfPath, Buffer.from(bytes));
+  const text = execFileSync('pdftotext', ['-layout', pdfPath, '-'], { encoding: 'utf8' });
+  assert.match(text, /Lukasz Café LLC/);
+  assert.match(text, /Authorized representative: Lukasz Café/);
+  assert.match(text, /Page 1/);
+});
+
+test('file names keep accented and special letters readable', function () {
+  const plan = planFor({ employer_name: 'Café Łódź & Søn, Inc.', plan_name: 'Café Łódź Trump Account Program' });
+  assert.equal(S128Docgen.planFileName(plan), 'Cafe_Lodz_Son_Inc_Section_128_Plan_v0.5.docx');
 });

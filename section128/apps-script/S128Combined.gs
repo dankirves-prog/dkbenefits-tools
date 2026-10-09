@@ -2,17 +2,17 @@
  * Combined Section 128 Apps Script deploy file.
  * Generated from s128-model.js + s128-terms.js + s128-docgen.js + apps-script/Code.gs.
  * Paste this whole file into Apps Script as Code.gs. Do not edit by hand.
- * Template s128-v0.5-2026-10-08. Terms s128-terms-2026-10-08b.
+ * Template s128-v0.5.1-2026-10-09. Terms s128-terms-2026-10-08b.
  * The Terms of use are a draft for DK Benefits LLC counsel before go-live. They are not legal advice.
  */
 
 /**
  * Section 128 Trump Account Contribution Program — validation, limits, review flags.
- * Template s128-v0.5-2026-10-08. Guidance as of October 8, 2026.
+ * Template s128-v0.5.1-2026-10-09. Guidance as of October 8, 2026.
  * Same rules run in the browser and in the Apps Script.
  */
 var S128Model = (function () {
-  var TEMPLATE_VERSION = 's128-v0.5-2026-10-08';
+  var TEMPLATE_VERSION = 's128-v0.5.1-2026-10-09';
   var GUIDANCE_AS_OF = '2026-10-08';
   var FIRST_CONTRIBUTION_DATE = '2026-07-04';
   var PUBLISHED_S128_CEILING = 2500;
@@ -234,7 +234,7 @@ var S128Model = (function () {
       if (published) {
         return 'the Section 128(b) statutory limit for each calendar year ($2,500 for 2026 and 2027; as adjusted under Section 128(b)(2) for later years)';
       }
-      return 'the Section 128(b) statutory limit for each calendar year, as adjusted under Section 128(b)(2) (indexed dollar amounts after 2027 are not stated until the IRS publishes them)';
+      return 'the Section 128(b) statutory limit for each calendar year, as adjusted under Section 128(b)(2)';
     }
     var amt = formatMoney(plan.fixed_annual_cap);
     if (published) {
@@ -243,7 +243,7 @@ var S128Model = (function () {
       }
       return 'a fixed cap of ' + amt + ' per employee per calendar year, not to exceed the Section 128(b) limit ($2,500 for 2026 and 2027; as adjusted under Section 128(b)(2) for later years)';
     }
-    return 'a fixed cap of ' + amt + ' per employee per calendar year, not to exceed the Section 128(b) limit as adjusted under Section 128(b)(2) (no indexed amount after 2027 is stated because none has been published)';
+    return 'a fixed cap of ' + amt + ' per employee per calendar year, not to exceed the Section 128(b) limit as adjusted under Section 128(b)(2)';
   }
 
   function salaryCapacity(plan) {
@@ -276,9 +276,9 @@ var S128Model = (function () {
     if (!info) return '';
     if (info.unpublished) {
       if (info.fixedCap != null) {
-        return 'For ' + info.year + ', employees may elect up to ' + formatMoney(info.room) + ' through payroll if this fixed cap is used. The indexed Section 128(b) limit for ' + info.year + ' has not been published, so no higher figure is shown. Salary reduction can fund dependents’ accounts only.';
+        return 'For ' + info.year + ', employees may elect up to ' + formatMoney(info.room) + ' through payroll under this fixed cap. Salary reduction can fund dependents’ accounts only.';
       }
-      return 'Salary reduction for ' + info.year + ' is limited to the Section 128(b) amount for that year. The indexed figure has not been published, so this draft does not state a dollar capacity above the last published limit of ' + formatMoney(info.publishedCeiling) + '. Salary reduction can fund dependents’ accounts only.';
+      return 'Salary reduction for ' + info.year + ' follows the Section 128(b) limit for that year. Salary reduction can fund dependents’ accounts only.';
     }
     if (plan.funding_mode === 'combined') {
       var ceiling = info.statutory || info.cap;
@@ -441,6 +441,7 @@ var S128Model = (function () {
         else if (plan.cafeteria_amendment_date < FIRST_CONTRIBUTION_DATE) push(errors, 'cafeteria_amendment_date', 'The amendment cannot be effective before July 4, 2026.');
         else if (plan.cafeteria_amendment_date < asOf) push(errors, 'cafeteria_amendment_date', 'The Section 125 amendment must be prospective. Choose today or a later date.');
         else if (plan.cafeteria_amendment_date > addMonthsIso(asOf, 18)) push(errors, 'cafeteria_amendment_date', 'Choose an amendment date within the next 18 months.');
+        else if (isIsoDate(plan.effective_date) && plan.cafeteria_amendment_date < plan.effective_date) push(errors, 'cafeteria_amendment_date', 'The amendment effective date cannot be earlier than the program effective date.');
       } else {
         plan.cafeteria_plan_name = '';
         plan.cafeteria_amendment_date = '';
@@ -463,7 +464,7 @@ var S128Model = (function () {
     lead.contact_phone = phone ? formatPhone(phone) : '';
     if (lead.contact_name.length < 2 || lead.contact_name.length > 120) push(errors, 'contact_name', 'Enter the contact’s name.');
     if (lead.contact_title.length < 2 || lead.contact_title.length > 120) push(errors, 'contact_title', 'Enter the contact’s title.');
-    if (!validEmail(lead.contact_email)) push(errors, 'contact_email', 'Enter a valid email for the copy of this draft.');
+    if (!validEmail(lead.contact_email)) push(errors, 'contact_email', 'Enter a valid email address.');
     if (!phone) push(errors, 'contact_phone', 'Enter a 10-digit U.S. phone number.');
 
     var countRaw = String(src.total_employee_count == null ? '' : src.total_employee_count).trim().replace(/,/g, '');
@@ -525,7 +526,7 @@ var S128Model = (function () {
       if (lead.entity_type === 's_corp') {
         reasons.push('An owner or family member wants to participate in an S corporation. A 2-percent shareholder, with ownership attribution, is not treated as an employee for this program under the proposed-regulation preamble.');
       } else if (lead.entity_type === 'llc_partnership' || lead.entity_type === 'sole_prop') {
-        reasons.push('An owner wants to participate, but partners and sole proprietors are not eligible employees.');
+        reasons.push('An owner or family member wants to participate. Partners and sole proprietors are not eligible employees. A family member who is a common-law employee of the business may be eligible.');
       } else if (lead.entity_type === 'c_corp') {
         reasons.push('A C corporation owner-employee may participate if the person is a common-law employee. That person is usually highly compensated for testing.');
       } else {
@@ -539,7 +540,7 @@ var S128Model = (function () {
       reasons.push('Salary reduction has to run through a Section 125 cafeteria plan. No cafeteria plan was confirmed, so this sample does not include an amendment. A cafeteria plan must be adopted or confirmed before salary reduction can start.');
     }
     if (isIsoDate(plan.effective_date) && plan.effective_date < asOf) {
-      reasons.push('The effective date is before today. The sample can be used prospectively only if that date is still available.');
+      reasons.push('The effective date is before today. Contributions made before the plan is signed may not qualify. Consider using today or a later date.');
     }
     if (isIsoDate(plan.effective_date) && +plan.effective_date.slice(0, 4) >= 2028) {
       reasons.push('The Section 128 limit for ' + plan.effective_date.slice(0, 4) + ' has not been published. This sample does not invent an indexed dollar amount. Confirm the published limit before any contribution is made for that year.');
@@ -634,7 +635,7 @@ var S128Terms = (function () {
   };
 })();
 /**
- * Deterministic Section 128 DOCX builder. Template s128-v0.5-2026-10-08.
+ * Deterministic Section 128 DOCX builder. Template s128-v0.5.1-2026-10-09.
  * Language is the Employer Plan (Articles 1–12 and the adoption agreement),
  * with the October 8, 2026 research edits applied. No live drafting.
  */
@@ -666,6 +667,15 @@ var S128Docgen = (function () {
     return days + ' calendar days of employment';
   }
 
+  function noticeDays(plan) {
+    var n = Number(plan.election_cutoff_days);
+    if (!isFinite(n)) n = 0;
+    n = Math.floor(n);
+    if (n < 0) n = 0;
+    if (n > 30) n = 30;
+    return String(n);
+  }
+
   function employersText(plan) {
     if (!plan.participating_employers || !plan.participating_employers.length) {
       return 'None (the sponsoring Employer is the sole participating employer)';
@@ -683,7 +693,7 @@ var S128Docgen = (function () {
   function accountLimitSentence(plan) {
     var year = +String(plan.effective_date).slice(0, 4);
     if (year >= 2028) {
-      return 'Section 530A imposes a separate account-level annual contribution limit. The base amount is adjusted after 2027. The indexed amount is not stated here because it has not been published. Section 128 contributions count toward that limit. Qualified pilot, qualified general, and qualified rollover contributions receive their applicable statutory treatment. The employee and responsible party must coordinate other account deposits. The administrator processes trustee rejections and known errors. The Employer is not required to enforce the separate account-level limit.';
+      return 'Section 530A imposes a separate account-level annual contribution limit. The base amount is adjusted after 2027. Section 128 contributions count toward that limit. Qualified pilot, qualified general, and qualified rollover contributions receive their applicable statutory treatment. The employee and responsible party must coordinate other account deposits. The administrator processes trustee rejections and known errors. The Employer is not required to enforce the separate account-level limit.';
     }
     return 'Section 530A imposes a separate account-level annual contribution limit, generally $5,000 for 2026 and 2027, adjusted after 2027. Section 128 contributions count toward that limit. Qualified pilot, qualified general, and qualified rollover contributions receive their applicable statutory treatment. The employee and responsible party must coordinate other account deposits. The administrator processes trustee rejections and known errors. The Employer is not required to enforce the separate account-level limit.';
   }
@@ -760,7 +770,7 @@ var S128Docgen = (function () {
     }
     return [
       { style: 'Heading2', text: 'Article 7 Salary reduction' },
-      { style: null, text: 'Salary reduction is elected in the Adoption Agreement. An employee may initiate, increase, decrease, or revoke an election prospectively at any time during the plan year, subject to ' + plan.election_cutoff_days + ' calendar days of payroll processing notice. Administration must permit changes and revocations to become effective at least monthly and only as to salary not yet currently available. No qualifying life event is required.' },
+      { style: null, text: 'The Adoption Agreement makes salary reduction available under this Program. An employee may initiate, increase, decrease, or revoke an election prospectively at any time during the plan year, subject to ' + noticeDays(plan) + ' calendar days of payroll processing notice. Administration must permit changes and revocations to become effective at least monthly and only as to salary not yet currently available. No qualifying life event is required.' },
       { style: null, text: 'Elections identify the amount per payroll and the effective payroll date. The administrator limits deductions to the available annual amount, applicable compensation, and verified eligible dependent accounts. No retroactive election is permitted. Salary reduction stops before the dependent’s growth period ends and when the employee revokes the election, employment or eligibility ends, or applicable limits require a stop.' },
       { style: null, text: 'The employer remits authorized salary reduction promptly under its regular payroll remittance process. Deductions continue only while they can be sent to valid eligible accounts. If a contribution is rejected, the administrator investigates, retries only when a lawful eligible transfer is available, and otherwise returns an untransferred deduction through payroll with the appropriate wage and withholding adjustments. ' + (plan.funding_mode === 'combined'
         ? 'A correction does not authorize retroactive salary reduction or a cash substitute for an employer grant.'
@@ -771,7 +781,7 @@ var S128Docgen = (function () {
   function article8Notice(plan) {
     var items = 'eligibility, funding, contribution limits, designation requirements, ';
     if (usesSalary(plan)) items += 'available election changes, ';
-    items += 'tax treatment, the administrator contact, and that an account automatically created by the Treasury Department cannot receive Program contributions until a parent or guardian claims it and the account is activated';
+    items += 'tax treatment, the administrator contact, and that an account automatically created by the Treasury Department cannot receive Program contributions; after a parent or guardian claims it, contributions can go only to the claimed account, once that account is activated';
     return 'The employer gives all eligible employees reasonable written notice of the program’s availability and terms before participation and when material terms change. The notice identifies ' + items + '. Electronic delivery must provide a practical way for employees to obtain the terms.';
   }
 
@@ -851,7 +861,7 @@ var S128Docgen = (function () {
       rows.push({ style: null, text: 'Employer grant recipients: ' + recipientText(plan) + '.' });
     }
     if (usesSalary(plan)) {
-      rows.push({ style: null, text: 'Salary reduction election processing notice: ' + plan.election_cutoff_days + ' calendar days before payday' });
+      rows.push({ style: null, text: 'Salary reduction election processing notice: ' + noticeDays(plan) + ' calendar days before payday' });
       if (plan.cafeteria_plan_name) {
         rows.push({ style: null, text: 'Section 125 plan name: ' + plan.cafeteria_plan_name });
         rows.push({ style: null, text: 'Section 125 amendment effective date: ' + longDate(plan.cafeteria_amendment_date) });
@@ -898,7 +908,7 @@ var S128Docgen = (function () {
     rows.push({ style: 'Heading2', text: 'Article 6 Designation, certification, and verification' });
     rows.push({ style: null, text: 'Before any contribution, an employee submits a paper or electronic designation identifying the contribution year, each beneficiary and date of birth, the relationship to the employee, the trustee, secure payment instructions, and the allocation percentage. The employee certifies in writing that each beneficiary is the employee or an anticipated Section 152 dependent for that contribution year and that no facts known to the employee make the beneficiary ineligible for that calendar year.' });
     rows.push({ style: null, text: 'The employee renews the certification for each contribution year and promptly reports changes affecting eligibility, dependency, trustee, account status, allocation, or contributions from other employers. The employer may rely on the relationship and eligibility certifications unless it has actual knowledge they are incorrect. Dependency or ownership questions requiring interpretation are resolved before payment.' });
-    rows.push({ style: null, text: 'The employer will independently verify that each destination is a valid Trump account using information supplied by the trustee, payroll processor, or another service provider through a method reasonably designed for that purpose. An employee’s assertion that an account is valid, standing alone, is insufficient. Verification confirms that the account can accept contributions under this Program. An account automatically established by the Secretary that has not been claimed and activated cannot receive Program contributions. Verification is documented before initial payment and refreshed when an account or trustee changes or contrary information arises.' });
+    rows.push({ style: null, text: 'The employer will independently verify that each destination is a valid Trump account using information supplied by the trustee, payroll processor, or another service provider through a method reasonably designed for that purpose. An employee’s assertion that an account is valid, standing alone, is insufficient. Verification confirms that the account can accept contributions under this Program. An account automatically established by the Secretary (an auto account) cannot receive Program contributions. After an auto account is claimed, Program contributions may be made only to the claimed Trump account that receives its balance, once that account is activated. Verification is documented before initial payment and refreshed when an account or trustee changes or contrary information arises.' });
     rows.push({ style: null, text: 'The employer will not restrict contributions to accounts maintained by a selected trustee or list of trustees. A payroll vendor’s limited trustee support does not change that rule. The administrator will arrange a workable alternative transfer process for a valid designated account. Contributions pending verification or transfer are tracked and resolved. The employer does not promise tax qualification or retroactive dating for delayed deposits.' });
     article7(plan).forEach(function (row) { rows.push(row); });
 
@@ -941,7 +951,7 @@ var S128Docgen = (function () {
       { style: 'Heading2', text: 'Eligibility and amounts' },
       { style: null, text: 'Participation requires eligibility under both this cafeteria plan and the separate Section 128 program named ' + plan.plan_name + ' (the Program). The Section 128 program annual cap is ' + S128Model.capText(plan) + '. ' + capShare + ' Account designation, certification, verification, allocation, notices, and corrections follow the Program.' },
       { style: 'Heading2', text: 'Prospective election changes' },
-      { style: null, text: 'A participant may initiate, increase, decrease, or revoke a salary reduction election for this benefit prospectively at any time during the plan year. No qualifying life event is required. The participant must provide ' + plan.election_cutoff_days + ' calendar days of payroll processing notice. Administration must permit changes and revocations to become effective at least monthly and only as to salary not yet currently available. No retroactive election or change is permitted. This provision controls over a general irrevocability or change-in-status restriction in the cafeteria plan solely for this benefit.' },
+      { style: null, text: 'A participant may initiate, increase, decrease, or revoke a salary reduction election for this benefit prospectively at any time during the plan year. No qualifying life event is required. The participant must provide ' + noticeDays(plan) + ' calendar days of payroll processing notice. Administration must permit changes and revocations to become effective at least monthly and only as to salary not yet currently available. No retroactive election or change is permitted. This provision controls over a general irrevocability or change-in-status restriction in the cafeteria plan solely for this benefit.' },
       { style: 'Heading2', text: 'Payment, tax treatment, and compliance' },
       { style: null, text: 'Authorized deductions are remitted directly to independently verified Trump account trustees under the Section 128 program. Elections end or are adjusted when the participant or account becomes ineligible, the beneficiary’s growth period ends, the participant revokes an election, the maximum is reached, or a compliance limit applies. Payroll will apply federal gross income exclusion only to qualifying amounts and will retain applicable Social Security, Medicare, unemployment, and other required wage treatment. This amendment creates no payroll-tax exclusion.' },
       { style: null, text: 'The employer will evaluate cafeteria plan nondiscrimination independently of Section 128 testing. The amendment does not establish an FSA grace period, carryover, uniform coverage rule, or prior-year contribution designation. Except for the specific benefit and election provisions above, the cafeteria plan remains governed by its existing terms and applicable law.' }
@@ -967,17 +977,87 @@ var S128Docgen = (function () {
     ];
   }
 
+  function checklistLimitText(plan) {
+    if (plan.annual_cap_mode === 'fixed' && plan.fixed_annual_cap) return money(plan, plan.fixed_annual_cap) + ' per employee per year';
+    var year = +String(plan.effective_date || '').slice(0, 4);
+    var known = S128Model.limitForYear(year);
+    if (known) return money(plan, known.s128) + ' per employee per year';
+    return 'the per-employee Section 128 limit the IRS publishes for that year';
+  }
+
+  function checklistContributionLine(plan) {
+    var limit = checklistLimitText(plan);
+    var grant = usesGrant(plan) ? money(plan, plan.employer_annual_grant) : '';
+    if (plan.funding_mode === 'employer_only') {
+      return 'Pay the ' + grant + ' grant once a year for each participating employee, directly to the verified Trump account.';
+    }
+    if (plan.funding_mode === 'salary_reduction_only') {
+      return 'Start payroll deductions once the cafeteria plan permits them, up to ' + limit + '.';
+    }
+    return 'Pay the ' + grant + ' grant once a year and start payroll deductions once the cafeteria plan permits them. Together they can’t exceed ' + limit + '.';
+  }
+
+  function signChecklistLine(plan) {
+    var when = longDate(plan.effective_date);
+    var today = S128Model.todayIso();
+    if (plan.effective_date && today && plan.effective_date < today) {
+      return 'Sign and date the plan (page 1) promptly, as soon as possible. It takes effect on ' + when + '.';
+    }
+    return 'Sign and date the plan (page 1) before the effective date (' + when + ').';
+  }
+
+  function emailSignLine(plan) {
+    var when = longDate(plan.effective_date);
+    var today = S128Model.todayIso();
+    if (plan.effective_date && today && plan.effective_date < today) {
+      return 'Sign and date the plan (page 1) as soon as you can.';
+    }
+    return 'Sign and date the plan (page 1) before ' + when + '.';
+  }
+
+  function emailContributionLine(plan) {
+    var limit = checklistLimitText(plan);
+    var grant = usesGrant(plan) ? money(plan, plan.employer_annual_grant) : '';
+    if (plan.funding_mode === 'employer_only') {
+      return 'Pay the ' + grant + ' grant once a year for each participating employee, straight to their verified Trump account.';
+    }
+    if (plan.funding_mode === 'salary_reduction_only') {
+      return 'Start payroll deductions once your cafeteria plan allows them, up to ' + limit + '.';
+    }
+    return 'Pay the ' + grant + ' grant once a year and start payroll deductions once your cafeteria plan allows them. Together they can\'t go over ' + limit + '.';
+  }
+
+  function emailChecklistLines(plan) {
+    var lines = [emailSignLine(plan)];
+    if (usesSalary(plan)) {
+      lines.push(plan.cafeteria_plan_name
+        ? 'Add the Section 125 amendment to your cafeteria plan and sign it.'
+        : 'Adopt or confirm a Section 125 cafeteria plan and amend it for this benefit before any payroll deductions start. No amendment was prepared.');
+    }
+    lines.push('Let payroll know the contributions aren\'t subject to income tax, but Social Security and Medicare still apply. They go on the W-2 in box 12, code TA.');
+    lines.push('Send your employees a short note letting them know about the program.');
+    lines.push(plan.allow_employee_account
+      ? 'Get each employee\'s child\'s Trump account info (or the employee\'s own account, if the employee is 17 or younger) and make sure the account is active. If the Treasury opened it automatically, a parent has to claim it first.'
+      : 'Get each employee\'s child\'s Trump account info and make sure the account is active. If the Treasury opened it automatically, a parent has to claim it first.');
+    lines.push(emailContributionLine(plan));
+    return lines;
+  }
+
   function checklistLines(plan) {
     var lines = [
-      'Sign and date the plan (page 1) before the effective date (' + longDate(plan.effective_date) + ').'
+      signChecklistLine(plan)
     ];
     if (usesSalary(plan)) {
-      lines.push('Add the Section 125 amendment to your cafeteria plan and sign it.');
+      lines.push(plan.cafeteria_plan_name
+        ? 'Add the Section 125 amendment to your cafeteria plan and sign it.'
+        : 'Adopt or confirm a Section 125 cafeteria plan and amend it for this benefit before any payroll deductions start. No amendment was prepared.');
     }
     lines.push('Tell payroll: contributions are excluded from income tax but still subject to Social Security and Medicare, reported on W-2 box 12 code TA.');
     lines.push('Give employees a short written notice of the program.');
-    lines.push('Collect each employee’s child’s Trump account information and make sure the account is active. Accounts the Treasury opened automatically must be claimed by a parent first.');
-    lines.push('Start contributions through payroll, up to $2,500 per employee per year.');
+    lines.push(plan.allow_employee_account
+      ? 'Collect Trump account information for each employee’s child (or the employee’s own account, if the employee is 17 or younger) and make sure the account is active. Accounts the Treasury opened automatically must be claimed by a parent first.'
+      : 'Collect each employee’s child’s Trump account information and make sure the account is active. Accounts the Treasury opened automatically must be claimed by a parent first.');
+    lines.push(checklistContributionLine(plan));
     return lines;
   }
 
@@ -992,31 +1072,80 @@ var S128Docgen = (function () {
     return rows;
   }
 
-  function visitorEmailText(plan, lead) {
-    var attached = usesSalary(plan) && plan.cafeteria_plan_name
-      ? 'Your plan, Section 125 amendment, and implementation checklist are attached.'
-      : 'Your plan and implementation checklist are attached.';
+  function followUpFirstName(lead) {
+    var name = String(lead && lead.contact_name || '').trim();
+    var first = name.split(/\s+/)[0] || '';
+    return first;
+  }
+
+  function followUpEmailText(plan, lead, links) {
+    links = links || {};
+    lead = lead || {};
+    plan = plan || {};
+    var section125 = links.section125Url || '';
+    var rates = links.ratesUrl || '';
+    var first = followUpFirstName(lead);
+    var employer = plan.employer_name || 'your company';
     var lines = [
-      'Hello ' + (lead.contact_name || '') + ',',
+      first ? ('Hi ' + first + ',') : 'Hi there,',
       '',
-      'Here are the Section 128 program documents for ' + plan.employer_name + '.',
-      attached,
+      'I just saw you put together your Section 128 plan for ' + employer + '. Thanks so much for giving my tool a try. I really appreciate it!',
       '',
-      'Employee notices, salary-reduction election forms, and account designation forms aren\'t included.',
+      'Just a few quick reminders so you can get it up and running:',
       ''
     ];
-    checklistLines(plan).forEach(function (line, index) {
+    emailChecklistLines(plan).forEach(function (line, index) {
       lines.push((index + 1) + '. ' + line);
     });
     lines.push(
       '',
       'Your tax advisor can help with anything specific to your situation.',
       '',
-      'Questions about DK Benefits’ services? 407-476-5076 · dan@dkbenefits.net',
+      'Oh, and if you ever need a Section 125 plan, or yours could use a refresh, I\'ve got a free tool for that too:',
+      section125,
       '',
-      'This was created with an educational tool and isn\'t legal or tax advice.'
+      'Also, just so you know, I\'m an employee benefits broker. No pressure at all, but I\'d be happy to help you shop and negotiate your group health and other benefits. I even have some rates you can check out online right now:',
+      rates,
+      '',
+      'Would you mind giving me a shot to see what I can do for you? I\'d love to hear from you.',
+      '',
+      'Also, just so it\'s clear, I don\'t sell, market, open, or administer Trump accounts. And legally I have to mention that the tool is educational and isn\'t legal or tax advice.',
+      '',
+      'Daniel Kirves',
+      'Benefits Broker | 20 Years Exp | DK Benefits',
+      '407-476-5076 | www.dkbenefits.net',
+      '6000 Metrowest Blvd #200 Orlando, FL 32835',
+      '',
+      'Agency Lic# L109331'
     );
     return lines.join('\n');
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function followUpEmailHtml(plan, lead, links) {
+    links = links || {};
+    var allowed = {};
+    if (links.section125Url) allowed[links.section125Url] = true;
+    if (links.ratesUrl) allowed[links.ratesUrl] = true;
+    var html = followUpEmailText(plan, lead, links).split('\n').map(function (line) {
+      if (allowed[line]) {
+        var safe = escapeHtml(line);
+        return '<a href="' + safe + '">' + safe + '</a>';
+      }
+      return escapeHtml(line);
+    }).join('<br>\n');
+    return '<div>' + html + '</div>';
+  }
+
+  function visitorEmailText(plan, lead, links) {
+    return followUpEmailText(plan, lead, links);
   }
 
   function paragraphXml(row) {
@@ -1057,8 +1186,17 @@ var S128Docgen = (function () {
 
   function footerXml() {
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-      '<w:ftr xmlns:w="' + W + '"><w:p><w:pPr><w:pStyle w:val="Footer"/></w:pPr>' +
-      '<w:r><w:t xml:space="preserve">' + xml(FOOTER) + '</w:t></w:r></w:p></w:ftr>';
+      '<w:ftr xmlns:w="' + W + '">' +
+      '<w:p><w:pPr><w:pStyle w:val="Footer"/></w:pPr>' +
+      '<w:r><w:t xml:space="preserve">' + xml(FOOTER) + '</w:t></w:r></w:p>' +
+      '<w:p><w:pPr><w:pStyle w:val="Footer"/><w:jc w:val="right"/></w:pPr>' +
+      '<w:r><w:t xml:space="preserve">Page </w:t></w:r>' +
+      '<w:r><w:fldChar w:fldCharType="begin"/></w:r>' +
+      '<w:r><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r>' +
+      '<w:r><w:fldChar w:fldCharType="separate"/></w:r>' +
+      '<w:r><w:t>1</w:t></w:r>' +
+      '<w:r><w:fldChar w:fldCharType="end"/></w:r>' +
+      '</w:p></w:ftr>';
   }
 
   function stylesXml() {
@@ -1139,7 +1277,7 @@ var S128Docgen = (function () {
 
   function settingsXml() {
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-      '<w:settings xmlns:w="' + W + '"><w:compat><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/></w:compat></w:settings>';
+      '<w:settings xmlns:w="' + W + '"><w:compat><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/></w:compat><w:updateFields w:val="true"/></w:settings>';
   }
 
   function packageParts(rows, props) {
@@ -1231,8 +1369,16 @@ var S128Docgen = (function () {
     return zipStore(packageParts(rows, props || {}));
   }
 
+  var FILE_LETTERS = { 'Ł': 'L', 'ł': 'l', 'Ø': 'O', 'ø': 'o', 'Đ': 'D', 'đ': 'd', 'ß': 'ss', 'Æ': 'AE', 'æ': 'ae', 'Œ': 'OE', 'œ': 'oe', 'Þ': 'Th', 'þ': 'th' };
+
+  function asciiLetters(value) {
+    var s = String(value || '');
+    if (s.normalize) s = s.normalize('NFD').replace(/[̀-ͯ]/g, '');
+    return s.replace(/[ŁłØøĐđßÆæŒœÞþ]/g, function (ch) { return FILE_LETTERS[ch]; });
+  }
+
   function safeFilePart(name) {
-    var s = String(name || 'Employer').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 50);
+    var s = asciiLetters(name || 'Employer').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 50);
     return s || 'Employer';
   }
 
@@ -1282,10 +1428,13 @@ var S128Docgen = (function () {
   return {
     FOOTER: FOOTER,
     checklistLines: checklistLines,
+    emailChecklistLines: emailChecklistLines,
     planParagraphs: planParagraphs,
     amendmentParagraphs: amendmentParagraphs,
     guideParagraphs: guideParagraphs,
     visitorEmailText: visitorEmailText,
+    followUpEmailText: followUpEmailText,
+    followUpEmailHtml: followUpEmailHtml,
     buildDocx: buildDocx,
     buildPlanDocx: buildPlanDocx,
     buildAmendmentDocx: buildAmendmentDocx,
@@ -1322,6 +1471,15 @@ var S128_MAX_FILE_BYTES = 1500000;
 var S128_MAX_FILES = 8;
 var S128_DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 var S128_PDF_MIME = 'application/pdf';
+var S128_FOLLOWUPS_SHEET = 'FollowUps';
+var S128_FOLLOWUP_DELAY_MS = 10 * 60 * 1000;
+var S128_FOLLOWUP_HANDLER = 's128SendDueFollowUps';
+var SECTION125_URL = 'https://www.dkbenefits.net/section125plantool';
+var RATES_URL = 'https://www.dkbenefits.net/instant-group-quote';
+
+var S128_FOLLOWUP_HEADERS = [
+  'timestamp', 'email', 'name', 'company', 'plan_json', 'status', 'test', 'submission_id', 'error', 'sent_at'
+];
 
 var S128_SUBMISSION_HEADERS = [
   'timestamp', 'submission_id', 'status', 'test', 'company', 'state', 'contact_name',
@@ -1385,19 +1543,21 @@ function s128Handle_(payload) {
     return { ok: false, error: checked.errors[0] ? checked.errors[0].message : 'Check the form and try again.', fields: checked.errors };
   }
 
+  s128EnsureFollowUpTrigger_();
+
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
   var existing;
   var sendLead = true;
-  var wantVisitor = payload.sendVisitorCopy !== false;
   try {
     existing = s128FindSubmission_(String(payload.submissionId));
-    if (existing && existing.leadEmailed && (existing.visitorEmailed || !wantVisitor)) {
+    if (existing && existing.leadEmailed) {
       return {
         ok: true,
         duplicate: true,
         leadEmailed: true,
-        visitorEmailed: !!existing.visitorEmailed
+        visitorEmailed: false,
+        followUpQueued: s128AppendFollowUp_(payload, checked)
       };
     }
     if (existing && existing.status === 'pending' && !existing.leadEmailed) {
@@ -1407,7 +1567,6 @@ function s128Handle_(payload) {
       }
     }
     sendLead = !(existing && existing.leadEmailed);
-    wantVisitor = wantVisitor && !(existing && existing.visitorEmailed);
     if (sendLead && s128CountLeadsToday_(String(payload.submissionId)) >= S128_DAILY_LEAD_CAP) {
       s128LogEvent_('rejected_daily_cap', payload.submissionId, 'cap');
       return { ok: false, error: 'The daily email limit has been reached. Questions about DK Benefits’ services? 407-476-5076 · dan@dkbenefits.net' };
@@ -1441,41 +1600,37 @@ function s128Handle_(payload) {
   }
 
   var leadSent = !!(existing && existing.leadEmailed);
-  var visitorSent = !!(existing && existing.visitorEmailed);
   if (sendLead) {
     try {
       MailApp.sendEmail(s128LeadMessage_(payload, checked, files));
       leadSent = true;
-      s128Mark_(String(payload.submissionId), 'partial', '', true, visitorSent);
+      s128Mark_(String(payload.submissionId), 'partial', '', true, false);
     } catch (mailErr) {
-      s128Mark_(String(payload.submissionId), 'failed', mailErr.message || 'mail failed', false, visitorSent);
-      return { ok: false, error: 'The sample could not be emailed.' };
+      s128Mark_(String(payload.submissionId), 'failed', mailErr.message || 'mail failed', false, false);
+      return { ok: false, error: 'The request could not be sent.' };
     }
   }
 
-  var visitorLimited = false;
-  if (wantVisitor) {
-    if (quota < (sendLead ? 2 : 1)) {
-      visitorLimited = true;
-    } else if (!s128VisitorAllowed_(checked.lead.contact_email)) {
-      visitorLimited = true;
-    } else {
-      try {
-        MailApp.sendEmail(s128VisitorMessage_(payload, checked, files));
-        visitorSent = true;
-      } catch (visitorErr) {
-        visitorSent = false;
-      }
+  var followQueued = false;
+  if (leadSent && payload.sendVisitorCopy !== false) {
+    var queueLock = LockService.getScriptLock();
+    queueLock.waitLock(20000);
+    try {
+      followQueued = s128AppendFollowUp_(payload, checked);
+    } catch (queueErr) {
+      followQueued = false;
+    } finally {
+      queueLock.releaseLock();
     }
   }
 
-  s128Mark_(String(payload.submissionId), 'sent', '', leadSent, visitorSent);
-  s128LogEvent_('sent', payload.submissionId, (leadSent ? 'dan' : '') + (visitorSent ? '+visitor' : ''));
+  s128Mark_(String(payload.submissionId), 'sent', '', leadSent, false);
+  s128LogEvent_('sent', payload.submissionId, (leadSent ? 'dan' : '') + (followQueued ? '+queued' : ''));
   return {
     ok: true,
     leadEmailed: leadSent,
-    visitorEmailed: visitorSent,
-    visitorRateLimited: visitorLimited,
+    visitorEmailed: false,
+    followUpQueued: followQueued,
     duplicate: false
   };
 }
@@ -1601,18 +1756,133 @@ function s128LeadMessage_(payload, checked, files) {
   };
 }
 
-function s128VisitorMessage_(payload, checked, files) {
-  var plan = checked.plan;
-  var subject = 'Your Section 128 program documents — ' + plan.employer_name;
-  if (payload && payload.test) subject = '[TEST] ' + subject;
+function s128FollowUpPlan_(plan) {
   return {
-    to: checked.lead.contact_email,
-    subject: subject,
-    body: S128Docgen.visitorEmailText(plan, checked.lead),
-    name: 'DK Benefits LLC',
-    replyTo: S128_NOTIFY_EMAIL,
-    attachments: files
+    employer_name: plan.employer_name,
+    funding_mode: plan.funding_mode,
+    employer_annual_grant: plan.employer_annual_grant,
+    annual_cap_mode: plan.annual_cap_mode,
+    fixed_annual_cap: plan.fixed_annual_cap,
+    effective_date: plan.effective_date,
+    cafeteria_plan_name: plan.cafeteria_plan_name || '',
+    allow_employee_account: !!plan.allow_employee_account
   };
+}
+
+function s128AppendFollowUp_(payload, checked) {
+  if (payload.sendVisitorCopy === false) return false;
+  var email = checked.lead && checked.lead.contact_email;
+  if (!email) return false;
+  var sheet = s128Sheet_(S128_FOLLOWUPS_SHEET, S128_FOLLOWUP_HEADERS);
+  var values = sheet.getDataRange().getValues();
+  var id = String(payload.submissionId);
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][7]) === id) return true;
+  }
+  sheet.appendRow([
+    new Date(s128Now_()).toISOString(),
+    email,
+    checked.lead.contact_name || '',
+    checked.plan.employer_name || '',
+    JSON.stringify(s128FollowUpPlan_(checked.plan)),
+    'pending',
+    payload.test ? 'yes' : 'no',
+    id,
+    '',
+    ''
+  ]);
+  return true;
+}
+
+function s128FollowUpMessage_(row) {
+  var plan = {};
+  try { plan = JSON.parse(String(row[4] || '{}')); } catch (err) { plan = {}; }
+  var subject = 'Thanks for using my Section 128 tool!';
+  if (String(row[6]) === 'yes') subject = '[TEST] ' + subject;
+  var links = { section125Url: SECTION125_URL, ratesUrl: RATES_URL };
+  var lead = { contact_name: String(row[2] || '') };
+  return {
+    to: String(row[1] || ''),
+    subject: subject,
+    body: S128Docgen.followUpEmailText(plan, lead, links),
+    htmlBody: S128Docgen.followUpEmailHtml(plan, lead, links),
+    name: 'Daniel Kirves',
+    replyTo: S128_NOTIFY_EMAIL
+  };
+}
+
+function s128FollowUpSentToday_(values, email) {
+  var day = s128Today_();
+  var target = String(email || '').toLowerCase();
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][1] || '').toLowerCase() !== target) continue;
+    if (String(values[i][5]) !== 'sent') continue;
+    if (String(values[i][9] || '').slice(0, 10) === day) return true;
+  }
+  return false;
+}
+
+function s128SendDueFollowUps() {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var sheet = s128Sheet_(S128_FOLLOWUPS_SHEET, S128_FOLLOWUP_HEADERS);
+    var values = sheet.getDataRange().getValues();
+    var now = s128Now_();
+    for (var i = 1; i < values.length; i++) {
+      if (String(values[i][5]) !== 'pending') continue;
+      var ts = Date.parse(String(values[i][0] || ''));
+      if (isNaN(ts) || now - ts < S128_FOLLOWUP_DELAY_MS) continue;
+      var email = String(values[i][1] || '');
+      var rowNumber = i + 1;
+      if (s128FollowUpSentToday_(values, email)) {
+        sheet.getRange(rowNumber, 6).setValue('skipped');
+        sheet.getRange(rowNumber, 9).setValue('already sent today');
+        values[i][5] = 'skipped';
+        continue;
+      }
+      if (!s128VisitorAllowed_(email)) {
+        sheet.getRange(rowNumber, 6).setValue('skipped');
+        sheet.getRange(rowNumber, 9).setValue('hourly limit');
+        values[i][5] = 'skipped';
+        continue;
+      }
+      try {
+        var message = s128FollowUpMessage_(values[i]);
+        if (message.attachments) delete message.attachments;
+        MailApp.sendEmail(message);
+        var sentAt = new Date(s128Now_()).toISOString();
+        sheet.getRange(rowNumber, 6).setValue('sent');
+        sheet.getRange(rowNumber, 9).setValue('');
+        sheet.getRange(rowNumber, 10).setValue(sentAt);
+        values[i][5] = 'sent';
+        values[i][9] = sentAt;
+      } catch (err) {
+        sheet.getRange(rowNumber, 6).setValue('failed');
+        sheet.getRange(rowNumber, 9).setValue(err && err.message ? String(err.message).slice(0, 300) : 'mail failed');
+        values[i][5] = 'failed';
+      }
+    }
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function setupFollowUpTrigger() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === S128_FOLLOWUP_HANDLER) return;
+  }
+  ScriptApp.newTrigger(S128_FOLLOWUP_HANDLER).timeBased().everyMinutes(5).create();
+}
+
+function s128EnsureFollowUpTrigger_() {
+  try { setupFollowUpTrigger(); } catch (err) {}
+}
+
+function s128Now_() {
+  if (typeof S128_TEST_NOW === 'number' && isFinite(S128_TEST_NOW)) return S128_TEST_NOW;
+  return Date.now();
 }
 
 function s128VisitorAllowed_(email) {

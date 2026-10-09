@@ -1,10 +1,10 @@
 /**
  * Section 128 Trump Account Contribution Program — validation, limits, review flags.
- * Template s128-v0.5-2026-10-08. Guidance as of October 8, 2026.
+ * Template s128-v0.5.1-2026-10-09. Guidance as of October 8, 2026.
  * Same rules run in the browser and in the Apps Script.
  */
 var S128Model = (function () {
-  var TEMPLATE_VERSION = 's128-v0.5-2026-10-08';
+  var TEMPLATE_VERSION = 's128-v0.5.1-2026-10-09';
   var GUIDANCE_AS_OF = '2026-10-08';
   var FIRST_CONTRIBUTION_DATE = '2026-07-04';
   var PUBLISHED_S128_CEILING = 2500;
@@ -226,7 +226,7 @@ var S128Model = (function () {
       if (published) {
         return 'the Section 128(b) statutory limit for each calendar year ($2,500 for 2026 and 2027; as adjusted under Section 128(b)(2) for later years)';
       }
-      return 'the Section 128(b) statutory limit for each calendar year, as adjusted under Section 128(b)(2) (indexed dollar amounts after 2027 are not stated until the IRS publishes them)';
+      return 'the Section 128(b) statutory limit for each calendar year, as adjusted under Section 128(b)(2)';
     }
     var amt = formatMoney(plan.fixed_annual_cap);
     if (published) {
@@ -235,7 +235,7 @@ var S128Model = (function () {
       }
       return 'a fixed cap of ' + amt + ' per employee per calendar year, not to exceed the Section 128(b) limit ($2,500 for 2026 and 2027; as adjusted under Section 128(b)(2) for later years)';
     }
-    return 'a fixed cap of ' + amt + ' per employee per calendar year, not to exceed the Section 128(b) limit as adjusted under Section 128(b)(2) (no indexed amount after 2027 is stated because none has been published)';
+    return 'a fixed cap of ' + amt + ' per employee per calendar year, not to exceed the Section 128(b) limit as adjusted under Section 128(b)(2)';
   }
 
   function salaryCapacity(plan) {
@@ -268,9 +268,9 @@ var S128Model = (function () {
     if (!info) return '';
     if (info.unpublished) {
       if (info.fixedCap != null) {
-        return 'For ' + info.year + ', employees may elect up to ' + formatMoney(info.room) + ' through payroll if this fixed cap is used. The indexed Section 128(b) limit for ' + info.year + ' has not been published, so no higher figure is shown. Salary reduction can fund dependents’ accounts only.';
+        return 'For ' + info.year + ', employees may elect up to ' + formatMoney(info.room) + ' through payroll under this fixed cap. Salary reduction can fund dependents’ accounts only.';
       }
-      return 'Salary reduction for ' + info.year + ' is limited to the Section 128(b) amount for that year. The indexed figure has not been published, so this draft does not state a dollar capacity above the last published limit of ' + formatMoney(info.publishedCeiling) + '. Salary reduction can fund dependents’ accounts only.';
+      return 'Salary reduction for ' + info.year + ' follows the Section 128(b) limit for that year. Salary reduction can fund dependents’ accounts only.';
     }
     if (plan.funding_mode === 'combined') {
       var ceiling = info.statutory || info.cap;
@@ -433,6 +433,7 @@ var S128Model = (function () {
         else if (plan.cafeteria_amendment_date < FIRST_CONTRIBUTION_DATE) push(errors, 'cafeteria_amendment_date', 'The amendment cannot be effective before July 4, 2026.');
         else if (plan.cafeteria_amendment_date < asOf) push(errors, 'cafeteria_amendment_date', 'The Section 125 amendment must be prospective. Choose today or a later date.');
         else if (plan.cafeteria_amendment_date > addMonthsIso(asOf, 18)) push(errors, 'cafeteria_amendment_date', 'Choose an amendment date within the next 18 months.');
+        else if (isIsoDate(plan.effective_date) && plan.cafeteria_amendment_date < plan.effective_date) push(errors, 'cafeteria_amendment_date', 'The amendment effective date cannot be earlier than the program effective date.');
       } else {
         plan.cafeteria_plan_name = '';
         plan.cafeteria_amendment_date = '';
@@ -455,7 +456,7 @@ var S128Model = (function () {
     lead.contact_phone = phone ? formatPhone(phone) : '';
     if (lead.contact_name.length < 2 || lead.contact_name.length > 120) push(errors, 'contact_name', 'Enter the contact’s name.');
     if (lead.contact_title.length < 2 || lead.contact_title.length > 120) push(errors, 'contact_title', 'Enter the contact’s title.');
-    if (!validEmail(lead.contact_email)) push(errors, 'contact_email', 'Enter a valid email for the copy of this draft.');
+    if (!validEmail(lead.contact_email)) push(errors, 'contact_email', 'Enter a valid email address.');
     if (!phone) push(errors, 'contact_phone', 'Enter a 10-digit U.S. phone number.');
 
     var countRaw = String(src.total_employee_count == null ? '' : src.total_employee_count).trim().replace(/,/g, '');
@@ -517,7 +518,7 @@ var S128Model = (function () {
       if (lead.entity_type === 's_corp') {
         reasons.push('An owner or family member wants to participate in an S corporation. A 2-percent shareholder, with ownership attribution, is not treated as an employee for this program under the proposed-regulation preamble.');
       } else if (lead.entity_type === 'llc_partnership' || lead.entity_type === 'sole_prop') {
-        reasons.push('An owner wants to participate, but partners and sole proprietors are not eligible employees.');
+        reasons.push('An owner or family member wants to participate. Partners and sole proprietors are not eligible employees. A family member who is a common-law employee of the business may be eligible.');
       } else if (lead.entity_type === 'c_corp') {
         reasons.push('A C corporation owner-employee may participate if the person is a common-law employee. That person is usually highly compensated for testing.');
       } else {
@@ -531,7 +532,7 @@ var S128Model = (function () {
       reasons.push('Salary reduction has to run through a Section 125 cafeteria plan. No cafeteria plan was confirmed, so this sample does not include an amendment. A cafeteria plan must be adopted or confirmed before salary reduction can start.');
     }
     if (isIsoDate(plan.effective_date) && plan.effective_date < asOf) {
-      reasons.push('The effective date is before today. The sample can be used prospectively only if that date is still available.');
+      reasons.push('The effective date is before today. Contributions made before the plan is signed may not qualify. Consider using today or a later date.');
     }
     if (isIsoDate(plan.effective_date) && +plan.effective_date.slice(0, 4) >= 2028) {
       reasons.push('The Section 128 limit for ' + plan.effective_date.slice(0, 4) + ' has not been published. This sample does not invent an indexed dollar amount. Confirm the published limit before any contribution is made for that year.');
