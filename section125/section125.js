@@ -56,8 +56,8 @@
       prior_plan: checked('prior_plan'),
       prior_adoption: fieldValue('prior_adoption'),
       plan_year_change: $('plan_year_change').checked ? 'yes' : 'no',
-      oe_window_days: checked('oe_window_days'),
-      new_hire_window: checked('new_hire_window'),
+      oe_window_days: fieldValue('oe_window_days'),
+      new_hire_window: fieldValue('new_hire_window'),
       employee_count: fieldValue('employee_count'),
       funding_type: checked('funding_type'),
       full_time_hours: fieldValue('full_time_hours'),
@@ -76,6 +76,7 @@
   }
   function clearErrors() {
     document.querySelectorAll('.field-error').forEach(function (el) { el.textContent = ''; });
+    document.querySelectorAll('[aria-invalid="true"]').forEach(function (el) { el.removeAttribute('aria-invalid'); });
   }
   function showErrors(errors, only) {
     var allow = only ? {} : null;
@@ -86,6 +87,7 @@
       var box = $('err_' + err.field);
       if (box) box.textContent = err.message;
       var input = $(err.field) || document.querySelector('[name="' + err.field + '"]');
+      if (input && input.setAttribute) input.setAttribute('aria-invalid', 'true');
       if (!first) first = input || box;
     });
     if (first) {
@@ -425,6 +427,99 @@
       setStatus('<strong>The PDF could not be prepared.</strong> The Word files are still available below.');
     });
   }
+  function digitsBeforeCaret(value, caret) {
+    return (String(value || '').slice(0, caret).match(/\d/g) || []).length;
+  }
+  function caretAfterDigits(formatted, count) {
+    if (count <= 0) return 0;
+    var seen = 0;
+    for (var i = 0; i < formatted.length; i++) {
+      if (/\d/.test(formatted.charAt(i))) {
+        seen++;
+        if (seen === count) return i + 1;
+      }
+    }
+    return formatted.length;
+  }
+  function bindLiveMask(input, format) {
+    function apply() {
+      var start = input.selectionStart || 0;
+      var count = digitsBeforeCaret(input.value, start);
+      var next = format(input.value);
+      if (next === input.value) return;
+      input.value = next;
+      var pos = caretAfterDigits(next, count);
+      if (input.setSelectionRange) input.setSelectionRange(pos, pos);
+    }
+    function removeDigit(index) {
+      var all = String(input.value || '').replace(/\D/g, '');
+      if (index < 0 || index >= all.length) return;
+      input.value = format(all.slice(0, index) + all.slice(index + 1));
+      var pos = caretAfterDigits(input.value, index);
+      if (input.setSelectionRange) input.setSelectionRange(pos, pos);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    input.addEventListener('input', apply);
+    input.addEventListener('keydown', function (event) {
+      if (event.key !== 'Backspace' && event.key !== 'Delete') return;
+      var start = input.selectionStart;
+      var end = input.selectionEnd;
+      if (start == null || start !== end) return;
+      var value = input.value || '';
+      if (event.key === 'Backspace' && start > 0 && /\D/.test(value.charAt(start - 1))) {
+        event.preventDefault();
+        removeDigit(digitsBeforeCaret(value, start) - 1);
+      } else if (event.key === 'Delete' && start < value.length && /\D/.test(value.charAt(start))) {
+        event.preventDefault();
+        removeDigit(digitsBeforeCaret(value, start));
+      }
+    });
+  }
+  function paintGate(input) {
+    var box = $('err_' + input.id);
+    if (box) box.textContent = input.dataset.gateMessage || '';
+    if (input.dataset.gateMessage) input.setAttribute('aria-invalid', 'true');
+    else input.removeAttribute('aria-invalid');
+  }
+  function applyWholeNumberGate(input, min, max, messages) {
+    var raw = String(input.value || '').replace(/[$,\s]/g, '');
+    var cut = raw.search(/[^\d]/);
+    var digits = cut === -1 ? raw : raw.slice(0, cut);
+    var invalidChars = cut !== -1;
+    var message = '';
+    if (digits === '') {
+      if (input.value !== '') input.value = '';
+      input.dataset.gateMessage = invalidChars ? messages.whole : '';
+      paintGate(input);
+      return;
+    }
+    var n = Number(digits);
+    var complete = String(n).length >= String(min).length;
+    if (n > max || (complete && n < min)) {
+      digits = input.dataset.lastValid || '';
+      message = messages.range;
+    } else {
+      digits = String(n);
+      if (n >= min && n <= max) input.dataset.lastValid = digits;
+      if (invalidChars) message = messages.whole;
+    }
+    if (input.value !== digits) input.value = digits;
+    input.dataset.gateMessage = message;
+    paintGate(input);
+  }
+  function bindWholeNumberGate(input, min, max, messages) {
+    var current = String(input.value || '');
+    input.dataset.lastValid = /^\d+$/.test(current) && Number(current) >= min && Number(current) <= max ? String(Number(current)) : '';
+    input.addEventListener('input', function () { applyWholeNumberGate(input, min, max, messages); });
+    input.addEventListener('keydown', function (event) {
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.key.length === 1 && !/\d/.test(event.key)) {
+        event.preventDefault();
+        input.dataset.gateMessage = messages.whole;
+        paintGate(input);
+      }
+    });
+  }
   function mountTerms() {
     $('termsDialogBody').innerHTML = S125Terms.PARAGRAPHS.map(function (p) { return '<p>' + escapeHtml(p) + '</p>'; }).join('');
     $('openTerms').addEventListener('click', function (event) {
@@ -452,8 +547,38 @@
     fillDays();
     if (window.S125Tips) S125Tips.mount();
     mountTerms();
-    $('employer_ein').addEventListener('input', function () { $('employer_ein').value = S125Model.formatEinLive($('employer_ein').value); });
-    $('phone').addEventListener('input', function () { $('phone').value = S125Model.formatPhoneLive($('phone').value); });
+    bindLiveMask($('employer_ein'), S125Model.formatEinLive);
+    bindLiveMask($('phone'), S125Model.formatPhoneLive);
+    bindLiveMask($('zip'), S125Model.formatZipLive);
+    bindLiveMask($('effective_date'), S125Model.formatDateLive);
+    bindLiveMask($('prior_adoption'), S125Model.formatMonthYearLive);
+    $('effective_date').addEventListener('blur', function () {
+      $('effective_date').value = S125Model.formatDateCanonical($('effective_date').value);
+    });
+    $('prior_adoption').addEventListener('blur', function () {
+      var next = S125Model.canonicalMonthYear($('prior_adoption').value);
+      if (next) $('prior_adoption').value = next;
+    });
+    bindWholeNumberGate($('plan_number'), 501, 999, {
+      range: 'Use a plan number from 501 to 999.',
+      whole: 'Enter the plan number as a whole number.'
+    });
+    bindWholeNumberGate($('employee_count'), 1, 100000, {
+      range: 'Enter an employee count from 1 to 100,000.',
+      whole: 'Enter the employee count as a whole number.'
+    });
+    bindWholeNumberGate($('full_time_hours'), 1, 40, {
+      range: 'Enter full-time hours as a whole number from 1 to 40.',
+      whole: 'Enter full-time hours as a whole number.'
+    });
+    bindWholeNumberGate($('oe_window_days'), 1, 90, {
+      range: 'Enter the open enrollment window as a whole number of days from 1 to 90.',
+      whole: 'Enter the open enrollment window as a whole number of days.'
+    });
+    bindWholeNumberGate($('new_hire_window'), 1, 30, {
+      range: 'Enter the new-hire window as a whole number of days from 1 to 30.',
+      whole: 'Enter the new-hire window as a whole number of days.'
+    });
     $('wizard').addEventListener('change', syncConditional);
     $('wizard').addEventListener('input', syncConditional);
     month.addEventListener('change', fillDays);

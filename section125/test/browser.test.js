@@ -90,11 +90,11 @@ test('the wizard builds a premium-only plan in the browser and does not post', a
     await page.locator('#btnNext').click();
     await page.locator('#stepTitle', { hasText: 'Plan year' }).waitFor();
 
-    await setField(page, 'effective_date', '2027-01-01');
+    await setField(page, 'effective_date', '01/01/2027');
     await setField(page, 'plan_year_type', 'calendar');
     await page.locator('input[name="prior_plan"][value="no"]').check();
-    await page.locator('input[name="oe_window_days"][value="30"]').check();
-    await page.locator('input[name="new_hire_window"][value="30"]').check();
+    await setField(page, 'oe_window_days', '30');
+    await setField(page, 'new_hire_window', '30');
     await page.locator('#btnNext').click();
     await page.locator('#stepTitle', { hasText: 'Eligibility' }).waitFor();
 
@@ -146,6 +146,90 @@ test('the wizard builds a premium-only plan in the browser and does not post', a
     assert.equal(mobileTop, 0);
     await mobile.screenshot({ path: path.join(artifactDir, 'wizard-mobile.png') });
     await mobile.close();
+    await page.close();
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+test('typed fields format themselves and numeric gates keep whole numbers in range', async function () {
+  const server = await startStatic(8816);
+  const browser = await chromium.launch({
+    channel: 'chrome',
+    headless: true,
+    args: ['--no-sandbox', '--disable-dev-shm-usage']
+  });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    await page.goto('http://127.0.0.1:8816/index.html', { waitUntil: 'domcontentloaded' });
+    await page.locator('#employer_name').waitFor();
+    const placeholders = await page.locator('input, textarea').evaluateAll(function (nodes) {
+      return nodes.map(function (node) { return node.getAttribute('placeholder') || ''; });
+    });
+    placeholders.forEach(function (value) { assert.equal(value, ''); });
+    assert.equal(await page.locator('#hint_employer_ein').innerText(), 'e.g. 12-3456789');
+    assert.equal(await page.locator('#hint_phone').innerText(), 'e.g. 407-476-5076');
+    assert.equal(await page.locator('#hint_signer_email').innerText(), 'e.g. name@company.com');
+    await setField(page, 'employer_ein', '1234567890');
+    assert.equal(await page.locator('#employer_ein').inputValue(), '12-3456789');
+    await setField(page, 'phone', '1 (813) 555-0199 x123');
+    assert.equal(await page.locator('#phone').inputValue(), '813-555-0199 ext. 123');
+    await setField(page, 'zip', '336021234');
+    assert.equal(await page.locator('#zip').inputValue(), '33602-1234');
+    await setField(page, 'plan_number', '1000');
+    assert.equal(await page.locator('#plan_number').inputValue(), '501');
+    assert.match(await page.locator('#err_plan_number').innerText(), /501 to 999/);
+    await setField(page, 'plan_number', '500');
+    assert.equal(await page.locator('#plan_number').inputValue(), '501');
+    await page.locator('#plan_number').focus();
+    await page.keyboard.press('End');
+    await page.keyboard.type('a');
+    assert.equal(await page.locator('#plan_number').inputValue(), '501');
+    assert.match(await page.locator('#err_plan_number').innerText(), /whole number/);
+    await setField(page, 'employer_name', 'Northwind Benefits Inc');
+    await setField(page, 'street', '100 King Street');
+    await setField(page, 'city', 'Tampa');
+    await setField(page, 'state', 'FL');
+    await page.locator('input[name="funding_type"][value="insured"]').check();
+    await page.locator('input[name="multi_state"][value="no"]').check();
+    await page.locator('#btnNext').click();
+    await page.locator('#stepTitle', { hasText: 'Plan year' }).waitFor();
+    await setField(page, 'effective_date', '01012027');
+    assert.equal(await page.locator('#effective_date').inputValue(), '01/01/2027');
+    await page.locator('#effective_date').blur();
+    assert.equal(await page.locator('#effective_date').inputValue(), '01/01/2027');
+    await page.locator('input[name="prior_plan"][value="yes"]').check();
+    await setField(page, 'prior_adoption', '1/2020');
+    await page.locator('#prior_adoption').blur();
+    assert.equal(await page.locator('#prior_adoption').inputValue(), '01/2020');
+    await setField(page, 'oe_window_days', '91');
+    assert.equal(await page.locator('#oe_window_days').inputValue(), '');
+    assert.match(await page.locator('#err_oe_window_days').innerText(), /1 to 90/);
+    await setField(page, 'oe_window_days', '12.5');
+    assert.equal(await page.locator('#oe_window_days').inputValue(), '12');
+    assert.match(await page.locator('#err_oe_window_days').innerText(), /whole number/);
+    await setField(page, 'new_hire_window', '60');
+    assert.equal(await page.locator('#new_hire_window').inputValue(), '');
+    assert.match(await page.locator('#err_new_hire_window').innerText(), /1 to 30/);
+    await setField(page, 'new_hire_window', '30');
+    assert.equal(await page.locator('#err_new_hire_window').innerText(), '');
+    await setField(page, 'plan_year_type', 'calendar');
+    await setField(page, 'oe_window_days', '30');
+    await page.locator('#btnNext').click();
+    await page.locator('#stepTitle', { hasText: 'Eligibility' }).waitFor();
+    await setField(page, 'employee_count', '100001');
+    assert.equal(await page.locator('#employee_count').inputValue(), '');
+    assert.match(await page.locator('#err_employee_count').innerText(), /1 to 100,000/);
+    await setField(page, 'employee_count', '1,000');
+    assert.equal(await page.locator('#employee_count').inputValue(), '1000');
+    await setField(page, 'full_time_hours', '41');
+    assert.equal(await page.locator('#full_time_hours').inputValue(), '30');
+    assert.match(await page.locator('#err_full_time_hours').innerText(), /1 to 40/);
+    await setField(page, 'full_time_hours', '12.5');
+    assert.equal(await page.locator('#full_time_hours').inputValue(), '12');
+    assert.match(await page.locator('#err_full_time_hours').innerText(), /whole number/);
+    await page.screenshot({ path: path.join(artifactDir, 'input-polish-1280.png'), fullPage: true });
     await page.close();
   } finally {
     await browser.close();

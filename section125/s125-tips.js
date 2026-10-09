@@ -5,7 +5,7 @@ var S125Tips = (function () {
   var TEXT = {
     employer_name: 'The legal name is printed on the sample. The employer decides whether to adopt it. Printing the name does not adopt the plan.',
     employer_ein: 'The EIN is printed so payroll and the sample refer to the same employer. This tool does not check the number with the IRS. The file stays in the browser and in the email to DK Benefits. It is not posted as a public file.',
-    plan_number: '501 is the usual cafeteria-plan number. Use another 3-digit number if this employer already uses 501.',
+    plan_number: '501 is the usual cafeteria-plan number. Use another whole number from 501 to 999 if this employer already uses 501.',
     street: 'The street address is printed so the employer is identified. It does not adopt the plan.',
     city: 'The city is printed with the state and ZIP. The address identifies the employer.',
     state: 'An employer in any U.S. state can prepare this sample. Federal cafeteria-plan rules do not decide state income tax.',
@@ -19,7 +19,7 @@ var S125Tips = (function () {
     prior_plan: 'A restatement continues the plan that is already in place. It is not treated as a brand-new short plan year unless you are also changing the plan year.',
     plan_year_change: 'Check this only if the restatement moves the plan year. The period from the effective date to the day before the new plan year starts is a short year.',
     oe_window_days: 'Open enrollment is the window before each plan year. The dates in the sample are the first window on or after this plan exists. They are not a window from a month that already passed.',
-    new_hire_window: 'A new hire has 7, 14, or 30 days to enroll. An election made within 30 days of hire can take effect when coverage begins. A later election is prospective. A missed window is treated as an election of cash, not after-tax coverage.',
+    new_hire_window: 'A new hire has 1 to 30 days to enroll. An election made within 30 days of hire can take effect when coverage begins. A later election is prospective. A missed window is treated as an election of cash, not after-tax coverage.',
     employee_count: 'Section 125 nondiscrimination tests apply at every size. This count does not by itself decide Applicable Large Employer status.',
     funding_type: 'Level-funded and self-funded medical benefits can also face the section 105(h) nondiscrimination rules. Fully insured medical coverage generally does not.',
     full_time_hours: 'Full-time in this plan means the weekly hours you enter. The Affordable Care Act uses 30 hours for a different purpose. The two definitions can match, and they do not have to.',
