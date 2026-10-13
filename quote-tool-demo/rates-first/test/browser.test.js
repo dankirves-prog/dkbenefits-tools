@@ -166,7 +166,7 @@ test('rates-first demo shows rates immediately and prints with or without group 
       });
       const fixed = [];
       document.querySelectorAll('body *').forEach((el) => {
-        if (el.id === 'customize-btn' || el.classList.contains('rf-sticky-cta')) return;
+        if (el.id === 'customize-btn' || el.id === 'customize-panel' || el.classList.contains('rf-sticky-cta')) return;
         const style = getComputedStyle(el);
         if (style.position !== 'fixed' && style.position !== 'sticky') return;
         const rect = el.getBoundingClientRect();

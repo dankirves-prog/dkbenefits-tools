@@ -965,9 +965,8 @@
       '<section class="print-disclaimer"><h2>Important information</h2>' +
       '<p>Rates shown are based on current published pricing and the answers provided. Final eligibility, participation, underwriting, plan availability, effective dates, and carrier/program approval may change pricing or options. Benefits are governed by official plan documents.</p>' +
       '<p>Plan availability may vary by state. If your business is outside Florida or Georgia, Daniel can let you know whether DK Benefits can assist directly or connect you with an appropriate resource.</p>' +
-      '<p>Use of this tool does not create a broker-client relationship or guarantee coverage.</p></section>' +
-      '<section class="print-close"><p class="print-close-lead">Let DK Benefits search a wider market! Call/text/email today.</p>' +
-      '<p>Daniel Kirves, DK Benefits, 407-476-5076, dan@dkbenefits.net, www.dkbenefits.net.</p></section>' +
+      '<p>Use of this tool does not create a broker-client relationship or guarantee coverage.</p>' +
+      '<p class="print-close-lead">Let DK Benefits search a wider market! Call/text/email today. Daniel Kirves, DK Benefits, 407-476-5076, dan@dkbenefits.net, www.dkbenefits.net.</p></section>' +
       printNotesHtml(items);
   }
 
@@ -1297,7 +1296,13 @@
       }
       el.addEventListener('input', function () { apply(false); });
       el.addEventListener('change', function () { apply(true); });
-      el.addEventListener('blur', function () { apply(true); });
+      el.addEventListener('blur', function (event) {
+        // Eligible and Enrolling are one group-size edit. Leaving one for the other
+        // must keep the debounce instead of emailing the first number alone.
+        var next = event.relatedTarget;
+        if (next && (next.id === 'eligible' || next.id === 'enrolling')) return;
+        apply(true);
+      });
     }
     bindCount($('eligible'), function (value) { return model.setEligible(value); });
     bindCount($('enrolling'), function (value) { return model.setEnrolling(value); });

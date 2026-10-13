@@ -78,8 +78,7 @@ test('landing state shows tier rates only, cheapest employee-only first', () => 
   const html = rates.printHtml(printState(quote, 'all'));
   assert.match(html, /Published monthly tier rates/);
   assert.match(html, /Important information/);
-  assert.match(html, /Let DK Benefits search a wider market! Call\/text\/email today\./);
-  assert.match(html, /Daniel Kirves, DK Benefits, 407-476-5076, dan@dkbenefits\.net, www\.dkbenefits\.net\./);
+  assert.match(html, /Let DK Benefits search a wider market! Call\/text\/email today\. Daniel Kirves, DK Benefits, 407-476-5076, dan@dkbenefits\.net, www\.dkbenefits\.net\./);
   assert.match(html, /Notes and Limitations/);
   assert.match(html, /class="coverage-warning"/);
   assert.match(html, /This is not traditional major medical coverage\./);
@@ -650,7 +649,7 @@ test('the page does not gate rates behind the questionnaire', () => {
   assert.match(source, /market-talk-btn/);
   assert.match(source, /openLead\(marketTalk\)/);
   assert.match(source, /my-plans-btn'\)\.hidden = state\.saved\.length === 0/);
-  assert.match(source, /Let DK Benefits search a wider market!/);
+  assert.match(source, /Let DK Benefits search a wider market! Call\/text\/email today\./);
   assert.match(source, /model\.setHelp\('Get a full-market review'\)/);
   assert.match(source, /firstName: name/);
   assert.equal(rates.ACTIVITY_TRACKING_ENABLED, true);
