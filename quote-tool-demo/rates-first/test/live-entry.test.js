@@ -57,6 +57,7 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
   ], { stdio: 'ignore' });
 
   const posts = [];
+  const consoleErrors = [];
   let leaked = false;
   let ws;
   let sessionId;
@@ -116,6 +117,66 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
     const file = path.join(ARTIFACTS, name);
     fs.writeFileSync(file, Buffer.from(result.data, 'base64'));
     assert.ok(fs.statSync(file).size > 5000, name + ' screenshot was empty');
+  }
+
+  const featureProbe = `(() => {
+    const text = (id) => {
+      const el = document.getElementById(id);
+      return el ? el.textContent.replace(/\\s+/g, ' ').trim() : '';
+    };
+    const summary = document.querySelector('#disclaimer summary');
+    const panel = document.getElementById('customize-panel');
+    const sticky = document.getElementById('customize-btn');
+    return {
+      trust: document.querySelector('.trust').textContent.replace(/\\s+/g, ' ').trim(),
+      split: !!document.querySelector('.rf-toolbar.rf-split'),
+      sorts: [...document.querySelectorAll('#sort-mode option')].map((option) => option.value),
+      mix: text('mix-heading'),
+      printProposal: text('print-proposal-btn'),
+      market: (document.getElementById('market-note') || { textContent: '' }).textContent,
+      summary: summary ? summary.textContent.replace(/\\s+/g, ' ').trim() : '',
+      participation: (document.getElementById('disclaimer') || { textContent: '' }).textContent.includes('United and Cigna plans require at least 5 enrolled employees with 50% participation'),
+      lead: text('lead-heading'),
+      submit: text('lead-submit'),
+      drawer: text('drawer-send'),
+      contact: text('contact-btn'),
+      groupSize: !!document.getElementById('lead-group-size'),
+      helpFields: !!document.querySelector('[data-help]'),
+      printRoot: !!document.getElementById('print-root'),
+      chevron: summary ? getComputedStyle(summary, '::before').content : '',
+      hint: summary ? getComputedStyle(summary, '::after').content : '',
+      stickyDisplay: sticky ? getComputedStyle(sticky).display : 'missing',
+      panelDisplay: panel ? getComputedStyle(panel).display : 'missing',
+      live: window.__rfLive === true
+    };
+  })()`;
+
+  function assertLiveFeatures(features, phone) {
+    assert.equal(features.live, true);
+    assert.equal(features.trust, 'Live rates below. Inquire for a full-market review, there may be better options available.');
+    assert.equal(features.split, true);
+    assert.deepEqual(features.sorts, ['price', 'carrier', 'lowestCost']);
+    assert.equal(features.mix, 'Customize & print proposal');
+    assert.equal(features.printProposal, 'Print proposal');
+    assert.match(features.market, /full-market review/);
+    assert.equal(features.summary, 'Important information');
+    assert.equal(features.participation, true);
+    assert.equal(features.lead, 'Get a full-market review');
+    assert.equal(features.submit, 'Get a full-market review');
+    assert.equal(features.drawer, 'Get a full-market review');
+    assert.equal(features.contact, 'Get a full-market review');
+    assert.equal(features.groupSize, true);
+    assert.equal(features.helpFields, false);
+    assert.equal(features.printRoot, true);
+    assert.match(features.chevron, /▸/);
+    assert.match(features.hint, /Show/);
+    if (phone) {
+      assert.notEqual(features.stickyDisplay, 'none');
+      assert.equal(features.panelDisplay, 'none');
+    } else {
+      assert.equal(features.stickyDisplay, 'none');
+      assert.notEqual(features.panelDisplay, 'none');
+    }
   }
 
   async function openTop(url) {
@@ -242,6 +303,13 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
           leaked = true;
           console.error(error);
         });
+      } else if (message.method === 'Runtime.exceptionThrown') {
+        const details = message.params && message.params.exceptionDetails;
+        const text = details && (details.exception && (details.exception.description || details.exception.value) || details.text);
+        consoleErrors.push(String(text || 'exception'));
+      } else if (message.method === 'Runtime.consoleAPICalled' && message.params && message.params.type === 'error') {
+        const args = (message.params.args || []).map((arg) => arg.value || arg.description || arg.type).join(' ');
+        consoleErrors.push(args || 'console.error');
       }
     });
 
@@ -268,7 +336,7 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
       };
     })()`);
     assert.equal(fold.scrollY, 0);
-    assert.equal(fold.trust, 'No company info needed. No spam.');
+    assert.equal(fold.trust, 'Live rates below. Inquire for a full-market review, there may be better options available.');
     fold.tools.forEach((tool) => {
       if (tool.sel === '#my-plans-btn') {
         assert.equal(tool.display, 'none', 'My Plans stays hidden until a plan is saved');
@@ -278,6 +346,12 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
       assert.ok(tool.text.length > 0, tool.sel);
     });
     assert.ok(fold.bottom <= fold.innerHeight - 8, 'Family tier is below the live 390 fold: ' + fold.bottom);
+    assertLiveFeatures(await evaluate(featureProbe), true);
+    await evaluate(`document.getElementById('customize-btn').click()`);
+    assert.equal(await evaluate(`document.body.classList.contains('is-customizing') && getComputedStyle(document.getElementById('customize-panel')).display !== 'none'`), true);
+    await shot('quote-tool-live-390.png');
+    await evaluate(`document.getElementById('customize-btn').click()`);
+    assert.equal(await evaluate(`document.body.classList.contains('is-customizing')`), false);
     await shot('phone390_after.png');
     await setViewport(1440, 900);
     await openTop(LIVE);
@@ -308,6 +382,7 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
     await evaluate(`(() => {
       document.getElementById('first-name').value = 'Pat';
       document.getElementById('email').value = 'pat@example.com';
+      document.getElementById('lead-group-size').value = '8';
       document.getElementById('lead-form').requestSubmit();
     })()`);
     const opened = await evaluate(`(() => {
@@ -338,7 +413,13 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
     assert.ok(opened.stateBottom <= opened.innerHeight, 'state question is below the phone fold');
     assert.equal(opened.errorHidden, false);
     assert.equal(opened.errorText, 'Choose Florida, Georgia, or Other.');
-    assert.ok(opened.errorBottom <= opened.innerHeight, 'state error is below the phone fold');
+    const errorSeen = await evaluate(`(() => {
+      const error = document.getElementById('lead-error');
+      error.scrollIntoView({ block: 'center' });
+      const rect = error.getBoundingClientRect();
+      return rect.height > 10 && rect.top >= -2 && rect.bottom <= innerHeight + 2;
+    })()`);
+    assert.equal(errorSeen, true, 'state error is not visible after scrolling the form');
     await shot('phone390_lets_talk.png');
     await evaluate(`(() => {
       document.getElementById('my-plans-btn').click();
@@ -360,6 +441,8 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
     await setViewport(1280, 900);
 
     await openTop(LIVE);
+    assertLiveFeatures(await evaluate(featureProbe), false);
+    await shot('quote-tool-live-1280.png');
     const liveBoot = await evaluate(`({ href: location.href, live: window.__rfLive === true, search: location.search })`);
     assert.equal(liveBoot.live, true);
     assert.equal(liveBoot.search, '');
@@ -367,6 +450,21 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
     await waitFor(async () => evaluate(`!!document.querySelector('[data-carrier="All"]')`), 'carrier chips');
     await evaluate(`document.querySelector('[data-carrier="All"]').click()`);
     await waitFor(async () => posts.some((post) => post.body.includes('"event":"quote_accessed"')), 'live quote accessed');
+    const printed = await evaluate(`(() => {
+      window.print = () => { window.__printed = true; };
+      document.getElementById('print-proposal-btn').click();
+      const root = document.getElementById('print-root').innerHTML;
+      return {
+        called: window.__printed === true,
+        close: root.includes('Let DK Benefits search a wider market'),
+        phone: root.includes('407-476-5076'),
+        email: root.includes('dan@dkbenefits.net')
+      };
+    })()`);
+    assert.equal(printed.called, true);
+    assert.equal(printed.close, true);
+    assert.equal(printed.phone, true);
+    assert.equal(printed.email, true);
     await evaluate(`(() => {
       const eligible = document.getElementById('eligible');
       const type = (value) => {
@@ -408,10 +506,10 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
       flat.dispatchEvent(new Event('change', { bubbles: true }));
       document.querySelector('.save-toggle[data-plan-id="cigna-epo-1750-hsa"]').click();
       document.querySelector('[data-state="Georgia"]').click();
-      document.querySelector('[data-help="Ready to enroll"]').click();
       document.getElementById('first-name').value = 'Pat';
       document.getElementById('email').value = 'pat@example.com';
       document.getElementById('phone').value = '407-555-0100';
+      document.getElementById('lead-group-size').value = '20';
       document.getElementById('lead-form').requestSubmit();
     })()`);
     await waitFor(async () => posts.some((post) => post.body.includes('"event":"lead_submitted"')), 'live lead');
@@ -435,7 +533,9 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
     assert.equal(bodies[3].email, 'pat@example.com');
     assert.equal(bodies[3].phone, '407-555-0100');
     assert.equal(bodies[3].answers.state, 'Georgia');
-    assert.equal(bodies[3].helpWith, 'Ready to enroll');
+    assert.equal(bodies[3].answers.employees, '20');
+    assert.equal(bodies[3].answers.enrolling, '7');
+    assert.equal(bodies[3].helpWith, 'Get a full-market review');
     assert.equal(bodies[3].selectedPlans[0].id, 'cigna-epo-1750-hsa');
     assert.equal(bodies[3].notes, undefined);
     assert.ok(bodies.every((body) => body.sessionId));
@@ -541,7 +641,7 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
       assert.ok(layout.cardTop >= 0 && layout.cardTop < layout.innerHeight - 48, 'first card is outside the iframe, top ' + layout.cardTop + ' of ' + layout.innerHeight);
       assert.ok(layout.parentCardTop < layout.parentHeight - 24, 'first card is below the Wix fold');
       assert.equal(layout.leadHidden, false);
-      assert.equal(layout.leadHeading, "Let's Talk");
+      assert.equal(layout.leadHeading, 'Get a full-market review');
       layout.tools.forEach((tool) => {
         if (tool.sel === '#my-plans-btn') {
           assert.equal(tool.display, 'none', 'My Plans stays hidden until a plan is saved');
@@ -612,15 +712,18 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
         formHidden: doc.getElementById('lead-form').hidden
       };
     })()`);
-    assert.equal(contact.heading, "Let's Talk");
-    assert.equal(contact.submit, "Let's Talk");
+    assert.equal(contact.heading, 'Get a full-market review');
+    assert.equal(contact.submit, 'Get a full-market review');
     assert.equal(contact.hidden, false);
     assert.equal(contact.formHidden, false);
     assert.ok(contact.top >= -2 && contact.top < contact.innerHeight - 28, 'contact card is not open on screen');
+    const pageErrors = consoleErrors.filter((item) => !/favicon/i.test(item));
+    assert.deepEqual(pageErrors, [], 'console errors: ' + pageErrors.join('\n'));
     fs.writeFileSync(path.join(ARTIFACTS, 'rf-live-report.json'), JSON.stringify({
       mobileFirstCardMs: mobile.mark,
       desktopFirstCardMs: desktop.mark,
-      postsIntercepted: true
+      postsIntercepted: true,
+      consoleErrors: pageErrors
     }, null, 2));
   } finally {
     if (ws) ws.close();
