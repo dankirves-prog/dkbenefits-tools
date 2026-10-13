@@ -685,6 +685,12 @@ test('the live entry posts without ?live=1 and the demo folder stays quiet', () 
   assert.equal(rates.shouldPostLive({ location: { search: '?live=0' } }), false);
   const livePage = fs.readFileSync(path.join(__dirname, '../../quote-tool.html'), 'utf8');
   const demoPage = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  function markupBody(html) {
+    const match = html.match(/<body\b[^>]*>[\s\S]*<\/body>/);
+    assert.ok(match, 'page is missing a body');
+    return match[0].replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').replace(/\s+/g, ' ').trim();
+  }
+  assert.equal(markupBody(livePage), markupBody(demoPage), 'quote-tool.html body markup must stay in sync with rates-first/index.html');
   assert.match(livePage, /window\.__rfLive\s*=\s*true/);
   assert.match(livePage, /fetch\('plans\.json'/);
   assert.match(livePage, /__rfConfigUrl\s*=\s*'preview\/preview-config\.json'/);
