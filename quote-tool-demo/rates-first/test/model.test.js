@@ -673,7 +673,7 @@ test('the page does not gate rates behind the questionnaire', () => {
   assert.match(source, /model\.setHelp\('Get a full-market review'\)/);
   assert.match(source, /firstName: name/);
   assert.equal(rates.ACTIVITY_TRACKING_ENABLED, true);
-  assert.equal(rates.WEBHOOK_URL.endsWith('lcSq0CZ0z/exec'), true);
+  assert.equal(rates.WEBHOOK_URL.endsWith('27JPDch5WZI/exec'), true);
 });
 
 test('the live entry posts without ?live=1 and the demo folder stays quiet', () => {

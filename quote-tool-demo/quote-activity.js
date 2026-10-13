@@ -7,9 +7,8 @@
     root.QuoteActivity = api;
   }
 })(typeof window !== 'undefined' ? window : globalThis, function () {
-  // One line to switch the live quote tool onto Dan's new Apps Script web app.
-  // Leave this on the current endpoint until that /exec URL is deployed.
-  var WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby4-ZxTQfsAgIBO0JYSngccVoj5HRKtNshy6N2XlJhbxaEk2oW7b_xIRBGlcSq0CZ0z/exec';
+  // Live quote posts. quote-tool.html and rates-first/index.html both read this.
+  var WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbweIqu-mNXn_JEH4gYffTNU2zkcAyOQIWlC2QE__JLunaOaKy4m72SJO27JPDch5WZI/exec';
   var UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
   var RATE_KEYS = ['employeeOnly', 'employeeSpouse', 'employeeChildren', 'family'];
   var DEFAULT_VISIBLE_GROUPS = ['top', 'low'];

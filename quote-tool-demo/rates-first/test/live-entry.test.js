@@ -539,7 +539,7 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
     assert.equal(bodies[3].selectedPlans[0].id, 'cigna-epo-1750-hsa');
     assert.equal(bodies[3].notes, undefined);
     assert.ok(bodies.every((body) => body.sessionId));
-    assert.ok(posts.every((post) => post.url.includes('lcSq0CZ0z')));
+    assert.ok(posts.every((post) => post.url.includes('27JPDch5WZI')));
     assert.equal(posts.filter((post) => post.method === 'POST').length, 4);
     assert.equal(leaked, false);
 
@@ -579,7 +579,7 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
       await waitFor(async () => posts.some((post) => post.body.includes('"event":"group_size"')), fieldId + ' group size');
       const groups = posts.filter((post) => post.body.includes('"event":"group_size"')).map((post) => JSON.parse(post.body));
       assert.equal(groups.length, 1, fieldId + ' group events ' + groups.length);
-      assert.ok(posts.every((post) => post.url.includes('lcSq0CZ0z')));
+      assert.ok(posts.every((post) => post.url.includes('27JPDch5WZI')));
       return groups[0];
     }
 
@@ -684,7 +684,7 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
       assert.equal(printed.notes, true);
       assert.equal(printed.name, true);
       await waitFor(async () => posts.some((post) => post.body.includes('"event":"quote_accessed"')), 'iframe quote accessed ' + width);
-      assert.ok(posts.every((post) => post.url.includes('lcSq0CZ0z')));
+      assert.ok(posts.every((post) => post.url.includes('27JPDch5WZI')));
       posts.length = 0;
       return layout;
     }

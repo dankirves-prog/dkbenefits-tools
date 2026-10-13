@@ -461,7 +461,7 @@ test('the live pages share one endpoint setting and still point at the current w
   const ratesSource = fs.readFileSync(path.join(__dirname, '../rates-first/rates-first.js'), 'utf8');
   const livePage = fs.readFileSync(path.join(__dirname, '../quote-tool.html'), 'utf8');
   const demoPage = fs.readFileSync(path.join(__dirname, '../rates-first/index.html'), 'utf8');
-  assert.equal(activity.WEBHOOK_URL, 'https://script.google.com/macros/s/AKfycby4-ZxTQfsAgIBO0JYSngccVoj5HRKtNshy6N2XlJhbxaEk2oW7b_xIRBGlcSq0CZ0z/exec');
+  assert.equal(activity.WEBHOOK_URL, 'https://script.google.com/macros/s/AKfycbweIqu-mNXn_JEH4gYffTNU2zkcAyOQIWlC2QE__JLunaOaKy4m72SJO27JPDch5WZI/exec');
   assert.equal(ratesSource.includes('lcSq0CZ0z'), false);
   assert.match(ratesSource, /QuoteActivity\.WEBHOOK_URL/);
   assert.match(ratesSource, /GROUP_SETTLE_MS = 20000/);
