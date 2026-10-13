@@ -3,9 +3,11 @@
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.RatesFirst = api;
 })(typeof window !== 'undefined' ? window : globalThis, function () {
-  var WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby4-ZxTQfsAgIBO0JYSngccVoj5HRKtNshy6N2XlJhbxaEk2oW7b_xIRBGlcSq0CZ0z/exec';
+  var host = typeof window !== 'undefined' ? window : globalThis;
+  var WEBHOOK_URL = (host.QuoteActivity && host.QuoteActivity.WEBHOOK_URL) || '';
   var ACTIVITY_TRACKING_ENABLED = true;
   var SETTLE_MS = 3000;
+  var GROUP_SETTLE_MS = 20000;
 
   function shouldPostLive(win) {
     var search = '';
@@ -214,8 +216,10 @@
         phone: shaped.phone,
         answers: shaped.answers,
         contribution: shaped.contribution,
-        selectedPlans: []
+        selectedPlans: Array.from(saved.values())
       };
+      if (pageUrl) details.pageUrl = pageUrl;
+      if (carrier && carrier !== 'All') details.carrier = carrier;
       if (mixPresent) {
         details.tierMix = {
           employeeOnly: shaped.tierMix.employeeOnly,
@@ -257,7 +261,7 @@
         else contribTimer = null;
         if (kind === 'group') commitGroupSize();
         else commitContribution();
-      }, SETTLE_MS);
+      }, kind === 'group' ? GROUP_SETTLE_MS : SETTLE_MS);
       if (kind === 'group') groupTimer = id;
       else contribTimer = id;
     }
@@ -979,6 +983,8 @@
     if (live && ACTIVITY_TRACKING_ENABLED && win.QuoteActivity) {
       tracker = win.QuoteActivity.createQuoteActivityTracker({
         storage: win.QuoteActivity.createSafeWebStorage(),
+        pageUrl: win.location.href,
+        referrer: document.referrer || '',
         post: function (payload) {
           return fetch(WEBHOOK_URL, { method: 'POST', body: JSON.stringify(payload) }).then(function (response) {
             if (!response.ok) throw new Error('request failed');
@@ -987,6 +993,7 @@
         }
       });
       tracker.captureLandingUtms(win.location.search);
+      tracker.getSessionId();
     }
     var model = null;
 
@@ -1504,6 +1511,7 @@
     WEBHOOK_URL: WEBHOOK_URL,
     ACTIVITY_TRACKING_ENABLED: ACTIVITY_TRACKING_ENABLED,
     SETTLE_MS: SETTLE_MS,
+    GROUP_SETTLE_MS: GROUP_SETTLE_MS,
     shouldPostLive: shouldPostLive,
     createModel: createModel,
     printHtml: printHtml,

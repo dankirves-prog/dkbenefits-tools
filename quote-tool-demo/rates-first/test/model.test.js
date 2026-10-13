@@ -8,6 +8,7 @@ global.fetch = function refuseNetwork() {
 };
 
 const math = require('../quote-math.js');
+require('../../quote-activity.js');
 const rates = require('../rates-first.js');
 
 const PLANS = JSON.parse(fs.readFileSync(path.join(__dirname, '../../plans.json'), 'utf8'));
@@ -527,6 +528,7 @@ test('invalid enrolling clears calculated output and group size sends only a set
 
 test('typing 4 then 0 settles once as 40 for enrolling and eligible', () => {
   assert.equal(rates.SETTLE_MS, 3000);
+  assert.equal(rates.GROUP_SETTLE_MS, 20000);
 
   function liveModel() {
     const log = activityCalls();
@@ -548,7 +550,7 @@ test('typing 4 then 0 settles once as 40 for enrolling and eligible', () => {
   enrollingOnly.quote.setEnrolling('40');
   assert.equal(enrollingOnly.log.calls.filter((call) => call[0] === 'group').length, 0);
   assert.equal(enrollingOnly.log.clock.pending(), 1);
-  assert.deepEqual(enrollingOnly.delays, [3000, 3000]);
+  assert.deepEqual(enrollingOnly.delays, [20000, 20000]);
   enrollingOnly.log.clock.flush();
   assert.equal(enrollingOnly.log.calls.filter((call) => call[0] === 'group').length, 1);
   assert.equal(enrollingOnly.log.calls.find((call) => call[0] === 'group')[1].answers.employees, '');
@@ -570,7 +572,7 @@ test('typing 4 then 0 settles once as 40 for enrolling and eligible', () => {
   eligibleOnly.quote.setEligible('4');
   eligibleOnly.quote.setEligible('40');
   assert.equal(eligibleOnly.log.calls.filter((call) => call[0] === 'group').length, 0);
-  assert.deepEqual(eligibleOnly.delays, [3000, 3000]);
+  assert.deepEqual(eligibleOnly.delays, [20000, 20000]);
   eligibleOnly.log.clock.flush();
   const eligibleGroup = eligibleOnly.log.calls.find((call) => call[0] === 'group')[1];
   assert.equal(eligibleOnly.log.calls.filter((call) => call[0] === 'group').length, 1);
@@ -671,7 +673,7 @@ test('the page does not gate rates behind the questionnaire', () => {
   assert.match(source, /model\.setHelp\('Get a full-market review'\)/);
   assert.match(source, /firstName: name/);
   assert.equal(rates.ACTIVITY_TRACKING_ENABLED, true);
-  assert.equal(rates.WEBHOOK_URL.endsWith('lcSq0CZ0z/exec'), true);
+  assert.equal(rates.WEBHOOK_URL.endsWith('27JPDch5WZI/exec'), true);
 });
 
 test('the live entry posts without ?live=1 and the demo folder stays quiet', () => {

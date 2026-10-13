@@ -7,6 +7,8 @@
     root.QuoteActivity = api;
   }
 })(typeof window !== 'undefined' ? window : globalThis, function () {
+  // Live quote posts. quote-tool.html and rates-first/index.html both read this.
+  var WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbweIqu-mNXn_JEH4gYffTNU2zkcAyOQIWlC2QE__JLunaOaKy4m72SJO27JPDch5WZI/exec';
   var UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
   var RATE_KEYS = ['employeeOnly', 'employeeSpouse', 'employeeChildren', 'family'];
   var DEFAULT_VISIBLE_GROUPS = ['top', 'low'];
@@ -140,6 +142,8 @@
         sessionId: ensureSessionId(),
         timestamp: now().toISOString()
       };
+      if (options.pageUrl) payload.pageUrl = String(options.pageUrl);
+      if (options.referrer) payload.referrer = String(options.referrer);
       var utms = readUtms();
       UTM_KEYS.forEach(function (key) {
         if (utms[key]) payload[key] = utms[key];
@@ -241,6 +245,7 @@
   }
 
   return {
+    WEBHOOK_URL: WEBHOOK_URL,
     UTM_KEYS: UTM_KEYS,
     classifyDisplayedRates: classifyDisplayedRates,
     hasDisplayableRates: hasDisplayableRates,
