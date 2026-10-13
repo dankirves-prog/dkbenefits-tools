@@ -765,7 +765,8 @@ test('rates-first demo shows rates immediately and prints with or without group 
     await waitFor(async () => evaluate(`getComputedStyle(document.getElementById('customize-panel')).display !== 'none'`), 'customize panel');
     const dropped = await evaluate(`(() => {
       const button = document.getElementById('customize-btn').getBoundingClientRect();
-      const panel = document.getElementById('customize-panel').getBoundingClientRect();
+      const panelEl = document.getElementById('customize-panel');
+      const panel = panelEl.getBoundingClientRect();
       const card = document.querySelector('#top-plans .plan-card').getBoundingClientRect();
       return {
         buttonTop: button.top,
@@ -773,9 +774,9 @@ test('rates-first demo shows rates immediately and prints with or without group 
         panelTop: panel.top,
         panelBottom: panel.bottom,
         cardTop: card.top,
-        display: getComputedStyle(document.getElementById('customize-panel')).display,
-        panelOverflow: getComputedStyle(panel).overflowY,
-        panelMaxHeight: getComputedStyle(panel).maxHeight,
+        display: getComputedStyle(panelEl).display,
+        panelOverflow: getComputedStyle(panelEl).overflowY,
+        panelMaxHeight: getComputedStyle(panelEl).maxHeight,
         position: getComputedStyle(document.getElementById('customize-btn')).position,
         innerHeight
       };
