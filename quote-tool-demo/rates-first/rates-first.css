@@ -1,4 +1,4 @@
-/* Rates-first demo. Screen layout only; print rules stay in preview.css. */
+/* Rates-first demo. Screen layout lives here; print overrides follow preview.css. */
 
 .rf-page { padding-bottom: 88px; }
 .brand-name { margin: 0; font-weight: 700; color: var(--navy); }
@@ -162,21 +162,18 @@ body.is-customizing #customize-panel { display: block; }
   }
   .rf-page .quote-main { grid-column: 1; grid-row: 1; min-width: 0; }
   #customize-panel {
-    display: flex;
-    flex-direction: column;
+    display: block;
     grid-column: 2;
     grid-row: 1;
-    position: sticky;
-    top: 12px;
-    max-height: calc(100vh - 24px);
-    overflow: hidden;
+    position: static;
+    max-height: none;
+    overflow: visible;
     margin: 0;
     min-width: 0;
   }
   #customize-panel .mix-panel {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow: auto;
+    max-height: none;
+    overflow: visible;
   }
   #customize-btn,
   .rf-sticky-cta { display: none; }
@@ -299,19 +296,28 @@ body.is-customizing #customize-panel { display: block; }
 }
 
 @media print {
+  @page {
+    size: landscape;
+    size: letter landscape;
+  }
   .rf-sticky-cta { display: none !important; }
   .print-table th,
   .print-table td { line-height: 1.02; padding-top: 0; padding-bottom: 0; }
   .print-disclaimer { margin-top: 1px; }
   .print-disclaimer p { margin: 0 0 1px; }
-  .print-disclaimer .print-close-lead {
-    column-span: all;
-    margin: 2px 0 0;
-    padding-top: 1px;
-    border-top: 0.6pt solid #163e73;
+  .print-close {
+    margin: 3px 0 0;
+    padding: 2px 6px 1px;
+    border: 0.8pt solid #163e73;
+    background: #f3f6fb;
     color: #122033;
-    font-size: 7.5pt;
-    font-weight: 700;
-    line-height: 1.1;
+    font-size: 8pt;
+    line-height: 1.15;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
+  .print-close p { margin: 0; }
+  .print-close .print-close-lead { font-weight: 700; }
 }

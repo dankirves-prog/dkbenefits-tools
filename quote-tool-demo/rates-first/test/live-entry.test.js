@@ -294,7 +294,7 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
       };
     })()`);
     assert.notEqual(desk.display, 'none');
-    assert.equal(desk.position, 'sticky');
+    assert.equal(desk.position, 'static');
     assert.equal(desk.btn, 'none');
     assert.ok(desk.panelLeft > desk.cardRight - 2, 'desktop side panel is not beside the cards');
     assert.equal(desk.leadNext, 'load-error');
@@ -560,7 +560,7 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
         assert.equal(layout.sideDisplay, 'none');
       } else {
         assert.notEqual(layout.sideDisplay, 'none');
-        assert.equal(layout.sidePosition, 'sticky');
+        assert.equal(layout.sidePosition, 'static');
         assert.ok(layout.innerWidth >= 1024);
         assert.ok(layout.sideLeft > layout.cardLeft, 'side panel is not beside the cards');
       }

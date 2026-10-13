@@ -369,7 +369,7 @@ test('rates-first demo shows rates immediately and prints with or without group 
       const pdf = await send('Page.printToPDF', {
         printBackground: true,
         preferCSSPageSize: true,
-        landscape: true
+        landscape: false
       }, printSession);
       const file = path.join(ARTIFACTS, filename);
       fs.writeFileSync(file, Buffer.from(pdf.data, 'base64'));
@@ -580,6 +580,11 @@ test('rates-first demo shows rates immediately and prints with or without group 
         cols: cols.length,
         btn: getComputedStyle(document.getElementById('customize-btn')).display,
         sticky: getComputedStyle(document.getElementById('customize-panel')).position,
+        panelOverflow: getComputedStyle(document.getElementById('customize-panel')).overflowY,
+        panelMaxHeight: getComputedStyle(document.getElementById('customize-panel')).maxHeight,
+        mixOverflow: getComputedStyle(document.querySelector('#customize-panel .mix-panel')).overflowY,
+        panelScroll: document.getElementById('customize-panel').scrollHeight,
+        panelClient: document.getElementById('customize-panel').clientHeight,
         wrap: document.getElementById('quote-app').getBoundingClientRect().width,
         innerHeight: innerHeight
       };
@@ -590,7 +595,11 @@ test('rates-first demo shows rates immediately and prints with or without group 
     assert.ok(place.cardTop < place.innerHeight - 72, 'first card is below the fold beside the panel');
     assert.ok(place.panelWidth < place.wrap * 0.5, 'side panel is too wide: ' + place.panelWidth);
     assert.ok(place.panelWidth >= 280, 'side panel is too narrow: ' + place.panelWidth);
-    assert.equal(place.sticky, 'sticky', 'side panel should stay in view while the cards scroll');
+    assert.equal(place.sticky, 'static', 'side panel scrolls with the page');
+    assert.equal(place.panelOverflow, 'visible', 'customize panel should not scroll inside itself');
+    assert.equal(place.panelMaxHeight, 'none', 'customize panel should be full height');
+    assert.equal(place.mixOverflow, 'visible', 'customize fields should not scroll inside the panel');
+    assert.ok(place.panelScroll <= place.panelClient + 1, 'customize panel has an inner scrollbar');
     assert.equal(place.cols, 2, 'desktop cards should be two-up');
     assert.equal(place.btn, 'none', 'desktop hides the customize toggle');
     await assertProposalCta(false);
@@ -765,11 +774,15 @@ test('rates-first demo shows rates immediately and prints with or without group 
         panelBottom: panel.bottom,
         cardTop: card.top,
         display: getComputedStyle(document.getElementById('customize-panel')).display,
+        panelOverflow: getComputedStyle(panel).overflowY,
+        panelMaxHeight: getComputedStyle(panel).maxHeight,
         position: getComputedStyle(document.getElementById('customize-btn')).position,
         innerHeight
       };
     })()`);
     assert.notEqual(dropped.display, 'none');
+    assert.equal(dropped.panelOverflow, 'visible', 'phone customize panel should not scroll inside itself');
+    assert.equal(dropped.panelMaxHeight, 'none', 'phone customize panel should be full height');
     assert.equal(dropped.position, 'fixed');
     assert.ok(dropped.buttonBottom <= dropped.innerHeight + 1 && dropped.buttonTop > dropped.innerHeight - 80, 'customize bar is not along the bottom');
     assert.ok(dropped.cardTop >= dropped.panelBottom - 4, 'plan cards are not below the customize box');
