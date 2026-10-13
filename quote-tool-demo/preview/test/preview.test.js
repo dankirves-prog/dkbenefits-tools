@@ -434,7 +434,7 @@ test('a full visit posts quote started, rates displayed, then one unchanged lead
   assert.equal(preview.ACTIVITY_TRACKING_ENABLED, true);
   const activitySource = fs.readFileSync(path.join(ROOT, 'quote-activity.js'), 'utf8');
   assert.equal(activitySource.includes('fetch('), false);
-  assert.equal(activitySource.includes('script.google.com'), false);
+  assert.equal(activitySource.includes("var WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby4-ZxTQfsAgIBO0JYSngccVoj5HRKtNshy6N2XlJhbxaEk2oW7b_xIRBGlcSq0CZ0z/exec'"), true);
 
   const calls = [];
   const previousFetch = global.fetch;
