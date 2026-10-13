@@ -7,6 +7,9 @@
     root.QuoteActivity = api;
   }
 })(typeof window !== 'undefined' ? window : globalThis, function () {
+  // One line to switch the live quote tool onto Dan's new Apps Script web app.
+  // Leave this on the current endpoint until that /exec URL is deployed.
+  var WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby4-ZxTQfsAgIBO0JYSngccVoj5HRKtNshy6N2XlJhbxaEk2oW7b_xIRBGlcSq0CZ0z/exec';
   var UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
   var RATE_KEYS = ['employeeOnly', 'employeeSpouse', 'employeeChildren', 'family'];
   var DEFAULT_VISIBLE_GROUPS = ['top', 'low'];
@@ -140,6 +143,8 @@
         sessionId: ensureSessionId(),
         timestamp: now().toISOString()
       };
+      if (options.pageUrl) payload.pageUrl = String(options.pageUrl);
+      if (options.referrer) payload.referrer = String(options.referrer);
       var utms = readUtms();
       UTM_KEYS.forEach(function (key) {
         if (utms[key]) payload[key] = utms[key];
@@ -241,6 +246,7 @@
   }
 
   return {
+    WEBHOOK_URL: WEBHOOK_URL,
     UTM_KEYS: UTM_KEYS,
     classifyDisplayedRates: classifyDisplayedRates,
     hasDisplayableRates: hasDisplayableRates,

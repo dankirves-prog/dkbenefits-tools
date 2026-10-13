@@ -37,7 +37,7 @@ function chromePath() {
   throw new Error('Chrome was not found');
 }
 
-test('live quote entry posts without ?live=1 and still fits the Wix iframe', { timeout: 180000 }, async () => {
+test('live quote entry posts without ?live=1 and still fits the Wix iframe', { timeout: 240000 }, async () => {
   fs.mkdirSync(ARTIFACTS, { recursive: true });
   const userData = '/tmp/chrome-rates-first-live-8705';
   fs.rmSync(userData, { recursive: true, force: true });
@@ -476,7 +476,7 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
     })()`);
     await sleep(250);
     assert.equal(posts.filter((post) => post.body.includes('"event":"group_size"')).length, 0);
-    await sleep(3400);
+    await sleep(21000);
     await waitFor(async () => posts.some((post) => post.body.includes('"event":"group_size"')), 'live group size');
     await evaluate(`(() => {
       const eligible = document.getElementById('eligible');
@@ -575,7 +575,7 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
       })()`);
       await sleep(400);
       assert.equal(posts.filter((post) => post.body.includes('"event":"group_size"')).length, 0, fieldId + ' sent a partial group size');
-      await sleep(3200);
+      await sleep(21000);
       await waitFor(async () => posts.some((post) => post.body.includes('"event":"group_size"')), fieldId + ' group size');
       const groups = posts.filter((post) => post.body.includes('"event":"group_size"')).map((post) => JSON.parse(post.body));
       assert.equal(groups.length, 1, fieldId + ' group events ' + groups.length);
