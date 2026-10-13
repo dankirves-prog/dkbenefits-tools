@@ -270,6 +270,10 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
     assert.equal(fold.scrollY, 0);
     assert.equal(fold.trust, 'No company info needed. No spam.');
     fold.tools.forEach((tool) => {
+      if (tool.sel === '#my-plans-btn') {
+        assert.equal(tool.display, 'none', 'My Plans stays hidden until a plan is saved');
+        return;
+      }
       assert.notEqual(tool.display, 'none', tool.sel);
       assert.ok(tool.text.length > 0, tool.sel);
     });
@@ -506,7 +510,10 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
       set('enrolling', '7');
       document.querySelector('[data-ee="50"]').click();
       document.querySelector('[data-state="Florida"]').click();
-      document.querySelector('[data-help="Just learning more"]').click();
+      const help = document.querySelector('[data-help="Just learning more"]');
+      if (help) help.click();
+      const groupSize = document.getElementById('lead-group-size');
+      if (groupSize) groupSize.value = '12';
       document.getElementById('first-name').value = 'Pat';
       document.getElementById('email').value = 'pat@example.com';
       document.getElementById('lead-form').requestSubmit();
@@ -536,6 +543,10 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
       assert.equal(layout.leadHidden, false);
       assert.equal(layout.leadHeading, "Let's Talk");
       layout.tools.forEach((tool) => {
+        if (tool.sel === '#my-plans-btn') {
+          assert.equal(tool.display, 'none', 'My Plans stays hidden until a plan is saved');
+          return;
+        }
         const expectVisible = phone || tool.sel !== '#customize-btn';
         if (!expectVisible) {
           assert.equal(tool.display, 'none');
