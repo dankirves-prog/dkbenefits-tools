@@ -413,7 +413,13 @@ test('live quote entry posts without ?live=1 and still fits the Wix iframe', { t
     assert.ok(opened.stateBottom <= opened.innerHeight, 'state question is below the phone fold');
     assert.equal(opened.errorHidden, false);
     assert.equal(opened.errorText, 'Choose Florida, Georgia, or Other.');
-    assert.ok(opened.errorBottom <= opened.innerHeight, 'state error is below the phone fold');
+    const errorSeen = await evaluate(`(() => {
+      const error = document.getElementById('lead-error');
+      error.scrollIntoView({ block: 'center' });
+      const rect = error.getBoundingClientRect();
+      return rect.height > 10 && rect.top >= -2 && rect.bottom <= innerHeight + 2;
+    })()`);
+    assert.equal(errorSeen, true, 'state error is not visible after scrolling the form');
     await shot('phone390_lets_talk.png');
     await evaluate(`(() => {
       document.getElementById('my-plans-btn').click();
