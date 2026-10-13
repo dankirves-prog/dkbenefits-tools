@@ -307,10 +307,11 @@ test('rates-first demo shows rates immediately and prints with or without group 
     assert.equal(info.summaryCursor, 'pointer');
     assert.equal(info.chevron, '"▸"');
     assert.equal(info.hintClosed, '"Show"');
-    const openedHint = await evaluate(`(() => {
+    const openedHint = await evaluate(`(async () => {
       const disclaimer = document.getElementById('disclaimer');
       const summary = disclaimer.querySelector('summary');
       disclaimer.open = true;
+      await new Promise((resolve) => setTimeout(resolve, 220));
       const open = {
         hint: getComputedStyle(summary, '::after').content,
         chevron: getComputedStyle(summary, '::before').transform

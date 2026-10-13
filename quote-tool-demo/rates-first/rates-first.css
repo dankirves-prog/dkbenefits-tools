@@ -138,6 +138,12 @@ body.is-customizing #customize-panel { display: block; }
 }
 .disclaimer[open] > summary::after { content: 'Hide'; }
 .disclaimer summary:hover { background: var(--wash); }
+#customize-panel input[type="range"] {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 6px 0 0;
+}
 
 @media (max-width: 1023px) {
   #customize-panel .mix-grid { grid-template-columns: 1fr 1fr; }
