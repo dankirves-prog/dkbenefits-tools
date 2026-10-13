@@ -660,7 +660,14 @@ test('the page does not gate rates behind the questionnaire', () => {
   assert.match(css, /#customize-panel\s*\{[^}]*position:\s*static;/);
   assert.match(css, /#customize-panel\s*\{[^}]*max-height:\s*none;/);
   assert.match(css, /#customize-panel\s*\{[^}]*overflow:\s*visible;/);
+  assert.match(css, /#customize-panel \* \{[^}]*overflow:\s*visible;/);
   assert.doesNotMatch(css, /overflow:\s*auto/);
+  assert.doesNotMatch(css, /100vh/);
+  assert.doesNotMatch(css, /#customize-panel[\s\S]{0,500}position:\s*sticky/);
+  assert.match(css, /summary::before[\s\S]*content:\s*'▸'/);
+  assert.match(css, /summary::after[\s\S]*content:\s*'Show'/);
+  assert.match(css, /\[open\] > summary::after \{ content: 'Hide'/);
+  assert.match(css, /summary:hover/);
   assert.match(source, /model\.setHelp\('Get a full-market review'\)/);
   assert.match(source, /firstName: name/);
   assert.equal(rates.ACTIVITY_TRACKING_ENABLED, true);

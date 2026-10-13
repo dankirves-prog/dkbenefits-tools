@@ -278,6 +278,10 @@ test('rates-first demo shows rates immediately and prints with or without group 
         afterMec: document.getElementById('section-mec').nextElementSibling.id,
         beforeDisclaimer: disclaimer.previousElementSibling.id,
         summary: disclaimer.querySelector('summary').textContent.trim(),
+        summaryCursor: getComputedStyle(disclaimer.querySelector('summary')).cursor,
+        chevron: getComputedStyle(disclaimer.querySelector('summary'), '::before').content,
+        chevronClosed: getComputedStyle(disclaimer.querySelector('summary'), '::before').transform,
+        hintClosed: getComputedStyle(disclaimer.querySelector('summary'), '::after').content,
         paragraphs,
         options,
         sort: document.getElementById('sort-mode').value,
@@ -300,6 +304,22 @@ test('rates-first demo shows rates immediately and prints with or without group 
     assert.equal(info.afterMec, 'market-note');
     assert.equal(info.beforeDisclaimer, 'market-note');
     assert.equal(info.summary, 'Important information');
+    assert.equal(info.summaryCursor, 'pointer');
+    assert.equal(info.chevron, '"▸"');
+    assert.equal(info.hintClosed, '"Show"');
+    const openedHint = await evaluate(`(() => {
+      const disclaimer = document.getElementById('disclaimer');
+      const summary = disclaimer.querySelector('summary');
+      disclaimer.open = true;
+      const open = {
+        hint: getComputedStyle(summary, '::after').content,
+        chevron: getComputedStyle(summary, '::before').transform
+      };
+      disclaimer.open = false;
+      return open;
+    })()`);
+    assert.equal(openedHint.hint, '"Hide"');
+    assert.notEqual(openedHint.chevron, info.chevronClosed, 'chevron should rotate when the disclaimer opens');
     assert.match(info.paragraphs[1], /United and Cigna plans require at least 5 enrolled employees with 50% participation\. PHCS plans require at least 3 enrolled\./);
     assert.deepEqual(info.options, ['price:Lowest price', 'carrier:Carrier', 'lowestCost:Lowest employer cost']);
     assert.equal(info.sort, 'price');
@@ -318,6 +338,52 @@ test('rates-first demo shows rates immediately and prints with or without group 
       assert.notEqual(info.panelDisplay, 'none');
       assert.ok(info.printWidth >= info.panelWidth - 4, 'Print proposal is not full width: ' + info.printWidth + ' vs ' + info.panelWidth);
     }
+  }
+
+  async function assertNoInnerPanelScroll(label) {
+    const report = await evaluate(`(() => {
+      const panel = document.getElementById('customize-panel');
+      const nodes = [panel, ...panel.querySelectorAll('*')];
+      const bad = [];
+      nodes.forEach((node) => {
+        if (!(node instanceof Element)) return;
+        const style = getComputedStyle(node);
+        const oy = style.overflowY;
+        const ox = style.overflowX;
+        const trapped = oy === 'auto' || oy === 'scroll' || ox === 'auto' || ox === 'scroll';
+        const scrolls = node.scrollHeight > node.clientHeight + 1 || node.scrollWidth > node.clientWidth + 1;
+        const sticky = style.position === 'sticky' || style.position === 'fixed';
+        const capped = style.maxHeight !== 'none';
+        if (trapped || scrolls || sticky || capped) {
+          bad.push({
+            id: node.id,
+            cls: String(node.className || '').slice(0, 48),
+            tag: node.tagName,
+            ox,
+            oy,
+            pos: style.position,
+            maxH: style.maxHeight,
+            h: style.height,
+            sh: node.scrollHeight,
+            ch: node.clientHeight,
+            sw: node.scrollWidth,
+            cw: node.clientWidth
+          });
+        }
+      });
+      const wrappers = [];
+      for (let node = panel.parentElement; node && node !== document.documentElement; node = node.parentElement) {
+        const style = getComputedStyle(node);
+        const oy = style.overflowY;
+        const ox = style.overflowX;
+        if (oy === 'auto' || oy === 'scroll' || ox === 'auto' || ox === 'scroll' || style.position === 'sticky' || style.maxHeight !== 'none') {
+          wrappers.push({ id: node.id, cls: String(node.className || '').slice(0, 48), ox, oy, pos: style.position, maxH: style.maxHeight });
+        }
+      }
+      return { bad, wrappers, height: innerHeight };
+    })()`);
+    assert.equal(report.bad.length, 0, label + ' panel scroll ' + JSON.stringify(report.bad));
+    assert.equal(report.wrappers.length, 0, label + ' wrapper scroll ' + JSON.stringify(report.wrappers));
   }
 
   async function clickPrint(id) {
@@ -602,6 +668,62 @@ test('rates-first demo shows rates immediately and prints with or without group 
     assert.ok(place.panelScroll <= place.panelClient + 1, 'customize panel has an inner scrollbar');
     assert.equal(place.cols, 2, 'desktop cards should be two-up');
     assert.equal(place.btn, 'none', 'desktop hides the customize toggle');
+    await setViewport(1280, 800);
+    await assertNoInnerPanelScroll('1280x800');
+    const wheel800 = await evaluate(`(() => {
+      window.scrollTo(0, 0);
+      document.getElementById('customize-panel').scrollTop = 0;
+      const rect = document.getElementById('customize-panel').getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: Math.min(rect.top + 48, innerHeight - 24) };
+    })()`);
+    await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: wheel800.x, y: wheel800.y, deltaX: 0, deltaY: 140 }, sessionId);
+    await sleep(80);
+    const afterWheel = await evaluate(`(() => ({
+      panel: document.getElementById('customize-panel').scrollTop,
+      page: window.scrollY
+    }))()`);
+    assert.equal(afterWheel.panel, 0, 'customize panel captured the wheel');
+    assert.ok(afterWheel.page > 0, 'page did not scroll when the wheel was over the panel');
+    await evaluate('window.scrollTo(0, 0)');
+    await setViewport(1280, 650);
+    await assertNoInnerPanelScroll('1280x650');
+    await setViewport(1280, 1900);
+    await evaluate(`(() => {
+      const frame = document.createElement('iframe');
+      frame.id = 'rf-scroll-frame';
+      frame.title = 'Scroll check';
+      frame.style.cssText = 'position:fixed;left:0;top:0;width:1280px;height:1691px;border:0;z-index:5';
+      frame.src = location.pathname + location.search;
+      document.body.appendChild(frame);
+    })()`);
+    await waitFor(async () => evaluate(`(() => {
+      const doc = document.getElementById('rf-scroll-frame').contentDocument;
+      return !!(doc && doc.querySelector('#top-plans .plan-card:not(.skeleton)'));
+    })()`), '1691 iframe plans');
+    const framed = await evaluate(`(() => {
+      const doc = document.getElementById('rf-scroll-frame').contentDocument;
+      const win = doc.defaultView;
+      doc.getElementById('model-percent').click();
+      const panel = doc.getElementById('customize-panel');
+      const nodes = [panel, ...panel.querySelectorAll('*')];
+      const bad = [];
+      nodes.forEach((node) => {
+        const style = win.getComputedStyle(node);
+        const oy = style.overflowY;
+        const ox = style.overflowX;
+        const trapped = oy === 'auto' || oy === 'scroll' || ox === 'auto' || ox === 'scroll';
+        const scrolls = node.scrollHeight > node.clientHeight + 1 || node.scrollWidth > node.clientWidth + 1;
+        if (trapped || scrolls || style.position === 'sticky' || style.position === 'fixed' || style.maxHeight !== 'none') {
+          bad.push(node.id || node.tagName + '.' + String(node.className || '').slice(0, 24));
+        }
+      });
+      return { vh: win.innerHeight, bad };
+    })()`);
+    assert.equal(framed.vh, 1691, 'iframe viewport ' + framed.vh);
+    assert.equal(framed.bad.length, 0, '1691 iframe panel scroll ' + JSON.stringify(framed.bad));
+    await evaluate(`document.getElementById('rf-scroll-frame').remove()`);
+    await setViewport(1280, 900);
+    await evaluate('window.scrollTo(0, 0)');
     await assertProposalCta(false);
     await clickPrint('print-proposal-btn');
     assert.equal(await evaluate(`document.getElementById('print-root').innerHTML.includes('class="print-sheet') && document.getElementById('print-root').innerHTML.includes('Important information')`), true, 'Print proposal did not build a proposal');
