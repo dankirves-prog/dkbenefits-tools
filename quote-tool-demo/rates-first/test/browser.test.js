@@ -162,10 +162,11 @@ test('rates-first demo shows rates immediately and prints with or without group 
         const el = document.querySelector(sel);
         const rect = el.getBoundingClientRect();
         const style = getComputedStyle(el);
-        return { sel, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height, display: style.display };
+        return { sel, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height, display: style.display, position: style.position };
       });
       const fixed = [];
       document.querySelectorAll('body *').forEach((el) => {
+        if (el.id === 'customize-btn' || el.id === 'customize-panel' || el.classList.contains('rf-sticky-cta')) return;
         const style = getComputedStyle(el);
         if (style.position !== 'fixed' && style.position !== 'sticky') return;
         const rect = el.getBoundingClientRect();
@@ -205,7 +206,7 @@ test('rates-first demo shows rates immediately and prints with or without group 
 
   function assertLanding(layout, phone) {
     assert.equal(layout.headline, 'Group health rates for small businesses');
-    assert.equal(layout.trust, 'No company info needed. No spam.');
+    assert.equal(layout.trust, 'Live rates below. Inquire for a full-market review, there may be better options available.');
     assert.notEqual(layout.trustDisplay, 'none');
     assert.equal(layout.headers, 1);
     assert.equal(layout.h1, 1);
@@ -221,9 +222,20 @@ test('rates-first demo shows rates immediately and prints with or without group 
     assert.ok(layout.cardTop < layout.innerHeight - 72, 'first card is not visibly on screen, top ' + layout.cardTop + ' of ' + layout.innerHeight);
     assert.ok(layout.cardBottom > layout.cardTop + 40, 'first card is too short to read');
     layout.tools.forEach((tool) => {
-      const expectVisible = phone || tool.sel !== '#customize-btn';
-      if (!expectVisible) {
-        assert.equal(tool.display, 'none', 'desktop should hide the customize button');
+      if (tool.sel === '#my-plans-btn') {
+        assert.equal(tool.display, 'none', 'My Plans stays hidden until a plan is saved');
+        return;
+      }
+      if (tool.sel === '#customize-btn') {
+        if (!phone) {
+          assert.equal(tool.display, 'none', 'desktop should hide the customize bar');
+          return;
+        }
+        assert.notEqual(tool.display, 'none', 'phone should show the customize bar');
+        assert.equal(tool.position, 'fixed', 'customize bar should stick to the viewport');
+        assert.ok(tool.height >= 28 && tool.height <= 56, 'customize bar should stay slim ' + tool.height);
+        assert.ok(tool.width >= layout.innerWidth - 2, 'customize bar should be full width');
+        assert.ok(tool.top >= -1 && tool.bottom <= layout.innerHeight + 1, 'customize bar is off the phone screen');
         return;
       }
       assert.notEqual(tool.display, 'none', tool.sel + ' is hidden');
@@ -233,8 +245,146 @@ test('rates-first demo shows rates immediately and prints with or without group 
     else assert.notEqual(layout.sideDisplay, 'none');
     assert.equal(layout.leadHidden, false, 'contact card should be open on landing');
     assert.ok(layout.leadTop > layout.cardBottom - 2, 'contact card should sit below the first plan card');
-    assert.equal(layout.talk, "Let's Talk");
+    assert.equal(layout.talk, 'Get a full-market review');
     assert.equal(layout.printLabel, 'Print all');
+  }
+
+  async function assertProposalCta(phone) {
+    const info = await evaluate(`(() => {
+      const bar = document.getElementById('customize-btn');
+      const barStyle = getComputedStyle(bar);
+      const printBtn = document.getElementById('print-proposal-btn');
+      const panel = document.getElementById('customize-panel');
+      const note = document.getElementById('market-note');
+      const disclaimer = document.getElementById('disclaimer');
+      const paragraphs = [...disclaimer.querySelectorAll('p')].map((p) => p.textContent.trim());
+      const options = [...document.querySelectorAll('#sort-mode option')].map((o) => o.value + ':' + o.textContent.trim());
+      window.scrollTo(0, document.documentElement.scrollHeight);
+      const barRect = bar.getBoundingClientRect();
+      const lead = document.getElementById('lead').getBoundingClientRect();
+      const pad = parseFloat(getComputedStyle(document.body).paddingBottom);
+      window.scrollTo(0, 0);
+      return {
+        heading: document.getElementById('mix-heading').textContent.trim(),
+        barText: bar.textContent.trim(),
+        barDisplay: barStyle.display,
+        barPosition: barStyle.position,
+        printText: printBtn.textContent.trim(),
+        printWidth: printBtn.getBoundingClientRect().width,
+        panelWidth: panel.getBoundingClientRect().width,
+        panelDisplay: getComputedStyle(panel).display,
+        market: note.querySelector('p').textContent.trim(),
+        talk: document.getElementById('market-talk-btn').textContent.trim(),
+        afterMec: document.getElementById('section-mec').nextElementSibling.id,
+        beforeDisclaimer: disclaimer.previousElementSibling.id,
+        summary: disclaimer.querySelector('summary').textContent.trim(),
+        summaryCursor: getComputedStyle(disclaimer.querySelector('summary')).cursor,
+        chevron: getComputedStyle(disclaimer.querySelector('summary'), '::before').content,
+        chevronClosed: getComputedStyle(disclaimer.querySelector('summary'), '::before').transform,
+        hintClosed: getComputedStyle(disclaimer.querySelector('summary'), '::after').content,
+        paragraphs,
+        options,
+        sort: document.getElementById('sort-mode').value,
+        myPlansHidden: document.getElementById('my-plans-btn').hidden,
+        trust: document.querySelector('.trust').textContent.trim(),
+        contact: document.getElementById('contact-btn').textContent.trim(),
+        filters: !!document.querySelector('.rf-bar-filters #carrier-filters') && !!document.querySelector('.rf-bar-filters #sort-mode'),
+        actions: !!document.querySelector('.rf-bar-actions #print-all-btn') && !!document.querySelector('.rf-bar-actions #contact-btn') && !document.querySelector('.rf-bar-actions #customize-btn'),
+        pad,
+        barH: barRect.height,
+        leadBottom: lead.bottom,
+        barTop: barRect.top
+      };
+    })()`);
+    assert.equal(info.heading, 'Customize & print proposal');
+    assert.equal(info.barText, 'Customize & print proposal');
+    assert.equal(info.printText, 'Print proposal');
+    assert.equal(info.market, 'These are a few of the plans we can quote instantly. A full-market review with underwriting can often turn up better options.');
+    assert.equal(info.talk, 'Get a full-market review');
+    assert.equal(info.afterMec, 'market-note');
+    assert.equal(info.beforeDisclaimer, 'market-note');
+    assert.equal(info.summary, 'Important information');
+    assert.equal(info.summaryCursor, 'pointer');
+    assert.equal(info.chevron, '"▸"');
+    assert.equal(info.hintClosed, '"Show"');
+    const openedHint = await evaluate(`(async () => {
+      const disclaimer = document.getElementById('disclaimer');
+      const summary = disclaimer.querySelector('summary');
+      disclaimer.open = true;
+      await new Promise((resolve) => setTimeout(resolve, 220));
+      const open = {
+        hint: getComputedStyle(summary, '::after').content,
+        chevron: getComputedStyle(summary, '::before').transform
+      };
+      disclaimer.open = false;
+      return open;
+    })()`);
+    assert.equal(openedHint.hint, '"Hide"');
+    assert.notEqual(openedHint.chevron, info.chevronClosed, 'chevron should rotate when the disclaimer opens');
+    assert.match(info.paragraphs[1], /United and Cigna plans require at least 5 enrolled employees with 50% participation\. PHCS plans require at least 3 enrolled\./);
+    assert.deepEqual(info.options, ['price:Lowest price', 'carrier:Carrier', 'lowestCost:Lowest employer cost']);
+    assert.equal(info.sort, 'price');
+    assert.equal(info.myPlansHidden, true);
+    assert.equal(info.trust, 'Live rates below. Inquire for a full-market review, there may be better options available.');
+    assert.equal(info.contact, 'Get a full-market review');
+    assert.equal(info.filters, true);
+    assert.equal(info.actions, true);
+    if (phone) {
+      assert.notEqual(info.barDisplay, 'none');
+      assert.equal(info.barPosition, 'fixed');
+      assert.ok(info.pad + 0.5 >= info.barH, 'page padding does not clear the sticky bar');
+      assert.ok(info.leadBottom <= info.barTop + 1, 'sticky bar covers the last content');
+    } else {
+      assert.equal(info.barDisplay, 'none');
+      assert.notEqual(info.panelDisplay, 'none');
+      assert.ok(info.printWidth >= info.panelWidth - 4, 'Print proposal is not full width: ' + info.printWidth + ' vs ' + info.panelWidth);
+    }
+  }
+
+  async function assertNoInnerPanelScroll(label) {
+    const report = await evaluate(`(() => {
+      const panel = document.getElementById('customize-panel');
+      const nodes = [panel, ...panel.querySelectorAll('*')];
+      const bad = [];
+      nodes.forEach((node) => {
+        if (!(node instanceof Element)) return;
+        const style = getComputedStyle(node);
+        const oy = style.overflowY;
+        const ox = style.overflowX;
+        const trapped = oy === 'auto' || oy === 'scroll' || ox === 'auto' || ox === 'scroll';
+        const scrolls = node.scrollHeight > node.clientHeight + 1 || node.scrollWidth > node.clientWidth + 1;
+        const sticky = style.position === 'sticky' || style.position === 'fixed';
+        const capped = style.maxHeight !== 'none';
+        if (trapped || scrolls || sticky || capped) {
+          bad.push({
+            id: node.id,
+            cls: String(node.className || '').slice(0, 48),
+            tag: node.tagName,
+            ox,
+            oy,
+            pos: style.position,
+            maxH: style.maxHeight,
+            h: style.height,
+            sh: node.scrollHeight,
+            ch: node.clientHeight,
+            sw: node.scrollWidth,
+            cw: node.clientWidth
+          });
+        }
+      });
+      const wrappers = [];
+      for (let node = panel.parentElement; node && node !== document.documentElement; node = node.parentElement) {
+        const style = getComputedStyle(node);
+        const oy = style.overflowY;
+        const ox = style.overflowX;
+        if (oy === 'auto' || oy === 'scroll' || ox === 'auto' || ox === 'scroll' || style.position === 'sticky' || style.maxHeight !== 'none') {
+          wrappers.push({ id: node.id, cls: String(node.className || '').slice(0, 48), ox, oy, pos: style.position, maxH: style.maxHeight });
+        }
+      }
+      return { bad, wrappers, height: innerHeight };
+    })()`);
+    assert.equal(report.bad.length, 0, label + ' panel scroll ' + JSON.stringify(report.bad));
+    assert.equal(report.wrappers.length, 0, label + ' wrapper scroll ' + JSON.stringify(report.wrappers));
   }
 
   async function clickPrint(id) {
@@ -286,7 +436,7 @@ test('rates-first demo shows rates immediately and prints with or without group 
       const pdf = await send('Page.printToPDF', {
         printBackground: true,
         preferCSSPageSize: true,
-        landscape: true
+        landscape: false
       }, printSession);
       const file = path.join(ARTIFACTS, filename);
       fs.writeFileSync(file, Buffer.from(pdf.data, 'base64'));
@@ -306,6 +456,8 @@ test('rates-first demo shows rates immediately and prints with or without group 
     const notes = pages.slice(expectedSheets);
     const last = proposal[proposal.length - 1];
     assert.match(last, /Important information/);
+    assert.match(last, /Let DK Benefits search a wider market/);
+    assert.match(last, /www\.dkbenefits\.net/);
     assert.match(last, /Premium/);
     assert.match(last, /Family/);
     proposal.forEach((text) => assert.doesNotMatch(text, /Notes and Limitations/));
@@ -410,6 +562,12 @@ test('rates-first demo shows rates immediately and prints with or without group 
     assert.ok(tiers.bottom <= tiers.innerHeight - 8, 'Family tier is below the 390 fold: ' + tiers.bottom);
     await shot('rf_mobile390_landing.png');
     await shot('rf4_mobile390_landing.png');
+    await shot('rates-first-phone-390.png');
+    await assertProposalCta(true);
+    await send('Emulation.setEmulatedMedia', { media: 'print' }, sessionId);
+    assert.equal(await evaluate(`getComputedStyle(document.getElementById('customize-btn')).display`), 'none', 'sticky bar should hide in print');
+    await send('Emulation.setEmulatedMedia', { media: 'screen' }, sessionId);
+    assert.equal(await evaluate(`getComputedStyle(document.getElementById('customize-btn')).position`), 'fixed');
 
     await setViewport(360, 740);
     layout = await evaluate(layoutExpression());
@@ -430,10 +588,14 @@ test('rates-first demo shows rates immediately and prints with or without group 
       const card = doc.querySelector('#top-plans .plan-card:not(.skeleton)');
       const cardRect = card.getBoundingClientRect();
       const frameRect = frame.getBoundingClientRect();
-      const tools = ['#carrier-filters', '#my-plans-btn', '#print-all-btn', '#customize-btn', '#contact-btn'].map((sel) => {
+      const tools = ['#carrier-filters', '#print-all-btn', '#contact-btn'].map((sel) => {
         const rect = doc.querySelector(sel).getBoundingClientRect();
         return { sel, top: frameRect.top + rect.top, bottom: frameRect.top + rect.bottom, height: rect.height };
       });
+      const bar = doc.getElementById('customize-btn');
+      const barStyle = win.getComputedStyle(bar);
+      const barRect = bar.getBoundingClientRect();
+      const myPlans = doc.getElementById('my-plans-btn');
       return {
         client: doc.documentElement.clientWidth,
         scroll: doc.documentElement.scrollWidth,
@@ -441,10 +603,21 @@ test('rates-first demo shows rates immediately and prints with or without group 
         cardTop: frameRect.top + cardRect.top,
         cardBottom: frameRect.top + cardRect.bottom,
         innerHeight: win.parent.innerHeight,
-        tools
+        tools,
+        myPlansDisplay: win.getComputedStyle(myPlans).display,
+        barDisplay: barStyle.display,
+        barPosition: barStyle.position,
+        barHeight: barRect.height,
+        barBottom: barRect.bottom,
+        frameHeight: win.innerHeight
       };
     })()`);
     assert.equal(embedded.client, 320);
+    assert.equal(embedded.myPlansDisplay, 'none');
+    assert.notEqual(embedded.barDisplay, 'none');
+    assert.equal(embedded.barPosition, 'fixed');
+    assert.ok(embedded.barHeight >= 28 && embedded.barHeight <= 56, 'iframe customize bar is not slim');
+    assert.ok(embedded.barBottom <= embedded.frameHeight + 1, 'customize bar is outside the iframe viewport');
     assert.ok(embedded.scroll <= embedded.client + 1, '320 iframe overflow ' + embedded.scroll);
     assert.equal(embedded.cardId, 'cigna-epo-1750-hsa');
     assert.ok(embedded.cardTop < embedded.innerHeight - 48, 'first card is below the 320 iframe fold, top ' + embedded.cardTop);
@@ -452,7 +625,7 @@ test('rates-first demo shows rates immediately and prints with or without group 
       assert.ok(tool.top >= 0 && tool.bottom <= embedded.innerHeight && tool.height >= 28, tool.sel + ' is outside the 320 iframe ' + JSON.stringify(tool));
     });
 
-    await setViewport(1440, 900);
+    await setViewport(1280, 900);
     await openPage(PAGE);
     layout = await evaluate(layoutExpression());
     assertLanding(layout, false);
@@ -474,6 +647,11 @@ test('rates-first demo shows rates immediately and prints with or without group 
         cols: cols.length,
         btn: getComputedStyle(document.getElementById('customize-btn')).display,
         sticky: getComputedStyle(document.getElementById('customize-panel')).position,
+        panelOverflow: getComputedStyle(document.getElementById('customize-panel')).overflowY,
+        panelMaxHeight: getComputedStyle(document.getElementById('customize-panel')).maxHeight,
+        mixOverflow: getComputedStyle(document.querySelector('#customize-panel .mix-panel')).overflowY,
+        panelScroll: document.getElementById('customize-panel').scrollHeight,
+        panelClient: document.getElementById('customize-panel').clientHeight,
         wrap: document.getElementById('quote-app').getBoundingClientRect().width,
         innerHeight: innerHeight
       };
@@ -484,9 +662,75 @@ test('rates-first demo shows rates immediately and prints with or without group 
     assert.ok(place.cardTop < place.innerHeight - 72, 'first card is below the fold beside the panel');
     assert.ok(place.panelWidth < place.wrap * 0.5, 'side panel is too wide: ' + place.panelWidth);
     assert.ok(place.panelWidth >= 280, 'side panel is too narrow: ' + place.panelWidth);
-    assert.equal(place.sticky, 'sticky', 'side panel should stay in view while the cards scroll');
+    assert.equal(place.sticky, 'static', 'side panel scrolls with the page');
+    assert.equal(place.panelOverflow, 'visible', 'customize panel should not scroll inside itself');
+    assert.equal(place.panelMaxHeight, 'none', 'customize panel should be full height');
+    assert.equal(place.mixOverflow, 'visible', 'customize fields should not scroll inside the panel');
+    assert.ok(place.panelScroll <= place.panelClient + 1, 'customize panel has an inner scrollbar');
     assert.equal(place.cols, 2, 'desktop cards should be two-up');
     assert.equal(place.btn, 'none', 'desktop hides the customize toggle');
+    await setViewport(1280, 800);
+    await assertNoInnerPanelScroll('1280x800');
+    const wheel800 = await evaluate(`(() => {
+      window.scrollTo(0, 0);
+      document.getElementById('customize-panel').scrollTop = 0;
+      const rect = document.getElementById('customize-panel').getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: Math.min(rect.top + 48, innerHeight - 24) };
+    })()`);
+    await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: wheel800.x, y: wheel800.y, deltaX: 0, deltaY: 140 }, sessionId);
+    await sleep(80);
+    const afterWheel = await evaluate(`(() => ({
+      panel: document.getElementById('customize-panel').scrollTop,
+      page: window.scrollY
+    }))()`);
+    assert.equal(afterWheel.panel, 0, 'customize panel captured the wheel');
+    assert.ok(afterWheel.page > 0, 'page did not scroll when the wheel was over the panel');
+    await evaluate('window.scrollTo(0, 0)');
+    await setViewport(1280, 650);
+    await assertNoInnerPanelScroll('1280x650');
+    await setViewport(1280, 1900);
+    await evaluate(`(() => {
+      const frame = document.createElement('iframe');
+      frame.id = 'rf-scroll-frame';
+      frame.title = 'Scroll check';
+      frame.style.cssText = 'position:fixed;left:0;top:0;width:1280px;height:1691px;border:0;z-index:5';
+      frame.src = location.pathname + location.search;
+      document.body.appendChild(frame);
+    })()`);
+    await waitFor(async () => evaluate(`(() => {
+      const doc = document.getElementById('rf-scroll-frame').contentDocument;
+      return !!(doc && doc.querySelector('#top-plans .plan-card:not(.skeleton)'));
+    })()`), '1691 iframe plans');
+    const framed = await evaluate(`(() => {
+      const doc = document.getElementById('rf-scroll-frame').contentDocument;
+      const win = doc.defaultView;
+      doc.getElementById('model-percent').click();
+      const panel = doc.getElementById('customize-panel');
+      const nodes = [panel, ...panel.querySelectorAll('*')];
+      const bad = [];
+      nodes.forEach((node) => {
+        const style = win.getComputedStyle(node);
+        const oy = style.overflowY;
+        const ox = style.overflowX;
+        const trapped = oy === 'auto' || oy === 'scroll' || ox === 'auto' || ox === 'scroll';
+        const scrolls = node.scrollHeight > node.clientHeight + 1 || node.scrollWidth > node.clientWidth + 1;
+        if (trapped || scrolls || style.position === 'sticky' || style.position === 'fixed' || style.maxHeight !== 'none') {
+          bad.push(node.id || node.tagName + '.' + String(node.className || '').slice(0, 24));
+        }
+      });
+      return { vh: win.innerHeight, bad };
+    })()`);
+    assert.equal(framed.vh, 1691, 'iframe viewport ' + framed.vh);
+    assert.equal(framed.bad.length, 0, '1691 iframe panel scroll ' + JSON.stringify(framed.bad));
+    await evaluate(`document.getElementById('rf-scroll-frame').remove()`);
+    await setViewport(1280, 900);
+    await evaluate('window.scrollTo(0, 0)');
+    await assertProposalCta(false);
+    await clickPrint('print-proposal-btn');
+    assert.equal(await evaluate(`document.getElementById('print-root').innerHTML.includes('class="print-sheet') && document.getElementById('print-root').innerHTML.includes('Important information')`), true, 'Print proposal did not build a proposal');
+    await evaluate(`window.scrollTo(0, 0)`);
+    await shot('rates-first-desktop-1280.png');
+    await setViewport(1440, 900);
     await evaluate(`window.scrollTo(0, 0)`);
     await shot('rf_desktop_landing.png');
     await shot('rf4_desktop_1440_landing.png');
@@ -644,18 +888,27 @@ test('rates-first demo shows rates immediately and prints with or without group 
     await waitFor(async () => evaluate(`getComputedStyle(document.getElementById('customize-panel')).display !== 'none'`), 'customize panel');
     const dropped = await evaluate(`(() => {
       const button = document.getElementById('customize-btn').getBoundingClientRect();
-      const panel = document.getElementById('customize-panel').getBoundingClientRect();
+      const panelEl = document.getElementById('customize-panel');
+      const panel = panelEl.getBoundingClientRect();
       const card = document.querySelector('#top-plans .plan-card').getBoundingClientRect();
       return {
+        buttonTop: button.top,
         buttonBottom: button.bottom,
         panelTop: panel.top,
         panelBottom: panel.bottom,
         cardTop: card.top,
-        display: getComputedStyle(document.getElementById('customize-panel')).display
+        display: getComputedStyle(panelEl).display,
+        panelOverflow: getComputedStyle(panelEl).overflowY,
+        panelMaxHeight: getComputedStyle(panelEl).maxHeight,
+        position: getComputedStyle(document.getElementById('customize-btn')).position,
+        innerHeight
       };
     })()`);
     assert.notEqual(dropped.display, 'none');
-    assert.ok(dropped.panelTop >= dropped.buttonBottom - 4, 'customize box is not directly under the button');
+    assert.equal(dropped.panelOverflow, 'visible', 'phone customize panel should not scroll inside itself');
+    assert.equal(dropped.panelMaxHeight, 'none', 'phone customize panel should be full height');
+    assert.equal(dropped.position, 'fixed');
+    assert.ok(dropped.buttonBottom <= dropped.innerHeight + 1 && dropped.buttonTop > dropped.innerHeight - 80, 'customize bar is not along the bottom');
     assert.ok(dropped.cardTop >= dropped.panelBottom - 4, 'plan cards are not below the customize box');
     await shot('rf3_mobile390_customize.png');
     await evaluate(`(() => {
@@ -708,12 +961,22 @@ test('rates-first demo shows rates immediately and prints with or without group 
       };
     })()`);
     assert.equal(lead.hidden, false);
-    assert.equal(lead.heading, "Let's Talk");
-    assert.equal(lead.line, 'Questions, more options, or ready to enroll? Daniel will reach out personally.');
+    assert.equal(lead.heading, 'Get a full-market review');
+    assert.equal(lead.line, 'Daniel will look past these instant rates and follow up with what else may fit.');
     assert.equal(lead.next, 'lead');
     assert.equal(lead.leads, 1);
     assert.equal(lead.forms, 1);
     assert.ok(lead.top >= lead.buttonBottom - 4, 'contact form is not under the toolbar button');
+    await evaluate(`document.getElementById('market-talk-btn').click()`);
+    await waitFor(async () => evaluate(`document.activeElement && document.activeElement.id === 'lead-state'`), 'full-market review opens the lead form');
+    const marketLead = await evaluate(`(() => ({
+      hidden: document.getElementById('lead').hidden,
+      next: document.querySelector('.rf-toolbar').nextElementSibling.id,
+      focus: document.activeElement && document.activeElement.id
+    }))()`);
+    assert.equal(marketLead.hidden, false);
+    assert.equal(marketLead.next, 'lead');
+    assert.equal(marketLead.focus, 'lead-state');
     assert.ok(lead.stateBottom <= lead.innerHeight, 'state question is below the phone fold');
     await shot('phone390_lets_talk.png');
     await evaluate(`(() => {
@@ -733,12 +996,9 @@ test('rates-first demo shows rates immediately and prints with or without group 
     await evaluate(`document.getElementById('drawer-close').click()`);
     assert.deepEqual(lead.states.map((item) => item.label), ['Florida', 'Georgia', 'Other']);
     assert.ok(lead.states.every((item) => item.checked === 'false'));
-    assert.ok(lead.help.every((checked) => checked === 'false'));
+    assert.equal(lead.help.length, 0);
     await shot('rf_lead_form_state.png');
-    await evaluate(`(() => {
-      document.querySelector('[data-help="Talk through these plans"]').click();
-      document.querySelector('[data-state="Florida"]').click();
-    })()`);
+    await evaluate(`document.querySelector('[data-state="Florida"]').click()`);
     async function frameContactCard() {
       return evaluate(`(() => {
         const lead = document.getElementById('lead');
@@ -751,33 +1011,37 @@ test('rates-first demo shows rates immediately and prints with or without group 
         return {
           heading: visible(document.getElementById('lead-heading')),
           florida: visible(document.querySelector('[data-state="Florida"]')),
-          help: visible(document.querySelector('[data-help="Talk through these plans"]')),
-          floridaOn: document.querySelector('[data-state="Florida"]').getAttribute('aria-checked'),
-          helpOn: document.querySelector('[data-help="Talk through these plans"]').getAttribute('aria-checked')
+          group: visible(document.getElementById('lead-group-size')),
+          floridaOn: document.querySelector('[data-state="Florida"]').getAttribute('aria-checked')
         };
       })()`);
     }
     const mobileCard = await frameContactCard();
     assert.equal(mobileCard.heading, true, 'contact heading is off the phone screen');
     assert.equal(mobileCard.florida, true, 'Florida bubble is off the phone screen');
-    assert.equal(mobileCard.help, true, 'help bubble is off the phone screen');
+    assert.equal(mobileCard.group, true, 'group size is off the phone screen');
     assert.equal(mobileCard.floridaOn, 'true');
-    assert.equal(mobileCard.helpOn, 'true');
     await shot('rf4_mobile390_contact_card.png');
     await setViewport(1440, 900);
-    await evaluate(`document.getElementById('contact-btn').click()`);
+    await evaluate(`document.getElementById('market-talk-btn').click()`);
     await waitFor(async () => evaluate(`document.activeElement && document.activeElement.id === 'first-name'`), 'desktop name focused');
     assert.equal(await evaluate(`document.getElementById('lead').nextElementSibling.id`), 'load-error');
     const desktopCard = await frameContactCard();
     assert.equal(desktopCard.heading, true, 'contact heading is off the desktop screen');
     assert.equal(desktopCard.florida, true, 'Florida bubble is off the desktop screen');
-    assert.equal(desktopCard.help, true, 'help bubble is off the desktop screen');
+    assert.equal(desktopCard.group, true, 'group size is off the desktop screen');
     assert.equal(desktopCard.floridaOn, 'true');
-    assert.equal(desktopCard.helpOn, 'true');
     await shot('rf4_desktop_contact_card.png');
     await evaluate(`(() => {
       document.getElementById('first-name').value = 'Pat';
-      document.getElementById('email').value = 'pat@example.com';
+      document.getElementById('email').value = '';
+      document.getElementById('phone').value = '';
+      document.getElementById('lead-group-size').value = '8';
+      document.getElementById('lead-form').requestSubmit();
+    })()`);
+    await waitFor(async () => evaluate(`document.getElementById('lead-error').textContent.includes('email or a phone')`), 'email or phone required');
+    await evaluate(`(() => {
+      document.getElementById('phone').value = '407-555-0123';
       document.getElementById('lead-form').requestSubmit();
     })()`);
     await waitFor(async () => evaluate(`document.getElementById('lead-success').textContent.includes('Demo mode, not sent')`), 'demo confirmation');
@@ -807,6 +1071,13 @@ test('rates-first demo shows rates immediately and prints with or without group 
     for (const id of ['cigna-epo-1750-hsa', 'UHC-PPO-2000-Deductible', 'phcs-visit-limit-1750-HSA']) {
       await evaluate(`document.querySelector('.save-toggle[data-plan-id="${id}"]').click()`);
     }
+    const mine = await evaluate(`(() => {
+      const btn = document.getElementById('my-plans-btn');
+      return { hidden: btn.hidden, text: btn.textContent.trim(), display: getComputedStyle(btn).display };
+    })()`);
+    assert.equal(mine.hidden, false);
+    assert.notEqual(mine.display, 'none');
+    assert.equal(mine.text, 'My Plans (3)');
     await evaluate(`document.querySelector('[data-carrier="Cigna"]').click()`);
     await waitFor(async () => evaluate(`document.getElementById('print-all-btn').textContent.trim() === 'Print selected (3)'`), 'print selected label');
     await evaluate(`window.scrollTo(0, 0)`);
@@ -926,17 +1197,23 @@ test('rates-first demo shows rates immediately and prints with or without group 
     assert.equal(posts.filter((post) => post.body.includes('"event":"group_size"')).length, 1);
     assert.equal(posts.filter((post) => post.body.includes('"event":"contribution_identified"')).length, 1);
     await evaluate(`(() => {
-      document.querySelector('[data-help="Ready to enroll"]').click();
       document.querySelector('[data-state="Georgia"]').click();
       document.getElementById('contact-btn').click();
       document.getElementById('first-name').value = 'Pat';
       document.getElementById('email').value = 'pat@example.com';
+      document.getElementById('lead-group-size').value = '7';
       document.getElementById('lead-form').requestSubmit();
     })()`);
     await waitFor(async () => posts.some((post) => post.body.includes('"event":"lead_submitted"')), 'lead');
     const leadPost = JSON.parse(posts.find((post) => post.body.includes('"event":"lead_submitted"')).body);
     assert.equal(leadPost.answers.state, 'Georgia');
-    assert.equal(leadPost.helpWith, 'Ready to enroll');
+    assert.equal(leadPost.helpWith, 'Get a full-market review');
+    assert.equal(leadPost.firstName, 'Pat');
+    assert.equal(leadPost.email, 'pat@example.com');
+    assert.equal(leadPost.answers.employees, '7');
+    assert.equal(leadPost.answers.priority, '');
+    assert.equal(leadPost.answers.coverage, '');
+    assert.equal(leadPost.answers.timeline, '');
     assert.equal(leadPost.notes, undefined);
     assert.equal(leadPost.comments, undefined);
     assert.ok(Array.isArray(leadPost.selectedPlans));

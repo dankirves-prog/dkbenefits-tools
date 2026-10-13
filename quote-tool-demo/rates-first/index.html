@@ -29,27 +29,28 @@
     <main id="quote-app" class="wrap">
       <section class="intro" aria-labelledby="intro-heading">
         <h1 id="intro-heading">Group health rates for small businesses</h1>
-        <p class="trust">No company info needed. No spam.</p>
+        <p class="trust rf-trust">Live rates below. Inquire for a full-market review, there may be better options available.</p>
         <p id="rates-as-of" class="as-of" hidden></p>
       </section>
 
-      <div class="rf-toolbar toolbar" aria-label="Plan tools">
-        <div id="carrier-filters" class="chips" role="radiogroup" aria-label="Filter by carrier"></div>
-        <div class="sort-field">
-          <label for="sort-mode">Sort</label>
-          <select id="sort-mode">
-            <option value="price">Lowest price</option>
-            <option value="carrier">Carrier</option>
-            <option value="recommended">Recommended</option>
-            <option value="lowestCost">Lowest employer cost</option>
-            <option value="strongestCoverage">Strongest coverage</option>
-          </select>
+      <div class="rf-toolbar toolbar rf-split" aria-label="Plan tools">
+        <div class="rf-bar-row rf-bar-filters">
+          <div id="carrier-filters" class="chips" role="radiogroup" aria-label="Filter by carrier"></div>
+          <div class="sort-field">
+            <label for="sort-mode">Sort</label>
+            <select id="sort-mode">
+              <option value="price">Lowest price</option>
+              <option value="carrier">Carrier</option>
+              <option value="lowestCost">Lowest employer cost</option>
+            </select>
+          </div>
         </div>
-        <div class="toolbar-actions">
-          <button type="button" id="my-plans-btn" class="btn btn-secondary" aria-expanded="false" aria-controls="my-plans-panel">My Plans (0)</button>
-          <button type="button" id="print-all-btn" class="btn btn-secondary">Print all</button>
-          <button type="button" id="customize-btn" class="btn btn-secondary" aria-expanded="false" aria-controls="customize-panel">Customize for your group</button>
-          <button type="button" id="contact-btn" class="btn btn-primary">Let's Talk</button>
+        <div class="rf-bar-row rf-bar-actions">
+          <div class="toolbar-actions">
+            <button type="button" id="my-plans-btn" class="btn btn-secondary" hidden aria-expanded="false" aria-controls="my-plans-panel">My Plans (0)</button>
+            <button type="button" id="print-all-btn" class="btn btn-secondary">Print all</button>
+          </div>
+          <button type="button" id="contact-btn" class="btn btn-primary">Get a full-market review</button>
         </div>
       </div>
 
@@ -61,7 +62,7 @@
         <div id="drawer-body"></div>
         <div class="drawer-actions">
           <button type="button" id="drawer-print" class="btn btn-secondary">Print saved</button>
-          <button type="button" id="drawer-send" class="btn btn-primary">Let's Talk</button>
+          <button type="button" id="drawer-send" class="btn btn-primary">Get a full-market review</button>
         </div>
       </section>
 
@@ -69,7 +70,7 @@
         <div id="customize-panel" class="rf-customize side-tools">
         <section class="panel mix-panel" aria-labelledby="mix-heading">
           <div class="mix-head">
-            <h2 id="mix-heading">Customize for your group</h2>
+            <h2 id="mix-heading">Customize &amp; print proposal</h2>
             <button type="button" id="clear-group" class="btn btn-secondary">Clear</button>
           </div>
           <p class="hint">Optional. Monthly tier rates stay visible either way. Totals appear after you enter enrollment.</p>
@@ -161,6 +162,7 @@
             </section>
           </div>
         </section>
+        <button type="button" id="print-proposal-btn" class="btn btn-primary rf-print-proposal">Print proposal</button>
         </div>
 
         <div class="quote-main">
@@ -182,9 +184,14 @@
               <div id="mec-plans" class="plan-list"></div>
             </div>
           </section>
+          <div class="rf-market" id="market-note">
+            <p>These are a few of the plans we can quote instantly. A full-market review with underwriting can often turn up better options.</p>
+            <button type="button" id="market-talk-btn" class="btn btn-secondary">Get a full-market review</button>
+          </div>
           <details class="disclaimer" id="disclaimer">
-            <summary>Rates, eligibility, and license information</summary>
+            <summary>Important information</summary>
             <p>Rates shown are based on current published pricing and the answers provided. Final eligibility, participation, underwriting, plan availability, effective dates, and carrier/program approval may change pricing or options. Benefits are governed by official plan documents.</p>
+            <p>United and Cigna plans require at least 5 enrolled employees with 50% participation. PHCS plans require at least 3 enrolled.</p>
             <p>Plan availability may vary by state. If your business is outside Florida or Georgia, Daniel can let you know whether DK Benefits can assist directly or connect you with an appropriate resource.</p>
             <p>Use of this tool does not create a broker-client relationship or guarantee coverage.</p>
             <p>DK Benefits LLC owns and operates this tool.</p>
@@ -195,46 +202,42 @@
 
       <section id="lead" class="panel lead" aria-labelledby="lead-heading">
         <div class="lead-head">
-          <h2 id="lead-heading">Let's Talk</h2>
+          <h2 id="lead-heading">Get a full-market review</h2>
         </div>
-        <p id="lead-next">Questions, more options, or ready to enroll? Daniel will reach out personally.</p>
+        <p id="lead-next">Daniel will look past these instant rates and follow up with what else may fit.</p>
         <p id="lead-saved-note" class="hint"></p>
         <ul id="lead-plan-list" class="lead-plan-list"></ul>
         <form id="lead-form">
-          <fieldset id="lead-state" class="state-bubbles" tabindex="-1">
-            <legend>What state is your business in?</legend>
+          <fieldset id="lead-state" class="state-bubbles rf-state-light" tabindex="-1">
+            <legend>Business state</legend>
             <div class="mode-switch" role="radiogroup" aria-label="Business state">
               <button type="button" class="mode-btn" role="radio" data-state="Florida" aria-checked="false">Florida</button>
               <button type="button" class="mode-btn" role="radio" data-state="Georgia" aria-checked="false">Georgia</button>
               <button type="button" class="mode-btn" role="radio" data-state="Other" aria-checked="false">Other</button>
             </div>
           </fieldset>
-          <p id="lead-error" class="message message-error" hidden></p>
-          <fieldset class="state-bubbles">
-            <legend>What can we help with?</legend>
-            <div class="mode-switch" role="radiogroup" aria-label="What can we help with?">
-              <button type="button" class="mode-btn" role="radio" data-help="Talk through these plans" aria-checked="false">Talk through these plans</button>
-              <button type="button" class="mode-btn" role="radio" data-help="See more plan options" aria-checked="false">See more plan options</button>
-              <button type="button" class="mode-btn" role="radio" data-help="Ready to enroll" aria-checked="false">Ready to enroll</button>
-              <button type="button" class="mode-btn" role="radio" data-help="Just learning more" aria-checked="false">Just learning more</button>
-            </div>
-          </fieldset>
-          <label for="first-name">First name
-            <input id="first-name" name="firstName" type="text" autocomplete="given-name" required placeholder="First name" />
+          <label for="first-name">Name
+            <input id="first-name" name="firstName" type="text" autocomplete="name" required placeholder="Your name" />
           </label>
-          <label for="email">Work email
-            <input id="email" name="email" type="email" autocomplete="email" required placeholder="you@company.com" />
+          <label for="email">Email
+            <input id="email" name="email" type="email" autocomplete="email" placeholder="you@company.com" />
           </label>
-          <label for="phone">Best phone (optional)
+          <label for="phone">Phone
             <input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="407-555-0123" />
           </label>
-          <button id="lead-submit" class="btn btn-primary" type="submit">Let's Talk</button>
+          <p class="hint rf-reach" id="reach-hint">Email or phone, either one is enough.</p>
+          <label for="lead-group-size">Group size
+            <input id="lead-group-size" name="groupSize" type="text" inputmode="numeric" autocomplete="off" placeholder="Eligible employees" />
+          </label>
+          <p id="lead-error" class="message message-error" hidden></p>
+          <button id="lead-submit" class="btn btn-primary" type="submit">Get a full-market review</button>
         </form>
         <div id="lead-success" class="success" role="status" hidden></div>
       </section>
 
       <section id="load-error" class="panel load-error" hidden role="alert"></section>
     </main>
+    <button type="button" id="customize-btn" class="btn btn-secondary rf-sticky-cta" aria-expanded="false" aria-controls="customize-panel">Customize &amp; print proposal</button>
   </div>
   <div id="print-root" class="print-root" aria-hidden="true"></div>
   <script src="../quote-activity.js"></script>

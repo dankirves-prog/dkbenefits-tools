@@ -966,6 +966,8 @@
       '<p>Rates shown are based on current published pricing and the answers provided. Final eligibility, participation, underwriting, plan availability, effective dates, and carrier/program approval may change pricing or options. Benefits are governed by official plan documents.</p>' +
       '<p>Plan availability may vary by state. If your business is outside Florida or Georgia, Daniel can let you know whether DK Benefits can assist directly or connect you with an appropriate resource.</p>' +
       '<p>Use of this tool does not create a broker-client relationship or guarantee coverage.</p></section>' +
+      '<section class="print-close"><p class="print-close-lead">Let DK Benefits search a wider market! Call/text/email today.</p>' +
+      '<p>Daniel Kirves, DK Benefits, 407-476-5076, dan@dkbenefits.net, www.dkbenefits.net.</p></section>' +
       printNotesHtml(items);
   }
 
@@ -1090,6 +1092,11 @@
       var any = state.sections.groups.some(function (group) { return group.id !== 'mec' && group.plans.length; });
       $('filter-empty').hidden = any;
       $('my-plans-btn').textContent = 'My Plans (' + state.saved.length + ')';
+      $('my-plans-btn').hidden = state.saved.length === 0;
+      if (!state.saved.length) {
+        $('my-plans-panel').hidden = true;
+        $('my-plans-btn').setAttribute('aria-expanded', 'false');
+      }
       $('print-all-btn').textContent = state.toolbarPrint.label;
       var asOf = $('rates-as-of');
       asOf.hidden = !state.ratesAsOfLabel;
@@ -1113,6 +1120,13 @@
     // typed, which must not flush Group size or mark the estimate as hand-edited.
     var blockCountSettle = 0;
 
+    function paintLeadGroup(state) {
+      var field = $('lead-group-size');
+      if (!field || document.activeElement === field || field.dataset.touched === '1') return;
+      var next = state.eligible || state.enrolling || '';
+      if (field.value !== next) field.value = next;
+    }
+
     function render(guardSettle) {
       var typing = document.activeElement;
       var keepTyping = typing && (typing.id === 'eligible' || typing.id === 'enrolling' || typing.id === 'flat-custom-amount');
@@ -1123,10 +1137,12 @@
           renderCarriers(state);
           $('carrier-filters').setAttribute('data-carrier', state.carrier);
         }
-        $('sort-mode').value = state.sortMode;
+        var sortSelect = $('sort-mode');
+        if (sortSelect.querySelector('option[value="' + state.sortMode + '"]')) sortSelect.value = state.sortMode;
         renderCustomize(state);
         renderPlans(state);
         renderSaved(state);
+        paintLeadGroup(state);
       } finally {
         if (keepTyping && typing.isConnected && document.activeElement !== typing) {
           var now = document.activeElement;
@@ -1216,6 +1232,10 @@
       render();
     });
     $('print-all-btn').addEventListener('click', function () { printMode(model.getState().toolbarPrint.mode); });
+    var printProposal = $('print-proposal-btn');
+    if (printProposal) {
+      printProposal.addEventListener('click', function () { printMode(model.getState().toolbarPrint.mode); });
+    }
     $('drawer-print').addEventListener('click', function () { printMode('saved'); });
     $('my-plans-btn').addEventListener('click', function () {
       var panel = $('my-plans-panel');
@@ -1253,6 +1273,8 @@
       setCustomizeOpen(!document.body.classList.contains('is-customizing'));
     });
     $('contact-btn').addEventListener('click', function () { openLead($('contact-btn')); });
+    var marketTalk = $('market-talk-btn');
+    if (marketTalk) marketTalk.addEventListener('click', function () { openLead(marketTalk); });
     $('drawer-send').addEventListener('click', function () { openLead($('drawer-send')); });
     $('clear-group').addEventListener('click', function () {
       model.clearGroup();
@@ -1275,7 +1297,13 @@
       }
       el.addEventListener('input', function () { apply(false); });
       el.addEventListener('change', function () { apply(true); });
-      el.addEventListener('blur', function () { apply(true); });
+      el.addEventListener('blur', function (event) {
+        // Eligible and Enrolling are one group-size edit. Leaving one for the other
+        // must keep the debounce instead of emailing the first number alone.
+        var next = event.relatedTarget;
+        if (next && (next.id === 'eligible' || next.id === 'enrolling')) return;
+        apply(true);
+      });
     }
     bindCount($('eligible'), function (value) { return model.setEligible(value); });
     bindCount($('enrolling'), function (value) { return model.setEnrolling(value); });
@@ -1373,23 +1401,56 @@
         renderCustomize(model.getState());
       });
     });
+    var leadGroup = $('lead-group-size');
+    if (leadGroup) {
+      leadGroup.addEventListener('input', function () { leadGroup.dataset.touched = '1'; });
+    }
     $('lead-form').addEventListener('submit', function (event) {
       event.preventDefault();
+      var simplified = !document.querySelector('#lead-form [data-help]');
+      var name = $('first-name').value.trim();
+      var email = $('email').value.trim();
+      var phone = $('phone').value.trim();
+      function showLeadError(message, field) {
+        $('lead-error').hidden = false;
+        $('lead-error').textContent = message;
+        if (field && field.focus) field.focus({ preventScroll: true });
+      }
+      if (simplified) {
+        if (!name) {
+          showLeadError('Enter your name.', $('first-name'));
+          return;
+        }
+        if (!email && !phone) {
+          showLeadError('Enter an email or a phone number.', $('email'));
+          return;
+        }
+        if (leadGroup) {
+          var parsed = QuoteMath.parseWholeCount(leadGroup.value, { min: 1, label: 'group size' });
+          if (!parsed.ok) {
+            showLeadError(parsed.message, leadGroup);
+            return;
+          }
+          var applied = model.setEligible(String(parsed.value));
+          if (!applied.ok) {
+            showLeadError(applied.error, leadGroup);
+            return;
+          }
+          model.settleGroupSize();
+        }
+        if (!model.getState().helpWith) model.setHelp('Get a full-market review');
+      }
       var state = model.getState();
       if (!state.leadState) {
-        $('lead-error').hidden = false;
-        $('lead-error').textContent = 'Choose Florida, Georgia, or Other.';
-        if (!desktopCustomize()) {
-          var stateField = $('lead-state');
-          if (stateField && stateField.focus) stateField.focus({ preventScroll: true });
-        }
+        var stateField = $('lead-state');
+        showLeadError('Choose Florida, Georgia, or Other.', desktopCustomize() ? null : stateField);
         return;
       }
       $('lead-error').hidden = true;
       var contact = {
-        firstName: $('first-name').value,
-        email: $('email').value,
-        phone: $('phone').value
+        firstName: name || $('first-name').value,
+        email: email,
+        phone: phone
       };
       var payload = model.leadPayload(contact);
       var success = $('lead-success');
