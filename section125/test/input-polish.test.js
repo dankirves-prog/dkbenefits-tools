@@ -104,7 +104,7 @@ test('sample formats are hint lines, not field placeholders', function () {
   assert.match(html, /id="hint_employer_ein">e\.g\. 12-3456789</);
   assert.match(html, /id="hint_phone">e\.g\. 407-476-5076</);
   assert.match(html, /id="hint_zip">e\.g\. 32801 or 32801-1234</);
-  assert.match(html, /id="hint_effective_date">e\.g\. 01\/01\/2027/);
+  assert.match(html, /id="hint_effective_date">Use MM\/DD\/YYYY\. Today or a later date\./);
   assert.match(html, /id="hint_prior_adoption">e\.g\. 01\/2020</);
   assert.match(html, /id="hint_signer_email">e\.g\. name@company\.com</);
   assert.match(html, /id="hint_plan_number">e\.g\. 501/);

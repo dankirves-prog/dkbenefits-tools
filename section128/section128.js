@@ -407,13 +407,13 @@
     btn.className = 'btn-gold';
     btn.textContent = label;
     btn.addEventListener('click', function () { triggerDownload(bytes, name, mime); });
-    $('downloadList').appendChild(btn);
+    return btn;
   }
   function buildFiles(plan) {
     var files = [];
     var planName = S128Docgen.planFileName(plan);
     var planBytes = S128Docgen.buildPlanDocx(plan);
-    files.push({ name: planName, bytes: planBytes, mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', label: 'Download Word plan' });
+    files.push({ name: planName, bytes: planBytes, mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', label: 'Download Plan (Word)' });
     var amendment = S128Docgen.buildAmendmentDocx(plan);
     if (amendment) {
       files.push({
@@ -432,14 +432,25 @@
     return files;
   }
   function showDownloads(files) {
-    $('downloadList').innerHTML = '';
-    files.forEach(function (file) { addDownload(file.bytes, file.name, file.mime, file.label); });
+    var list = $('downloadList');
+    list.innerHTML = '';
+    var pdfCol = document.createElement('div');
+    pdfCol.className = 'download-col download-col-pdf';
+    var wordCol = document.createElement('div');
+    wordCol.className = 'download-col download-col-word';
+    files.forEach(function (file) {
+      var pdf = file.mime === 'application/pdf' || /\.pdf$/i.test(file.name);
+      var btn = addDownload(file.bytes, file.name, file.mime, file.label);
+      (pdf ? pdfCol : wordCol).appendChild(btn);
+    });
+    if (pdfCol.childElementCount) list.appendChild(pdfCol);
+    if (wordCol.childElementCount) list.appendChild(wordCol);
   }
   function pdfFiles(plan) {
     var jobs = [{
       promise: S128Pdf.buildPdf(S128Docgen.planParagraphs(plan), { title: plan.plan_name }),
       name: S128Docgen.pdfFileName(S128Docgen.planFileName(plan)),
-      label: 'Download PDF plan'
+      label: 'Download Plan (PDF)'
     }];
     var amendmentRows = S128Docgen.amendmentParagraphs(plan);
     if (amendmentRows) {

@@ -299,21 +299,21 @@
   function showDownloads(files) {
     var list = $('downloadList');
     list.innerHTML = '';
+    var pdfCol = document.createElement('div');
+    pdfCol.className = 'download-col download-col-pdf';
+    var wordCol = document.createElement('div');
+    wordCol.className = 'download-col download-col-word';
     files.forEach(function (file) {
+      var pdf = file.mime === 'application/pdf' || /\.pdf$/i.test(file.name);
       var button = document.createElement('button');
       button.type = 'button';
-      button.className = 'btn-secondary';
-      var label = document.createElement('span');
-      label.className = 'download-label';
-      label.textContent = downloadLabel(file.name);
-      var fileName = document.createElement('span');
-      fileName.className = 'download-file';
-      fileName.textContent = file.name;
-      button.appendChild(label);
-      button.appendChild(fileName);
+      button.className = 'btn-gold';
+      button.textContent = downloadLabel(file.name);
       button.addEventListener('click', function () { triggerDownload(file.bytes, file.name, file.mime); });
-      list.appendChild(button);
+      (pdf ? pdfCol : wordCol).appendChild(button);
     });
+    if (pdfCol.childElementCount) list.appendChild(pdfCol);
+    if (wordCol.childElementCount) list.appendChild(wordCol);
   }
   function buildFiles(plan) {
     var docx = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -370,7 +370,7 @@
         inFlight = false;
         $('btnRetry').classList.add('hidden');
         if (body && body.ok) {
-          setStatus('<strong>Your documents are ready to download.</strong> A short note will come to your email shortly.');
+          setStatus('<strong>Your documents are ready to download.</strong>');
         } else {
           $('btnRetry').classList.remove('hidden');
           var message = body && body.error ? body.error : 'The request could not be sent.';

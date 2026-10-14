@@ -125,7 +125,9 @@ test('the wizard builds a premium-only plan in the browser and does not post', a
     assert.equal(termsFocus, 'H2 -1');
     const terms = await page.locator('#termsDialogBody').innerText();
     assert.match(terms, /not legal advice/);
-    assert.match(terms, /s125-terms-2026-10-10/);
+    assert.match(terms, /s125-terms-2026-10-14/);
+    assert.match(terms, /Rules and IRS limits change each year/);
+    assert.doesNotMatch(terms, /October 9, 2026/);
     assert.match(terms, /The tool and the documents are free/);
     await page.locator('#closeTerms').click();
     await page.locator('#terms_ack').check();
@@ -135,12 +137,27 @@ test('the wizard builds a premium-only plan in the browser and does not post', a
     const status = await page.locator('#emailStatus').innerText();
     assert.match(status, /ready to download/i);
     assert.match(status, /not turned on/i);
+    assert.doesNotMatch(status, /short note/i);
     const names = await page.locator('#downloadList button').allTextContents();
-    assert.ok(names.some(function (name) { return /Section_125_Plan_v1\.0\.docx/.test(name); }));
-    assert.ok(names.some(function (name) { return /Implementation_Checklist_v1\.0\.docx/.test(name); }));
-    assert.ok(names.some(function (name) { return /Section_125_Plan_v1\.0\.pdf/.test(name); }));
-    assert.ok(names.some(function (name) { return /Implementation_Checklist_v1\.0\.pdf/.test(name); }));
-    assert.equal(names.length, 4);
+    assert.deepEqual(names, [
+      'Plan document (PDF)',
+      'Implementation checklist (PDF)',
+      'Plan document (Word)',
+      'Implementation checklist (Word)'
+    ]);
+    const classes = await page.locator('#downloadList button').evaluateAll(function (nodes) {
+      return nodes.every(function (node) { return node.classList.contains('btn-gold'); });
+    });
+    assert.equal(classes, true);
+    const columns = await page.locator('#downloadList').evaluate(function (list) {
+      var style = getComputedStyle(list);
+      return {
+        pdfFirst: list.firstElementChild.classList.contains('download-col-pdf'),
+        tracks: style.gridTemplateColumns.split(' ').length
+      };
+    });
+    assert.equal(columns.pdfFirst, true);
+    assert.equal(columns.tracks, 2);
     assert.deepEqual(blocked, []);
     await page.screenshot({ path: path.join(artifactDir, 'wizard-download.png') });
 

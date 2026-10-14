@@ -96,17 +96,17 @@ const s09 = {
   health_fsa_unused: 'carryover'
 };
 
-test('a short 2026 Health FSA year is prorated and later years are not given the 2026 dollar limit', function () {
+test('a short Health FSA year is prorated against the limit in effect, with no dollar figure', function () {
   const nov = textOf(planFor(s02));
-  assert.match(nov, /For a plan year beginning in 2026, the limit is \$3,400/);
+  assert.match(nov, /the IRS limit in effect for that plan year/);
   assert.match(nov, /November 1, 2026 through December 31, 2026/);
-  assert.match(nov, /Notice 2012-40 requires: \$566/);
+  assert.match(nov, /Notice 2012-40 requires: 2\/12 of the Code §125\(i\) limit in effect for that plan year/);
   assert.equal(S125Model.shortYearMonths('2026-11-01', '2026-12-31'), 2);
+  assert.doesNotMatch(nov, /\$/);
 
   const march = textOf(planFor(s09));
-  assert.match(march, /10\/12 of the §125\(i\) limit for 2027/);
-  assert.doesNotMatch(march, /short plan year from March 1, 2027 through December 31, 2027, the limit is prorated by the number of months in that short plan year, as Notice 2012-40 requires: \$3,400/);
-  assert.doesNotMatch(march, /\$660/);
+  assert.match(march, /10\/12 of the Code §125\(i\) limit in effect for that plan year/);
+  assert.doesNotMatch(march, /\$/);
 
   const full = textOf(planFor({
     effective_date: '2027-01-01',
@@ -114,11 +114,11 @@ test('a short 2026 Health FSA year is prorated and later years are not given the
     health_fsa_design: 'general',
     health_fsa_unused: 'carryover'
   }));
-  assert.match(full, /For a plan year beginning in 2026, the limit is \$3,400/);
+  assert.match(full, /the IRS limit in effect for that plan year/);
   assert.doesNotMatch(full, /For the short plan year/);
-  assert.doesNotMatch(full, /\$660/);
-  assert.match(nov, /\$680 from a plan year beginning in 2026/);
-  assert.match(nov, /\$660/);
+  assert.doesNotMatch(full, /\$/);
+  assert.match(nov, /IRS carryover maximum for that plan year/);
+  assert.doesNotMatch(nov, /\$680|\$660|plan year beginning in 2026/);
 });
 
 test('the 60-day new-hire window is gone and late elections are prospective', function () {
@@ -177,19 +177,19 @@ test('a Health FSA follows major medical eligibility and section 105(h) even whe
   assert.match(insured, /including the Health FSA and any level-funded medical arrangement that is self-insured for tax purposes, must also satisfy Code §105\(h\)/);
 });
 
-test('the template version is v1.0 and file names are derived from it', function () {
-  assert.equal(S125Model.TEMPLATE_VERSION, 's125-v1.0-2026-10-10');
-  assert.equal(S125Terms.VERSION, 's125-terms-2026-10-10');
+test('the template version is v1.1 and file names are derived from it', function () {
+  assert.equal(S125Model.TEMPLATE_VERSION, 's125-v1.1-2026-10-14');
+  assert.equal(S125Terms.VERSION, 's125-terms-2026-10-14');
   const plan = planFor();
-  assert.equal(S125Docgen.planFileName(plan), 'Northwind_Benefits_Inc_Section_125_Plan_v1.0.docx');
-  assert.equal(S125Docgen.guideFileName(plan), 'Northwind_Benefits_Inc_Section_125_Implementation_Checklist_v1.0.docx');
+  assert.equal(S125Docgen.planFileName(plan), 'Northwind_Benefits_Inc_Section_125_Plan_v1.1.docx');
+  assert.equal(S125Docgen.guideFileName(plan), 'Northwind_Benefits_Inc_Section_125_Implementation_Checklist_v1.1.docx');
   assert.match(S125Terms.PARAGRAPHS.join('\n'), /The tool and the documents are free/);
   assert.match(S125Terms.PARAGRAPHS[1], /asking DK Benefits LLC for a copy/);
   const email = S125Docgen.followUpEmailText(plan, { contact_name: 'Ada Lopez' }, {
     section128Url: 'https://www.dkbenefits.net/section-128-tool',
     ratesUrl: 'https://www.dkbenefits.net/instant-group-quote'
   });
-  assert.match(email, /If you'd rather not get these emails from me, let me know and I'll take you off the list\./);
+  assert.doesNotMatch(email, /off the list|mailing list|unsubscribe/i);
   assert.doesNotMatch(email, /just reply|just hit reply/i);
 });
 
@@ -216,18 +216,19 @@ test('a plan year that starts March 1 ends on the last day of February', functio
   assert.match(textOf(plan), /ending on the last day of February/);
 });
 
-test('dependent care uses the post-2025 exclusion and a plan-year election cap', function () {
+test('dependent care uses the Code §129 exclusion in effect for that year', function () {
   const text = textOf(planFor({ benefits: ['dcap'], dcap_unused: 'forfeit' }));
-  assert.match(text, /For taxable years beginning after December 31, 2025/);
-  assert.doesNotMatch(text, /For a taxable year beginning in 2026/);
-  assert.match(text, /A Participant’s Dependent Care FSA election for a plan year may not exceed \$7,500, or \$3,750 for a married Participant filing separately\./);
+  assert.match(text, /The exclusion is the Code §129 exclusion limit in effect for that year, including the lower limit for a married participant filing separately/);
+  assert.match(text, /A Participant’s Dependent Care FSA election for a plan year may not exceed the Code §129 exclusion limit in effect for that year, including the lower limit for a married participant filing separately/);
+  assert.doesNotMatch(text, /not adjusted for inflation|December 31, 2025|\$7,500|\$3,750/);
   assert.doesNotMatch(text, /remitting the elected premium/);
   const selfFunded = textOf(planFor({ funding_type: 'self', benefits: ['medical'] }));
   assert.match(selfFunded, /group medical plan/);
   assert.match(selfFunded, /If the Employer changes that share/);
   assert.doesNotMatch(selfFunded, /group medical contract|If the insurer changes/);
   const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-  assert.match(html, /Dependent care FSA<small>\$7,500 a year, not indexed<\/small>/);
+  assert.match(html, /Dependent care FSA<small>The Code §129 exclusion limit in effect for that year, including the lower limit for a married participant filing separately\.<\/small>/);
+  assert.doesNotMatch(html, /\$3,400|\$7,500|\$680|not indexed/);
 });
 
 test('prior adoption is printed as a month name and cannot be before 1978 or after the effective date', function () {

@@ -21,7 +21,6 @@ var S125Docgen = (function () {
 
   function h1(text) { return row('Heading1', text, { keepNext: true, keepLines: true }); }
   function h2(text) { return row('Heading2', text, { keepNext: true, keepLines: true }); }
-  function money(amount) { return S125Model.formatMoney(amount); }
   function finishSentence(text) {
     var s = String(text || '');
     if (!s || /[.!?]$/.test(s)) return s;
@@ -74,7 +73,7 @@ var S125Docgen = (function () {
       if (plan.health_fsa_unused === 'grace') {
         unused = 'The Health FSA has a grace period that ends on the 15th day of the third month after the plan year. A Health FSA expense incurred in the grace period may be paid from the amount unused at the end of the prior plan year. Any Health FSA amount still unused when the grace period and the run-out period end is forfeited to the Employer. The Health FSA does not also carry unused amounts into the next plan year.';
       } else if (plan.health_fsa_unused === 'carryover') {
-        unused = carryoverSentence(plan);
+        unused = carryoverSentence();
       } else {
         unused = 'A Health FSA amount still unused when the plan year and the run-out period end is forfeited to the Employer. The Health FSA has neither a grace period nor a carryover.';
       }
@@ -90,7 +89,7 @@ var S125Docgen = (function () {
         ? 'The Dependent Care FSA has a grace period that ends on the 15th day of the third month after the plan year. Any Dependent Care FSA amount still unused when that grace period and the run-out period end is forfeited to the Employer.'
         : 'A Dependent Care FSA amount still unused when the plan year and the run-out period end is forfeited to the Employer.';
       rows.push(h2('Dependent Care FSA'));
-      rows.push(row(null, 'A Participant may pay qualifying dependent care assistance on a pre-tax basis under Code §129. For taxable years beginning after December 31, 2025, the exclusion is ' + money(S125Model.DCAP_LIMIT_2026) + ', or ' + money(S125Model.DCAP_MFS_2026) + ' if the Participant is married and files a separate return. A Participant’s Dependent Care FSA election for a plan year may not exceed ' + money(S125Model.DCAP_LIMIT_2026) + ', or ' + money(S125Model.DCAP_MFS_2026) + ' for a married Participant filing separately. The statute sets those amounts. They are not adjusted for inflation. A qualifying individual is determined under Code §§129 and 21.'));
+      rows.push(row(null, 'A Participant may pay qualifying dependent care assistance on a pre-tax basis under Code §129. The exclusion is the Code §129 exclusion limit in effect for that year, including the lower limit for a married participant filing separately. A Participant’s Dependent Care FSA election for a plan year may not exceed the Code §129 exclusion limit in effect for that year, including the lower limit for a married participant filing separately. A qualifying individual is determined under Code §§129 and 21.'));
       rows.push(row(null, 'The expenses must be employment-related expenses that §129 treats as qualifying. The exclusion for a year also cannot exceed the Participant’s earned income, or the spouse’s earned income if the Participant is married, except where §129 treats a student or a spouse who is incapable of self-care as having earned income.'));
       rows.push(row(null, 'The Participant identifies the provider and shows the date and the amount before the Employer excludes the payment. The Employer reports the assistance on Form W-2.'));
       rows.push(row(null, dcapUnused + ' The Dependent Care FSA does not have a carryover.'));
@@ -248,7 +247,7 @@ var S125Docgen = (function () {
     rows.push(h1('Article 13. Nondiscrimination'));
     rows.push(row(null, 'The Plan Administrator will apply the cafeteria-plan nondiscrimination rules of Code §125 for each plan year, including the eligibility test, the contributions and benefits test, and the key-employee concentration test in Code §125(b)(2). If a test is not met, the highly compensated individuals or key employees reached by that test include the benefit in income as the Code provides, and the failure does not by itself tax the other Participants.'));
     if (has(plan, 'dcap')) {
-      rows.push(row(null, 'Dependent care assistance is also tested under Code §129(d), including the 55 percent average-benefits test and the limit on benefits provided to more-than-5-percent owners. The Plan Administrator will complete that testing before the Employer relies on the ' + money(S125Model.DCAP_LIMIT_2026) + ' exclusion.'));
+      rows.push(row(null, 'Dependent care assistance is also tested under Code §129(d), including the 55 percent average-benefits test and the limit on benefits provided to more-than-5-percent owners. The Plan Administrator will complete that testing before the Employer relies on the Code §129 exclusion limit in effect for that year, including the lower limit for a married participant filing separately.'));
     }
     if (plan.funding_type === 'self' || plan.funding_type === 'level' || has(plan, 'health_fsa')) {
       rows.push(row(null, 'Self-insured medical reimbursement, including the Health FSA and any level-funded medical arrangement that is self-insured for tax purposes, must also satisfy Code §105(h).'));
@@ -291,26 +290,18 @@ var S125Docgen = (function () {
     if (plan.short_plan_year && plan.effective_date) return Number(String(plan.effective_date).slice(0, 4));
     if (plan.on_plan_year_start && plan.effective_date) return Number(String(plan.effective_date).slice(0, 4));
     if (plan.next_plan_year_start) return Number(String(plan.next_plan_year_start).slice(0, 4)) - (plan.effective_date === plan.next_plan_year_start ? 0 : 1);
-    return Number(String(plan.effective_date || '').slice(0, 4)) || 2026;
+    return Number(String(plan.effective_date || '').slice(0, 4)) || new Date().getFullYear();
   }
 
   function healthFsaLimitSentence(plan) {
-    var sentence = 'Salary reduction contributions to the Health FSA for a plan year may not exceed the dollar limit in Code §125(i) for that plan year, as adjusted for inflation. For a plan year beginning in 2026, the limit is ' + money(S125Model.HEALTH_FSA_LIMIT_2026) + '.';
+    var sentence = 'Salary reduction contributions to the Health FSA for a plan year may not exceed the IRS limit in effect for that plan year, as adjusted for inflation.';
     if (!plan.short_plan_year || !plan.effective_date || !plan.short_plan_year_end) return sentence;
     var months = S125Model.shortYearMonths(plan.effective_date, plan.short_plan_year_end);
-    var year = Number(String(plan.effective_date).slice(0, 4));
-    var amount = year === 2026
-      ? money(Math.floor(S125Model.HEALTH_FSA_LIMIT_2026 * months / 12))
-      : (months + '/12 of the §125(i) limit for ' + year);
-    return sentence + ' For the short plan year from ' + S125Model.formatLongDate(plan.effective_date) + ' through ' + S125Model.formatLongDate(plan.short_plan_year_end) + ', the limit is prorated by the number of months in that short plan year, as Notice 2012-40 requires: ' + amount + '.';
+    return sentence + ' For the short plan year from ' + S125Model.formatLongDate(plan.effective_date) + ' through ' + S125Model.formatLongDate(plan.short_plan_year_end) + ', the limit is prorated by the number of months in that short plan year, as Notice 2012-40 requires: ' + months + '/12 of the Code §125(i) limit in effect for that plan year.';
   }
 
-  function carryoverSentence(plan) {
-    var text = 'The Health FSA carries unused amounts into the next plan year, up to the maximum carryover the IRS sets for that plan year, as adjusted for inflation ($680 from a plan year beginning in 2026).';
-    if (firstPlanYear(plan) < 2027) {
-      text += ' Amounts carried into a plan year that begins in 2026, from a plan year that begins in 2025, are limited to ' + money(S125Model.CARRYOVER_INTO_2026) + '.';
-    }
-    return text + ' Any Health FSA amount above that limit is forfeited to the Employer. The Health FSA does not also have a grace period.';
+  function carryoverSentence() {
+    return 'The Health FSA carries unused amounts into the next plan year, up to the IRS carryover maximum for that plan year. Any Health FSA amount above that limit is forfeited to the Employer. The Health FSA does not also have a grace period.';
   }
 
   function establishmentYearSentence(plan) {
@@ -351,7 +342,7 @@ var S125Docgen = (function () {
     lines.push('Let payroll know these elections come out of pay before income tax, and before Social Security and Medicare tax when the benefit qualifies.');
     if (has(plan, 'health_fsa')) {
       if (plan.health_fsa_unused === 'carryover') {
-        lines.push('The Health FSA carries unused amounts up to the plan-year limit ($680 from a 2026 plan year). It does not also have a grace period.');
+        lines.push('The Health FSA carries unused amounts up to the IRS carryover maximum for that plan year. It does not also have a grace period.');
       } else if (plan.health_fsa_unused === 'grace') {
         lines.push('The Health FSA grace period runs through the 15th day of the third month after the plan year. It does not also have a carryover.');
       } else {
@@ -386,40 +377,14 @@ var S125Docgen = (function () {
   }
 
   function followUpEmailText(plan, lead, links) {
-    links = links || {};
     lead = lead || {};
-    plan = plan || { benefits: [], employer_name: '' };
-    plan.benefits = plan.benefits || [];
-    var section128 = links.section128Url || '';
-    var rates = links.ratesUrl || '';
     var first = followUpFirstName(lead);
-    var employer = plan.employer_name || 'your company';
     var lines = [
       first ? ('Hi ' + first + ',') : 'Hi there,',
       '',
-      'I just saw you put together your Section 125 plan for ' + finishSentence(employer) + ' Thanks so much for giving my tool a try. I really appreciate it!',
+      'Thanks for using the Section 125 tool. I hope the document came together OK.',
       '',
-      'Just a few quick reminders so you can get it up and running:',
-      ''
-    ];
-    emailChecklistLines(plan).forEach(function (line, index) {
-      lines.push((index + 1) + '. ' + line);
-    });
-    lines.push(
-      '',
-      'Your tax advisor can help with anything specific to your situation.',
-      '',
-      'Oh, and if you\'re looking at contributing to your employees\' kids\' Trump accounts (employers can contribute under the new Section 128), I have a free tool that creates that plan too. I don\'t sell, market, open, or administer Trump accounts, but the tool is there if you need it:',
-      section128,
-      '',
-      'Also, just so you know, I\'m an employee benefits broker. No pressure at all, but I\'d be happy to help you shop and negotiate your group health and other benefits. I even have some rates you can check out online right now:',
-      rates,
-      '',
-      'Would you mind giving me a shot to see what I can do for you? I\'d love to hear from you.',
-      '',
-      'Just so it\'s clear, legally I have to mention that the tool is educational and isn\'t legal or tax advice.',
-      '',
-      'If you\'d rather not get these emails from me, let me know and I\'ll take you off the list.',
+      'By the way, I\'m an independent employee benefits broker, and I can shop group health and benefits across the full market. If you want a second set of eyes or a quick quote, call or text me at 407-476-5076 or email me.',
       '',
       'Daniel Kirves',
       'Benefits Broker | 20 Years Exp | DK Benefits',
@@ -427,7 +392,7 @@ var S125Docgen = (function () {
       '6000 Metrowest Blvd #200 Orlando, FL 32835',
       '',
       'Agency Lic# L109331'
-    );
+    ];
     return lines.join('\n');
   }
 
