@@ -29,7 +29,12 @@ $w.onReady(function () {
 });
 ```
 
-If the component cannot listen for messages, use a fixed height that fits the longest results. Measured heights are listed in the pull request for this checkup. A question step is much shorter than the results, so auto-height is the better fit.
+If the component cannot listen for messages, size it to the longest collapsed results. Measured on `compliance-assessment.html` at the content width, with every result card still closed:
+
+- Desktop, 1280px wide: 3682px of content. A fixed height of 3710px includes the 24px pad.
+- Phone, 390px wide: 4629px of content. A fixed height of 4660px includes the 24px pad.
+- A question step is 597px on desktop and 623px on a phone, so a fixed results height leaves empty space during the questions.
+- Opening every card grows the page to 8888px on desktop and 11828px on a phone. The resize message covers that. A fixed height clips open cards.
 
 Local preview:
 
