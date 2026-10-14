@@ -72,6 +72,7 @@ test('combined visitor email and guide stay educational', function () {
   assert.match(S128Terms.PARAGRAPHS.join('\n'), /hold harmless/);
   assert.match(S128Terms.PARAGRAPHS.join('\n'), /attorney-client/);
   assert.equal(S128Terms.VERSION, 's128-terms-2026-10-09');
-  assert.match(S128Docgen.FOOTER, /Prepared with DK Benefits/);
-  assert.match(S128Docgen.FOOTER, /Not effective until signed by the employer/);
+  assert.equal(S128Docgen.documentFooter(checked.plan, 'plan'), 'Northwind Benefits LLC Section 128 Trump Account Contribution Program');
+  assert.equal(S128Terms.FOOTER, undefined);
+  assert.doesNotMatch(S128Docgen.documentFooter(checked.plan, 'plan'), /Prepared with|Not effective until signed|\u2014/);
 });
