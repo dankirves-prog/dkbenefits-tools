@@ -142,15 +142,16 @@ var S125Model = (function () {
       return d.slice(0, 2) + '/' + d.slice(2, 4) + '/' + d.slice(4);
     }
     var month = parts[0].slice(0, 2);
-    var day = (parts[1] || '').slice(0, 2);
-    var year = (parts[2] || '').slice(0, 4);
-    if (parts.length > 2 && year.length === 4) {
+    var dayRaw = parts[1] || '';
+    var day = dayRaw.slice(0, 2);
+    var hasYear = parts.length > 2 || dayRaw.length > 2;
+    var year = (dayRaw.slice(2) + parts.slice(2).join('')).slice(0, 4);
+    if (hasYear && year.length === 4) {
       if (month.length === 1) month = '0' + month;
       if (day.length === 1) day = '0' + day;
     }
-    var out = month;
-    if (text.indexOf('/') !== -1) out += '/' + day;
-    if (parts.length > 2) out += '/' + year;
+    var out = month + '/' + day;
+    if (hasYear) out += '/' + year;
     return out;
   }
   function formatMonthYearLive(raw) {
@@ -902,7 +903,7 @@ var S125Docgen = (function () {
     if (!plan.prior_plan) {
       rows.push(row(null, 'Initial enrollment. Each Employee who will be an Eligible Employee on the Effective Date may make an election during an initial enrollment period the Plan Administrator sets, ending no later than the day before the Effective Date. Those elections take effect on the Effective Date and remain in effect through the end of the first plan year.'));
     } else {
-      rows.push(row(null, 'Elections in effect under the plan being restated continue under this restatement for the rest of the plan year in which the restatement takes effect.'));
+      rows.push(row(null, 'Elections in effect under the plan being restated on the day before the restatement takes effect continue under this restatement until the end of the plan year for which they were made.'));
     }
     rows.push(row(null, 'Open enrollment lasts ' + plan.oe_window_days + ' days and ends on the day before the plan year begins. An election made in open enrollment takes effect on the first day of the coming plan year. The first' + (plan.short_plan_year ? ' annual' : '') + ' open enrollment period under this Plan is ' + S125Model.formatLongDate(plan.oe_start_date) + ' through ' + S125Model.formatLongDate(plan.oe_end_date) + '.'));
 
@@ -1112,7 +1113,7 @@ var S125Docgen = (function () {
     var lines = [
       first ? ('Hi ' + first + ',') : 'Hi there,',
       '',
-      'I just saw you put together your Section 125 plan for ' + employer + '. Thanks so much for giving my tool a try. I really appreciate it!',
+      'I just saw you put together your Section 125 plan for ' + finishSentence(employer) + ' Thanks so much for giving my tool a try. I really appreciate it!',
       '',
       'Just a few quick reminders so you can get it up and running:',
       ''

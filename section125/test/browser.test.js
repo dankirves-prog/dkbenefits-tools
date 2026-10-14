@@ -205,6 +205,12 @@ test('typed fields format themselves and numeric gates keep whole numbers in ran
     assert.equal(await page.locator('#effective_date').inputValue(), '01/01/2027');
     await page.locator('#effective_date').blur();
     assert.equal(await page.locator('#effective_date').inputValue(), '01/01/2027');
+    await page.locator('#effective_date').fill('');
+    await page.locator('#effective_date').pressSequentially('11012026');
+    assert.equal(await page.locator('#effective_date').inputValue(), '11/01/2026');
+    await page.locator('#effective_date').fill('');
+    await page.locator('#effective_date').pressSequentially('01/01/2027');
+    assert.equal(await page.locator('#effective_date').inputValue(), '01/01/2027');
     await page.locator('input[name="prior_plan"][value="yes"]').check();
     await setField(page, 'prior_adoption', '1/2020');
     await page.locator('#prior_adoption').blur();

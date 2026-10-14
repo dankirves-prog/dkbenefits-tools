@@ -25,6 +25,22 @@ test('EIN, phone, ZIP, and dates format as they are typed', function () {
   assert.equal(S125Model.formatZipLive('3280112349'), '32801-1234');
   assert.equal(S125Model.formatDateLive('01012027'), '01/01/2027');
   assert.equal(S125Model.formatDateLive('1/15/2027'), '01/15/2027');
+  function typeDate(raw) {
+    var value = '';
+    for (var i = 0; i < raw.length; i++) value = S125Model.formatDateLive(value + raw.charAt(i));
+    return value;
+  }
+  assert.equal(typeDate('11012026'), '11/01/2026');
+  assert.equal(typeDate('12312027'), '12/31/2027');
+  assert.equal(typeDate('1/5/2027'), '01/05/2027');
+  assert.equal(typeDate('01/15/2027'), '01/15/2027');
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const page = fs.readFileSync(path.join(__dirname, '..', 'section125.js'), 'utf8');
+  assert.match(html, /id="effective_date"[^>]*type="text"/);
+  assert.match(html, /id="effective_date"[^>]*inputmode="numeric"/);
+  assert.doesNotMatch(html, /id="effective_date"[^>]*maxlength=/);
+  assert.match(page, /bindLiveMask\(\$\('effective_date'\), S125Model\.formatDateLive\)/);
+  assert.doesNotMatch(page, /effective_date[\s\S]{0,240}preventDefault/);
   assert.equal(S125Model.formatDateCanonical('1/5/2027'), '01/05/2027');
   assert.equal(S125Model.formatMonthYearLive('012020'), '01/2020');
   assert.equal(S125Model.canonicalMonthYear('1/2020'), '01/2020');

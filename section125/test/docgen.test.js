@@ -149,7 +149,10 @@ test('the follow-up note has exactly two links and a plain-text signature', func
   const email = S125Docgen.followUpEmailText(plan, lead, LINKS);
   const html = S125Docgen.followUpEmailHtml(plan, lead, LINKS);
   assert.match(email, /^Hi Ada,/);
-  assert.match(email, /Section 125 plan for Northwind Benefits Inc/);
+  assert.match(email, /Section 125 plan for Northwind Benefits Inc\. Thanks so much/);
+  const punctuated = S125Docgen.followUpEmailText(planFor({ employer_name: 'Northwind Supply Inc.' }), lead, LINKS);
+  assert.match(punctuated, /Section 125 plan for Northwind Supply Inc\. Thanks so much/);
+  assert.doesNotMatch(punctuated, /Inc\.\./);
   assert.match(email, /Oh, and if you're looking at contributing to your employees' kids' Trump accounts \(employers can contribute under the new Section 128\), I have a free tool that creates that plan too\. I don't sell, market, open, or administer Trump accounts, but the tool is there if you need it:\nhttps:\/\/www\.dkbenefits\.net\/section-128-tool/);
   assert.match(email, /I'd be happy to help you shop and negotiate your group health and other benefits/);
   assert.match(email, /Just so it's clear, legally I have to mention that the tool is educational and isn't legal or tax advice\.\n\nIf you'd rather not get these emails from me, let me know and I'll take you off the list\.\n\nDaniel Kirves\n/);

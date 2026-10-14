@@ -133,15 +133,16 @@ var S125Model = (function () {
       return d.slice(0, 2) + '/' + d.slice(2, 4) + '/' + d.slice(4);
     }
     var month = parts[0].slice(0, 2);
-    var day = (parts[1] || '').slice(0, 2);
-    var year = (parts[2] || '').slice(0, 4);
-    if (parts.length > 2 && year.length === 4) {
+    var dayRaw = parts[1] || '';
+    var day = dayRaw.slice(0, 2);
+    var hasYear = parts.length > 2 || dayRaw.length > 2;
+    var year = (dayRaw.slice(2) + parts.slice(2).join('')).slice(0, 4);
+    if (hasYear && year.length === 4) {
       if (month.length === 1) month = '0' + month;
       if (day.length === 1) day = '0' + day;
     }
-    var out = month;
-    if (text.indexOf('/') !== -1) out += '/' + day;
-    if (parts.length > 2) out += '/' + year;
+    var out = month + '/' + day;
+    if (hasYear) out += '/' + year;
     return out;
   }
   function formatMonthYearLive(raw) {

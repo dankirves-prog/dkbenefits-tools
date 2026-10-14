@@ -140,7 +140,7 @@ test('new plans enroll current employees and a restatement continues elections',
     assert.match(guideOf(planFor(input)), /Hold enrollment for current employees before/);
   });
   const restated = textOf(planFor(s04));
-  assert.match(restated, /Elections in effect under the plan being restated continue/);
+  assert.match(restated, /Elections in effect under the plan being restated on the day before the restatement takes effect continue under this restatement until the end of the plan year for which they were made\./);
   assert.doesNotMatch(restated, /Initial enrollment\./);
   const short = textOf(planFor(s02));
   assert.match(short, /The first annual open enrollment period/);
