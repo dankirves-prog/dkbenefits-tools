@@ -348,15 +348,26 @@ button:focus-visible, .button:focus-visible { outline: 3px solid var(--gold); ou
   cursor: pointer;
 }
 
-.downloads { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
-.downloads button {
+.downloads {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 12px 0;
+  align-items: start;
+}
+.downloads:not(:has(.download-col + .download-col)) { grid-template-columns: 1fr; }
+.download-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.download-col .btn-gold {
+  width: 100%;
   white-space: normal;
-  overflow-wrap: anywhere;
-  text-align: left;
   height: auto;
 }
-.download-label { display: block; font-weight: 700; }
-.download-file { display: block; font-size: 0.82rem; font-weight: 400; margin-top: 2px; }
+.downloads > .hint { grid-column: 1 / -1; }
 .status {
   border-radius: 8px;
   padding: 12px 14px;
@@ -415,5 +426,6 @@ h2#stepTitle:focus { outline: none; }
   .progress-list button .step-name { display: none; }
   .progress-list button[aria-current="step"] .step-name { display: inline; }
   .nav { flex-direction: column-reverse; }
+  .downloads { grid-template-columns: 1fr; }
   .nav button, .downloads .button, .downloads button { width: 100%; }
 }

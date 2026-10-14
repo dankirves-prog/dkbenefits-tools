@@ -98,7 +98,7 @@ function s125Handle_(payload) {
     return { ok: false, error: 'The submission id is missing.' };
   }
   var ack = payload.acknowledgement || {};
-  var termsOk = ack.termsVersion === S125Terms.VERSION || ack.termsVersion === 's125-terms-2026-10-09';
+  var termsOk = ack.termsVersion === S125Terms.VERSION || ack.termsVersion === 's125-terms-2026-10-10';
   if (ack.accepted !== true || !ack.acceptedAt || !Date.parse(ack.acceptedAt) || !termsOk) {
     s125LogEvent_('rejected_terms', payload.submissionId, 'terms');
     return { ok: false, error: 'The terms acknowledgement is missing.' };

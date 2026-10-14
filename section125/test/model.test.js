@@ -155,12 +155,12 @@ test('posted booleans revalidate, including a plan object from Apps Script', fun
   assert.equal(posted.plan.multi_state, true);
 });
 
-test('dollar limits and the 90-day waiting label stay on the published figures', function () {
-  assert.equal(S125Model.HEALTH_FSA_LIMIT_2026, 3400);
-  assert.equal(S125Model.CARRYOVER_FROM_2026, 680);
-  assert.equal(S125Model.CARRYOVER_INTO_2026, 660);
-  assert.equal(S125Model.DCAP_LIMIT_2026, 7500);
-  assert.equal(S125Model.DCAP_MFS_2026, 3750);
+test('dollar limits are not hardcoded and the 90-day waiting label stays published', function () {
+  assert.equal(S125Model.HEALTH_FSA_LIMIT_2026, undefined);
+  assert.equal(S125Model.CARRYOVER_FROM_2026, undefined);
+  assert.equal(S125Model.CARRYOVER_INTO_2026, undefined);
+  assert.equal(S125Model.DCAP_LIMIT_2026, undefined);
+  assert.equal(S125Model.DCAP_MFS_2026, undefined);
   assert.equal(S125Model.WAITING.days_90, 'The 91st day of employment.');
-  assert.equal(S125Model.TEMPLATE_VERSION, 's125-v1.0-2026-10-10');
+  assert.equal(S125Model.TEMPLATE_VERSION, 's125-v1.1-2026-10-14');
 });

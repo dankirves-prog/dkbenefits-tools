@@ -236,6 +236,28 @@ test('submission requires body.ok, blocks a double post, and retries with the sa
   });
   assert.equal(posts.length, 2);
   assert.equal(posts[1].submissionId, firstId);
+  const downloadLabels = await page.$$eval('#downloadList button', function (nodes) {
+    return nodes.map(function (node) { return node.textContent; });
+  });
+  assert.deepEqual(downloadLabels, [
+    'Download Plan (PDF)',
+    'Download Section 125 amendment (PDF)',
+    'Download implementation guide (PDF)',
+    'Download Plan (Word)',
+    'Download Section 125 amendment (Word)',
+    'Download implementation guide (Word)'
+  ]);
+  const downloadLayout = await page.$eval('#downloadList', function (list) {
+    var style = getComputedStyle(list);
+    return {
+      pdfFirst: list.firstElementChild.classList.contains('download-col-pdf'),
+      gold: Array.from(list.querySelectorAll('button')).every(function (node) { return node.classList.contains('btn-gold'); }),
+      tracks: style.gridTemplateColumns.split(' ').length
+    };
+  });
+  assert.equal(downloadLayout.pdfFirst, true);
+  assert.equal(downloadLayout.gold, true);
+  assert.equal(downloadLayout.tracks, 2);
   assert.ok(posts[0].files.some(function (file) {
     return file.mime === 'application/pdf' && String(file.dataBase64).indexOf('JVBERi') === 0;
   }));
@@ -291,6 +313,19 @@ test('without an endpoint the page does not claim the draft was emailed', async 
   const statusClass = await page.$eval('#emailStatus', function (el) { return el.className; });
   assert.match(text, /ready to download/i);
   assert.match(statusClass, /neutral/);
+  const phoneLabels = await page.$$eval('#downloadList button', function (nodes) {
+    return nodes.map(function (node) { return node.textContent; });
+  });
+  assert.deepEqual(phoneLabels, [
+    'Download Plan (PDF)',
+    'Download implementation guide (PDF)',
+    'Download Plan (Word)',
+    'Download implementation guide (Word)'
+  ]);
+  const phoneTracks = await page.$eval('#downloadList', function (list) {
+    return getComputedStyle(list).gridTemplateColumns.split(' ').length;
+  });
+  assert.equal(phoneTracks, 1);
   assert.doesNotMatch(statusClass, /failed|unsent/);
   assert.doesNotMatch(text, /could not be emailed|Retry email|not connected/i);
   assert.equal(await page.$eval('#btnRetry', function (el) { return el.classList.contains('hidden'); }), true);

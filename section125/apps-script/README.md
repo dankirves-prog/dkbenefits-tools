@@ -4,7 +4,7 @@ This is a **new** Apps Script and a **new** spreadsheet. Do not paste it into th
 
 The page reads the web-app URL from `section125/config.js` (`endpoint`). Until that value is a real `/exec` URL, the page still builds the Word and PDF samples in the browser and lets the employer download them. It does not email anyone.
 
-Template version `s125-v1.0-2026-10-10`. Terms version `s125-terms-2026-10-10`. The script still accepts the previous terms version `s125-terms-2026-10-09` so a page that has not refreshed can post. The Terms of use in `s125-terms.js` are a draft for DK Benefits LLC’s own attorney to review before go-live. They are not themselves legal advice.
+Template version `s125-v1.1-2026-10-14`. Terms version `s125-terms-2026-10-14`. The script still accepts the previous terms version `s125-terms-2026-10-10` so a page that has not refreshed can post. The Terms of use in `s125-terms.js` are a draft for DK Benefits LLC’s own attorney to review before go-live. They are not themselves legal advice.
 
 The live Wix page that posts to `/_functions/section125pdf` is a different tool. Leave `section125.html` and `section125-embed.html` in place until this replacement is ready to swap in.
 
@@ -60,10 +60,7 @@ A submission on `https://dankirves-prog.github.io/dkbenefits-tools/section125/`:
 
 Subject: `Thanks for using my Section 125 tool!` A test submission (`?test=1`) uses `[TEST] Thanks for using my Section 125 tool!`.
 
-The note has exactly two links, in this order:
-
-1. `https://www.dkbenefits.net/section-128-tool`
-2. `https://www.dkbenefits.net/instant-group-quote`
+The note is a short check-in: thanks for using the tool, a hope that the document came together, and a note that Dan is an independent employee benefits broker who can shop group health and benefits across the full market. It invites a call, text, or email. It does not say the person was added to a list, and it has no unsubscribe line. It has no links.
 
 Reply-To is dan@dkbenefits.net. The From name is Daniel Kirves. The phone number and www.dkbenefits.net in the signature stay plain text. The note does not print the email address. One note per address per day, and at most three an hour. The trigger runs every 5 minutes and sends rows that have been pending for at least 10 minutes.
 

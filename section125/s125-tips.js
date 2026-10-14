@@ -29,11 +29,11 @@ var S125Tips = (function () {
     multi_state: 'The sample states the federal cafeteria-plan rules. Some states add their own benefit rules for employees who work there.',
     benefits: 'Choose every benefit that will be paid pre-tax. Medical, dental, and vision mean the employee’s share of the premium. A health FSA and an HSA can both be offered. An employee covered by a general-purpose health FSA cannot contribute to an HSA.',
     health_fsa_design: 'A limited-purpose health FSA covers dental, vision, and preventive care, so an HSA contribution can still be allowed. A general-purpose health FSA blocks HSA contributions for the person it covers. A post-deductible FSA is another HSA-compatible design a TPA can add.',
-    health_fsa_unused: 'Pick one. A grace period runs through the 15th day of the third month. Carryover is up to the maximum the IRS sets for that plan year ($680 from a plan year beginning in 2026). The plan cannot have both.',
-    dcap_unused: 'Dependent care can be forfeited or given a grace period. The health FSA carryover does not apply. For 2026 the exclusion is $7,500, or $3,750 if married filing separately.',
+    health_fsa_unused: 'Pick one. A grace period runs through the 15th day of the third month. Carryover is up to the IRS carryover maximum for that plan year. The plan cannot have both.',
+    dcap_unused: 'Dependent care can be forfeited or given a grace period. The health FSA carryover does not apply. The exclusion is the Code §129 exclusion limit in effect for that year, including the lower limit for a married participant filing separately.',
     signer_name: 'This name is printed above a blank signature line. The employer, not the individual, is the plan administrator. The officer signs for the employer.',
     signer_title: 'The title is printed with the name. It is not a signature and it is not the adoption date.',
-    signer_email: 'We use this address for a short note after you download the documents. The documents are not attached to that note. The same address is limited to three notes an hour.'
+    signer_email: 'This address is stored with the submission. The documents download on this page.'
   };
 
   function place(button, panel) {

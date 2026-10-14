@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
-const { loadBrowserScripts, baseInput, ASOF, LINKS } = require('./helpers');
+const { loadBrowserScripts, baseInput, ASOF } = require('./helpers');
 
 function boot() {
   const context = loadBrowserScripts();
@@ -149,7 +149,7 @@ function payload(overrides, id) {
     startedAt: '2026-10-09T15:00:00.000Z',
     submittedAt: '2026-10-09T15:00:10.000Z',
     pageUrl: 'http://127.0.0.1/section125/index.html',
-    templateVersion: 's125-v1.0-2026-10-10',
+    templateVersion: 's125-v1.1-2026-10-14',
     test: true,
     hp: '',
     lead: checked.lead,
@@ -158,7 +158,7 @@ function payload(overrides, id) {
     acknowledgement: {
       accepted: true,
       acceptedAt: '2026-10-09T15:00:10.000Z',
-      termsVersion: 's125-terms-2026-10-10'
+      termsVersion: 's125-terms-2026-10-14'
     },
     sendVisitorCopy: true
   };
@@ -211,14 +211,14 @@ test('a valid lead emails Dan immediately and queues a follow-up with no visitor
   assert.match(ctx.sent[0].body, /Officer email: ada@northwind\.example/);
   assert.doesNotMatch(ctx.sent[0].body, /health_fsa|s-corp|c-corp|\bdcap\b|dcap_unused/);
   assert.equal(ctx.sent[0].attachments.length, 2);
-  assert.match(ctx.sent[0].attachments[0].name, /Section_125_Plan_v1\.0\.docx$/);
-  assert.match(ctx.sent[0].attachments[1].name, /Implementation_Checklist_v1\.0\.docx$/);
+  assert.match(ctx.sent[0].attachments[0].name, /Section_125_Plan_v1\.1\.docx$/);
+  assert.match(ctx.sent[0].attachments[1].name, /Implementation_Checklist_v1\.1\.docx$/);
   assert.match(ctx.sent[0].body, /Review flags\nNone/);
   assert.equal(ctx.sent[0].attachments[0].data[0], 0x50);
   assert.equal(ctx.sent[0].attachments[0].data[1], 0x4b);
   assert.equal(ctx.sheets.Submissions.rows[1][14], 'yes');
   assert.equal(ctx.sheets.Submissions.rows[1][15], 'no');
-  assert.equal(ctx.sheets.Submissions.rows[1][18], 's125-terms-2026-10-10');
+  assert.equal(ctx.sheets.Submissions.rows[1][18], 's125-terms-2026-10-14');
   assert.equal(ctx.sheets.FollowUps.rows[1][5], 'pending');
   assert.equal(ctx.triggers[0], 's125SendDueFollowUps');
   ctx.setupFollowUpTrigger();
@@ -227,7 +227,7 @@ test('a valid lead emails Dan immediately and queues a follow-up with no visitor
   assert.equal(ctx.sent.length, 1);
 });
 
-test('the follow-up waits ten minutes, has two links, and has no attachments', function () {
+test('the follow-up waits ten minutes, is a short check-in, and has no attachments', function () {
   const ctx = boot();
   const base = Date.parse('2026-10-09T15:00:00.000Z');
   ctx.S125_TEST_NOW = base;
@@ -259,13 +259,13 @@ test('the follow-up waits ten minutes, has two links, and has no attachments', f
   assert.equal(notes[0].replyTo, 'dan@dkbenefits.net');
   assert.equal(notes[0].subject, '[TEST] Thanks for using my Section 125 tool!');
   assert.match(notes[0].body, /^Hi Ada,/);
-  assert.match(notes[0].body, /kids' Trump accounts \(employers can contribute under the new Section 128\)/);
-  assert.match(notes[0].body, /Just so it's clear, legally I have to mention that the tool is educational and isn't legal or tax advice\./);
-  assert.match(notes[0].body, /If you'd rather not get these emails from me, let me know and I'll take you off the list\./);
+  assert.match(notes[0].body, /Thanks for using the Section 125 tool\. I hope the document came together OK\./);
+  assert.match(notes[0].body, /independent employee benefits broker/);
+  assert.match(notes[0].body, /call or text me at 407-476-5076 or email me\./);
+  assert.doesNotMatch(notes[0].body, /off the list|mailing list|unsubscribe|Thanks, Dan/i);
   assert.doesNotMatch(notes[0].body, /just reply|just hit reply/i);
-  assert.match(notes[0].body, /I don't sell, market, open, or administer Trump accounts/);
-  assert.deepEqual(notes[0].body.match(/https?:\/\/\S+/g), [LINKS.section128Url, LINKS.ratesUrl]);
-  assert.equal((notes[0].htmlBody.match(/<a /g) || []).length, 2);
+  assert.equal(notes[0].body.match(/https?:\/\/\S+/g), null);
+  assert.equal((notes[0].htmlBody.match(/<a /g) || []).length, 0);
   assert.match(notes[0].htmlBody, /407-476-5076 \| www\.dkbenefits\.net/);
   assert.doesNotMatch(notes[0].htmlBody, /<a [^>]*>[^<]*www\.dkbenefits\.net<\/a>/);
   assert.doesNotMatch(notes[0].body, /dan@dkbenefits\.net|Thanks again|P\.S\./);
@@ -286,7 +286,7 @@ test('an evening submission dated today in Hawaii still emails Dan', function ()
 test('the previous terms version is still accepted', function () {
   const ctx = boot();
   const body = payload(null, '57575757-5757-4575-8575-575757575757');
-  body.acknowledgement.termsVersion = 's125-terms-2026-10-09';
+  body.acknowledgement.termsVersion = 's125-terms-2026-10-10';
   assert.equal(ctx.post(body).ok, true);
   assert.equal(ctx.sent.length, 1);
 });

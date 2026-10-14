@@ -58,8 +58,8 @@ test('the premium-only C corporation plan states the start-up enrollment and lea
   assert.match(text, /laws of the State of Florida/);
   assert.doesNotMatch(text, /The Health FSA is limited|Dependent Care FSA has a grace|health savings account by pre-tax/);
   assert.doesNotMatch(text, banned);
-  assert.equal(S125Docgen.planFileName(plan), 'Northwind_Benefits_Inc_Section_125_Plan_v1.0.docx');
-  assert.equal(S125Docgen.planFileName({ employer_name: 'Łódź Cafe' }), 'Lodz_Cafe_Section_125_Plan_v1.0.docx');
+  assert.equal(S125Docgen.planFileName(plan), 'Northwind_Benefits_Inc_Section_125_Plan_v1.1.docx');
+  assert.equal(S125Docgen.planFileName({ employer_name: 'Łódź Cafe' }), 'Lodz_Cafe_Section_125_Plan_v1.1.docx');
   const bytes = S125Docgen.buildPlanDocx(plan);
   assert.equal(bytes[0], 0x50);
   assert.equal(bytes[1], 0x4B);
@@ -94,11 +94,11 @@ test('the S corporation plan carries the HSA, limited-purpose FSA, carryover, an
   assert.match(text, /at least monthly/);
   assert.match(text, /limited-purpose health FSA/);
   assert.match(text, /dental, vision, and preventive care/);
-  assert.match(text, /\$680/);
-  assert.match(text, /\$660/);
-  assert.match(text, /\$3,400/);
-  assert.match(text, /\$7,500/);
-  assert.match(text, /\$3,750/);
+  assert.match(text, /IRS carryover maximum for that plan year/);
+  assert.match(text, /IRS limit in effect for that plan year/);
+  assert.match(text, /Code §129 exclusion limit in effect for that year, including the lower limit for a married participant filing separately/);
+  assert.doesNotMatch(text, /\$680|\$660|\$3,400|\$7,500|\$3,750/);
+  assert.doesNotMatch(text, /not adjusted for inflation/);
   assert.match(text, /age 27/);
   assert.match(text, /Code §105\(h\)/);
   assert.match(text, /15th day of the third month/);
@@ -130,14 +130,15 @@ test('an LLC taxed as a partnership with only dependent care excludes self-emplo
   assert.match(text, /LLC taxed as a partnership/);
   assert.match(text, /The Dependent Care FSA does not have a carryover/);
   assert.equal((text.match(/The Dependent Care FSA does not have a carryover/g) || []).length, 1);
-  assert.match(text, /\$7,500/);
+  assert.match(text, /Code §129 exclusion limit in effect for that year, including the lower limit for a married participant filing separately/);
+  assert.doesNotMatch(text, /\$7,500/);
   assert.match(text, /forfeited to the Employer/);
   assert.doesNotMatch(text, /Health FSA is limited|grace period that ends on the 15th day of the third month after the plan year\. A Health FSA/);
   assert.doesNotMatch(text, banned);
   assert.match(S125Model.entitySentence(plan), /a Florida limited liability company taxed as a partnership/);
 });
 
-test('the follow-up note has exactly two links and a plain-text signature', function () {
+test('the follow-up note is a short check-in with a plain-text signature', function () {
   const plan = planFor({
     entity_type: 's-corp',
     benefits: ['medical', 'health_fsa', 'dcap', 'hsa'],
@@ -148,33 +149,32 @@ test('the follow-up note has exactly two links and a plain-text signature', func
   const lead = { contact_name: 'Ada Lopez' };
   const email = S125Docgen.followUpEmailText(plan, lead, LINKS);
   const html = S125Docgen.followUpEmailHtml(plan, lead, LINKS);
-  assert.match(email, /^Hi Ada,/);
-  assert.match(email, /Section 125 plan for Northwind Benefits Inc\. Thanks so much/);
-  const punctuated = S125Docgen.followUpEmailText(planFor({ employer_name: 'Northwind Supply Inc.' }), lead, LINKS);
-  assert.match(punctuated, /Section 125 plan for Northwind Supply Inc\. Thanks so much/);
-  assert.doesNotMatch(punctuated, /Inc\.\./);
-  assert.match(email, /Oh, and if you're looking at contributing to your employees' kids' Trump accounts \(employers can contribute under the new Section 128\), I have a free tool that creates that plan too\. I don't sell, market, open, or administer Trump accounts, but the tool is there if you need it:\nhttps:\/\/www\.dkbenefits\.net\/section-128-tool/);
-  assert.match(email, /I'd be happy to help you shop and negotiate your group health and other benefits/);
-  assert.match(email, /Just so it's clear, legally I have to mention that the tool is educational and isn't legal or tax advice\.\n\nIf you'd rather not get these emails from me, let me know and I'll take you off the list\.\n\nDaniel Kirves\n/);
-  assert.match(email, /I don't sell, market, open, or administer Trump accounts/);
-  assert.match(email, /Benefits Broker \| 20 Years Exp \| DK Benefits\n407-476-5076 \| www\.dkbenefits\.net\n6000 Metrowest Blvd #200 Orlando, FL 32835\n\nAgency Lic# L109331$/);
-  assert.match(email, /\$680 from a 2026 plan year/);
-  assert.match(email, /at least once a month/);
-  assert.doesNotMatch(email, /Thanks again|P\.S\.|dan@dkbenefits\.net/);
-  assert.deepEqual(email.match(/https?:\/\/\S+/g), [
-    'https://www.dkbenefits.net/section-128-tool',
-    'https://www.dkbenefits.net/instant-group-quote'
-  ]);
-  assert.equal((html.match(/<a /g) || []).length, 2);
-  assert.match(html, /<a href="https:\/\/www\.dkbenefits\.net\/section-128-tool">https:\/\/www\.dkbenefits\.net\/section-128-tool<\/a>/);
-  assert.match(html, /<a href="https:\/\/www\.dkbenefits\.net\/instant-group-quote">https:\/\/www\.dkbenefits\.net\/instant-group-quote<\/a>/);
+  assert.equal(email, [
+    'Hi Ada,',
+    '',
+    'Thanks for using the Section 125 tool. I hope the document came together OK.',
+    '',
+    'By the way, I\'m an independent employee benefits broker, and I can shop group health and benefits across the full market. If you want a second set of eyes or a quick quote, call or text me at 407-476-5076 or email me.',
+    '',
+    'Daniel Kirves',
+    'Benefits Broker | 20 Years Exp | DK Benefits',
+    '407-476-5076 | www.dkbenefits.net',
+    '6000 Metrowest Blvd #200 Orlando, FL 32835',
+    '',
+    'Agency Lic# L109331'
+  ].join('\n'));
+  assert.doesNotMatch(email, /Thanks, Dan|mailing list|unsubscribe|off the list|added you/i);
+  assert.doesNotMatch(email, /just reply|just hit reply/i);
+  assert.doesNotMatch(email, /\u2014/);
+  assert.equal(email.match(/https?:\/\/\S+/g), null);
+  assert.equal((html.match(/<a /g) || []).length, 0);
   assert.match(html, /407-476-5076 \| www\.dkbenefits\.net/);
-  assert.doesNotMatch(html, /<a [^>]*>[^<]*www\.dkbenefits\.net<\/a>/);
   assert.doesNotMatch(html, /mailto:|tel:|<img|utm_|bit\.ly/i);
   assert.match(S125Docgen.followUpEmailText(plan, { contact_name: '   ' }, LINKS), /^Hi there,/);
-  assert.equal(S125Terms.VERSION, 's125-terms-2026-10-10');
-  assert.match(email, /If you'd rather not get these emails from me, let me know and I'll take you off the list\./);
-  assert.doesNotMatch(email, /just reply|just hit reply/i);
+  assert.equal(S125Terms.VERSION, 's125-terms-2026-10-14');
+  assert.match(S125Terms.PARAGRAPHS.join('\n'), /Rules and IRS limits change each year/);
+  assert.match(S125Terms.PARAGRAPHS.join('\n'), /Confirm the current amounts with your third-party administrator or advisor/);
+  assert.doesNotMatch(S125Terms.PARAGRAPHS.join('\n'), /October 9, 2026|as of October/);
   assert.match(S125Terms.FOOTER, /educational tool/);
   fs.writeFileSync(path.join(artifactDir(), 'follow-up-email.txt'), email);
 });

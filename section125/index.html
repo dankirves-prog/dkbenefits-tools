@@ -107,7 +107,7 @@
           <div class="field">
             <label for="effective_date">Effective date<span class="tip-slot" data-tip="effective_date"></span></label>
             <input id="effective_date" name="effective_date" type="text" inputmode="numeric" autocomplete="off" aria-describedby="hint_effective_date" required>
-            <p class="hint" id="hint_effective_date">e.g. 01/01/2027. Today or a later date.</p>
+            <p class="hint" id="hint_effective_date">Use MM/DD/YYYY. Today or a later date.</p>
             <p class="field-error" id="err_effective_date" role="alert"></p>
           </div>
           <div class="field">
@@ -251,8 +251,8 @@
             <label class="choice"><input type="checkbox" name="benefits" value="medical"><span>Medical<small>The employee’s share of the group medical premium.</small></span></label>
             <label class="choice"><input type="checkbox" name="benefits" value="dental"><span>Dental</span></label>
             <label class="choice"><input type="checkbox" name="benefits" value="vision"><span>Vision</span></label>
-            <label class="choice"><input type="checkbox" name="benefits" value="health_fsa"><span>Health FSA<small>Limit is indexed each year ($3,400 for 2026).</small></span></label>
-            <label class="choice"><input type="checkbox" name="benefits" value="dcap"><span>Dependent care FSA<small>$7,500 a year, not indexed</small></span></label>
+            <label class="choice"><input type="checkbox" name="benefits" value="health_fsa"><span>Health FSA<small>The IRS limit in effect for that plan year.</small></span></label>
+            <label class="choice"><input type="checkbox" name="benefits" value="dcap"><span>Dependent care FSA<small>The Code §129 exclusion limit in effect for that year, including the lower limit for a married participant filing separately.</small></span></label>
             <label class="choice"><input type="checkbox" name="benefits" value="hsa"><span>HSA<small>The election can be changed at least monthly.</small></span></label>
           </div>
           <p class="field-error" id="err_benefits" role="alert"></p>
@@ -272,7 +272,7 @@
             <div class="choices">
               <label class="choice"><input type="radio" name="health_fsa_unused" value="forfeit"><span>Forfeiture<small>Unused amounts are lost at year-end.</small></span></label>
               <label class="choice"><input type="radio" name="health_fsa_unused" value="grace"><span>Grace period<small>Through the 15th day of the third month. No carryover.</small></span></label>
-              <label class="choice"><input type="radio" name="health_fsa_unused" value="carryover"><span>Carryover<small>Up to the IRS maximum for that plan year ($680 from a plan year beginning in 2026). No grace period.</small></span></label>
+              <label class="choice"><input type="radio" name="health_fsa_unused" value="carryover"><span>Carryover<small>Up to the IRS carryover maximum for that plan year. No grace period.</small></span></label>
             </div>
             <p class="field-error" id="err_health_fsa_unused" role="alert"></p>
           </fieldset>
@@ -311,7 +311,7 @@
             <label for="signer_email">Email<span class="tip-slot" data-tip="signer_email"></span></label>
             <input id="signer_email" name="signer_email" type="email" autocomplete="email" maxlength="120" aria-describedby="hint_signer_email signerEmailHint" required>
             <p class="hint" id="hint_signer_email">e.g. name@company.com</p>
-            <p class="hint" id="signerEmailHint">We’ll use this to follow up with a short note. The documents download on this page.</p>
+            <p class="hint" id="signerEmailHint">The documents download on this page. They are not emailed.</p>
             <p class="field-error" id="err_signer_email" role="alert"></p>
           </div>
         </div>

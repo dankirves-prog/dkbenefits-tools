@@ -1,16 +1,11 @@
 /**
  * Section 125 sample plan rules.
- * Dollar figures follow IR-2025-103 / Rev. Proc. 2025-32 and the OBBBA change to §129.
+ * Dollar limits are the IRS or Code amount in effect for that plan year.
  * Draft for the employer's own advisors. Not legal advice.
  */
 var S125Model = (function () {
-  var TEMPLATE_VERSION = 's125-v1.0-2026-10-10';
-  var GUIDANCE_AS_OF = '2026-10-09';
-  var HEALTH_FSA_LIMIT_2026 = 3400;
-  var CARRYOVER_FROM_2026 = 680;
-  var CARRYOVER_INTO_2026 = 660;
-  var DCAP_LIMIT_2026 = 7500;
-  var DCAP_MFS_2026 = 3750;
+  var TEMPLATE_VERSION = 's125-v1.1-2026-10-14';
+  var GUIDANCE_AS_OF = '2026-10-14';
 
   var US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
   var STATE_NAMES = {
@@ -629,11 +624,6 @@ var S125Model = (function () {
   return {
     TEMPLATE_VERSION: TEMPLATE_VERSION,
     GUIDANCE_AS_OF: GUIDANCE_AS_OF,
-    HEALTH_FSA_LIMIT_2026: HEALTH_FSA_LIMIT_2026,
-    CARRYOVER_FROM_2026: CARRYOVER_FROM_2026,
-    CARRYOVER_INTO_2026: CARRYOVER_INTO_2026,
-    DCAP_LIMIT_2026: DCAP_LIMIT_2026,
-    DCAP_MFS_2026: DCAP_MFS_2026,
     US_STATES: US_STATES,
     MONTHS: MONTHS,
     WAITING: WAITING,
