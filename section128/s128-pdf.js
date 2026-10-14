@@ -198,23 +198,22 @@ var S128Pdf = (function () {
         index++;
       }
 
+      var footerName = props.footer || props.title || '';
       pages.forEach(function (pg, index) {
+        var label = (footerName ? footerName + ' | ' : '') + 'Page ' + (index + 1) + ' of ' + pages.length;
         var size = 8;
-        var pageLabel = 'Page ' + (index + 1);
-        var pageWidthText = font.widthOfTextAtSize(pageLabel, size);
-        var label = S128Docgen.FOOTER;
-        var lines = wrap(label, font, size, Math.max(80, maxWidth - pageWidthText - 16));
-        var fy = 32 + (lines.length - 1) * 10;
+        var lines = wrap(label, font, size, maxWidth);
+        var fy = 28 + (lines.length - 1) * 10;
         lines.forEach(function (line) {
-          pg.drawText(line, { x: left, y: fy, size: size, font: font, color: muted });
+          var lineWidth = font.widthOfTextAtSize(line, size);
+          pg.drawText(line, {
+            x: left + Math.max(0, (maxWidth - lineWidth) / 2),
+            y: fy,
+            size: size,
+            font: font,
+            color: muted
+          });
           fy -= 10;
-        });
-        pg.drawText(pageLabel, {
-          x: pageWidth - right - pageWidthText,
-          y: 32,
-          size: size,
-          font: font,
-          color: muted
         });
       });
       return doc.save();

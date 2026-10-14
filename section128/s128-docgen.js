@@ -6,7 +6,6 @@
 var S128Docgen = (function () {
   var W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
   var R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
-  var FOOTER = S128Terms.FOOTER;
 
   function xml(value) {
     return String(value == null ? '' : value)
@@ -525,18 +524,23 @@ var S128Docgen = (function () {
       '<w:hdr xmlns:w="' + W + '"><w:p><w:pPr><w:pStyle w:val="Header"/></w:pPr></w:p></w:hdr>';
   }
 
-  function footerXml() {
-    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-      '<w:ftr xmlns:w="' + W + '">' +
-      '<w:p><w:pPr><w:pStyle w:val="Footer"/></w:pPr>' +
-      '<w:r><w:t xml:space="preserve">' + xml(FOOTER) + '</w:t></w:r></w:p>' +
-      '<w:p><w:pPr><w:pStyle w:val="Footer"/><w:jc w:val="right"/></w:pPr>' +
-      '<w:r><w:t xml:space="preserve">Page </w:t></w:r>' +
-      '<w:r><w:fldChar w:fldCharType="begin"/></w:r>' +
-      '<w:r><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r>' +
+  function pageField(instr) {
+    return '<w:r><w:fldChar w:fldCharType="begin"/></w:r>' +
+      '<w:r><w:instrText xml:space="preserve"> ' + instr + ' </w:instrText></w:r>' +
       '<w:r><w:fldChar w:fldCharType="separate"/></w:r>' +
       '<w:r><w:t>1</w:t></w:r>' +
-      '<w:r><w:fldChar w:fldCharType="end"/></w:r>' +
+      '<w:r><w:fldChar w:fldCharType="end"/></w:r>';
+  }
+
+  function footerXml(label) {
+    var name = xml(label || '');
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<w:ftr xmlns:w="' + W + '">' +
+      '<w:p><w:pPr><w:pStyle w:val="Footer"/><w:jc w:val="center"/></w:pPr>' +
+      (name ? '<w:r><w:t xml:space="preserve">' + name + ' | Page </w:t></w:r>' : '<w:r><w:t xml:space="preserve">Page </w:t></w:r>') +
+      pageField('PAGE') +
+      '<w:r><w:t xml:space="preserve"> of </w:t></w:r>' +
+      pageField('NUMPAGES') +
       '</w:p></w:ftr>';
   }
 
@@ -630,7 +634,7 @@ var S128Docgen = (function () {
       { name: 'word/document.xml', text: documentXml(rows) },
       { name: 'word/styles.xml', text: stylesXml() },
       { name: 'word/header1.xml', text: headerXml() },
-      { name: 'word/footer1.xml', text: footerXml() },
+      { name: 'word/footer1.xml', text: footerXml((props && (props.footer || props.title)) || '') },
       { name: 'word/settings.xml', text: settingsXml() },
       { name: 'word/_rels/document.xml.rels', text: docRels() }
     ];
@@ -744,9 +748,21 @@ var S128Docgen = (function () {
     return String(docxName).replace(/\.docx$/i, '.pdf');
   }
 
+  function documentFooter(plan, kind) {
+    plan = plan || {};
+    var employer = String(plan.employer_name || '').replace(/\s+/g, ' ').trim();
+    var title = 'Section 128 Trump Account Contribution Program';
+    if (kind === 'amendment') title = 'Amendment to ' + String(plan.cafeteria_plan_name || '').replace(/\s+/g, ' ').trim();
+    if (kind === 'guide') title = 'Section 128 implementation checklist';
+    title = title.replace(/\s+/g, ' ').trim();
+    if (employer && title) return employer + ' ' + title;
+    return employer || title;
+  }
+
   function buildPlanDocx(plan) {
     return buildDocx(planParagraphs(plan), {
       title: plan.plan_name,
+      footer: documentFooter(plan, 'plan'),
       created: S128Model.GUIDANCE_AS_OF
     });
   }
@@ -756,6 +772,7 @@ var S128Docgen = (function () {
     if (!rows) return null;
     return buildDocx(rows, {
       title: 'Amendment to ' + plan.cafeteria_plan_name,
+      footer: documentFooter(plan, 'amendment'),
       created: S128Model.GUIDANCE_AS_OF
     });
   }
@@ -763,6 +780,7 @@ var S128Docgen = (function () {
   function buildGuideDocx(plan) {
     return buildDocx(guideParagraphs(plan), {
       title: 'Section 128 implementation checklist',
+      footer: documentFooter(plan, 'guide'),
       created: S128Model.GUIDANCE_AS_OF
     });
   }
@@ -772,7 +790,7 @@ var S128Docgen = (function () {
   }
 
   return {
-    FOOTER: FOOTER,
+    documentFooter: documentFooter,
     checklistLines: checklistLines,
     emailChecklistLines: emailChecklistLines,
     planParagraphs: planParagraphs,

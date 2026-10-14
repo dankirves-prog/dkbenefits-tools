@@ -448,20 +448,20 @@
   }
   function pdfFiles(plan) {
     var jobs = [{
-      promise: S128Pdf.buildPdf(S128Docgen.planParagraphs(plan), { title: plan.plan_name }),
+      promise: S128Pdf.buildPdf(S128Docgen.planParagraphs(plan), { title: plan.plan_name, footer: S128Docgen.documentFooter(plan, 'plan') }),
       name: S128Docgen.pdfFileName(S128Docgen.planFileName(plan)),
       label: 'Download Plan (PDF)'
     }];
     var amendmentRows = S128Docgen.amendmentParagraphs(plan);
     if (amendmentRows) {
       jobs.push({
-        promise: S128Pdf.buildPdf(amendmentRows, { title: 'Amendment' }),
+        promise: S128Pdf.buildPdf(amendmentRows, { title: 'Amendment to ' + plan.cafeteria_plan_name, footer: S128Docgen.documentFooter(plan, 'amendment') }),
         name: S128Docgen.pdfFileName(S128Docgen.amendmentFileName(plan)),
         label: 'Download Section 125 amendment (PDF)'
       });
     }
     jobs.push({
-      promise: S128Pdf.buildPdf(S128Docgen.guideParagraphs(plan), { title: 'Section 128 implementation guide' }),
+      promise: S128Pdf.buildPdf(S128Docgen.guideParagraphs(plan), { title: 'Section 128 implementation checklist', footer: S128Docgen.documentFooter(plan, 'guide') }),
       name: S128Docgen.pdfFileName(S128Docgen.guideFileName(plan)),
       label: 'Download implementation guide (PDF)'
     });

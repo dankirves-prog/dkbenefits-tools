@@ -26,13 +26,10 @@ var S128Terms = (function () {
 
   var CHECKBOX = 'I understand this is an educational tool, not legal or tax advice, and my company is responsible for what it adopts. I agree to the Terms of use.';
 
-  var FOOTER = 'Prepared with DK Benefits\' educational tool. Not effective until signed by the employer.';
-
   return {
     VERSION: VERSION,
     AS_OF: AS_OF,
     PARAGRAPHS: PARAGRAPHS,
-    CHECKBOX: CHECKBOX,
-    FOOTER: FOOTER
+    CHECKBOX: CHECKBOX
   };
 })();
