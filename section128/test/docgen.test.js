@@ -298,41 +298,35 @@ test('implementation guide matches the funding design and the visitor email', fu
   assert.doesNotMatch(guide, /Who:|What:|When:|REG-101355|attorney|SAMPLE DRAFT/);
   const emailLines = S128Docgen.emailChecklistLines(combined);
   assert.equal(emailLines.length, 6);
-  emailLines.forEach(function (line) { assert.ok(email.indexOf(line) !== -1, line); });
+  emailLines.forEach(function (line) { assert.equal(email.indexOf(line), -1, line); });
   assert.match(emailLines[5], /Pay the \$1,000 grant once a year and start payroll deductions once your cafeteria plan allows them\. Together they can't go over \$2,500 per employee per year\./);
-  assert.match(email, /^Hi Ada,/);
-  assert.match(email, /I just saw you put together your Section 128 plan for Northwind Benefits LLC\. Thanks so much for giving my tool a try\. I really appreciate it!/);
-  assert.match(email, /Just a few quick reminders so you can get it up and running/);
-  assert.match(email, /Your tax advisor can help with anything specific to your situation/);
-  assert.match(email, /I've got a free tool for that too/);
-  assert.doesNotMatch(email, /premium-only/);
-  assert.match(email, /I'd be happy to help you shop and negotiate your group health and other benefits/);
-  assert.match(email, /some rates you can check out online right now/);
-  assert.match(email, /Would you mind giving me a shot to see what I can do for you\? I'd love to hear from you\./);
-  assert.doesNotMatch(email, /Thanks again|P\.S\./);
-  assert.match(email, /Also, just so it's clear, I don't sell, market, open, or administer Trump accounts\. And legally I have to mention that the tool is educational and isn't legal or tax advice\.\n\nIf you'd rather not get these emails from me, let me know and I'll take you off the list\.\n\nDaniel Kirves\n/);
-  assert.doesNotMatch(email, /just reply/i);
-  assert.match(email, /the tool is educational and isn't legal or tax advice/);
-  assert.match(email, /Daniel Kirves/);
-  assert.match(email, /Benefits Broker \| 20 Years Exp \| DK Benefits/);
-  assert.match(email, /407-476-5076 \| www\.dkbenefits\.net/);
-  assert.match(email, /6000 Metrowest Blvd #200 Orlando, FL 32835/);
-  assert.match(email, /Agency Lic# L109331/);
+  assert.equal(email, [
+    'Hi Ada,',
+    '',
+    'Thanks for using the Section 128 tool. I hope the document came together OK.',
+    '',
+    'By the way, I\'m an independent employee benefits broker, and I can shop group health and benefits across the full market. If you want a second set of eyes or a quick quote, call or text me at 407-476-5076 or email me.',
+    '',
+    'Daniel Kirves',
+    'Benefits Broker | 20 Years Exp | DK Benefits',
+    '407-476-5076 | www.dkbenefits.net',
+    '6000 Metrowest Blvd #200 Orlando, FL 32835',
+    '',
+    'Agency Lic# L109331'
+  ].join('\n'));
+  assert.doesNotMatch(email, /just reply|just hit reply|off the list|mailing list|unsubscribe|Thanks, Dan/i);
+  assert.doesNotMatch(email, /\u2014/);
   assert.doesNotMatch(email, /dan@dkbenefits\.net/);
   assert.doesNotMatch(email, /attorney|SAMPLE DRAFT|does not review|received your draft|attached|lowest|savings|cheapest|guarantee|quote-tool-demo/i);
-  assert.deepEqual(email.match(/https?:\/\/\S+/g), [
-    'https://www.dkbenefits.net/section125plantool',
-    'https://www.dkbenefits.net/instant-group-quote'
-  ]);
+  assert.equal(email.match(/https?:\/\/\S+/g), null);
   assert.match(S128Docgen.followUpEmailText(combined, { contact_name: '   ' }, links), /^Hi there,/);
-  assert.equal((html.match(/<a /g) || []).length, 2);
-  assert.match(html, /<a href="https:\/\/www\.dkbenefits\.net\/section125plantool">https:\/\/www\.dkbenefits\.net\/section125plantool<\/a>/);
-  assert.match(html, /<a href="https:\/\/www\.dkbenefits\.net\/instant-group-quote">https:\/\/www\.dkbenefits\.net\/instant-group-quote<\/a>/);
+  assert.equal((html.match(/<a /g) || []).length, 0);
   assert.doesNotMatch(html, /mailto:|tel:|<img|utm_|bit\.ly|tinyurl/i);
   assert.match(html, /407-476-5076 \| www\.dkbenefits\.net/);
   assert.doesNotMatch(html, /dan@dkbenefits\.net/);
-  assert.doesNotMatch(html, /<a [^>]*>407-476-5076<\/a>/);
-  assert.doesNotMatch(html, /<a [^>]*>[^<]*www\.dkbenefits\.net<\/a>/);
+  assert.equal(html, '<div>' + email.split('\n').map(function (line) {
+    return line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }).join('<br>\n') + '</div>');
   const grantOnly = planFor({ funding_mode: 'employer_only' });
   assert.equal(S128Docgen.checklistLines(grantOnly).length, 5);
   assert.doesNotMatch(S128Docgen.plainText(S128Docgen.guideParagraphs(grantOnly)), /Section 125 amendment/);

@@ -498,7 +498,7 @@
       var already = body.duplicate === true;
       setStatus(already ? 'duplicate' : 'sent', already
         ? '<strong>This request was already received.</strong> You can download the documents again below.'
-        : '<strong>Your documents are ready to download.</strong> A short note will come to your email shortly.');
+        : '<strong>Your documents are ready to download.</strong>');
       return;
     }
     $('btnRetry').classList.remove('hidden');
@@ -642,7 +642,7 @@
   }
   function syncEmailCopy() {
     var hint = $('contactEmailHint');
-    if (hint) hint.textContent = 'We\'ll use this to follow up with a short note.';
+    if (hint) hint.textContent = 'The documents download on the last screen. They are not emailed.';
   }
   function digitsBeforeCaret(value, caret) {
     return (String(value || '').slice(0, caret).match(/\d/g) || []).length;

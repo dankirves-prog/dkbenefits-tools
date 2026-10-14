@@ -443,39 +443,14 @@ var S128Docgen = (function () {
   }
 
   function followUpEmailText(plan, lead, links) {
-    links = links || {};
     lead = lead || {};
-    plan = plan || {};
-    var section125 = links.section125Url || '';
-    var rates = links.ratesUrl || '';
     var first = followUpFirstName(lead);
-    var employer = plan.employer_name || 'your company';
     var lines = [
       first ? ('Hi ' + first + ',') : 'Hi there,',
       '',
-      'I just saw you put together your Section 128 plan for ' + employer + '. Thanks so much for giving my tool a try. I really appreciate it!',
+      'Thanks for using the Section 128 tool. I hope the document came together OK.',
       '',
-      'Just a few quick reminders so you can get it up and running:',
-      ''
-    ];
-    emailChecklistLines(plan).forEach(function (line, index) {
-      lines.push((index + 1) + '. ' + line);
-    });
-    lines.push(
-      '',
-      'Your tax advisor can help with anything specific to your situation.',
-      '',
-      'Oh, and if you ever need a Section 125 plan, or yours could use a refresh, I\'ve got a free tool for that too:',
-      section125,
-      '',
-      'Also, just so you know, I\'m an employee benefits broker. No pressure at all, but I\'d be happy to help you shop and negotiate your group health and other benefits. I even have some rates you can check out online right now:',
-      rates,
-      '',
-      'Would you mind giving me a shot to see what I can do for you? I\'d love to hear from you.',
-      '',
-      'Also, just so it\'s clear, I don\'t sell, market, open, or administer Trump accounts. And legally I have to mention that the tool is educational and isn\'t legal or tax advice.',
-      '',
-      'If you\'d rather not get these emails from me, let me know and I\'ll take you off the list.',
+      'By the way, I\'m an independent employee benefits broker, and I can shop group health and benefits across the full market. If you want a second set of eyes or a quick quote, call or text me at 407-476-5076 or email me.',
       '',
       'Daniel Kirves',
       'Benefits Broker | 20 Years Exp | DK Benefits',
@@ -483,7 +458,7 @@ var S128Docgen = (function () {
       '6000 Metrowest Blvd #200 Orlando, FL 32835',
       '',
       'Agency Lic# L109331'
-    );
+    ];
     return lines.join('\n');
   }
 

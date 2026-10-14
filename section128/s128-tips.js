@@ -12,7 +12,7 @@ var S128Tips = (function () {
     zip: 'The ZIP code is printed as part of the employer’s address, in the form City, ST ZIP. It identifies the employer on the sample.',
     contact_name: 'The person filling out this form. This name is not printed on the plan. The signer is entered separately in the Administration step.',
     contact_title: 'Your job title, stored with the submission. It is not printed on the plan. The signer’s title is entered separately in the Administration step.',
-    contact_email: 'We use this address for a short note after you download your documents. The documents are not emailed. The same address is limited to three notes an hour.',
+    contact_email: 'This address is stored with the submission. The documents download on the last screen.',
     contact_phone: 'The phone number is stored with the submission. Questions about DK Benefits’ services can use 407-476-5076 or dan@dkbenefits.net. The number is not a signature.',
     funding_method: 'The written plan states how contributions are made. Proposed rules in REG-101355-26 require the plan to state the amount and whether salary reduction through a Section 125 plan is allowed. Choose one method. There is no default.',
     funding_employer_only: 'An employer grant is an amount the employer pays. This choice uses one uniform annual grant and does not use salary reduction. The Section 128 limit for 2026 and 2027 is $2,500 per employee.',

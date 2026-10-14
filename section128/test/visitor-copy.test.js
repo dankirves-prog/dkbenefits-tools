@@ -60,18 +60,13 @@ test('combined visitor email and guide stay educational', function () {
   BANNED.forEach(function (pattern) { assert.doesNotMatch(email, pattern); });
   assert.doesNotMatch(email, /attorney|does not review|attached|lowest|savings/i);
   assert.match(email, /^Hi Ada,/);
-  assert.match(email, /Just a few quick reminders so you can get it up and running/);
-  assert.match(email, /Your tax advisor can help/);
-  assert.match(email, /I just saw you put together your Section 128 plan/);
-  assert.match(email, /some rates you can check out online right now/);
-  assert.match(email, /shop and negotiate your group health/);
-  assert.doesNotMatch(email, /premium-only/);
+  assert.match(email, /Thanks for using the Section 128 tool\. I hope the document came together OK\./);
+  assert.match(email, /independent employee benefits broker/);
+  assert.match(email, /call or text me at 407-476-5076 or email me\./);
+  assert.doesNotMatch(email, /premium-only|off the list|Trump accounts/i);
   assert.doesNotMatch(email, /dan@dkbenefits\.net/);
-  assert.deepEqual(email.match(/https?:\/\/\S+/g), [
-    'https://www.dkbenefits.net/section125plantool',
-    'https://www.dkbenefits.net/instant-group-quote'
-  ]);
-  assert.equal((html.match(/<a /g) || []).length, 2);
+  assert.equal(email.match(/https?:\/\/\S+/g), null);
+  assert.equal((html.match(/<a /g) || []).length, 0);
   assert.doesNotMatch(html, /mailto:|tel:|<img|utm_/i);
   assert.equal(S128Terms.CHECKBOX, 'I understand this is an educational tool, not legal or tax advice, and my company is responsible for what it adopts. I agree to the Terms of use.');
   assert.match(S128Terms.PARAGRAPHS.join('\n'), /hold harmless/);
