@@ -286,27 +286,17 @@ test('salary reduction attaches the amendment for Dan, and each test follow-up g
   assert.equal(notes[0].replyTo, 'dan@dkbenefits.net');
   assert.equal(notes[0].subject, '[TEST] Thanks for using my Section 128 tool!');
   assert.match(notes[0].body, /^Hi Ada,/);
-  assert.match(notes[0].body, /Just a few quick reminders so you can get it up and running/);
-  assert.match(notes[0].body, /Pay the \$1,000 grant/);
-  assert.match(notes[0].body, /can't go over \$2,500 per employee per year/);
-  assert.match(notes[0].body, /Add the Section 125 amendment/);
-  assert.match(notes[0].body, /I'd be happy to help you shop and negotiate your group health/);
-  assert.match(notes[0].body, /some rates you can check out online right now/);
-  assert.deepEqual(notes[0].body.match(/https?:\/\/\S+/g), [
-    'https://www.dkbenefits.net/section125plantool',
-    'https://www.dkbenefits.net/instant-group-quote'
-  ]);
+  assert.match(notes[0].body, /Thanks for using the Section 128 tool\. I hope the document came together OK\./);
+  assert.match(notes[0].body, /independent employee benefits broker/);
+  assert.match(notes[0].body, /call or text me at 407-476-5076 or email me\./);
+  assert.doesNotMatch(notes[0].body, /off the list|mailing list|unsubscribe|Trump accounts/i);
+  assert.equal(notes[0].body.match(/https?:\/\/\S+/g), null);
   assert.doesNotMatch(notes[0].body, /attorney|lowest|attached|savings|quote-tool-demo|dan@dkbenefits\.net/i);
-  assert.equal((notes[0].htmlBody.match(/<a /g) || []).length, 2);
-  assert.match(notes[0].htmlBody, /<a href="https:\/\/www\.dkbenefits\.net\/section125plantool">https:\/\/www\.dkbenefits\.net\/section125plantool<\/a>/);
-  assert.match(notes[0].htmlBody, /<a href="https:\/\/www\.dkbenefits\.net\/instant-group-quote">https:\/\/www\.dkbenefits\.net\/instant-group-quote<\/a>/);
+  assert.equal((notes[0].htmlBody.match(/<a /g) || []).length, 0);
   assert.doesNotMatch(notes[0].htmlBody, /mailto:|tel:|<img|utm_|bit\.ly|dan@dkbenefits\.net/i);
   assert.doesNotMatch(notes[0].body, /Thanks again|P\.S\./);
-  assert.match(notes[0].body, /Also, just so it's clear, I don't sell, market, open, or administer Trump accounts/);
   assert.match(notes[0].htmlBody, /407-476-5076 \| www\.dkbenefits\.net/);
   assert.match(notes[0].htmlBody, /Agency Lic# L109331/);
-  assert.doesNotMatch(notes[0].htmlBody, /<a [^>]*>407-476-5076<\/a>/);
-  assert.doesNotMatch(notes[0].htmlBody, /<a [^>]*>[^<]*www\.dkbenefits\.net<\/a>/);
   assert.equal(ctx.sheets.FollowUps.rows[1][5], 'sent');
   assert.equal(ctx.sheets.FollowUps.rows[2][5], 'sent');
   assert.equal(notes[1].subject, '[TEST] Thanks for using my Section 128 tool!');
@@ -366,8 +356,8 @@ test('a v1.0 test submission queues and then sends after an earlier note the sam
   const notes = ctx.sent.filter(function (message) { return message.to === 'dankirves@gmail.com'; });
   assert.equal(notes.length, 2);
   assert.equal(notes[1].subject, '[TEST] Thanks for using my Section 128 tool!');
-  assert.match(notes[1].body, /Northwind Benefits LLC/);
-  assert.match(notes[1].body, /If you'd rather not get these emails from me/);
+  assert.match(notes[1].body, /Thanks for using the Section 128 tool/);
+  assert.doesNotMatch(notes[1].body, /off the list/);
   assert.equal(notes[1].attachments, undefined);
   assert.equal(ctx.sheets.FollowUps.rows[2][5], 'sent');
 });
@@ -389,7 +379,7 @@ test('a test row already skipped for today is sent on the next trigger', functio
   const notes = ctx.sent.filter(function (message) { return message.to === 'dankirves@gmail.com'; });
   assert.equal(notes.length, 1);
   assert.equal(notes[0].subject, '[TEST] Thanks for using my Section 128 tool!');
-  assert.match(notes[0].body, /Northwind Benefits LLC/);
+  assert.match(notes[0].body, /Thanks for using the Section 128 tool/);
   assert.equal(ctx.sheets.FollowUps.rows[1][5], 'sent');
 });
 
