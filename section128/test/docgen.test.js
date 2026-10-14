@@ -392,6 +392,11 @@ test('LibreOffice renders each funding method and pdf-lib matches the text', asy
     fs.copyFileSync(docx, path.join(artifacts, name + '.docx'));
     fs.copyFileSync(renderedPdf, path.join(artifacts, name + '-libreoffice.pdf'));
   }
+});
+
+test('pdf-lib prints the centered footer with a computed page count', async function () {
+  const artifacts = artifactDir();
+  fs.mkdirSync(artifacts, { recursive: true });
   const plan = planFor(Object.assign({ funding_mode: 'combined', employer_annual_grant: '1000' }, salaryFields));
   const pdfBytes = await S128Pdf.buildPdf(S128Docgen.planParagraphs(plan), { title: plan.plan_name, footer: S128Docgen.documentFooter(plan, 'plan') });
   const pdfPath = path.join(artifacts, 'combined-statutory-pdflib.pdf');
@@ -444,6 +449,8 @@ test('LibreOffice renders each funding method and pdf-lib matches the text', asy
   assert.match(page1, /Date:/);
   const info = execFileSync('pdfinfo', [pdfPath], { encoding: 'utf8' });
   const pageTotal = Number((info.match(/Pages:\s+(\d+)/) || [])[1] || 1);
+  const lastPage = execFileSync('pdftotext', ['-f', String(pageTotal), '-l', String(pageTotal), pdfPath, '-'], { encoding: 'utf8' });
+  assert.match(lastPage, new RegExp('Northwind Benefits LLC Section 128 Trump Account Contribution Program\\s+\\|\\s+Page ' + pageTotal + ' of ' + pageTotal));
   let signaturePage = 1;
   for (let n = 1; n <= pageTotal; n++) {
     const slice = execFileSync('pdftotext', ['-f', String(n), '-l', String(n), pdfPath, '-'], { encoding: 'utf8' });
@@ -456,6 +463,8 @@ test('LibreOffice renders each funding method and pdf-lib matches the text', asy
   fs.copyFileSync(path.join(artifacts, 'combined-plan-page-' + signaturePage + '.png'), path.join(artifacts, 'plan-signature-page.png'));
   const amendInfo = execFileSync('pdfinfo', [amendmentPath], { encoding: 'utf8' });
   const amendPages = Number((amendInfo.match(/Pages:\s+(\d+)/) || [])[1] || 1);
+  const amendLast = execFileSync('pdftotext', ['-f', String(amendPages), '-l', String(amendPages), amendmentPath, '-'], { encoding: 'utf8' });
+  assert.match(amendLast, new RegExp('Northwind Benefits LLC Amendment to Northwind Cafeteria Plan\\s+\\|\\s+Page ' + amendPages + ' of ' + amendPages));
   let amendSignaturePage = amendPages;
   for (let n = 1; n <= amendPages; n++) {
     const slice = execFileSync('pdftotext', ['-f', String(n), '-l', String(n), amendmentPath, '-'], { encoding: 'utf8' });
