@@ -7,6 +7,7 @@
   var sessionId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('s125-' + Date.now());
   var inFlight = false;
   var lastFiles = [];
+  var autoDownloaded = false;
 
   function $(id) { return document.getElementById(id); }
   function fieldValue(name) {
@@ -55,8 +56,8 @@
       prior_plan: checked('prior_plan'),
       prior_adoption: fieldValue('prior_adoption'),
       plan_year_change: $('plan_year_change').checked ? 'yes' : 'no',
-      oe_window_days: checked('oe_window_days'),
-      new_hire_window: checked('new_hire_window'),
+      oe_window_days: fieldValue('oe_window_days'),
+      new_hire_window: fieldValue('new_hire_window'),
       employee_count: fieldValue('employee_count'),
       funding_type: checked('funding_type'),
       full_time_hours: fieldValue('full_time_hours'),
@@ -75,6 +76,7 @@
   }
   function clearErrors() {
     document.querySelectorAll('.field-error').forEach(function (el) { el.textContent = ''; });
+    document.querySelectorAll('[aria-invalid="true"]').forEach(function (el) { el.removeAttribute('aria-invalid'); });
   }
   function showErrors(errors, only) {
     var allow = only ? {} : null;
@@ -85,6 +87,7 @@
       var box = $('err_' + err.field);
       if (box) box.textContent = err.message;
       var input = $(err.field) || document.querySelector('[name="' + err.field + '"]');
+      if (input && input.setAttribute) input.setAttribute('aria-invalid', 'true');
       if (!first) first = input || box;
     });
     if (first) {
@@ -134,14 +137,40 @@
     }
     var result = S125Model.validate(readForm(), { asOf: S125Model.todayIso() });
     var short = $('shortYearNote');
-    if (result.plan.short_plan_year) {
-      short.textContent = 'This is a short first plan year, from ' + S125Model.formatLongDate(result.plan.effective_date) + ' through ' + S125Model.formatLongDate(result.plan.short_plan_year_end) + '.';
-      short.classList.remove('hidden');
-    } else if (result.plan.prior_plan && result.plan.effective_date) {
-      short.textContent = 'This restatement keeps the existing plan year. It is not marked as a new short year.';
+    var yearNote = result.plan && result.plan.effective_date ? S125Model.planYearNote(result.plan) : '';
+    if (yearNote) {
+      short.textContent = yearNote;
       short.classList.remove('hidden');
     } else {
+      short.textContent = '';
       short.classList.add('hidden');
+    }
+    var hint = $('planYearHint');
+    var notices = S125Model.stepTwoNotices(result.plan, S125Model.todayIso());
+    if (notices.length) {
+      hint.textContent = notices.join(' ');
+      hint.classList.remove('hidden');
+    } else {
+      hint.textContent = '';
+      hint.classList.add('hidden');
+    }
+    var medical = benefits.indexOf('medical') !== -1;
+    var partOrOther = checkedAll('eligible_classes').indexOf('part-time') !== -1 || checkedAll('eligible_classes').indexOf('other') !== -1;
+    var fsaMedical = $('fsaMedicalNote');
+    var fsaClass = $('fsaClassNote');
+    if (health && !medical) {
+      fsaMedical.textContent = 'A Health FSA should be offered only to employees who are eligible for your group major medical plan. Without one, a Health FSA can trigger ACA excise taxes. Check with your advisor.';
+      fsaMedical.classList.remove('hidden');
+    } else {
+      fsaMedical.textContent = '';
+      fsaMedical.classList.add('hidden');
+    }
+    if (health && partOrOther) {
+      fsaClass.textContent = 'Part-time or other employees who aren\'t eligible for your medical plan can\'t have the Health FSA.';
+      fsaClass.classList.remove('hidden');
+    } else {
+      fsaClass.textContent = '';
+      fsaClass.classList.add('hidden');
     }
     fillDays();
   }
@@ -216,7 +245,15 @@
       '<dt>Effective</dt><dd>' + escapeHtml(S125Model.formatLongDate(plan.effective_date)) + '</dd>' +
       '<dt>Plan year</dt><dd>' + escapeHtml(S125Model.planYearSentence(plan)) + '</dd>' +
       '<dt>Benefits</dt><dd>' + escapeHtml(benefits) + '</dd>' +
+      '<dt>Health FSA</dt><dd>' + escapeHtml((plan.benefits || []).indexOf('health_fsa') === -1 ? 'Not offered' : (S125Model.healthFsaDesignLabel(plan.health_fsa_design) + '. Unused amounts: ' + S125Model.unusedLabel(plan.health_fsa_unused) + '.')) + '</dd>' +
+      '<dt>Dependent care</dt><dd>' + escapeHtml((plan.benefits || []).indexOf('dcap') === -1 ? 'Not offered' : ('Unused amounts: ' + S125Model.unusedLabel(plan.dcap_unused) + '.')) + '</dd>' +
+      '<dt>Funding</dt><dd>' + escapeHtml(S125Model.fundingLabel(plan.funding_type)) + '</dd>' +
+      '<dt>Waiting period</dt><dd>' + escapeHtml(S125Model.waitingText(plan.waiting_period)) + '</dd>' +
+      '<dt>New-hire window</dt><dd>' + escapeHtml(String(plan.new_hire_window) + ' days') + '</dd>' +
+      '<dt>Open enrollment</dt><dd>' + escapeHtml(String(plan.oe_window_days) + ' days') + '</dd>' +
       '<dt>Eligible class</dt><dd>' + escapeHtml(S125Model.classSentence(plan)) + '</dd>' +
+      '<dt>Signer</dt><dd>' + escapeHtml(plan.signer_name) + '</dd>' +
+      '<dt>Email</dt><dd>' + escapeHtml(plan.signer_email) + '</dd>' +
       '</dl></section>';
   }
   function escapeHtml(value) {
@@ -254,6 +291,11 @@
     link.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
+  function downloadLabel(name) {
+    var pdf = /\.pdf$/i.test(name);
+    if (/Implementation_Checklist/i.test(name)) return pdf ? 'Implementation checklist (PDF)' : 'Implementation checklist (Word)';
+    return pdf ? 'Plan document (PDF)' : 'Plan document (Word)';
+  }
   function showDownloads(files) {
     var list = $('downloadList');
     list.innerHTML = '';
@@ -261,7 +303,14 @@
       var button = document.createElement('button');
       button.type = 'button';
       button.className = 'btn-secondary';
-      button.textContent = 'Download ' + file.name;
+      var label = document.createElement('span');
+      label.className = 'download-label';
+      label.textContent = downloadLabel(file.name);
+      var fileName = document.createElement('span');
+      fileName.className = 'download-file';
+      fileName.textContent = file.name;
+      button.appendChild(label);
+      button.appendChild(fileName);
       button.addEventListener('click', function () { triggerDownload(file.bytes, file.name, file.mime); });
       list.appendChild(button);
     });
@@ -279,7 +328,7 @@
       { rows: S125Docgen.guideParagraphs(plan), name: S125Docgen.pdfFileName(S125Docgen.guideFileName(plan)), title: 'Section 125 implementation checklist' }
     ];
     return Promise.all(jobs.map(function (job) {
-      return S125Pdf.buildPdf(job.rows, { title: job.title }).then(function (bytes) {
+      return S125Pdf.buildPdf(job.rows, { title: job.title, footer: job.title }).then(function (bytes) {
         return { name: job.name, mime: 'application/pdf', bytes: bytes };
       });
     }));
@@ -306,13 +355,37 @@
     };
   }
   function setStatus(html) { $('emailStatus').innerHTML = html; }
+  function stepForField(field) {
+    var n;
+    for (n = 1; n <= 5; n++) {
+      if (S125Model.stepFields(n).indexOf(field) !== -1) return n;
+    }
+    return 1;
+  }
+  function postFiles(result, id, files) {
+    var cfg = window.S125_CONFIG || {};
+    return fetch(cfg.endpoint, { method: 'POST', body: JSON.stringify(payloadFrom(result, id, files)) })
+      .then(function (response) { return response.json(); })
+      .then(function (body) {
+        inFlight = false;
+        $('btnRetry').classList.add('hidden');
+        if (body && body.ok) {
+          setStatus('<strong>Your documents are ready to download.</strong> A short note will come to your email shortly.');
+        } else {
+          $('btnRetry').classList.remove('hidden');
+          var message = body && body.error ? body.error : 'The request could not be sent.';
+          setStatus('<strong>' + escapeHtml(message) + '</strong> You can still download the documents below.');
+        }
+      });
+  }
   function finishGenerate() {
     if (inFlight) return;
     clearErrors();
+    $('btnRetry').classList.add('hidden');
     var result = S125Model.validate(readForm(), { asOf: S125Model.todayIso() });
     if (!result.ok) {
       showErrors(result.errors);
-      showStep(1);
+      showStep(stepForField(result.errors[0] && result.errors[0].field));
       return;
     }
     if (!$('terms_ack').checked) {
@@ -329,41 +402,143 @@
     lastFiles = buildFiles(result.plan);
     showStep(6);
     showDownloads(lastFiles);
-    lastFiles.forEach(function (file) {
-      if (/\.docx$/i.test(file.name)) triggerDownload(file.bytes, file.name, file.mime);
-    });
-    if (!shouldPost()) {
-      setStatus('<strong>Your documents are ready to download.</strong> Email delivery is not turned on for this copy of the page.');
-      return;
+    if (!autoDownloaded) {
+      lastFiles.forEach(function (file) {
+        if (/\.docx$/i.test(file.name)) triggerDownload(file.bytes, file.name, file.mime);
+      });
+      autoDownloaded = true;
     }
     inFlight = true;
     setStatus('Preparing your documents…');
     pdfFiles(result.plan).then(function (pdfs) {
       var all = lastFiles.concat(pdfs);
+      lastFiles = all;
       showDownloads(all);
-      var cfg = window.S125_CONFIG || {};
-      return fetch(cfg.endpoint, { method: 'POST', body: JSON.stringify(payloadFrom(result, id, all)) })
-        .then(function (response) { return response.json(); })
-        .then(function (body) {
-          inFlight = false;
-          if (body && body.ok) {
-            setStatus('<strong>Your documents are ready to download.</strong> A short note will come to your email shortly.');
-          } else {
-            $('btnRetry').classList.remove('hidden');
-            setStatus('<strong>The request could not be sent.</strong> You can still download the documents below.');
-          }
-        });
+      if (!shouldPost()) {
+        inFlight = false;
+        $('btnRetry').classList.add('hidden');
+        setStatus('<strong>Your documents are ready to download.</strong> Email delivery is not turned on for this copy of the page.');
+        return;
+      }
+      return postFiles(result, id, all);
     }).catch(function () {
+      if (shouldPost()) {
+        setStatus('<strong>PDFs could not be built. Your Word files are below.</strong>');
+        return postFiles(result, id, lastFiles).catch(function () {
+          inFlight = false;
+          $('btnRetry').classList.remove('hidden');
+          setStatus('<strong>PDFs could not be built. Your Word files are below.</strong> The request could not be sent.');
+        });
+      }
       inFlight = false;
       $('btnRetry').classList.remove('hidden');
-      setStatus('<strong>The request could not be sent.</strong> You can still download the documents below.');
+      setStatus('<strong>The PDF could not be prepared.</strong> The Word files are still available below.');
+    });
+  }
+  function digitsBeforeCaret(value, caret) {
+    return (String(value || '').slice(0, caret).match(/\d/g) || []).length;
+  }
+  function caretAfterDigits(formatted, count) {
+    if (count <= 0) return 0;
+    var seen = 0;
+    for (var i = 0; i < formatted.length; i++) {
+      if (/\d/.test(formatted.charAt(i))) {
+        seen++;
+        if (seen === count) return i + 1;
+      }
+    }
+    return formatted.length;
+  }
+  function bindLiveMask(input, format) {
+    function apply() {
+      var start = input.selectionStart || 0;
+      var count = digitsBeforeCaret(input.value, start);
+      var next = format(input.value);
+      if (next === input.value) return;
+      input.value = next;
+      var pos = caretAfterDigits(next, count);
+      if (input.setSelectionRange) input.setSelectionRange(pos, pos);
+    }
+    function removeDigit(index) {
+      var all = String(input.value || '').replace(/\D/g, '');
+      if (index < 0 || index >= all.length) return;
+      input.value = format(all.slice(0, index) + all.slice(index + 1));
+      var pos = caretAfterDigits(input.value, index);
+      if (input.setSelectionRange) input.setSelectionRange(pos, pos);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    input.addEventListener('input', apply);
+    input.addEventListener('keydown', function (event) {
+      if (event.key !== 'Backspace' && event.key !== 'Delete') return;
+      var start = input.selectionStart;
+      var end = input.selectionEnd;
+      if (start == null || start !== end) return;
+      var value = input.value || '';
+      if (event.key === 'Backspace' && start > 0 && /\D/.test(value.charAt(start - 1))) {
+        event.preventDefault();
+        removeDigit(digitsBeforeCaret(value, start) - 1);
+      } else if (event.key === 'Delete' && start < value.length && /\D/.test(value.charAt(start))) {
+        event.preventDefault();
+        removeDigit(digitsBeforeCaret(value, start));
+      }
+    });
+  }
+  function paintGate(input) {
+    var box = $('err_' + input.id);
+    if (box) box.textContent = input.dataset.gateMessage || '';
+    if (input.dataset.gateMessage) input.setAttribute('aria-invalid', 'true');
+    else input.removeAttribute('aria-invalid');
+  }
+  function applyWholeNumberGate(input, min, max, messages) {
+    var raw = String(input.value || '').replace(/[$,\s]/g, '');
+    var cut = raw.search(/[^\d]/);
+    var digits = cut === -1 ? raw : raw.slice(0, cut);
+    var invalidChars = cut !== -1;
+    var message = '';
+    if (digits === '') {
+      if (input.value !== '') input.value = '';
+      input.dataset.gateMessage = invalidChars ? messages.whole : '';
+      paintGate(input);
+      return;
+    }
+    var n = Number(digits);
+    var complete = String(n).length >= String(min).length;
+    if (n > max || (complete && n < min)) {
+      digits = input.dataset.lastValid || '';
+      message = messages.range;
+    } else {
+      digits = String(n);
+      if (n >= min && n <= max) input.dataset.lastValid = digits;
+      if (invalidChars) message = messages.whole;
+    }
+    if (input.value !== digits) input.value = digits;
+    input.dataset.gateMessage = message;
+    paintGate(input);
+  }
+  function bindWholeNumberGate(input, min, max, messages) {
+    var current = String(input.value || '');
+    input.dataset.lastValid = /^\d+$/.test(current) && Number(current) >= min && Number(current) <= max ? String(Number(current)) : '';
+    input.addEventListener('input', function () { applyWholeNumberGate(input, min, max, messages); });
+    input.addEventListener('keydown', function (event) {
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.key.length === 1 && !/\d/.test(event.key)) {
+        event.preventDefault();
+        input.dataset.gateMessage = messages.whole;
+        paintGate(input);
+      }
     });
   }
   function mountTerms() {
     $('termsDialogBody').innerHTML = S125Terms.PARAGRAPHS.map(function (p) { return '<p>' + escapeHtml(p) + '</p>'; }).join('');
     $('openTerms').addEventListener('click', function (event) {
       event.preventDefault();
-      if ($('termsDialog').showModal) $('termsDialog').showModal();
+      var dialog = $('termsDialog');
+      if (dialog.showModal) dialog.showModal();
+      var heading = dialog.querySelector('h2');
+      if (heading) {
+        heading.setAttribute('tabindex', '-1');
+        if (heading.focus) heading.focus();
+      }
     });
     $('closeTerms').addEventListener('click', function () { $('termsDialog').close(); });
   }
@@ -372,7 +547,7 @@
     S125Model.US_STATES.forEach(function (code) {
       var option = document.createElement('option');
       option.value = code;
-      option.textContent = code;
+      option.textContent = S125Model.stateName(code);
       state.appendChild(option);
     });
     var month = $('plan_year_start_month');
@@ -386,10 +561,44 @@
     fillDays();
     if (window.S125Tips) S125Tips.mount();
     mountTerms();
-    $('employer_ein').addEventListener('input', function () { $('employer_ein').value = S125Model.formatEinLive($('employer_ein').value); });
-    $('phone').addEventListener('input', function () { $('phone').value = S125Model.formatPhoneLive($('phone').value); });
-    $('wizard').addEventListener('change', syncConditional);
-    $('wizard').addEventListener('input', syncConditional);
+    bindLiveMask($('employer_ein'), S125Model.formatEinLive);
+    bindLiveMask($('phone'), S125Model.formatPhoneLive);
+    bindLiveMask($('zip'), S125Model.formatZipLive);
+    bindLiveMask($('effective_date'), S125Model.formatDateLive);
+    bindLiveMask($('prior_adoption'), S125Model.formatMonthYearLive);
+    $('effective_date').addEventListener('blur', function () {
+      $('effective_date').value = S125Model.formatDateCanonical($('effective_date').value);
+    });
+    $('prior_adoption').addEventListener('blur', function () {
+      var next = S125Model.canonicalMonthYear($('prior_adoption').value);
+      if (next) $('prior_adoption').value = next;
+    });
+    bindWholeNumberGate($('plan_number'), 501, 999, {
+      range: 'Use a plan number from 501 to 999.',
+      whole: 'Enter the plan number as a whole number.'
+    });
+    bindWholeNumberGate($('employee_count'), 1, 100000, {
+      range: 'Enter an employee count from 1 to 100,000.',
+      whole: 'Enter the employee count as a whole number.'
+    });
+    bindWholeNumberGate($('full_time_hours'), 1, 40, {
+      range: 'Enter full-time hours as a whole number from 1 to 40.',
+      whole: 'Enter full-time hours as a whole number.'
+    });
+    bindWholeNumberGate($('oe_window_days'), 1, 90, {
+      range: 'Enter the open enrollment window as a whole number of days from 1 to 90.',
+      whole: 'Enter the open enrollment window as a whole number of days.'
+    });
+    bindWholeNumberGate($('new_hire_window'), 1, 30, {
+      range: 'Enter the new-hire window as a whole number of days from 1 to 30.',
+      whole: 'Enter the new-hire window as a whole number of days.'
+    });
+    function onWizardInput() {
+      syncConditional();
+      if (step === 5) renderReview();
+    }
+    $('wizard').addEventListener('change', onWizardInput);
+    $('wizard').addEventListener('input', onWizardInput);
     month.addEventListener('change', fillDays);
     $('btnNext').addEventListener('click', function () {
       if (step < 5) {
@@ -401,6 +610,13 @@
     });
     $('btnBack').addEventListener('click', function () { if (step > 1 && step < 6) showStep(step - 1); });
     $('btnRetry').addEventListener('click', finishGenerate);
+    $('btnEdit').addEventListener('click', function () {
+      submissionId = '';
+      autoDownloaded = false;
+      inFlight = false;
+      $('btnRetry').classList.add('hidden');
+      showStep(5);
+    });
     showStep(1, { scroll: false });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

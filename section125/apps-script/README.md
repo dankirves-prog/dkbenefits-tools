@@ -4,7 +4,7 @@ This is a **new** Apps Script and a **new** spreadsheet. Do not paste it into th
 
 The page reads the web-app URL from `section125/config.js` (`endpoint`). Until that value is a real `/exec` URL, the page still builds the Word and PDF samples in the browser and lets the employer download them. It does not email anyone.
 
-Template version `s125-v1.0.0-2026-10-09`. Terms version `s125-terms-2026-10-09`. The Terms of use in `s125-terms.js` are a draft for DK Benefits LLC’s own attorney to review before go-live. They are not themselves legal advice.
+Template version `s125-v1.0-2026-10-10`. Terms version `s125-terms-2026-10-10`. The script still accepts the previous terms version `s125-terms-2026-10-09` so a page that has not refreshed can post. The Terms of use in `s125-terms.js` are a draft for DK Benefits LLC’s own attorney to review before go-live. They are not themselves legal advice.
 
 The live Wix page that posts to `/_functions/section125pdf` is a different tool. Leave `section125.html` and `section125-embed.html` in place until this replacement is ready to swap in.
 
@@ -21,6 +21,8 @@ Paste `section125/apps-script/S125Combined.gs` as the only script file.
 That file is `s125-model.js`, `s125-terms.js`, `s125-docgen.js`, and `apps-script/Code.gs`, in that order. Do not paste `s125-tips.js`, `s125-pdf.js`, or `section125.js`. The page builds the PDF in the browser. If no valid Word file arrives, the script rebuilds the Word plan and the Word checklist.
 
 Save the project. Do not add the Drive API.
+
+If the web app is already deployed, paste this file over the existing script and save. Then Deploy → Manage deployments → Edit (pencil) → Version → **New version** → Deploy. Do that on the existing deployment before the Wix page is swapped to this tool.
 
 ## 3. Run setup once
 
@@ -42,9 +44,11 @@ Opening that URL in a browser should show: `DK Benefits Section 125 lead service
 
 ## 5. Point the page at it
 
-In `section125/config.js`, set `endpoint` to that `/exec` URL. Commit that one-line change and let GitHub Pages publish it. Until then, `endpoint` stays empty and the page only downloads files.
+`section125/config.js` already sets `endpoint` to the deployed web app:
 
-After the endpoint is published, a submission on `https://dankirves-prog.github.io/dkbenefits-tools/section125/`:
+`https://script.google.com/macros/s/AKfycbxuK0N06PnBppBNlXyIhnIFT6oRwODUCxXMk_QY43xD29FsXQLtSdWimFriwi6y42beqA/exec`
+
+A submission on `https://dankirves-prog.github.io/dkbenefits-tools/section125/`:
 
 - emails **dan@dkbenefits.net** immediately, with the sample Word and PDF files attached
 - lets the employer download those files on the page

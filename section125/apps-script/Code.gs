@@ -98,11 +98,12 @@ function s125Handle_(payload) {
     return { ok: false, error: 'The submission id is missing.' };
   }
   var ack = payload.acknowledgement || {};
-  if (ack.accepted !== true || !ack.acceptedAt || !Date.parse(ack.acceptedAt) || ack.termsVersion !== S125Terms.VERSION) {
+  var termsOk = ack.termsVersion === S125Terms.VERSION || ack.termsVersion === 's125-terms-2026-10-09';
+  if (ack.accepted !== true || !ack.acceptedAt || !Date.parse(ack.acceptedAt) || !termsOk) {
     s125LogEvent_('rejected_terms', payload.submissionId, 'terms');
     return { ok: false, error: 'The terms acknowledgement is missing.' };
   }
-  var checked = S125Model.validateSubmission(payload, { asOf: s125Today_() });
+  var checked = S125Model.validateSubmission(payload, { asOf: s125AsOf_() });
   if (!checked.ok) {
     s125LogEvent_('rejected_validation', payload.submissionId, checked.errors.map(function (item) { return item.field; }).join(','));
     return { ok: false, error: checked.errors[0] ? checked.errors[0].message : 'Check the form and try again.' };
@@ -214,31 +215,81 @@ function s125BytesBlob_(bytes, mime, name) {
   return Utilities.newBlob(data, mime, name);
 }
 
+function s125Has_(plan, code) {
+  return (plan.benefits || []).indexOf(code) !== -1;
+}
+
 function s125LeadMessage_(payload, checked, files) {
   var plan = checked.plan;
   var lead = checked.lead;
+  var health = s125Has_(plan, 'health_fsa');
+  var dcap = s125Has_(plan, 'dcap');
+  var hsa = s125Has_(plan, 'hsa');
+  var benefits = (plan.benefits || []).map(function (code) { return S125Model.benefitLabel(code); }).join(', ');
+  var year = S125Model.planYearSentence(plan);
+  if (year) year = year.charAt(0).toUpperCase() + year.slice(1);
   var bits = [];
   if (payload.test) bits.push('[TEST]');
-  bits.push('New Section 125 Lead: ' + plan.employer_name);
+  bits.push('New Section 125 Lead: ' + plan.employer_name + ' | ' + S125Model.entityLabel(plan) + ' | ' + plan.employee_count + ' employees');
   var lines = [
     'Section 125 cafeteria plan — sample lead',
     'Template: ' + (payload.templateVersion || S125Model.TEMPLATE_VERSION),
     'Submission id: ' + payload.submissionId,
     'Source page: ' + (payload.pageUrl || ''),
     '',
-    'Company: ' + plan.employer_name,
+    'Company',
+    'Legal name: ' + plan.employer_name,
     'EIN: ' + plan.employer_ein,
     'Address: ' + plan.employer_address,
-    'Entity: ' + plan.entity_type + (plan.llc_tax ? ' / ' + plan.llc_tax : ''),
-    'Benefits: ' + (plan.benefits || []).join(', '),
-    'Effective date: ' + plan.effective_date,
-    'Contact: ' + lead.contact_name + ' <' + lead.contact_email + '> ' + lead.contact_phone,
+    'State: ' + S125Model.stateName(plan.state),
+    'Entity: ' + S125Model.entityLabel(plan),
+    'Employees: ' + plan.employee_count,
     '',
+    'Contact',
+    'Name: ' + (lead.contact_name || plan.signer_name),
+    'Title: ' + (lead.contact_title || plan.signer_title),
+    'Email: ' + (lead.contact_email || plan.signer_email),
+    'Phone: ' + (lead.contact_phone || plan.phone),
+    '',
+    'Design',
+    'Plan: ' + plan.plan_name,
+    'Plan number: ' + plan.plan_number,
+    'Effective date: ' + S125Model.formatLongDate(plan.effective_date),
+    'Plan year: ' + year,
+    'Funding: ' + S125Model.fundingLabel(plan.funding_type),
+    'Eligible classes: ' + S125Model.classSentence(plan),
+    'Waiting period: ' + S125Model.waitingText(plan.waiting_period),
+    'Full-time hours: ' + plan.full_time_hours,
+    'New-hire enrollment: ' + plan.new_hire_window + ' days',
+    'Open enrollment: ' + plan.oe_window_days + ' days',
+    'Employees in more than one state: ' + (plan.multi_state ? 'Yes' : 'No'),
+    'Existing Section 125 plan: ' + (plan.prior_plan ? 'Yes, originally adopted in ' + S125Model.formatAdoptionMonth(plan.prior_adoption) : 'No'),
+    'Benefits: ' + benefits,
+    'Health FSA: ' + (health ? S125Model.healthFsaDesignLabel(plan.health_fsa_design) : 'Not offered'),
+    'Unused Health FSA amounts: ' + (health ? S125Model.unusedLabel(plan.health_fsa_unused) : 'Not offered'),
+    'Dependent Care FSA: ' + (dcap ? 'Offered' : 'Not offered'),
+    'Unused dependent care amounts: ' + (dcap ? S125Model.unusedLabel(plan.dcap_unused) : 'Not offered'),
+    'HSA: ' + (hsa ? 'Offered. The election can be changed at least monthly.' : 'Not offered'),
+    'Authorized officer: ' + plan.signer_name,
+    'Officer title: ' + plan.signer_title,
+    'Officer email: ' + plan.signer_email,
+    '',
+    'Review flags'
+  ];
+  var reasons = (checked.review && checked.review.reasons) || [];
+  if (!reasons.length) lines.push('None');
+  else reasons.forEach(function (reason) { lines.push(reason); });
+  lines.push(
+    '',
+    'Acknowledgement',
     'Terms version: ' + ((payload.acknowledgement && payload.acknowledgement.termsVersion) || ''),
     'Accepted at: ' + ((payload.acknowledgement && payload.acknowledgement.acceptedAt) || ''),
     '',
     'The attached files are sample drafts. They are not adopted until the employer signs them. They are not stored on a public link.'
-  ];
+  );
+  if (plan.short_plan_year) {
+    lines.splice(lines.indexOf('Plan year: ' + year) + 1, 0, 'First plan year: short year ending ' + S125Model.formatLongDate(plan.short_plan_year_end));
+  }
   return {
     to: S125_NOTIFY_EMAIL,
     subject: bits.join(' '),
@@ -361,6 +412,17 @@ function s125SendDueFollowUps() {
 function s125Now_() {
   if (typeof S125_TEST_NOW === 'number' && isFinite(S125_TEST_NOW)) return S125_TEST_NOW;
   return Date.now();
+}
+function s125AsOf_() {
+  try {
+    if (typeof Utilities !== 'undefined' && Utilities.formatDate) {
+      return Utilities.formatDate(new Date(s125Now_()), 'Pacific/Honolulu', 'yyyy-MM-dd');
+    }
+  } catch (err) {}
+  var shifted = new Date(s125Now_() - 10 * 60 * 60 * 1000);
+  var month = shifted.getUTCMonth() + 1;
+  var day = shifted.getUTCDate();
+  return shifted.getUTCFullYear() + '-' + (month < 10 ? '0' : '') + month + '-' + (day < 10 ? '0' : '') + day;
 }
 function s125Today_() {
   var dt = new Date(s125Now_());

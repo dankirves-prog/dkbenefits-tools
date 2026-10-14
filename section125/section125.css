@@ -349,6 +349,14 @@ button:focus-visible, .button:focus-visible { outline: 3px solid var(--gold); ou
 }
 
 .downloads { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
+.downloads button {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+  height: auto;
+}
+.download-label { display: block; font-weight: 700; }
+.download-file { display: block; font-size: 0.82rem; font-weight: 400; margin-top: 2px; }
 .status {
   border-radius: 8px;
   padding: 12px 14px;
@@ -391,6 +399,12 @@ h2#stepTitle:focus { outline: none; }
   border-radius: 8px;
   padding: 12px 14px;
   margin-bottom: 16px;
+}
+
+@media (min-width: 721px) {
+  .choices { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+  fieldset { padding: 8px 10px 6px; margin-bottom: 6px; }
+  .choice { padding: 8px 10px; }
 }
 
 @media (max-width: 720px) {

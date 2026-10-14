@@ -2,7 +2,7 @@
 
 **Prepared for:** Daniel Kirves, DK Benefits LLC
 **Research date:** October 9, 2026
-**Template:** `s125-v1.0.0-2026-10-09`
+**Template:** `s125-v1.1.0-2026-10-09`
 **Terms:** `s125-terms-2026-10-09`
 **Status:** Educational sample for the employer’s own attorney and tax advisor. This record is not legal advice, and the generated plan is not adopted until the employer signs it.
 

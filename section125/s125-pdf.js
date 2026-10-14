@@ -94,35 +94,82 @@ var S125Pdf = (function () {
         if (!page || y - height < bottom) newPage();
       }
 
+      function typeFor(style) {
+        var size = style === 'Title' ? 16 : style === 'Heading1' ? 13 : style === 'Heading2' ? 12 : 11;
+        var before = style === 'Heading1' ? 11 : style === 'Heading2' ? 8 : 0;
+        var gap = style === 'Title' ? 10 : style === 'Heading1' ? 4 : style === 'Heading2' ? 3 : 5;
+        return {
+          size: size,
+          before: before,
+          gap: gap,
+          lineHeight: size + 4,
+          useFont: style ? bold : font,
+          color: style ? navy : body
+        };
+      }
+
       function metricsFor(row) {
+        if (row.table) {
+          var labelWidth = 150;
+          var valueWidth = maxWidth - labelWidth - 12;
+          var prepared = row.table.map(function (item) {
+            var valueLines = wrap(item.value, font, 11, valueWidth);
+            var labelLines = wrap(item.label, bold, 11, labelWidth);
+            var count = Math.max(valueLines.length, labelLines.length);
+            return { labelLines: labelLines, valueLines: valueLines, h: count * 15 + 8 };
+          });
+          var height = prepared.reduce(function (sum, item) { return sum + item.h; }, 0) + 10;
+          return { table: true, prepared: prepared, height: height, before: 0, labelWidth: labelWidth };
+        }
         var text = row.text || '';
         var style = row.style;
-        var size = style === 'Title' ? 16 : style === 'Heading1' ? 13 : style === 'Heading2' ? 12 : 11;
-        var useFont = style ? bold : font;
-        var color = style ? navy : body;
-        var gap = style === 'Title' ? 8 : style ? 6 : 3;
-        var lineHeight = size + 3;
-        var before = row.spaceBefore ? row.spaceBefore / 20 : 0;
+        var type = typeFor(style);
+        var before = row.spaceBefore ? row.spaceBefore / 20 : type.before;
         if (!text) {
-          return { empty: true, before: before, height: before + 8, size: size, useFont: useFont, color: color, lines: [], lineHeight: lineHeight, gap: gap, style: style };
+          return { empty: true, before: before, height: before + 8, size: type.size, useFont: type.useFont, color: type.color, lines: [], lineHeight: type.lineHeight, gap: type.gap, style: style };
         }
-        var lines = wrap(text, useFont, size, maxWidth);
+        var lines = wrap(text, type.useFont, type.size, maxWidth);
         return {
           empty: false,
           before: before,
-          height: before + lines.length * lineHeight + gap,
-          size: size,
-          useFont: useFont,
-          color: color,
+          height: before + lines.length * type.lineHeight + type.gap,
+          size: type.size,
+          useFont: type.useFont,
+          color: type.color,
           lines: lines,
-          lineHeight: lineHeight,
-          gap: gap,
+          lineHeight: type.lineHeight,
+          gap: type.gap,
           style: style
         };
       }
 
+      function drawTable(metrics) {
+        var labelWidth = metrics.labelWidth;
+        var topY = y;
+        metrics.prepared.forEach(function (item) {
+          var rowTop = y;
+          item.labelLines.forEach(function (line, i) {
+            page.drawText(line, { x: left + 6, y: rowTop - 14 - i * 15, size: 11, font: bold, color: navy });
+          });
+          item.valueLines.forEach(function (line, i) {
+            page.drawText(line, { x: left + labelWidth + 8, y: rowTop - 14 - i * 15, size: 11, font: font, color: body });
+          });
+          page.drawLine({ start: { x: left, y: rowTop }, end: { x: left + maxWidth, y: rowTop }, thickness: 0.4, color: navy });
+          y -= item.h;
+        });
+        page.drawLine({ start: { x: left, y: y }, end: { x: left + maxWidth, y: y }, thickness: 0.4, color: navy });
+        page.drawLine({ start: { x: left, y: topY }, end: { x: left, y: y }, thickness: 0.4, color: navy });
+        page.drawLine({ start: { x: left + labelWidth, y: topY }, end: { x: left + labelWidth, y: y }, thickness: 0.4, color: navy });
+        page.drawLine({ start: { x: left + maxWidth, y: topY }, end: { x: left + maxWidth, y: y }, thickness: 0.4, color: navy });
+        y -= 10;
+      }
+
       function drawMeasured(metrics) {
-        if (metrics.before) y -= metrics.before;
+        if (metrics.table) {
+          drawTable(metrics);
+          return;
+        }
+        if (metrics.before && y < pageHeight - top - 1) y -= metrics.before;
         if (metrics.empty) {
           y -= 8;
           return;
@@ -135,17 +182,24 @@ var S125Pdf = (function () {
       }
 
       function drawLegacy(row) {
+        if (row.table) {
+          var metrics = metricsFor(row);
+          if (!page || y - metrics.height < bottom) newPage();
+          drawTable(metrics);
+          return;
+        }
         var text = row.text || '';
         var style = row.style;
-        var size = style === 'Title' ? 16 : style === 'Heading1' ? 13 : style === 'Heading2' ? 12 : 11;
-        var useFont = style ? bold : font;
-        var color = style ? navy : body;
-        var gap = style === 'Title' ? 8 : style ? 6 : 3;
-        var lineHeight = size + 3;
-        if (row.spaceBefore) {
-          var before = row.spaceBefore / 20;
+        var type = typeFor(style);
+        var size = type.size;
+        var useFont = type.useFont;
+        var color = type.color;
+        var gap = type.gap;
+        var lineHeight = type.lineHeight;
+        var before = row.spaceBefore ? row.spaceBefore / 20 : type.before;
+        if (before && y < pageHeight - top - 1) {
           ensure(before);
-          y -= before;
+          if (y < pageHeight - top - 1) y -= before;
         }
         if (!text) {
           ensure(10);
@@ -198,23 +252,22 @@ var S125Pdf = (function () {
         index++;
       }
 
+      var footerName = props.footer || props.title || '';
       pages.forEach(function (pg, index) {
-        var label = S125Docgen.FOOTER;
+        var label = (footerName ? footerName + ' | ' : '') + 'Page ' + (index + 1) + ' of ' + pages.length;
         var size = 8;
         var lines = wrap(label, font, size, maxWidth);
-        var fy = 32 + (lines.length - 1) * 10;
+        var fy = 28 + (lines.length - 1) * 10;
         lines.forEach(function (line) {
-          pg.drawText(line, { x: left, y: fy, size: size, font: font, color: muted });
+          var lineWidth = font.widthOfTextAtSize(line, size);
+          pg.drawText(line, {
+            x: left + Math.max(0, (maxWidth - lineWidth) / 2),
+            y: fy,
+            size: size,
+            font: font,
+            color: muted
+          });
           fy -= 10;
-        });
-        var pageLabel = 'Page ' + (index + 1);
-        var pageWidthText = font.widthOfTextAtSize(pageLabel, size);
-        pg.drawText(pageLabel, {
-          x: pageWidth - right - pageWidthText,
-          y: 16,
-          size: size,
-          font: font,
-          color: muted
         });
       });
       return doc.save();
