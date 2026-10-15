@@ -151,6 +151,25 @@ test('self-funded nondiscrimination warning does not depend on employee contribu
   assert.match(notes.join(' '), /nondiscrimination/);
 });
 
+test('dates accept month/day/year, and the plan waiting period can be overridden', function () {
+  const Wp = model();
+  const dated = Wp.validate(baseInput({ original_effective_date: '06/01/2026' }));
+  assert.equal(dated.ok, true);
+  assert.equal(dated.plan.original_effective_date, '2026-06-01');
+  assert.equal(dated.plan.waiting.medical, 'Date of hire');
+  const bad = Wp.validate(baseInput({ original_effective_date: '02/31/2026' }));
+  assert.equal(bad.ok, false);
+  const custom = Wp.validate(baseInput({
+    waiting_period: 'day-90',
+    waiting_overrides: { life: 'other' },
+    waiting_override_other: { life: 'First of the month following six months' }
+  }));
+  assert.equal(custom.ok, true);
+  assert.equal(custom.plan.waiting.medical, '90th day');
+  assert.equal(custom.plan.waiting.life, 'First of the month following six months');
+  assert.equal(Wp.WAITING_OPTIONS.some(function (option) { return /following 90 days/i.test(option.menu); }), false);
+});
+
 test('allowlist includes the Wix filesusr parent and the editor preview origins', function () {
   const Wp = model();
   assert.ok(Wp.originAllowed('https://www-dkbenefits-net.filesusr.com'));

@@ -276,5 +276,29 @@ var WpPdf = (function () {
     });
   }
 
-  return { buildPdf: buildPdf };
+  function mergePdfs(parts, props) {
+    var PDFLib = lib();
+    if (!PDFLib) return Promise.reject(new Error('PDF library is not loaded'));
+    props = props || {};
+    return PDFLib.PDFDocument.create().then(function (merged) {
+      merged.setTitle(props.title || 'Plan packet');
+      merged.setAuthor('DK Benefits LLC');
+      merged.setSubject(props.title || 'Plan packet');
+      merged.setCreator('DK Benefits LLC');
+      merged.setProducer('DK Benefits LLC');
+      var chain = Promise.resolve();
+      (parts || []).forEach(function (bytes) {
+        chain = chain.then(function () {
+          return PDFLib.PDFDocument.load(bytes).then(function (src) {
+            return merged.copyPages(src, src.getPageIndices()).then(function (pages) {
+              pages.forEach(function (page) { merged.addPage(page); });
+            });
+          });
+        });
+      });
+      return chain.then(function () { return merged.save(); });
+    });
+  }
+
+  return { buildPdf: buildPdf, mergePdfs: mergePdfs };
 })();

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Wrap plan document | DK Benefits</title>
-  <meta name="description" content="A free sample ERISA wrap plan document and SPD for a private employer. DK Benefits LLC.">
+  <meta name="description" content="A free ERISA wrap plan document and SPD for a private employer. DK Benefits LLC.">
   <link rel="stylesheet" href="wrapplan.css">
 </head>
 <body>
@@ -13,7 +13,7 @@
     <div class="site-header-inner">
       <p class="brand">DK Benefits LLC</p>
       <h1>Wrap plan document</h1>
-      <p>A free sample ERISA wrap plan and summary plan description for a private employer.</p>
+      <p>A free ERISA wrap plan and summary plan description for a private employer.</p>
     </div>
   </header>
   <main class="wrap">
@@ -28,11 +28,14 @@
 
       <section class="card" data-step="1">
         <h2 id="stepTitle">Before you start</h2>
-        <p class="lede">Have the legal name, EIN, plan year, each carrier or administrator name, who is covered, and who will sign. You can leave and come back on this browser.</p>
+        <p class="lede">Have these ready. You can leave and come back on this browser.</p>
         <ul>
-          <li>Medical, dental, vision, life, disability, HRA, and health FSA can sit in one wrap.</li>
-          <li>Dependent care stays in the Section 125 plan.</li>
-          <li>An HSA is the employee's own account and is not wrapped.</li>
+          <li>Legal employer name, EIN, address, and phone</li>
+          <li>Plan number and the effective date of this wrap</li>
+          <li>Each benefit to wrap, and the carrier or administrator</li>
+          <li>Who is eligible, and the waiting period</li>
+          <li>Last year's employee count, and who is covered on the first day of the plan year</li>
+          <li>The name and title of the person who will sign</li>
         </ul>
       </section>
 
@@ -40,8 +43,8 @@
         <h2>Employer</h2>
         <div class="grid">
           <div class="field span-2"><label for="employer_name">Legal employer name</label><input id="employer_name" required><p class="field-error" id="err_employer_name" role="alert"></p></div>
-          <div class="field"><label for="employer_ein">EIN</label><input id="employer_ein" inputmode="numeric" maxlength="10"><p class="field-error" id="err_employer_ein" role="alert"></p></div>
-          <div class="field"><label for="phone">Employer phone <span class="hint-inline">(optional)</span></label><input id="phone" type="tel"></div>
+          <div class="field"><label for="employer_ein">EIN <span class="tip-slot" data-tip="ein"></span></label><input id="employer_ein" inputmode="numeric" maxlength="10" autocomplete="off"><p class="field-error" id="err_employer_ein" role="alert"></p></div>
+          <div class="field"><label for="phone">Employer phone <span class="hint-inline">(optional)</span></label><input id="phone" type="tel" inputmode="tel" maxlength="12" autocomplete="off"></div>
           <div class="field span-2"><label for="street">Street</label><input id="street"></div>
           <div class="field"><label for="city">City</label><input id="city"></div>
           <div class="field"><label for="state">State</label><input id="state" maxlength="2" placeholder="FL"></div>
@@ -50,7 +53,11 @@
           <div class="field span-2"><label for="plan_name">Plan name</label><input id="plan_name" placeholder="Filled from the employer name if you leave this blank"></div>
           <div class="field"><label for="plan_number">Plan number <span class="tip-slot" data-tip="plan_number"></span></label><input id="plan_number" value="501" inputmode="numeric" maxlength="3"><p class="field-error" id="err_plan_number" role="alert"></p></div>
           <div class="field"><label for="employee_count">About how many employees did you have last year, full-time and part-time? <span class="tip-slot" data-tip="employee_count"></span></label><input id="employee_count" inputmode="numeric"><p class="field-error" id="err_employee_count" role="alert"></p></div>
-          <div class="field"><label for="original_effective_date">Original effective date</label><input id="original_effective_date" type="date"><p class="field-error" id="err_original_effective_date" role="alert"></p></div>
+          <div class="field"><label for="wrap_effective_date">Effective date of this wrap plan <span class="tip-slot" data-tip="wrap_effective"></span></label><input id="wrap_effective_date" inputmode="numeric" maxlength="10" placeholder="MM/DD/YYYY" autocomplete="off"><p class="field-error" id="err_wrap_effective_date" role="alert"></p></div>
+          <div class="field"><label for="is_restatement">Is this a restatement? <span class="tip-slot" data-tip="restatement"></span></label>
+            <select id="is_restatement"><option value="no">No, first adoption</option><option value="yes">Yes</option></select>
+          </div>
+          <div class="field" id="originalWrap" hidden><label for="original_effective_date">Original effective date</label><input id="original_effective_date" inputmode="numeric" maxlength="10" placeholder="MM/DD/YYYY" autocomplete="off"><p class="field-error" id="err_original_effective_date" role="alert"></p></div>
           <div class="field"><label for="plan_year_type">Plan year</label>
             <select id="plan_year_type"><option value="calendar">Calendar year</option><option value="fiscal">Fiscal year</option></select>
           </div>
@@ -62,10 +69,6 @@
               <option value="10">October</option><option value="11">November</option><option value="12">December</option>
             </select>
           </div>
-          <div class="field"><label for="is_restatement">Is this a restatement?</label>
-            <select id="is_restatement"><option value="no">No, first adoption</option><option value="yes">Yes</option></select>
-          </div>
-          <div class="field" id="restatementWrap" hidden><label for="restatement_date">Restatement effective date</label><input id="restatement_date" type="date"><p class="field-error" id="err_restatement_date" role="alert"></p></div>
         </div>
       </section>
 
@@ -84,58 +87,89 @@
 
       <section class="card" data-step="4" hidden>
         <h2>Benefits</h2>
-        <p class="lede">Select every benefit to wrap. Dependent care is not on this list.</p>
-        <div id="benefitBoxes" class="checks"></div>
-        <p class="field-error" id="err_benefits" role="alert"></p>
-        <div class="field"><label for="dcap_interest">Do you also offer dependent care?</label>
-          <select id="dcap_interest"><option value="no">No</option><option value="yes">Yes. Keep it in the Section 125 plan, not this wrap.</option></select>
+        <p class="lede">Check each benefit to wrap. The details open under the box.</p>
+        <div id="benefitBoxes"></div>
+        <div id="volWrap" hidden>
+          <p class="lede">These questions cover the voluntary benefits you checked.</p>
+          <div class="field"><label for="vol_pretax">Are these voluntary benefits pre-tax through a Section 125 plan?</label>
+            <select id="vol_pretax"><option value="">Choose</option><option value="no">No</option><option value="yes">Yes</option></select>
+          </div>
+          <div class="field"><label for="vol_contrib">Does the employer contribute toward them?</label>
+            <select id="vol_contrib"><option value="">Choose</option><option value="no">No</option><option value="yes">Yes</option></select>
+          </div>
+          <div class="field"><label for="vol_voluntary">Is participation voluntary?</label>
+            <select id="vol_voluntary"><option value="">Choose</option><option value="no">No</option><option value="yes">Yes</option></select>
+          </div>
+          <div class="field"><label for="vol_endorse">Does the employer endorse them?</label>
+            <select id="vol_endorse"><option value="">Choose</option><option value="no">No</option><option value="yes">Yes</option></select>
+          </div>
+          <div class="field"><label for="vol_payroll_only">Is the employer limited to payroll deduction?</label>
+            <select id="vol_payroll_only"><option value="">Choose</option><option value="no">No</option><option value="yes">Yes</option></select>
+          </div>
+          <div class="field"><label for="vol_consideration">Does the employer receive any consideration beyond reasonable pay for payroll deduction? <span class="tip-slot" data-tip="vol_consideration"></span></label>
+            <select id="vol_consideration"><option value="">Choose</option><option value="no">No</option><option value="yes">Yes</option></select>
+            <p class="field-error" id="err_vol_consideration" role="alert"></p>
+          </div>
         </div>
-        <div class="field"><label for="classes">Eligible employee classes</label><input id="classes" placeholder="Full-time employees"></div>
-        <div class="field"><label for="hours">Minimum hours</label><input id="hours" placeholder="30 hours a week"></div>
-        <div class="field"><label for="dependents">Dependents you cover</label><input id="dependents" placeholder="Spouse and children to age 26"></div>
-        <div id="benefitDetail"></div>
+        <p class="field-error" id="err_benefits" role="alert"></p>
       </section>
 
       <section class="card" data-step="5" hidden>
+        <h2>Eligibility</h2>
+        <p class="lede">These answers apply to the whole plan. Change them if this employer is different.</p>
+        <div class="field"><label for="classes">Eligible employee classes</label><input id="classes" value="All full-time employees"></div>
+        <div class="field"><label for="hours">Minimum hours</label><input id="hours" value="30 hours a week"></div>
+        <div class="field"><label for="dependents">Dependents you cover</label><input id="dependents" value="Spouse and children to age 26"></div>
+        <div class="field"><label for="waiting_period">Waiting period <span class="tip-slot" data-tip="waiting_period"></span></label>
+          <select id="waiting_period"></select>
+          <p class="hint">First of the month following 90 days is not offered. For medical, that wait is longer than 90 days.</p>
+          <p class="field-error" id="err_waiting_other" role="alert"></p>
+        </div>
+        <div class="field" id="waitingOtherWrap" hidden><label for="waiting_other">Describe the waiting period</label><input id="waiting_other"></div>
+        <button type="button" class="text-link" id="waitingOverrideLink">Use a different waiting period for one benefit</button>
+        <p class="hint">Most plans use one wait. Life and disability are the usual reasons to set a different one.</p>
+        <div id="waitingOverrides" hidden></div>
+      </section>
+
+      <section class="card" data-step="6" hidden>
         <h2>Funding and headcount</h2>
-        <div id="fundingFields"></div>
         <div class="field"><label for="census_a">Current employees enrolled in or automatically covered by at least one wrapped benefit <span class="tip-slot" data-tip="census_a"></span></label><input id="census_a" inputmode="numeric"><p class="field-error" id="err_census_a" role="alert"></p></div>
-        <div class="field"><label for="census_b">Current employees not in that count who contribute (for example a health FSA only) <span class="tip-slot" data-tip="census_b"></span></label><input id="census_b" inputmode="numeric"></div>
-        <div class="field"><label for="census_c">Former employees on COBRA <span class="tip-slot" data-tip="census_c"></span></label><input id="census_c" inputmode="numeric"></div>
-        <div class="field"><label for="census_d">Covered retirees <span class="tip-slot" data-tip="census_d"></span></label><input id="census_d" inputmode="numeric"></div>
+        <div class="field"><label for="census_b">Current employees not in that count who contribute (for example a health FSA only) <span class="tip-slot" data-tip="census_b"></span></label><input id="census_b" inputmode="numeric" value="0"></div>
+        <div class="field"><label for="census_c">Former employees on COBRA <span class="tip-slot" data-tip="census_c"></span></label><input id="census_c" inputmode="numeric" value="0"></div>
+        <div class="field"><label for="census_d">Covered retirees <span class="tip-slot" data-tip="census_d"></span></label><input id="census_d" inputmode="numeric" value="0"></div>
         <p id="countPreview" class="hint"></p>
         <div class="field"><label for="employee_contributions">Do employees contribute?</label>
-          <select id="employee_contributions"><option value="no">No</option><option value="yes">Yes</option></select>
+          <select id="employee_contributions"><option value="yes">Yes</option><option value="no">No</option></select>
         </div>
-        <div class="field"><label for="remitted">If they contribute, does the employer remit those amounts to the carrier or TPA within three months?</label>
+        <div class="field" id="remittedWrap"><label for="remitted">Does the employer remit those amounts to the carrier or administrator within three months? <span class="tip-slot" data-tip="remitted"></span></label>
           <select id="remitted"><option value="yes">Yes</option><option value="no">No or not sure</option></select>
         </div>
-        <div class="field"><label for="section125">Is there a separate Section 125 plan for any pre-tax contributions?</label>
-          <select id="section125"><option value="no">No</option><option value="yes">Yes</option></select>
+        <div class="field"><label for="section125">Are pre-tax contributions made through a separate Section 125 plan? <span class="tip-slot" data-tip="section125"></span></label>
+          <select id="section125"><option value="yes">Yes</option><option value="no">No</option></select>
         </div>
-        <div class="field"><label for="trust">Is any plan money held in a trust or separate account?</label>
+        <div class="field"><label for="trust">Is any plan money held in a trust or separate account? <span class="tip-slot" data-tip="trust"></span></label>
           <select id="trust"><option value="no">No</option><option value="yes">Yes</option></select>
         </div>
         <div class="field" id="trusteeWrap" hidden><label for="trustee_name">Trustee name</label><input id="trustee_name"><label for="trustee_address">Trustee address</label><input id="trustee_address"><p class="field-error" id="err_trustee_name" role="alert"></p></div>
-        <div class="field"><label for="prior_small_filing">Did you file the last Form 5500 as a small plan?</label>
+        <div class="field" id="priorWrap" hidden><label for="prior_small_filing">Did you file the last Form 5500 as a small plan? <span class="tip-slot" data-tip="filing"></span></label>
           <select id="prior_small_filing"><option value="no">No or not applicable</option><option value="yes">Yes</option></select>
         </div>
-        <div class="field"><label for="certificates">Do you have the certificate, booklet, or TPA plan document for each benefit? <span class="tip-slot" data-tip="certificates"></span></label>
+        <div class="field"><label for="certificates">Do you have the certificate, booklet, or administrator plan document for each benefit? <span class="tip-slot" data-tip="certificates"></span></label>
           <select id="certificates"><option value="yes">Yes</option><option value="no">No</option></select>
         </div>
       </section>
 
-      <section class="card" data-step="6" hidden>
+      <section class="card" data-step="7" hidden>
         <h2>COBRA, claims, and adoption</h2>
-        <div class="field"><label for="cobra">Did this employer have 20 or more employees on more than half of its typical business days in the prior calendar year? <span class="tip-slot" data-tip="cobra"></span></label>
-          <select id="cobra"><option value="">Choose</option><option value="yes">Yes</option><option value="no">No</option><option value="unsure">Not sure</option></select>
+        <div class="field" id="cobraWrap"><label for="cobra">Did this employer have 20 or more employees on more than half of its typical business days in the prior calendar year? <span class="tip-slot" data-tip="cobra"></span></label>
+          <select id="cobra"><option value="">Choose</option><option value="yes">Yes</option><option value="no">No</option></select>
           <p class="field-error" id="err_cobra" role="alert"></p>
         </div>
-        <div class="field"><label for="cobra_admin">Who handles COBRA?</label><input id="cobra_admin" placeholder="Employer, WEX, carrier"></div>
-        <div class="field"><label for="appeals">Who decides the final internal medical appeal?</label>
-          <select id="appeals"><option value="carrier">Carrier or TPA</option><option value="employer">Employer</option></select>
+        <div class="field" id="cobraAdminWrap" hidden><label for="cobra_admin">Who handles COBRA?</label><input id="cobra_admin" placeholder="Employer, WEX, carrier"></div>
+        <div class="field" id="appealsWrap" hidden><label for="appeals">Who decides the final internal medical appeal? <span class="tip-slot" data-tip="appeals"></span></label>
+          <select id="appeals"><option value="carrier">Carrier or administrator</option><option value="employer">Employer</option></select>
         </div>
-        <div class="field"><label for="discretion">Discretionary authority clause</label>
+        <div class="field"><label for="discretion">Discretionary authority clause <span class="tip-slot" data-tip="discretion"></span></label>
           <select id="discretion"><option value="yes">Include</option><option value="no">Omit</option></select>
         </div>
         <div class="field"><label for="bargaining">Is any wrapped benefit collectively bargained?</label>
@@ -144,7 +178,7 @@
         <div class="field"><label for="phi">Does the employer receive health information to run the plan, beyond enrollment? <span class="tip-slot" data-tip="phi"></span></label>
           <select id="phi"><option value="no">No</option><option value="yes">Yes</option></select>
         </div>
-        <div class="field"><label for="phi_classes">Job classes that may see that information</label><input id="phi_classes" placeholder="Benefits staff, payroll"></div>
+        <div class="field" id="phiClassesWrap" hidden><label for="phi_classes">Job classes that may see that information</label><input id="phi_classes" placeholder="Benefits staff, payroll"></div>
         <div class="field"><label for="agent_choice">Agent for service of legal process <span class="tip-slot" data-tip="agent"></span></label>
           <select id="agent_choice"><option value="employer">The employer</option><option value="custom">Someone else</option></select>
         </div>
@@ -156,16 +190,16 @@
         <div class="field"><label for="signer_name">Signer name</label><input id="signer_name"><p class="field-error" id="err_signer_name" role="alert"></p></div>
         <div class="field"><label for="signer_title">Signer title</label><input id="signer_title"></div>
         <div class="field"><label for="governing_body">Who adopts the plan?</label><input id="governing_body" placeholder="Board of directors"></div>
-        <div class="field"><label for="intended_signature_date">Date you intend to sign (the signature line stays blank)</label><input id="intended_signature_date" type="date"></div>
+        <div class="field"><label for="intended_signature_date">Date you intend to sign (the signature line stays blank)</label><input id="intended_signature_date" inputmode="numeric" maxlength="10" placeholder="MM/DD/YYYY" autocomplete="off"><p class="field-error" id="err_intended_signature_date" role="alert"></p></div>
       </section>
 
-      <section class="card" data-step="7" hidden>
+      <section class="card" data-step="8" hidden>
         <h2>Review and download</h2>
         <div id="reviewBox"></div>
         <div class="grid">
           <div class="field"><label for="contact_name">Your name</label><input id="contact_name" required><p class="field-error" id="err_contact_name" role="alert"></p></div>
           <div class="field"><label for="contact_email">Email</label><input id="contact_email" type="email" required><p class="field-error" id="err_contact_email" role="alert"></p></div>
-          <div class="field"><label for="contact_phone">Phone (optional)</label><input id="contact_phone" type="tel"></div>
+          <div class="field"><label for="contact_phone">Phone (optional)</label><input id="contact_phone" type="tel" inputmode="tel" maxlength="12" autocomplete="off"></div>
           <div class="field"><label for="role">I am</label>
             <select id="role">
               <option value="employer">Employer</option>
@@ -176,7 +210,7 @@
             </select>
           </div>
         </div>
-        <label class="check-line"><input id="consent" type="checkbox"> I have read the sample terms.</label>
+        <label class="check-line"><input id="consent" type="checkbox"> I have read the terms.</label>
         <p class="field-error" id="err_consent" role="alert"></p>
         <p class="hint" id="statusLine"></p>
         <div class="downloads" id="downloadList" hidden></div>
@@ -186,7 +220,7 @@
       <div class="nav-row">
         <button type="button" class="btn btn-back" id="backBtn">Back</button>
         <button type="button" class="btn btn-next" id="nextBtn">Next</button>
-        <button type="submit" class="btn btn-gold" id="buildBtn" hidden>Build the sample</button>
+        <button type="submit" class="btn btn-gold" id="buildBtn" hidden>Create My Documents</button>
       </div>
     </form>
   </main>

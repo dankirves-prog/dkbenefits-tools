@@ -59,7 +59,7 @@ var WpDocgen = (function () {
     return 'adopts';
   }
   function administrationType(plan, code) {
-    if (code === 'hra' || code === 'health_fsa') return 'sponsor administration';
+    if (code === 'hra' || code === 'health_fsa' || code === 'lpfsa') return 'sponsor administration';
     if (code === 'medical' && WpModel.isSelfFundedFunding(plan.funding)) return 'contract administration';
     if (code === 'std' && plan.std_type === 'trust') return 'sponsor administration';
     if (WpModel.benefitIsInsured(plan, code)) return 'insurer administration';
@@ -82,7 +82,7 @@ var WpDocgen = (function () {
   }
   function cobraParagraph(plan) {
     if (!WpModel.groupHealth(plan)) return '';
-    if (plan.cobra === 'yes' || plan.cobra === 'unsure') {
+    if (plan.cobra === 'yes') {
       var who = plan.cobra_admin || 'the plan administrator';
       return 'Federal COBRA continuation coverage applies to the group health benefits under this plan to the extent the employer met the federal employee threshold in the prior calendar year. COBRA is administered by ' + who + '. The general notice and the election notice are part of this package. Those notices state the qualifying events, the election steps, and the deadlines.';
     }
@@ -99,7 +99,7 @@ var WpDocgen = (function () {
       'Obtain, upon written request to the plan administrator, copies of documents governing the operation of the plan, including insurance contracts and copies of the latest annual report, if any, and an updated summary plan description. The administrator may make a reasonable charge for the copies.',
       'Receive a summary of the plan\'s annual financial report if the plan is required to file an annual report. The plan administrator is required by law to furnish each participant with a copy of this summary annual report.'
     ];
-    if (plan && WpModel.groupHealth(plan) && (plan.cobra === 'yes' || plan.cobra === 'unsure')) {
+    if (plan && WpModel.groupHealth(plan) && plan.cobra === 'yes') {
       rights.push('Continue Group Health Plan Coverage. Continue health care coverage for yourself, spouse or dependents if there is a loss of coverage under the plan as a result of a qualifying event. You or your dependents may have to pay for such coverage. Review this summary plan description and the documents governing the plan on the rules governing your COBRA continuation coverage rights.');
     }
     rights.push('Prudent actions by plan fiduciaries. In addition to creating rights for plan participants, ERISA imposes duties upon the people who are responsible for the operation of the employee benefit plan. The people who operate your plan, called fiduciaries, have a duty to do so prudently and in the interest of you and other plan participants and beneficiaries.');
@@ -142,6 +142,7 @@ var WpDocgen = (function () {
       }
       if (code === 'hra' && plan.hra_type) line += ' The HRA type is ' + WpModel.hraLabel(plan.hra_type) + '. The separate HRA document is incorporated.';
       if (code === 'health_fsa') line += ' The separate health FSA document is incorporated. The health FSA is paid from the employer\'s general assets.';
+      if (code === 'lpfsa') line += ' This limited purpose FSA is for employees enrolled in an HSA-qualified plan. The separate limited purpose FSA document is incorporated. It is paid from the employer\'s general assets.';
       if (code === 'hra') line += ' The HRA is paid from the employer\'s general assets.';
       if (code === 'medical' && plan.network === 'traditional') line += ' Benefits are provided through a provider network named in the certificate.';
       if (code === 'medical' && (plan.network === 'rbp' || plan.funding === 'rbp')) {
@@ -160,7 +161,7 @@ var WpDocgen = (function () {
     return 'The plan is effective ' + longDate(plan.original_effective_date) + '.';
   }
   function selfFundedDesign(plan) {
-    return WpModel.isSelfFundedFunding(plan.funding) || WpModel.hasBenefit(plan, 'hra') || WpModel.hasBenefit(plan, 'health_fsa') ||
+    return WpModel.isSelfFundedFunding(plan.funding) || WpModel.hasBenefit(plan, 'hra') || WpModel.hasBenefit(plan, 'health_fsa') || WpModel.hasBenefit(plan, 'lpfsa') ||
       (WpModel.hasBenefit(plan, 'std') && plan.std_type === 'trust');
   }
   function section125Sentence(plan) {
@@ -176,7 +177,7 @@ var WpDocgen = (function () {
     if (!WpModel.groupHealth(plan)) return [];
     var who = plan.cobra_admin || 'the plan administrator';
     var you = voice === 'you';
-    if (plan.cobra === 'yes' || plan.cobra === 'unsure') {
+    if (plan.cobra === 'yes') {
       return [
         'Federal COBRA continuation coverage applies to the group health benefits under this plan to the extent the employer met the federal employee threshold in the prior calendar year. COBRA is administered by ' + who + '. The general notice and the election notice are part of this package. Those notices state the qualifying events, the election steps, and the deadlines.',
         (you ? 'You' : 'A covered person') + ' should read the COBRA notices for the qualifying events, who may elect, how to elect, and how long coverage can last. This wrap does not restate those deadlines. Dental and vision are group health coverage for COBRA when they are wrapped.',
@@ -284,7 +285,7 @@ var WpDocgen = (function () {
       return ['Insured benefits follow the recovery terms in the certificate. This wrap does not add a separate reimbursement right for a fully insured benefit.'];
     }
     return [
-      'This section applies to a self-funded or level-funded benefit, including a health reimbursement arrangement or a health FSA that pays from general assets. It does not enlarge the recovery terms of a fully insured benefit. Those terms stay in the certificate.',
+      'This section applies to a self-funded or level-funded benefit, including a health reimbursement arrangement, a health FSA, or a limited purpose FSA that pays from general assets. It does not enlarge the recovery terms of a fully insured benefit. Those terms stay in the certificate.',
       (you ? 'If you receive' : 'If a participant receives') + ' benefits for an injury or illness that someone else may be responsible for, the plan may recover what it paid from any amount ' + (you ? 'you' : 'the participant') + ' or a dependent receives from that person, an insurer, or another source. The right comes first, before the participant is made whole, except where a law that actually applies says otherwise. The plan is not limited to a particular fund.',
       'The participant will not settle a claim in a way that impairs the plan\'s right without the plan\'s written consent. The participant will cooperate, sign papers, and tell the plan about the claim. The plan may offset later benefits if the recovery is not repaid. Attorneys\' fees are not deducted from the plan\'s share unless the plan agrees in writing. This section is a right of reimbursement and an equitable lien on the recovery.'
     ];
@@ -368,7 +369,7 @@ var WpDocgen = (function () {
       'Insured benefits are funded through premiums, self-funded benefits are funded from the employer\'s general assets, and participant contributions are applied toward the cost of the benefit elected.',
       WpModel.REVERSION,
       WpModel.isSelfFundedFunding(plan.funding)
-        ? 'Stop-loss, if the employer has it, protects the employer. It is not a participant benefit, and its terms are not stated in this document.'
+        ? 'Stop-loss, if the employer has it, covers the employer, not participants.'
         : ''
     ]);
     addSection(rows, 'Claims and appeals', claimsBlock(plan, 'plan'));
@@ -533,12 +534,13 @@ var WpDocgen = (function () {
     ]);
     addSection(rows, 'Benefit schedule', WpModel.wrappedBenefits(plan).map(function (code) {
       var funding = 'Fully insured';
-      if (code === 'hra' || code === 'health_fsa') funding = 'Paid from the employer\'s general assets';
+      if (code === 'hra' || code === 'health_fsa' || code === 'lpfsa') funding = 'Paid from the employer\'s general assets';
       else if (code === 'medical') funding = WpModel.fundingLabel(plan.funding || 'insured');
       else if (!WpModel.benefitIsInsured(plan, code)) funding = 'Self-funded';
       var doc = code === 'medical' && plan.tpa_document ? plan.tpa_document : 'Current certificate, booklet, or component plan';
       if (code === 'hra') doc = 'Separate HRA plan document' + (plan.hra_type ? ' (' + WpModel.hraLabel(plan.hra_type) + ')' : '');
       if (code === 'health_fsa') doc = 'Separate health FSA plan document';
+      if (code === 'lpfsa') doc = 'Separate limited purpose FSA plan document';
       return WpModel.benefitLabel(code) + '. Carrier or administrator: ' + carrier(plan, code) + '. Attach: ' + doc + '. Funding: ' + funding + '.';
     }).concat([
       WpModel.wrappedBenefits(plan).length ? 'Attach the papers in the order of the rows above, after the wrap plan document.' : 'No wrapped benefit was selected, so there is nothing to attach under this schedule.'
@@ -683,9 +685,9 @@ var WpDocgen = (function () {
     addSection(rows, 'COBRA', [
       plan.cobra === 'yes'
         ? 'You answered that the federal COBRA threshold was met. The wrap and the summary include the federal COBRA paragraph and name ' + (plan.cobra_admin || 'the plan administrator') + ' as the party who handles it. The general notice and the election notice still have to go out. This sample does not replace those notices, and it does not print a number of months of continuation.'
-        : plan.cobra === 'unsure'
-          ? 'You marked the federal COBRA count as not sure. The wrap and the summary still include the federal COBRA paragraph so the package is complete. Confirm the federal COBRA employee count before you rely on the COBRA paragraph. Count part-time employees as a fraction, hours worked divided by full-time hours, and count related employers.'
-          : 'You answered that federal COBRA did not apply. Confirm that answer with the prior-year employee count before you omit federal COBRA notices.',
+        : plan.cobra === 'no'
+          ? 'You answered that federal COBRA did not apply. Confirm that answer with the prior-year employee count before you omit federal COBRA notices.'
+          : '',
       plan.cobra === 'no' && plan.funding === 'insured'
         ? 'Because the medical benefit is insured and you answered no, the documents say state continuation coverage may be available and that the certificate and state law control. They do not name a number of months.'
         : '',
@@ -791,11 +793,12 @@ var WpDocgen = (function () {
     return '<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> ' + instr + ' </w:instrText></w:r>' +
       '<w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>1</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r>';
   }
-  function footerXml(label) {
+  function footerXml(label, sectionPages) {
     var name = xml(label || '');
+    var total = sectionPages ? 'SECTIONPAGES' : 'NUMPAGES';
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr xmlns:w="' + W + '"><w:p><w:pPr><w:pStyle w:val="Footer"/><w:jc w:val="center"/></w:pPr>' +
       (name ? '<w:r><w:t xml:space="preserve">' + name + ' | Page </w:t></w:r>' : '<w:r><w:t xml:space="preserve">Page </w:t></w:r>') +
-      pageField('PAGE') + '<w:r><w:t xml:space="preserve"> of </w:t></w:r>' + pageField('NUMPAGES') + '</w:p></w:ftr>';
+      pageField('PAGE') + '<w:r><w:t xml:space="preserve"> of </w:t></w:r>' + pageField(total) + '</w:p></w:ftr>';
   }
   function stylesXml() {
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="' + W + '">' +
@@ -887,7 +890,64 @@ var WpDocgen = (function () {
   function safe(name) {
     return String(name || 'Employer').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40) || 'Employer';
   }
+  function sectInner(relId, last) {
+    return '<w:footerReference w:type="default" r:id="' + relId + '"/>' +
+      '<w:pgSz w:w="12240" w:h="15840"/>' +
+      '<w:pgMar w:top="936" w:right="1152" w:bottom="936" w:left="1152" w:header="720" w:footer="720" w:gutter="0"/>' +
+      '<w:pgNumType w:start="1"/>' +
+      (last ? '' : '<w:type w:val="nextPage"/>');
+  }
+  function packetDocumentXml(sections) {
+    var body = '';
+    sections.forEach(function (section, index) {
+      body += (section.rows || []).map(paragraphXml).join('');
+      var rel = 'rId' + (index + 2);
+      var last = index === sections.length - 1;
+      var sect = '<w:sectPr>' + sectInner(rel, last) + '</w:sectPr>';
+      body += last ? sect : '<w:p><w:pPr>' + sect + '</w:pPr></w:p>';
+    });
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<w:document xmlns:w="' + W + '" xmlns:r="' + R + '"><w:body>' + body + '</w:body></w:document>';
+  }
+  function packetContentTypes(count) {
+    var footers = '';
+    for (var i = 1; i <= count; i++) {
+      footers += '<Override PartName="/word/footer' + i + '.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>';
+    }
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+      '<Default Extension="xml" ContentType="application/xml"/>' +
+      '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
+      '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' +
+      footers +
+      '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>' +
+      '</Types>';
+  }
+  function packetRels(count) {
+    var rels = '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>';
+    for (var i = 1; i <= count; i++) {
+      rels += '<Relationship Id="rId' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer' + i + '.xml"/>';
+    }
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + rels + '</Relationships>';
+  }
+  function buildPacketDocx(sections, props) {
+    props = props || {};
+    sections = sections || [];
+    var files = [
+      { name: '[Content_Types].xml', text: packetContentTypes(sections.length) },
+      { name: '_rels/.rels', text: rootRels() },
+      { name: 'docProps/core.xml', text: coreXml(props) },
+      { name: 'word/document.xml', text: packetDocumentXml(sections) },
+      { name: 'word/styles.xml', text: stylesXml() }
+    ];
+    sections.forEach(function (section, index) {
+      files.push({ name: 'word/footer' + (index + 1) + '.xml', text: footerXml(section.footer || '', true) });
+    });
+    files.push({ name: 'word/_rels/document.xml.rels', text: packetRels(sections.length) });
+    return zipStore(files);
+  }
   function planFileName(plan) { return safe(plan.employer_name) + '_Wrap_Plan.docx'; }
+  function packetFileName(plan) { return safe(plan.employer_name) + '_Plan.docx'; }
   function spdFileName(plan) { return safe(plan.employer_name) + '_SPD.docx'; }
   function scheduleFileName(plan) { return safe(plan.employer_name) + '_Schedule_A.docx'; }
   function resolutionFileName(plan) { return safe(plan.employer_name) + '_Adoption_Resolution.docx'; }
@@ -921,7 +981,9 @@ var WpDocgen = (function () {
     followUpEmailText: followUpEmailText,
     followUpEmailHtml: followUpEmailHtml,
     buildDocx: buildDocx,
+    buildPacketDocx: buildPacketDocx,
     planFileName: planFileName,
+    packetFileName: packetFileName,
     spdFileName: spdFileName,
     scheduleFileName: scheduleFileName,
     resolutionFileName: resolutionFileName,

@@ -130,13 +130,20 @@ test('Medicare, newborns, reversion, QMCSO notice, and HIPAA certification use t
   assert.match(qmcso, /National Medical Support Notice/);
 });
 
-test('COBRA not sure prints the federal paragraph and a findings flag', function () {
+test('COBRA yes prints the federal paragraph, and not sure is not a path', function () {
   const context = boot();
-  const pack = planText(context, baseInput({ cobra: 'unsure' }));
+  const pack = planText(context, baseInput({ cobra: 'yes', cobra_admin: 'WEX' }));
   assert.match(pack.spd, /Federal COBRA continuation coverage applies/);
   assert.match(pack.spd, /Continue Group Health Plan Coverage/);
-  assert.match(pack.findings, /Confirm the federal COBRA employee count/);
-  assert.doesNotMatch(pack.spd, /The employer marked the federal COBRA count/);
+  assert.doesNotMatch(pack.findings, /not sure/i);
+  const unsureResult = context.WpModel.validate(baseInput({ cobra: 'unsure' }));
+  assert.equal(unsureResult.ok, false);
+  const unsureSpd = context.WpDocgen.plainText(context.WpDocgen.spdParagraphs(unsureResult.plan));
+  const unsureFindings = context.WpDocgen.plainText(context.WpDocgen.findingsParagraphs(unsureResult.plan, unsureResult.findings));
+  assert.doesNotMatch(unsureSpd, /Federal COBRA continuation coverage applies/);
+  assert.doesNotMatch(unsureFindings, /Confirm the federal COBRA employee count/);
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.doesNotMatch(html, /value="unsure"|Not sure/);
 });
 
 test('QSEHRA with medical and ICHRA on the same class are findings, and dependent care is absent from the wrap', function () {
@@ -192,6 +199,11 @@ test('download labels and the page do not promise an email', function () {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   assert.match(js, /Download Plan \(Word\)/);
   assert.match(js, /Download Plan \(PDF\)/);
+  assert.match(js, /Download Findings Report \(Word\)/);
+  assert.match(js, /Download Findings Report \(PDF\)/);
+  assert.match(html, /Create My Documents/);
+  assert.doesNotMatch(html, /Build the sample/);
+  assert.doesNotMatch(html, /can sit in one wrap/);
   assert.match(js, /btn-gold/);
   assert.ok(js.indexOf('list.appendChild(wordCol)') < js.indexOf('list.appendChild(pdfCol)'));
   assert.match(js, /slice\(0, 14\)/);
@@ -267,4 +279,39 @@ test('participant documents do not use You has, form-answer wording, or tool nar
   const omitted = planText(context, baseInput({ discretion: 'no' }));
   assert.doesNotMatch(omitted.wrap, /full discretionary authority/);
   assert.doesNotMatch(omitted.findings, /discretionary clauses/);
+});
+
+test('limited purpose FSA is wrapped from general assets', function () {
+  const context = boot();
+  const pack = planText(context, baseInput({
+    benefits: ['lpfsa'],
+    carriers: { lpfsa: 'WEX' },
+    cobra: 'no'
+  }));
+  assert.match(pack.wrap, /limited purpose FSA is for employees enrolled in an HSA-qualified plan/);
+  assert.match(pack.wrap, /general assets/);
+  const schedule = context.WpDocgen.plainText(context.WpDocgen.scheduleParagraphs(pack.result.plan));
+  assert.match(schedule, /Limited purpose FSA/);
+  assert.match(schedule, /Separate limited purpose FSA plan document/);
+  assert.doesNotMatch(pack.wrap, /Dependent care/);
+});
+
+test('a plan packet gives each document its own footer and page count', function () {
+  const context = boot();
+  const result = context.WpModel.validate(baseInput({ phi: 'yes', phi_classes: 'Benefits staff', cobra: 'yes' }));
+  const sections = [
+    { rows: context.WpDocgen.planParagraphs(result.plan), footer: 'Harbor Dental Group LLC Wrap Plan Document' },
+    { rows: context.WpDocgen.spdParagraphs(result.plan), footer: 'Harbor Dental Group LLC Summary Plan Description' },
+    { rows: context.WpDocgen.qmcsoParagraphs(result.plan), footer: 'Harbor Dental Group LLC QMCSO Procedures' },
+    { rows: context.WpDocgen.hipaaParagraphs(result.plan), footer: 'Harbor Dental Group LLC HIPAA Amendment' }
+  ];
+  const bytes = context.WpDocgen.buildPacketDocx(sections, { title: 'Plan packet' });
+  const xml = Buffer.from(bytes).toString('latin1');
+  assert.match(xml, /SECTIONPAGES/);
+  assert.doesNotMatch(xml, /NUMPAGES/);
+  assert.match(xml, /w:start="1"/);
+  assert.match(xml, /nextPage/);
+  assert.match(xml, /Harbor Dental Group LLC Wrap Plan Document \| Page /);
+  assert.match(xml, /Harbor Dental Group LLC HIPAA Amendment \| Page /);
+  assert.match(xml, /Qualified medical child support order procedures/);
 });

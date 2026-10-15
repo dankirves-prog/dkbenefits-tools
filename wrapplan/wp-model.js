@@ -34,6 +34,7 @@ var WpModel = (function () {
     eap: 'Employee assistance program',
     hra: 'Health reimbursement arrangement',
     health_fsa: 'Health FSA',
+    lpfsa: 'Limited purpose FSA',
     vol_life: 'Voluntary life',
     vol_add: 'Voluntary AD&D',
     accident: 'Accident',
@@ -66,9 +67,42 @@ var WpModel = (function () {
   function isSelfFundedFunding(funding) {
     return funding === 'level' || funding === 'aso' || funding === 'captive' || funding === 'rbp';
   }
+  var WAITING_OPTIONS = [
+    { id: 'date-of-hire', label: 'Date of hire', menu: 'Date of hire' },
+    { id: 'first-following-hire', label: 'First of the month following date of hire', menu: 'First of the month following date of hire' },
+    { id: 'first-following-30', label: 'First of the month following 30 days', menu: 'First of the month following 30 days' },
+    { id: 'day-31', label: '31st day', menu: '31st day' },
+    { id: 'first-following-60', label: 'First of the month following 60 days', menu: 'First of the month following 60 days' },
+    { id: 'day-61', label: '61st day', menu: '61st day' },
+    { id: 'day-90', label: '90th day', menu: '90th day (maximum for medical)' },
+    { id: 'other', label: 'Other', menu: 'Other' }
+  ];
+  function waitingText(id, other) {
+    if (id === 'other') return String(other || '').trim();
+    for (var i = 0; i < WAITING_OPTIONS.length; i++) {
+      if (WAITING_OPTIONS[i].id === id) return WAITING_OPTIONS[i].label;
+    }
+    return '';
+  }
+  function isoDate(value) {
+    var raw = String(value || '').trim();
+    var us = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (us) raw = us[3] + '-' + us[1] + '-' + us[2];
+    var iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!iso) return '';
+    var y = Number(iso[1]);
+    var m = Number(iso[2]);
+    var d = Number(iso[3]);
+    var dt = new Date(Date.UTC(y, m - 1, d));
+    if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) return '';
+    return iso[1] + '-' + iso[2] + '-' + iso[3];
+  }
+  function storedDate(value) {
+    return isoDate(value) || String(value || '').trim();
+  }
   function groupHealth(plan) {
     return hasBenefit(plan, 'medical') || hasBenefit(plan, 'dental') || hasBenefit(plan, 'vision') ||
-      hasBenefit(plan, 'health_fsa') || hasBenefit(plan, 'hra') ||
+      hasBenefit(plan, 'health_fsa') || hasBenefit(plan, 'lpfsa') || hasBenefit(plan, 'hra') ||
       (hasBenefit(plan, 'eap') && plan.eap_type === 'substantive');
   }
   function countParticipants(plan) {
@@ -77,7 +111,7 @@ var WpModel = (function () {
   }
   function selfFundedSlice(plan) {
     if (isSelfFundedFunding(plan.funding) && hasBenefit(plan, 'medical')) return true;
-    if (hasBenefit(plan, 'hra') || hasBenefit(plan, 'health_fsa')) return true;
+    if (hasBenefit(plan, 'hra') || hasBenefit(plan, 'health_fsa') || hasBenefit(plan, 'lpfsa')) return true;
     if (hasBenefit(plan, 'std') && plan.std_type === 'trust') return true;
     return false;
   }
@@ -166,7 +200,7 @@ var WpModel = (function () {
     return String(value || '').trim();
   }
   function benefitIsInsured(plan, code) {
-    if (code === 'hra' || code === 'health_fsa') return false;
+    if (code === 'hra' || code === 'health_fsa' || code === 'lpfsa') return false;
     if (code === 'std' && plan.std_type === 'trust') return false;
     if (code === 'medical') return plan.funding === 'insured';
     return (plan.benefit_funding || {})[code] !== 'self';
@@ -291,7 +325,6 @@ var WpModel = (function () {
     if (countParticipants(plan) >= 100 && yes(plan.prior_small_filing)) {
       notes.push('A prior small-plan filing does not change this. A Form 5500 is required.');
     }
-    if (plan.cobra === 'unsure') notes.push('Confirm the federal COBRA employee count before you rely on the COBRA paragraph.');
     if (plan.cobra === 'no' && countParticipants(plan) >= 100) {
       notes.push('You answered that federal COBRA did not apply, and the covered-participant count is 100 or more. Those answers usually do not belong together. Confirm the prior-year employee count, including related employers.');
     }
@@ -316,10 +349,10 @@ var WpModel = (function () {
       zip: String(input.zip || '').trim(),
       plan_name: String(input.plan_name || '').trim(),
       plan_number: String(input.plan_number || '').trim(),
-      original_effective_date: String(input.original_effective_date || '').trim(),
+      original_effective_date: storedDate(input.original_effective_date),
       is_restatement: input.is_restatement === 'yes' ? 'yes' : 'no',
-      restatement_date: String(input.restatement_date || '').trim(),
-      intended_signature_date: String(input.intended_signature_date || '').trim(),
+      restatement_date: input.is_restatement === 'yes' ? storedDate(input.restatement_date) : '',
+      intended_signature_date: storedDate(input.intended_signature_date),
       plan_year_type: input.plan_year_type === 'fiscal' ? 'fiscal' : 'calendar',
       plan_year_end_month: String(input.plan_year_end_month || ''),
       employee_count: String(input.employee_count || '').trim(),
@@ -387,11 +420,37 @@ var WpModel = (function () {
       referrer: String(input.referrer || '').trim()
     };
     if (!plan.plan_name && plan.employer_name) plan.plan_name = plan.employer_name + ' Group Welfare Benefit Plan';
-    plan.benefits = plan.benefits.filter(function (code) { return code !== 'dcap'; });
+    plan.benefits = plan.benefits.filter(function (code) { return code !== 'dcap' && code !== 'lpfsa_disabled'; });
+    applyWaiting(plan, input);
     if (!plan.phi && isSelfFundedFunding(plan.funding) && hasBenefit(plan, 'medical')) plan.phi = 'yes';
     plan.phi_classes_blank = (plan.phi === 'yes' && !plan.phi_classes);
     plan.address = [plan.street, plan.city, plan.state, plan.zip].filter(Boolean).join(', ');
     return plan;
+  }
+  function applyWaiting(plan, input) {
+    var legacy = input.waiting && typeof input.waiting === 'object' ? input.waiting : {};
+    var legacyKeys = Object.keys(legacy).filter(function (key) { return String(legacy[key] || '').trim(); });
+    var overrides = input.waiting_overrides || {};
+    var overrideOther = input.waiting_override_other || {};
+    var hasOverride = Object.keys(overrides).some(function (key) { return overrides[key] && overrides[key] !== 'same'; });
+    plan.waiting_overrides = overrides;
+    if (!input.waiting_period && legacyKeys.length && !hasOverride) {
+      plan.waiting_period = '';
+      plan.waiting_other = '';
+      plan.waiting = legacy;
+      return;
+    }
+    var id = input.waiting_period || 'date-of-hire';
+    plan.waiting_period = id;
+    plan.waiting_other = String(input.waiting_other || '').trim();
+    var base = waitingText(id, plan.waiting_other);
+    var waiting = {};
+    (plan.benefits || []).forEach(function (code) {
+      var over = overrides[code];
+      if (over && over !== 'same') waiting[code] = waitingText(over, overrideOther[code]);
+      else waiting[code] = base;
+    });
+    plan.waiting = waiting;
   }
   function validate(input) {
     var plan = normalize(input);
@@ -415,8 +474,21 @@ var WpModel = (function () {
     if (!/^\d{3}$/.test(plan.plan_number) || num(plan.plan_number) < 501 || num(plan.plan_number) > 999) {
       push(errors, 'plan_number', 'Enter a three-digit plan number from 501 through 999.');
     }
-    if (!plan.original_effective_date) push(errors, 'original_effective_date', 'Enter the original effective date.');
-    if (plan.is_restatement === 'yes' && !plan.restatement_date) push(errors, 'restatement_date', 'Enter the restatement date.');
+    if (plan.is_restatement === 'yes') {
+      if (!isoDate(plan.restatement_date)) push(errors, 'wrap_effective_date', 'Enter the effective date as month, day, and year.');
+      if (!isoDate(plan.original_effective_date)) push(errors, 'original_effective_date', 'Enter the original effective date as month, day, and year.');
+    } else if (!isoDate(plan.original_effective_date)) {
+      push(errors, 'wrap_effective_date', 'Enter the effective date as month, day, and year.');
+    }
+    if (plan.intended_signature_date && !isoDate(plan.intended_signature_date)) {
+      push(errors, 'intended_signature_date', 'Enter the date as month, day, and year.');
+    }
+    if (plan.waiting_period === 'other' && !plan.waiting_other) push(errors, 'waiting_other', 'Describe the waiting period.');
+    Object.keys(plan.waiting_overrides || {}).forEach(function (code) {
+      if (plan.waiting_overrides[code] === 'other' && !(plan.waiting && plan.waiting[code])) {
+        push(errors, 'waitover_other_' + code, 'Describe the waiting period for ' + benefitLabel(code) + '.');
+      }
+    });
     if (!plan.employee_count || num(plan.employee_count) < 1) push(errors, 'employee_count', 'Enter about how many employees you had last year.');
     if (!plan.benefits.length) push(errors, 'benefits', 'Select at least one benefit.');
     if (hasBenefit(plan, 'medical') && !plan.funding) push(errors, 'funding', 'Choose how medical is funded.');
@@ -436,7 +508,7 @@ var WpModel = (function () {
     if (hasBenefit(plan, 'hra') && !plan.hra_type) push(errors, 'hra_type', 'Choose the HRA type.');
     if (hasBenefit(plan, 'eap') && !plan.eap_type) push(errors, 'eap_type', 'Say whether the EAP is referral-only or provides care.');
     if (hasBenefit(plan, 'std') && !plan.std_type) push(errors, 'std_type', 'Say how short-term disability is paid.');
-    if (groupHealth(plan) && !plan.cobra) push(errors, 'cobra', 'Answer the federal COBRA question.');
+    if (groupHealth(plan) && plan.cobra !== 'yes' && plan.cobra !== 'no') push(errors, 'cobra', 'Answer yes or no on the federal COBRA count.');
     if (!plan.signer_name || !plan.signer_title) push(errors, 'signer_name', 'Enter the signer name and title.');
     if (!plan.contact_name) push(errors, 'contact_name', 'Enter your name.');
     if (!plan.contact_email || plan.contact_email.indexOf('@') === -1) push(errors, 'contact_email', 'Enter an email address.');
@@ -483,6 +555,9 @@ var WpModel = (function () {
     NEWBORNS_INSURED: NEWBORNS_INSURED,
     ALLOWED_ORIGINS: ALLOWED_ORIGINS,
     BENEFIT_LABELS: BENEFIT_LABELS,
+    WAITING_OPTIONS: WAITING_OPTIONS,
+    waitingText: waitingText,
+    isoDate: isoDate,
     benefitLabel: benefitLabel,
     hraLabel: hraLabel,
     fundingLabel: fundingLabel,
