@@ -197,10 +197,12 @@
     if (!q) return;
     var progress = DKQuiz.stepProgress(answers, index);
     var step = progress.step;
+    var isLast = index === list.length - 1;
+    if (isLast) progress = { step: list.length, total: list.length, showTotal: true, exact: true };
     maxProgress = DKQuiz.progressPercent(maxProgress, progress);
-    var stepLabel = progress.showTotal
-      ? (progress.exact ? 'Step ' + step + ' of ' + progress.total : 'Step ' + step + ' of about ' + progress.total)
-      : 'Step ' + step;
+    var stepLabel = isLast
+      ? 'Step ' + list.length + ' of ' + list.length
+      : (progress.showTotal ? 'Step ' + step + ' of about ' + progress.total : 'Step ' + step);
     var chosen = selectedMap(q);
     var role = q.multiSelect ? 'group' : 'radiogroup';
     var options = q.options.map(function (opt) {
@@ -271,14 +273,30 @@
     if (!cta) return '';
     var href = '';
     var external = false;
-    if (cta.type === 'contact') href = '#contact-box';
-    else if (DKQuiz.URLS[cta.type]) {
+    var contact = false;
+    if (cta.type === 'contact') {
+      href = '#contact-box';
+      contact = true;
+    } else if (DKQuiz.URLS[cta.type]) {
       href = DKQuiz.URLS[cta.type];
       external = true;
     }
     if (!href) return '';
-    var extra = external ? ' target="_blank" rel="noopener"' : '';
+    var extra = contact ? ' data-contact="1"' : (external ? ' target="_blank" rel="noopener"' : '');
     return '<a class="' + className + '" href="' + esc(href) + '"' + extra + '>' + esc(cta.label) + '</a>';
+  }
+
+  function contactInView() {
+    var box = document.getElementById('contact-box');
+    if (!box) return false;
+    var scrolling = document.scrollingElement || document.documentElement;
+    var before = scrolling ? scrolling.scrollTop : 0;
+    box.scrollIntoView();
+    var rect = box.getBoundingClientRect();
+    var viewHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+    var visible = rect.top >= -1 && rect.top < viewHeight;
+    if (!visible && scrolling) scrolling.scrollTop = before;
+    return visible;
   }
 
   function renderCards() {
@@ -448,6 +466,15 @@
   }
 
   root.addEventListener('click', function (event) {
+    var contactLink = event.target.closest && event.target.closest('a[data-contact]');
+    if (contactLink && root.contains(contactLink) && window.parent && window.parent !== window) {
+      if (!contactInView()) {
+        event.preventDefault();
+        var fallback = DKQuiz.contactHref(true);
+        window.open(fallback.href, fallback.target || '_top');
+      }
+      return;
+    }
     var target = event.target.closest('[data-action]');
     if (!target || !root.contains(target)) return;
     var action = target.getAttribute('data-action');
