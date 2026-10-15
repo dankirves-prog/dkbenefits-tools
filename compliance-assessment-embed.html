@@ -1,17 +1,18 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8"/>
+<title>Benefits compliance checkup</title>
 <style>html,body{margin:0;padding:0;height:100%;width:100%;overflow:hidden}iframe{border:0;width:100%;height:100%;display:block}</style>
 </head>
 <body>
-<iframe id="formFrame" src="https://dankirves-prog.github.io/dkbenefits-tools/compliance-assessment.html" allow="clipboard-write" title="Employee Benefits Compliance Assessment"></iframe>
+<iframe id="formFrame" src="https://dankirves-prog.github.io/dkbenefits-tools/compliance-assessment.html" allow="clipboard-write" title="Benefits compliance checkup"></iframe>
 <script>
 var frame = document.getElementById('formFrame');
-window.addEventListener('message', function(e) {
+window.addEventListener('message', function (e) {
   if (e.source === frame.contentWindow) {
     window.parent.postMessage(e.data, '*');
-  } else if (e.source === window.parent) {
+  } else if (e.source === window.parent && frame.contentWindow) {
     frame.contentWindow.postMessage(e.data, '*');
   }
 });

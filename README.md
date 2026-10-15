@@ -2,21 +2,28 @@
 
 The quote tool demo is now isolated in its own folder so existing files (including `wrapplan.html`) are not affected.
 
-## Employee Benefits Compliance Assessment
+## Benefits compliance checkup
 
-Self-contained quiz + scoring + results (no Wix Velo). Scoring is a port of the live dkbenefits.net compliance quiz engine, with Pages-path additions (Marketplace notice on the no-benefits path, SBC distribution, state / mini-COBRA).
+Scoring lives in `compliance-quiz/quiz-engine.js`. The pages are thin shells.
 
-- `compliance-assessment.html` — single-page assessment, hosted at `https://dankirves-prog.github.io/dkbenefits-tools/compliance-assessment.html`
-- `compliance-assessment-embed.html` — optional height:100% Wix HtmlComponent shim that iframes the Pages URL and forwards `postMessage` both ways (same pattern as Wrap / `section125-embed.html`). Does not set iframe height from resize messages.
+- `compliance-assessment.html` is the live checkup, hosted at `https://dankirves-prog.github.io/dkbenefits-tools/compliance-assessment.html`
+- `compliance-assessment-preview.html` is the draft preview, hosted at `https://dankirves-prog.github.io/dkbenefits-tools/compliance-assessment-preview.html` after this version is on `main`. GitHub Pages serves `main` only.
+- `compliance-assessment-embed.html` iframes the live Pages URL and forwards `postMessage` both ways. It does not set the iframe height.
+- Optional leads: `compliance-quiz/apps-script/ComplianceLeads.gs`. `QUIZ_LEAD_ENDPOINT` in `compliance-quiz/config.js` is the deployed web app.
 
-The assessment posts `{ type: 'resize', height }` on load, fonts ready, each step change, option select, and window resize (debounced; sent twice after layout). Height is the document content height, not a clipped iframe rect.
+Answers stay in the browser. The page may post `{ type: 'resize', height }` and `{ type: 'scrollTop' }`. Those messages are harmless, and the page does not post the answers. The HtmlComponent has no height property, so Wix should not listen for them.
 
-**Live Wix:** one HtmlComponent pointed at `compliance-assessment.html`. A simple Velo `onMessage` listener sets the HtmlComponent height to `data.height +` a small pad — no `Math.max` floor and no 670px minimum. Do not use a fixed ~4800px box as the primary approach; parent-driven auto-height is the live pattern. Embedded `body` does not force `min-height: 100vh`, so short steps do not paint a tall empty canvas inside the HtmlComponent.
+**Live Wix:** point one HtmlComponent at `compliance-assessment.html`. Set a fixed height in the editor: 3710px on desktop and 4660px on mobile. That fits the longest collapsed results. The page hides its own header when it is inside a frame. The page body does not force `min-height: 100vh`.
+
+Set the HtmlComponent iframe title to `Benefits compliance checkup`.
+
+`compliance-assessment-v3.html` is the previous live quiz, kept so the Wix component can point back at it. Use the same fixed heights if the component points at that file.
 
 Local preview:
 
 ```text
 http://localhost:8000/compliance-assessment.html
+http://localhost:8000/compliance-assessment-preview.html
 http://localhost:8000/compliance-assessment-embed.html
 ```
 
