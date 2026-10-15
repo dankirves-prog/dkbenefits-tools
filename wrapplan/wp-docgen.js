@@ -74,6 +74,7 @@ var WpDocgen = (function () {
     return 'Each benefit is administered as its certificate or booklet describes.';
   }
   function taxSentence(plan, code) {
+    if (code === 'hra') return ' The employer pays the HRA. Employees do not contribute to it.';
     var tax = (plan.tax && plan.tax[code]) || '';
     if (tax === 'pretax') return ' Employee contributions for this benefit are intended to be pre-tax under a separate Section 125 plan. This wrap is not that plan.';
     if (tax === 'aftertax') return ' Employee contributions for this benefit are taken after tax.';
@@ -142,7 +143,7 @@ var WpDocgen = (function () {
       }
       if (code === 'hra' && plan.hra_type) line += ' The HRA type is ' + WpModel.hraLabel(plan.hra_type) + '. The separate HRA document is incorporated.';
       if (code === 'health_fsa') line += ' The separate health FSA document is incorporated. The health FSA is paid from the employer\'s general assets.';
-      if (code === 'lpfsa') line += ' This limited purpose FSA is for employees enrolled in an HSA-qualified plan. The separate limited purpose FSA document is incorporated. It is paid from the employer\'s general assets.';
+      if (code === 'lpfsa') line += ' This limited purpose FSA covers dental and vision expenses, and preventive care if the plan allows, so it stays compatible with a health savings account. It is for employees enrolled in an HSA-qualified plan. The separate limited purpose FSA document is incorporated. It is paid from the employer\'s general assets.';
       if (code === 'hra') line += ' The HRA is paid from the employer\'s general assets.';
       if (code === 'medical' && plan.network === 'traditional') line += ' Benefits are provided through a provider network named in the certificate.';
       if (code === 'medical' && (plan.network === 'rbp' || plan.funding === 'rbp')) {
@@ -167,7 +168,7 @@ var WpDocgen = (function () {
   function section125Sentence(plan) {
     var pretax = false;
     var tax = plan.tax || {};
-    Object.keys(tax).forEach(function (code) { if (tax[code] === 'pretax') pretax = true; });
+    Object.keys(tax).forEach(function (code) { if (code !== 'hra' && tax[code] === 'pretax') pretax = true; });
     if (pretax || plan.section125 === 'yes') {
       return 'Where a benefit is offered pre-tax, that choice is made under a separate Section 125 cafeteria plan. This wrap is not the cafeteria plan. The cafeteria plan controls the election, the irrevocability rules, and the permitted changes in status. A pre-tax election does not add a benefit that the certificate does not provide.';
     }
@@ -793,12 +794,39 @@ var WpDocgen = (function () {
     return '<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> ' + instr + ' </w:instrText></w:r>' +
       '<w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>1</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r>';
   }
-  function footerXml(label, sectionPages) {
+  function footerXml(label, mode) {
     var name = xml(label || '');
-    var total = sectionPages ? 'SECTIONPAGES' : 'NUMPAGES';
+    var total = mode === 'section' ? 'SECTIONPAGES' : 'NUMPAGES';
+    var pageOnly = mode === 'page';
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr xmlns:w="' + W + '"><w:p><w:pPr><w:pStyle w:val="Footer"/><w:jc w:val="center"/></w:pPr>' +
       (name ? '<w:r><w:t xml:space="preserve">' + name + ' | Page </w:t></w:r>' : '<w:r><w:t xml:space="preserve">Page </w:t></w:r>') +
-      pageField('PAGE') + '<w:r><w:t xml:space="preserve"> of </w:t></w:r>' + pageField(total) + '</w:p></w:ftr>';
+      pageField('PAGE') + (pageOnly ? '' : '<w:r><w:t xml:space="preserve"> of </w:t></w:r>' + pageField(total)) + '</w:p></w:ftr>';
+  }
+  function coverParagraphs(plan, entries) {
+    var rows = [];
+    var hasHipaa = false;
+    var hasQmcso = false;
+    (entries || []).forEach(function (entry) {
+      if (entry.title === 'HIPAA Amendment') hasHipaa = true;
+      if (entry.title === 'QMCSO Procedures') hasQmcso = true;
+    });
+    rows.push(row('Title', (plan.plan_name || 'Plan packet') + ' packet', { keepNext: true, keepLines: true }));
+    rows.push(row(null, WpModel.DISCLAIMER));
+    addSection(rows, 'Contents', (entries || []).map(function (entry) {
+      var pages = entry.pages || 0;
+      if (!pages) return entry.title + '.';
+      var span = pages === 1 ? 'page 1' : 'pages 1-' + pages;
+      return entry.title + ', ' + span + '.';
+    }));
+    var who = [
+      'Employees receive the summary plan description and the certificates.',
+      hasHipaa
+        ? 'The employer keeps the signed wrap, the adoption resolution, Schedule A, and the HIPAA amendment.'
+        : 'The employer keeps the signed wrap, the adoption resolution, and Schedule A.'
+    ];
+    if (hasQmcso) who.push('The qualified medical child support order procedures are available on request.');
+    addSection(rows, 'Who receives what', who);
+    return rows;
   }
   function stylesXml() {
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="' + W + '">' +
@@ -941,7 +969,7 @@ var WpDocgen = (function () {
       { name: 'word/styles.xml', text: stylesXml() }
     ];
     sections.forEach(function (section, index) {
-      files.push({ name: 'word/footer' + (index + 1) + '.xml', text: footerXml(section.footer || '', true) });
+      files.push({ name: 'word/footer' + (index + 1) + '.xml', text: footerXml(section.footer || '', 'page') });
     });
     files.push({ name: 'word/_rels/document.xml.rels', text: packetRels(sections.length) });
     return zipStore(files);
@@ -982,6 +1010,7 @@ var WpDocgen = (function () {
     followUpEmailHtml: followUpEmailHtml,
     buildDocx: buildDocx,
     buildPacketDocx: buildPacketDocx,
+    coverParagraphs: coverParagraphs,
     planFileName: planFileName,
     packetFileName: packetFileName,
     spdFileName: spdFileName,

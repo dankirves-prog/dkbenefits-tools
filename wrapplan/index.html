@@ -91,9 +91,6 @@
         <div id="benefitBoxes"></div>
         <div id="volWrap" hidden>
           <p class="lede">These questions cover the voluntary benefits you checked.</p>
-          <div class="field"><label for="vol_pretax">Are these voluntary benefits pre-tax through a Section 125 plan?</label>
-            <select id="vol_pretax"><option value="">Choose</option><option value="no">No</option><option value="yes">Yes</option></select>
-          </div>
           <div class="field"><label for="vol_contrib">Does the employer contribute toward them?</label>
             <select id="vol_contrib"><option value="">Choose</option><option value="no">No</option><option value="yes">Yes</option></select>
           </div>
@@ -122,7 +119,8 @@
         <div class="field"><label for="dependents">Dependents you cover</label><input id="dependents" value="Spouse and children to age 26"></div>
         <div class="field"><label for="waiting_period">Waiting period <span class="tip-slot" data-tip="waiting_period"></span></label>
           <select id="waiting_period"></select>
-          <p class="hint">First of the month following 90 days is not offered. For medical, that wait is longer than 90 days.</p>
+          <p class="hint">First of the month following 90 days is not offered. For medical, that wait is longer than 90 days. Coverage must start no later than the 91st day.</p>
+          <p class="field-error" id="err_waiting_period" role="alert"></p>
           <p class="field-error" id="err_waiting_other" role="alert"></p>
         </div>
         <div class="field" id="waitingOtherWrap" hidden><label for="waiting_other">Describe the waiting period</label><input id="waiting_other"></div>
@@ -139,13 +137,16 @@
         <div class="field"><label for="census_d">Covered retirees <span class="tip-slot" data-tip="census_d"></span></label><input id="census_d" inputmode="numeric" value="0"></div>
         <p id="countPreview" class="hint"></p>
         <div class="field"><label for="employee_contributions">Do employees contribute?</label>
-          <select id="employee_contributions"><option value="yes">Yes</option><option value="no">No</option></select>
+          <select id="employee_contributions"><option value="">Choose</option><option value="yes">Yes</option><option value="no">No</option></select>
+          <p class="field-error" id="err_employee_contributions" role="alert"></p>
         </div>
         <div class="field" id="remittedWrap"><label for="remitted">Does the employer remit those amounts to the carrier or administrator within three months? <span class="tip-slot" data-tip="remitted"></span></label>
-          <select id="remitted"><option value="yes">Yes</option><option value="no">No or not sure</option></select>
+          <select id="remitted"><option value="">Choose</option><option value="yes">Yes</option><option value="no">No</option></select>
+          <p class="field-error" id="err_remitted" role="alert"></p>
         </div>
         <div class="field"><label for="section125">Are pre-tax contributions made through a separate Section 125 plan? <span class="tip-slot" data-tip="section125"></span></label>
-          <select id="section125"><option value="yes">Yes</option><option value="no">No</option></select>
+          <select id="section125"><option value="">Choose</option><option value="yes">Yes</option><option value="no">No</option></select>
+          <p class="field-error" id="err_section125" role="alert"></p>
         </div>
         <div class="field"><label for="trust">Is any plan money held in a trust or separate account? <span class="tip-slot" data-tip="trust"></span></label>
           <select id="trust"><option value="no">No</option><option value="yes">Yes</option></select>
@@ -155,7 +156,8 @@
           <select id="prior_small_filing"><option value="no">No or not applicable</option><option value="yes">Yes</option></select>
         </div>
         <div class="field"><label for="certificates">Do you have the certificate, booklet, or administrator plan document for each benefit? <span class="tip-slot" data-tip="certificates"></span></label>
-          <select id="certificates"><option value="yes">Yes</option><option value="no">No</option></select>
+          <select id="certificates"><option value="">Choose</option><option value="yes">Yes</option><option value="no">No</option></select>
+          <p class="field-error" id="err_certificates" role="alert"></p>
         </div>
       </section>
 

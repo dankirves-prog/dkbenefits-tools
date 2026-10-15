@@ -36,6 +36,7 @@ function baseInput(overrides) {
     original_effective_date: '2026-06-01',
     is_restatement: 'no',
     plan_year_type: 'calendar',
+    waiting_period: 'date-of-hire',
     employee_count: '22',
     benefits: ['medical', 'dental', 'vision', 'life'],
     carriers: { medical: 'Florida Blue', dental: 'Sun Life', vision: 'VSP', life: 'Sun Life' },
