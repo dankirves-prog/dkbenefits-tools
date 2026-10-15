@@ -74,6 +74,7 @@ test('(c) insured COBRA no mentions state continuation and does not print a numb
   const pack = planText(context, baseInput({ cobra: 'no', funding: 'insured' }));
   assert.match(pack.spd, /State continuation coverage may be available/);
   assert.doesNotMatch(pack.spd, /\d+ months/);
+  assert.doesNotMatch(pack.spd, /This document does not state a number of months of continuation/);
   assert.doesNotMatch(pack.spd, /Continue Group Health Plan Coverage/);
 });
 
@@ -195,6 +196,8 @@ test('download labels and the page do not promise an email', function () {
   assert.ok(js.indexOf('list.appendChild(wordCol)') < js.indexOf('list.appendChild(pdfCol)'));
   assert.match(js, /slice\(0, 14\)/);
   assert.match(html, /wrapplan\.js/);
+  assert.doesNotMatch(html, /draft-banner/);
+  assert.match(html, /Since this is a free tool, it's a good idea to have your own counsel take a quick look before you sign\./);
   const page = js + '\n' + html;
   assert.doesNotMatch(page, /we will email|we'll email|check your inbox/i);
   const embed = fs.readFileSync(path.join(root, 'embed.html'), 'utf8');

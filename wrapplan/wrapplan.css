@@ -61,14 +61,6 @@ body {
 }
 .site-header p { margin: 0; color: #d5deea; max-width: 42rem; }
 
-.draft-banner {
-  background: var(--warning-bg);
-  border-bottom: 1px solid var(--warning-border);
-  color: #5c4810;
-}
-.draft-banner-inner { max-width: 880px; margin: 0 auto; padding: 12px 20px; font-size: 0.95rem; }
-.draft-banner strong { color: #3f3208; }
-
 .wrap { max-width: 880px; margin: 0 auto; padding: 20px 20px 48px; }
 
 .progress {
@@ -138,6 +130,7 @@ body {
   gap: 6px;
 }
 .hint { color: var(--text-light); font-size: 0.92rem; margin: 0; }
+.soft-note { color: var(--text-light); font-size: 0.82rem; margin: 14px 0 0; }
 input[type="text"], input[type="email"], input[type="tel"], input[type="date"], input[type="number"], select, textarea {
   font: inherit;
   font-size: 16px;
