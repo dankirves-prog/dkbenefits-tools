@@ -115,6 +115,66 @@
     return lines;
   }
 
+  var SHORT_GROUP = 4;
+  var SHORT_CALENDAR = 8;
+
+  function itemHtml(item) {
+    return '<li class="print-item"><span class="print-box" aria-hidden="true"></span><div><strong>' + esc(item.title) + '</strong><p>' + esc(item.action) + '</p></div></li>';
+  }
+
+  function groupParts(key, rows) {
+    var heading = '<h3>' + esc(GROUP_LABEL[key]) + '</h3>';
+    var items = rows.map(itemHtml);
+    if (rows.length <= SHORT_GROUP) {
+      return {
+        short: true,
+        html: '<section class="print-group print-keep">' + heading + '<ul class="print-checks">' + items.join('') + '</ul></section>'
+      };
+    }
+    return {
+      short: false,
+      lead: heading + '<ul class="print-checks">' + items[0] + '</ul>',
+      rest: '<ul class="print-checks">' + items.slice(1).join('') + '</ul>'
+    };
+  }
+
+  function findingsSection(items) {
+    var parts = GROUP_ORDER.map(function (key) {
+      var rows = (items || []).filter(function (item) { return item.status === key; });
+      if (!rows.length) return null;
+      return groupParts(key, rows);
+    }).filter(Boolean);
+    if (!parts.length) {
+      return '<section class="print-section print-keep"><h2>Findings checklist</h2><p class="print-empty">No findings came up in these answers.</p></section>';
+    }
+    var rest = parts.slice(1).map(function (part) {
+      if (part.short) return part.html;
+      return '<section class="print-group"><div class="print-keep">' + part.lead + '</div>' + part.rest + '</section>';
+    }).join('');
+    if (parts[0].short) {
+      return '<section class="print-findings"><div class="print-keep"><h2>Findings checklist</h2>' + parts[0].html + '</div>' + rest + '</section>';
+    }
+    return '<section class="print-findings"><section class="print-group"><div class="print-keep"><h2>Findings checklist</h2>' + parts[0].lead + '</div>' + parts[0].rest + '</section>' + rest + '</section>';
+  }
+
+  function calendarTable(rows) {
+    var body = rows.map(function (row) {
+      return '<tr><td>' + esc(row.when) + '</td><td>' + esc(row.text) + '</td></tr>';
+    }).join('');
+    return '<table class="print-calendar"><thead><tr><th>When</th><th>Notice or filing</th></tr></thead><tbody>' + body + '</tbody></table>';
+  }
+
+  function calendarSection(rows) {
+    var heading = '<h2>Notice and filing calendar</h2>';
+    if (!rows.length) {
+      return '<section class="print-section print-keep">' + heading + '<p class="print-empty">No dated notices or filings came up in these answers.</p></section>';
+    }
+    if (rows.length <= SHORT_CALENDAR) {
+      return '<section class="print-section print-keep">' + heading + calendarTable(rows) + '</section>';
+    }
+    return '<section class="print-section print-calendar-long"><div class="print-keep">' + heading + calendarTable(rows.slice(0, 3)) + '</div>' + calendarTable(rows.slice(3)) + '</section>';
+  }
+
   function render(model) {
     model = model || {};
     var prepared = model.company
@@ -127,23 +187,6 @@
       return '<li class="print-priority"><span class="print-rank">' + (index + 1) + '</span><div><strong>' + esc(item.title) + '</strong><p>' + esc(item.finding) + '</p></div></li>';
     }).join('');
     if (!priorities) priorities = '<li class="print-priority"><div><p>Nothing in these answers needs action right now. The notes below are still worth a look.</p></div></li>';
-    var groups = GROUP_ORDER.map(function (key) {
-      var rows = (model.items || []).filter(function (item) { return item.status === key; });
-      if (!rows.length) return '';
-      var list = rows.map(function (item) {
-        return '<li class="print-item"><span class="print-box" aria-hidden="true"></span><div><strong>' + esc(item.title) + '</strong><p>' + esc(item.action) + '</p></div></li>';
-      }).join('');
-      return '<section class="print-group"><h3>' + esc(GROUP_LABEL[key]) + '</h3><ul class="print-checks">' + list + '</ul></section>';
-    }).join('');
-    var calendar = '';
-    if ((model.calendar || []).length) {
-      var body = model.calendar.map(function (row) {
-        return '<tr><td>' + esc(row.when) + '</td><td>' + esc(row.text) + '</td></tr>';
-      }).join('');
-      calendar = '<table class="print-calendar"><thead><tr><th>When</th><th>Notice or filing</th></tr></thead><tbody>' + body + '</tbody></table>';
-    } else {
-      calendar = '<p class="print-empty">No dated notices or filings came up in these answers.</p>';
-    }
     var steps = nextSteps(model).map(function (line) {
       return '<li>' + esc(line) + '</li>';
     }).join('');
@@ -153,14 +196,14 @@
         prepared +
         '<p class="print-date">Printed ' + esc(model.printed || printedDate()) + '</p>' +
       '</header>' +
-      '<section class="print-section"><h2>Readiness</h2>' + score +
+      '<section class="print-section print-keep"><h2>Readiness</h2>' + score +
         '<p class="print-label">' + esc(model.label || '') + '</p>' +
         '<p>' + esc(model.sub || '') + '</p></section>' +
-      '<section class="print-section"><h2>Top 3 priorities</h2><ol class="print-priorities">' + priorities + '</ol></section>' +
-      '<section class="print-section"><h2>Findings checklist</h2>' + groups + '</section>' +
-      '<section class="print-section"><h2>Notice and filing calendar</h2>' + calendar + '</section>' +
-      '<section class="print-section print-next"><h2>Next steps</h2><ul>' + steps + '</ul></section>' +
-      '<section class="print-contact">' +
+      '<section class="print-section print-keep"><h2>Top 3 priorities</h2><ol class="print-priorities">' + priorities + '</ol></section>' +
+      findingsSection(model.items) +
+      calendarSection(model.calendar || []) +
+      '<section class="print-section print-next print-keep"><h2>Next steps</h2><ul>' + steps + '</ul></section>' +
+      '<section class="print-contact print-keep">' +
         '<h2>Talk with DK Benefits</h2>' +
         '<p>Daniel Kirves, Benefits Broker | DK Benefits</p>' +
         '<p>407-476-5076</p>' +
@@ -170,7 +213,7 @@
         '<p>Agency Lic# L109331</p>' +
         '<p class="print-offer">DK Benefits clients get COBRA notice handling at no extra cost, and you keep the 2% admin fee.</p>' +
       '</section>' +
-      '<p class="print-disclaimer">This checkup is general information, not legal, tax, or ERISA advice. Confirm current requirements before you file or change a plan.</p>';
+      '<p class="print-disclaimer print-keep">This checkup is general information, not legal, tax, or ERISA advice. Confirm current requirements before you file or change a plan.</p>';
   }
 
   function host() {

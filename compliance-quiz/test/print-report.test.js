@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const http = require('node:http');
+const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 
@@ -17,6 +18,13 @@ test('print report source has no em dashes, prices, or hard-coded years', () => 
   assert.equal(/\b20\d{2}\b/.test(source), false);
   assert.match(CSS, /size:\s*letter portrait/);
   assert.match(CSS, /DK Benefits Benefits Compliance Checkup \| Page " counter\(page\) " of " counter\(pages\)/);
+  assert.match(CSS, /\.print-keep[\s\S]*break-inside:\s*avoid/);
+  assert.match(CSS, /\.print-keep[\s\S]*page-break-inside:\s*avoid/);
+  assert.match(CSS, /page-break-after:\s*avoid/);
+  assert.match(CSS, /display:\s*table-header-group/);
+  const live = fs.readFileSync(path.join(ROOT, 'compliance-assessment.html'), 'utf8');
+  assert.match(live, /print-report\.js/);
+  assert.match(live, /print-report\.css/);
   const preview = fs.readFileSync(path.join(ROOT, 'compliance-assessment-preview.html'), 'utf8');
   assert.match(preview, /print-report\.js/);
   assert.match(preview, /print-report\.css/);
@@ -95,6 +103,57 @@ function findChrome() {
   return '';
 }
 
+const HEADING_LINES = new Set([
+  'Readiness',
+  'Top 3 priorities',
+  'Findings checklist',
+  'Action needed',
+  'Confirm',
+  'In place',
+  'Notes',
+  'Notice and filing calendar',
+  'Next steps',
+  'Talk with DK Benefits',
+  'When',
+  'When Notice or filing'
+]);
+
+function pageIndex(pages, needle) {
+  return pages.findIndex((page) => page.includes(needle));
+}
+
+function assertHeadingsStay(text, label) {
+  const pages = text.split('\f');
+  if (pages.length && !pages[pages.length - 1].trim()) pages.pop();
+  pages.forEach((page, index) => {
+    const lines = page.split('\n').map((line) => line.replace(/\s+/g, ' ').trim()).filter((line) => {
+      return line && line.indexOf('DK Benefits Benefits Compliance Checkup | Page') !== 0;
+    });
+    const last = lines[lines.length - 1] || '';
+    assert.equal(HEADING_LINES.has(last), false, label + ' page ' + (index + 1) + ' ends on a heading: ' + last);
+  });
+  return pages;
+}
+
+async function printPdf(page, pdfPath) {
+  await page.emulateMediaType('print');
+  await page.pdf({ path: pdfPath, printBackground: true, preferCSSPageSize: true });
+  return execFileSync('pdftotext', ['-layout', pdfPath, '-'], { encoding: 'utf8' });
+}
+
+async function answerPlan(page, plan) {
+  for (let step = 0; step < 40; step += 1) {
+    if (await page.$('#results-title')) return;
+    const question = await page.$eval('#q-text', (el) => el.textContent);
+    const match = plan.find((item) => question.includes(item.q));
+    if (!match) throw new Error('No answer for: ' + question);
+    for (let i = 0; i < match.picks.length; i += 1) await choose(page, match.picks[i]);
+    await page.click('[data-action="next"]');
+    await new Promise((resolve) => setTimeout(resolve, 40));
+  }
+  throw new Error('Quiz did not reach results');
+}
+
 async function choose(page, label) {
   const missing = await page.evaluate((wanted) => {
     const buttons = Array.from(document.querySelectorAll('.option'));
@@ -162,6 +221,32 @@ test('print report is a checklist document, not a copy of the screen', async (t)
     assert.match(fixture.html, /Put the notice in the new-hire packet/);
     assert.match(fixture.html, /<table class="print-calendar">/);
     assert.match(fixture.html, /Mar 31/);
+    assert.match(fixture.html, /<section class="print-section print-keep"><h2>Notice and filing calendar<\/h2><table class="print-calendar">/);
+    assert.match(fixture.html, /<div class="print-keep"><h2>Findings checklist<\/h2><section class="print-group print-keep">/);
+    assert.match(fixture.withCompany, /<section class="print-section print-keep"><h2>Notice and filing calendar<\/h2><p class="print-empty">/);
+    const longItems = [];
+    for (let n = 1; n <= 5; n += 1) {
+      longItems.push({ title: 'Action item ' + n, status: 'actionNeeded', action: 'Do the work for item ' + n + '.' });
+    }
+    const longCalendar = [];
+    for (let n = 1; n <= 9; n += 1) {
+      longCalendar.push({ when: 'Day ' + n, text: 'Filing row ' + n + ' stays with its own line.' });
+    }
+    const longHtml = await page.evaluate((items, calendar) => {
+      return window.DKPrint.render({
+        company: '',
+        printed: window.DKPrint.printedDate(),
+        score: '2',
+        label: 'Significant gaps',
+        sub: 'Several items need action.',
+        priorities: [{ title: 'Action item 1', finding: 'This one comes first.', status: 'Action needed' }],
+        items: items,
+        calendar: calendar
+      });
+    }, longItems, longCalendar);
+    assert.match(longHtml, /<div class="print-keep"><h2>Findings checklist<\/h2><h3>Action needed<\/h3><ul class="print-checks"><li class="print-item">[\s\S]*Action item 1[\s\S]*<\/ul><\/div><ul class="print-checks">[\s\S]*Action item 5/);
+    assert.match(longHtml, /<div class="print-keep"><h2>Notice and filing calendar<\/h2><table class="print-calendar">[\s\S]*Filing row 1[\s\S]*Filing row 3[\s\S]*<\/table><\/div><table class="print-calendar">[\s\S]*Filing row 4[\s\S]*Filing row 9/);
+    assert.doesNotMatch(longHtml.split('print-calendar-long')[1].split('</table>')[0], /Filing row 4/);
     assert.match(fixture.html, /Daniel Kirves, Benefits Broker \| DK Benefits/);
     assert.match(fixture.html, /407-476-5076/);
     assert.match(fixture.html, /dan@dkbenefits\.net/);
@@ -216,6 +301,60 @@ test('print report is a checklist document, not a copy of the screen', async (t)
     assert.equal(shown.reportStyle, 'block');
     assert.equal(shown.quizStyle, 'none');
     assert.equal(shown.buttonStyle, 'none');
+
+    if (commandOnPath('pdftotext')) {
+      const pdfDir = fs.mkdtempSync(path.join(os.tmpdir(), 'print-report-'));
+      const smallText = await printPdf(page, path.join(pdfDir, 'small.pdf'));
+      const smallPages = assertHeadingsStay(smallText, 'no benefits');
+      assert.equal(pageIndex(smallPages, 'Notice and filing calendar'), pageIndex(smallPages, 'No dated notices'));
+
+      await page.evaluate(() => {
+        const calendar = Array.from(document.querySelectorAll('h2')).find((heading) => heading.textContent === 'Notice and filing calendar');
+        const block = calendar.closest('section');
+        const spacer = document.createElement('p');
+        spacer.className = 'print-spacer';
+        spacer.textContent = 'File note. '.repeat(230);
+        block.parentNode.insertBefore(spacer, block);
+        const html = document.getElementById('print-report').innerHTML;
+        // Printing rebuilds the report from the quiz, so restore the filler after that.
+        window.addEventListener('beforeprint', () => {
+          document.getElementById('print-report').innerHTML = html;
+        });
+      });
+      const squeezed = assertHeadingsStay(await printPdf(page, path.join(pdfDir, 'squeezed.pdf')), 'squeezed calendar');
+      const calendarPage = pageIndex(squeezed, 'Notice and filing calendar');
+      assert.equal(calendarPage, pageIndex(squeezed, 'No dated notices'));
+      assert.ok(calendarPage > 0, 'calendar heading stayed on page 1 beside a spacer that should have moved the section');
+
+      const benefits = await browser.newPage();
+      await benefits.goto('http://127.0.0.1:' + port + '/compliance-assessment-preview.html', { waitUntil: 'networkidle0' });
+      await answerPlan(benefits, [
+        { q: 'currently offer', picks: ['Yes. We currently offer benefits'] },
+        { q: 'full-time employees', picks: ['50 or more'] },
+        { q: 'kind of employer', picks: ['Private or other employer'] },
+        { q: 'Which benefits', picks: ['Medical', 'Dental/Vision', 'Health FSA'] },
+        { q: 'medical plan funded', picks: ['Fully insured through a carrier'] },
+        { q: 'written ERISA plan document', picks: ['No. We do not have one'] },
+        { q: 'Summary Plan Description', picks: ['No. Employees have not received an SPD'] },
+        { q: 'Summary of Benefits', picks: ['No. Employees have not received an SBC'] },
+        { q: 'contribute toward benefits', picks: ['Yes. Employees contribute through payroll'] },
+        { q: 'taken pre-tax', picks: ['Yes. Deductions are pre-tax'] },
+        { q: 'cafeteria plan', picks: ['No. We do not have one'] },
+        { q: 'Notices and filings', picks: ['None of these yet'] },
+        { q: 'Marketplace coverage notice', picks: ['No. We do not provide this notice'] },
+        { q: 'RxDC', picks: ['No'] },
+        { q: 'gag clause', picks: ['No'] },
+        { q: 'COBRA notices', picks: ['No one is handling it'] },
+        { q: 'following apply', picks: ['None of these apply'] },
+        { q: 'enrolled in at least one benefit', picks: ['Fewer than 100 enrolled'] }
+      ]);
+      await benefits.waitForSelector('#results-title');
+      await benefits.evaluate(() => window.DKPrint.mount());
+      const benefitsText = await printPdf(benefits, path.join(pdfDir, 'benefits.pdf'));
+      const benefitsPages = assertHeadingsStay(benefitsText, 'benefits 50+');
+      assert.equal(pageIndex(benefitsPages, 'Notice and filing calendar'), pageIndex(benefitsPages, 'NOTICE OR FILING'));
+      await benefits.close();
+    }
   } finally {
     await browser.close();
     await new Promise((resolve) => server.close(resolve));
