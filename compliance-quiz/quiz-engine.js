@@ -4,7 +4,7 @@
  * Fixed notice dates (Oct 15, Dec 31, Mar 2, Jun 1, Jul 31) are intentional.
  */
 var DKQuiz = (function () {
-  var VERSION = '4.0.0';
+  var VERSION = '4.1.0';
 
   var URLS = {
     wrap: 'https://www.dkbenefits.net/wrap-plan-document-tool',
@@ -88,7 +88,8 @@ var DKQuiz = (function () {
         { value: 'no', label: 'No. Most employees are full-time' },
         { value: 'notSure', label: 'Not sure' }
       ],
-      required: true
+      required: true,
+      showIf: function (a) { return a.employeeCount !== '50plus'; }
     },
     {
       id: 'employerType',
@@ -254,10 +255,13 @@ var DKQuiz = (function () {
     },
     {
       id: 'noticesSent',
-      text: 'Notices you send',
-      helper: 'These apply when you offer medical coverage. Select each one you already send.',
+      text: 'Notices and filings',
+      helper: 'These apply when you offer medical coverage. Select each one you already send. CMS has revised its creditable-coverage test; ask your carrier or TPA whether the plan is still creditable before sending the notice.',
       multiSelect: true,
-      options: NOTICE_ITEMS.concat([{ value: 'none', label: 'None of these yet', exclusive: true }]),
+      options: NOTICE_ITEMS.concat([
+        { value: 'none', label: 'None of these yet', exclusive: true },
+        { value: 'notSure', label: 'Not sure', exclusive: true }
+      ]),
       required: true,
       needs: ['benefitsOffered'],
       showIf: function (a) { return medical(a); }
@@ -305,7 +309,7 @@ var DKQuiz = (function () {
     {
       id: 'hraNotice',
       text: 'Have employees received the notice required for your HRA, ICHRA, or QSEHRA?',
-      helper: 'These arrangements need their own employee notice. An HRA is self-funded even when the medical plan is insured.',
+      helper: 'An ICHRA or QSEHRA needs a written notice 90 days before the plan year. A standard HRA needs a plan document and an SPD.',
       options: [
         { value: 'yes', label: 'Yes. Employees received the notice' },
         { value: 'no', label: 'No. They have not received it' },
@@ -375,8 +379,8 @@ var DKQuiz = (function () {
         { value: 'none', label: 'None of these apply', exclusive: true }
       ],
       required: true,
-      needs: ['offerBenefits'],
-      showIf: function (a) { return offersBenefits(a); }
+      needs: ['offerBenefits', 'employerType'],
+      showIf: function (a) { return offersBenefits(a) && erisaEmployer(a); }
     },
     {
       id: 'enrolledCount',
@@ -388,8 +392,10 @@ var DKQuiz = (function () {
         { value: 'notSure', label: 'Not sure' }
       ],
       required: true,
-      needs: ['offerBenefits'],
-      showIf: function (a) { return offersBenefits(a); }
+      needs: ['offerBenefits', 'employerType', 'employeeCount'],
+      showIf: function (a) {
+        return offersBenefits(a) && erisaEmployer(a) && a.employeeCount !== 'under20';
+      }
     },
     {
       id: 'nobenGrowth',
@@ -436,6 +442,7 @@ var DKQuiz = (function () {
       dcap: offersBenefits(answers) && hasBenefit(answers, 'dcap'),
       hsa: offersBenefits(answers) && hasBenefit(answers, 'hsa'),
       life: offersBenefits(answers) && hasBenefit(answers, 'lifeDisability'),
+      wellness: offersBenefits(answers) && hasBenefit(answers, 'wellness'),
       hasContrib: answers.employeeContrib === 'yes',
       pretaxYes: answers.pretax === 'yes',
       pretaxNo: answers.pretax === 'no',
@@ -452,7 +459,7 @@ var DKQuiz = (function () {
   }
 
   function determineForm5500(answers, flags) {
-    if (!flags.offersBenefits) return { status: 'notApplicable', note: '' };
+    if (!flags.offersBenefits || !flags.erisa) return { status: 'notApplicable', note: '' };
     if (flags.hasMewa) {
       return { status: 'required', reason: 'mewa', note: 'Confirm your association plan files its Form M-1 and Form 5500.' };
     }
@@ -462,7 +469,10 @@ var DKQuiz = (function () {
     if (answers.enrolledCount === '100plus') {
       return { status: 'required', reason: 'enrolled', note: '100 or more employees were enrolled on the first day of the plan year.' };
     }
-    if (answers.enrolledCount === 'under100') {
+    if (answers.employeeCount === 'under20' && !flags.hasPrior5500) {
+      return { status: 'notRequired', note: '' };
+    }
+    if (answers.enrolledCount === 'under100' || answers.employeeCount === 'under20') {
       if (flags.hasPrior5500) {
         return { status: 'confirm', note: 'You have filed Form 5500 before. Confirm whether a filing is still required.' };
       }
@@ -492,10 +502,13 @@ var DKQuiz = (function () {
   function computeReadiness(answers, flags, form5500) {
     var n = 10;
     if (!flags.offersBenefits) {
-      if (flags.ale === 'ale') n -= 2;
-      else if (flags.ale === 'confirmAle' || flags.ale === 'confirmSize') n -= 1.5;
-      n = deductUnsure(n, answers.exchangeNotice, 1, 1);
-      return readinessFor(n);
+      if (flags.ale === 'ale') return readinessFor(3);
+      return {
+        score: null,
+        label: 'Not applicable',
+        className: 'score-na',
+        sub: 'A readiness score starts once a plan is in place. The notes below still cover size and the Marketplace notice.'
+      };
     }
     if (!flags.erisa) {
       if (answers.wrapPlanInPlace === 'notSure') n -= 1;
@@ -517,7 +530,8 @@ var DKQuiz = (function () {
 
     if (flags.medicalOffered) {
       var sent = Array.isArray(answers.noticesSent) ? answers.noticesSent : [];
-      if (!sent.length || sent.indexOf('none') !== -1) n -= 2;
+      if (sent.indexOf('notSure') !== -1) n -= 1;
+      else if (!sent.length || sent.indexOf('none') !== -1) n -= 2;
       else {
         var missing = NOTICE_ITEMS.filter(function (item) { return sent.indexOf(item.value) === -1; }).length;
         if (missing) n -= Math.min(2, missing);
@@ -540,8 +554,11 @@ var DKQuiz = (function () {
     if (flags.ale === 'confirmAle' || flags.ale === 'confirmSize') n -= 1.5;
     if (flags.selfOrLevel) n = deductUnsure(n, answers.hipaaPrivacy, 1, 1);
     if (flags.hra) n = deductUnsure(n, answers.hraNotice, 1, 1);
+    if (flags.medicalOffered && answers.medicalFunding === 'notSure') n -= 1;
+    if ((flags.healthFsa || flags.dcap) && flags.pretaxNo) n -= 1.5;
     if (form5500.status === 'required' && !flags.hasPrior5500) n -= 1.5;
-    else if (form5500.status === 'confirm' || form5500.status === 'required') n -= 1;
+    else if (form5500.status === 'confirm') n -= 1;
+    if (flags.ale === 'ale' && !flags.medicalOffered && n > 3) n = 3;
     return readinessFor(n);
   }
 
@@ -563,7 +580,7 @@ var DKQuiz = (function () {
 
   function missingNotices(answers) {
     var sent = Array.isArray(answers.noticesSent) ? answers.noticesSent : [];
-    if (!sent.length || sent.indexOf('none') !== -1) return NOTICE_ITEMS.slice();
+    if (!sent.length || sent.indexOf('none') !== -1 || sent.indexOf('notSure') !== -1) return NOTICE_ITEMS.slice();
     return NOTICE_ITEMS.filter(function (item) { return sent.indexOf(item.value) === -1; });
   }
 
@@ -620,18 +637,32 @@ var DKQuiz = (function () {
       summary = 'State continuation rules differ. Confirm whether your state requires it, which plans are covered, and who sends notices.';
       action = 'Federal COBRA often does not apply under 20 employees. Confirm whether your state requires continuation, which plans are covered, and who sends notices.';
     }
-    var status = 'confirm';
+    var flInsuredSmall = state === 'FL' && answers.medicalFunding === 'fullyInsured' && flags.empCount === 'under20';
+    var status = flInsuredSmall ? 'note' : 'confirm';
     return card({
       key: 'state_cobra',
       title: 'State continuation',
       status: status,
-      exposure: 64,
+      exposure: flInsuredSmall ? 0 : 64,
       summary: summary,
       description: 'Many states require continuation coverage for groups below the federal COBRA threshold. Duration, premiums, and which plans are covered vary.',
       finding: flags.empCount === 'notSure'
         ? 'Headcount is not confirmed, so state continuation may matter if the group is under the federal threshold.'
         : 'This group looks small enough that state continuation may be the rule that applies.',
       action: action
+    });
+  }
+
+  function acaReportingCard() {
+    return card({
+      key: 'aca_reporting',
+      title: 'ACA reporting',
+      status: 'confirm',
+      exposure: 68,
+      summary: 'Forms 1094-C and 1095-C. IRS e-file is due Mar 31. Furnish Form 1095-C in early March, or post the allowed notice.',
+      description: 'Applicable large employers file Form 1094-C with the IRS and furnish Form 1095-C to full-time employees. Electronic filing with the IRS is due Mar 31. Furnish the employee statement in early March, or post the allowed notice instead of handing a form to every employee.',
+      finding: 'The group looks like an applicable large employer, so this reporting applies.',
+      action: 'Put Mar 31 on the calendar for the IRS e-file, and early March for furnishing Form 1095-C or posting the notice.'
     });
   }
 
@@ -687,7 +718,23 @@ var DKQuiz = (function () {
           finding: flags.church
             ? 'Church plans are generally not subject to federal COBRA.'
             : 'You are not offering benefits yet. COBRA becomes a live duty when coverage starts, if the group is large enough.',
-          action: 'Confirm the count before you assume COBRA will not apply. The employer notifies the administrator within 30 days, and the administrator sends the election notice within 14 days. An employer that administers its own plan has 44 days total.'
+          action: 'Confirm the count before you assume COBRA will not apply. The employer notifies the administrator within 30 days, and the administrator sends the election notice within 14 days. An employer that administers its own plan has 44 days total. DK Benefits clients get COBRA notice handling at no extra cost, and you keep the 2% admin fee.'
+        }));
+      }
+      if (flags.ale === 'ale') cards.push(acaReportingCard());
+      if (answers.nobenGrowth === 'yes' || answers.nobenGrowth === 'notSure') {
+        cards.push(card({
+          key: 'growth',
+          title: 'Plan ahead for hiring',
+          status: 'note',
+          exposure: 0,
+          summary: 'Hiring can move ACA and COBRA size before the next renewal.',
+          description: 'Full-time count and full-time equivalents should be checked again as the workforce grows.',
+          finding: answers.nobenGrowth === 'yes'
+            ? 'You expect significant hiring over the next year.'
+            : 'Hiring plans are not settled.',
+          action: 'Recheck size before you assume ACA or COBRA still sits where it does today.',
+          cta: toolCta('quote', 'See group medical quotes')
         }));
       }
       if (answers.nobenCompetition === 'yes') {
@@ -705,6 +752,8 @@ var DKQuiz = (function () {
       }
       return cards;
     }
+
+    cards.push(buildExchangeCard(answers));
 
     if (!flags.erisa) {
       cards.push(card({
@@ -787,20 +836,25 @@ var DKQuiz = (function () {
       }));
 
       var missing = missingNotices(answers);
-      var noticeStatus = missing.length ? (missing.length === NOTICE_ITEMS.length ? 'actionNeeded' : 'confirm') : 'inPlace';
+      var noticesUnsure = Array.isArray(answers.noticesSent) && answers.noticesSent.indexOf('notSure') !== -1;
+      var noticeStatus = noticesUnsure ? 'confirm' : missing.length ? (missing.length === NOTICE_ITEMS.length ? 'actionNeeded' : 'confirm') : 'inPlace';
       cards.push(card({
         key: 'annual_notices',
-        title: 'Notices you send',
+        title: 'Notices and filings',
         status: noticeStatus,
         exposure: noticeStatus === 'actionNeeded' ? 76 : noticeStatus === 'confirm' ? 50 : 0,
-        summary: missing.length
-          ? 'Still open: ' + missing.map(function (item) { return item.label; }).join('; ') + '.'
-          : 'The medical notices on the checklist are marked as sent.',
+        summary: noticesUnsure
+          ? 'The notice checklist was not confirmed.'
+          : missing.length
+            ? 'Still open: ' + missing.map(function (item) { return item.label; }).join('; ') + '.'
+            : 'The medical notices on the checklist are marked as sent.',
         description: 'Medical plans generally send a Part D notice by Oct 15, a Part D disclosure to CMS within 60 days of the plan year start, a CHIP notice, a WHCRA notice, and a HIPAA special enrollment notice at enrollment.',
-        finding: missing.length
-          ? 'One or more of those notices was not marked as sent.'
-          : 'Each notice on the checklist was marked as sent.',
-        action: 'Put the dated items on a calendar and keep a copy of what went out.',
+        finding: noticesUnsure
+          ? 'You were not sure which notices go out.'
+          : missing.length
+            ? 'One or more of those notices was not marked as sent.'
+            : 'Each notice on the checklist was marked as sent.',
+        action: 'CMS has revised its creditable-coverage test; ask your carrier or TPA whether the plan is still creditable before sending the notice. Put the dated items on a calendar and keep a copy of what went out.',
         links: [
           link(URLS.partD, 'CMS Part D model notices', 'Choose the creditable or non-creditable version that matches the plan.'),
           link(URLS.chip, 'DOL CHIP model notice', 'State contact details on the model change from time to time.'),
@@ -853,17 +907,28 @@ var DKQuiz = (function () {
           : 'For an insured plan, the carrier usually files. Ask for written confirmation.'
       }));
 
+      var smallSelfFunded = flags.selfOrLevel && (flags.empCount === 'under20' || flags.empCount === '20to49');
       cards.push(card({
         key: 'parity',
         title: 'Mental health parity analysis',
-        status: 'confirm',
-        exposure: 36,
-        summary: 'Your plan should have a written NQTL comparative analysis available on request.',
-        description: 'A written comparative analysis of nonquantitative treatment limits is required for insured and self-funded medical plans.',
-        finding: flags.selfOrLevel
-          ? 'Self-funded and level-funded plans should be able to produce the analysis.'
-          : 'The carrier usually prepares the analysis for an insured plan.',
-        action: 'Your plan should have a written NQTL comparative analysis available on request. Ask the carrier for the insured-plan version, or confirm the TPA has it for a self-funded or level-funded plan.'
+        status: smallSelfFunded ? 'note' : 'confirm',
+        exposure: smallSelfFunded ? 0 : 36,
+        summary: smallSelfFunded
+          ? 'Small self-funded and level-funded plans are generally exempt from the written NQTL analysis.'
+          : 'Your plan should have a written NQTL comparative analysis available on request.',
+        description: smallSelfFunded
+          ? 'Self-funded and level-funded medical plans under 50 employees are generally exempt from the comparative analysis requirement. The exemption should be confirmed if the group grows.'
+          : 'A written comparative analysis of nonquantitative treatment limits is required for insured plans and for larger self-funded plans.',
+        finding: smallSelfFunded
+          ? 'This group is under 50 and the medical plan is self-funded or level-funded.'
+          : flags.selfOrLevel
+            ? 'Self-funded and level-funded plans at this size should be able to produce the analysis.'
+            : 'The carrier usually prepares the analysis for an insured plan.',
+        action: smallSelfFunded
+          ? 'Confirm the small-plan exemption still fits. If the group reaches 50 employees, ask for the written analysis.'
+          : flags.selfOrLevel
+            ? 'Your plan should have a written NQTL comparative analysis available on request. Confirm the TPA has it.'
+            : 'The carrier usually prepares the analysis for an insured plan. Ask for a copy.'
       }));
     }
 
@@ -922,14 +987,15 @@ var DKQuiz = (function () {
         title: 'HRA notice',
         status: hraStatus,
         exposure: hraStatus === 'actionNeeded' ? 62 : hraStatus === 'confirm' ? 42 : 0,
-        summary: 'ICHRA, QSEHRA, and other HRA notices go to eligible employees.',
-        description: 'An HRA, ICHRA, or QSEHRA needs its own employee notice. The notice is separate from the medical SBC.',
+        summary: 'An ICHRA or QSEHRA needs a written notice 90 days before the plan year. A standard HRA needs a plan document and an SPD.',
+        description: 'ICHRA and QSEHRA arrangements need their own written employee notice at least 90 days before the plan year starts. A standard HRA is documented in the plan document and the SPD, often through a wrap document.',
         finding: answers.hraNotice === 'yes'
           ? 'You confirmed the HRA notice went out.'
           : answers.hraNotice === 'no'
             ? 'Employees have not received the HRA notice.'
             : 'The HRA notice was not confirmed.',
-        action: 'Confirm the notice that matches the arrangement you offer, and keep proof it was delivered.'
+        action: 'For an ICHRA or QSEHRA, deliver the written notice at least 90 days before the plan year. For a standard HRA, keep the plan document and SPD current. The wrap plan tool can draft that document.',
+        cta: hraStatus === 'inPlace' ? null : toolCta('wrap', 'Open the wrap plan tool')
       }));
     }
 
@@ -945,13 +1011,17 @@ var DKQuiz = (function () {
         action: 'You could save payroll taxes with a Section 125 premium-only plan. Without a written plan, pre-tax deductions can be treated as taxable wages for income tax and FICA.',
         cta: toolCta('section125', 'Open the Section 125 tool')
       }));
-    } else if (flags.pretaxYes || flags.healthFsa || flags.dcap || flags.hsa) {
+    }
+    if (flags.pretaxYes || flags.healthFsa || flags.dcap || flags.hsa) {
+      var needsWrittenForAccount = flags.pretaxNo && (flags.healthFsa || flags.dcap);
       var s125Status = 'confirm';
       var s125Finding = 'Confirm the written cafeteria plan and the annual tests.';
       var s125Exposure = 40;
-      if (answers.section125InPlace === 'no') {
+      if (needsWrittenForAccount || answers.section125InPlace === 'no') {
         s125Status = 'actionNeeded';
-        s125Finding = 'Pre-tax deductions are running without a written Section 125 plan.';
+        s125Finding = needsWrittenForAccount
+          ? 'A health FSA or dependent care FSA needs a written Section 125 plan, even when premiums are post-tax.'
+          : 'Pre-tax deductions are running without a written Section 125 plan.';
         s125Exposure = 86;
       } else if (answers.section125InPlace === 'notSure' || flags.pretaxNotSure) {
         s125Finding = 'It is not clear that a written Section 125 plan is in place.';
@@ -968,11 +1038,19 @@ var DKQuiz = (function () {
         s125Finding = 'A written plan is in place and you said it is tested.';
         s125Exposure = 0;
       }
-      var s125Action = 'Section 125 nondiscrimination testing applies to every cafeteria plan. A premium-only plan is treated as passing if it passes the eligibility test.';
+      var s125Action = 'Keep the written plan with the eligibility test results.';
+      if (s125Status === 'actionNeeded' && (needsWrittenForAccount || answers.section125InPlace === 'no')) {
+        s125Action = 'Put a written Section 125 plan in place. Without it, pre-tax deductions and FSA amounts can be treated as taxable wages (income tax and FICA).';
+      } else if (answers.section125Tested === 'no') {
+        s125Action = 'Test the cafeteria plan each year. A premium-only plan is treated as passing if it passes the eligibility test.';
+      } else if (answers.section125InPlace === 'notSure' || flags.pretaxNotSure) {
+        s125Action = 'Confirm a written plan is on file and that it matches the benefits you offer.';
+      } else if (answers.section125Tested === 'notSure' || answers.section125Age === 'over3years' || answers.section125Age === 'notSure') {
+        s125Action = 'Review the written plan against the benefits you offer now, and run the tests.';
+      }
       if (flags.dcap) s125Action += ' A dependent care FSA has its own nondiscrimination test.';
       if (flags.healthFsa) s125Action += ' A health FSA has to be written into the cafeteria plan.';
       if (flags.hsa) s125Action += ' Employee pre-tax HSA contributions generally run through the cafeteria plan.';
-      s125Action += ' Without a written plan, pre-tax deductions can be treated as taxable wages (income tax and FICA).';
       cards.push(card({
         key: 'sec125',
         title: 'Section 125 plan',
@@ -997,18 +1075,22 @@ var DKQuiz = (function () {
         finding: flags.medicalOffered
           ? 'You offer medical coverage. Confirm it is offered widely enough to full-time employees.'
           : 'Medical coverage is not offered, and the group looks like an applicable large employer.',
-        action: 'Confirm who is full-time and who received an offer of medical coverage. This is separate from the affordability penalty.'
+        action: 'Confirm who is full-time and who received an offer of medical coverage. This is separate from the affordability penalty.',
+        cta: flags.medicalOffered ? null : toolCta('quote', 'See group medical quotes')
       }));
-      cards.push(card({
-        key: 'aca_4980h_b',
-        title: 'ACA affordability penalty',
-        status: 'confirm',
-        exposure: flags.medicalOffered ? 49 : 90,
-        summary: 'A second penalty can apply when coverage is unaffordable or not minimum value and a full-time employee gets a premium tax credit.',
-        description: 'The affordability penalty is not the same as the offer penalty. It can apply when coverage fails affordability or minimum value and a full-time employee receives a premium tax credit.',
-        finding: 'Affordability and minimum value were not confirmed in this checkup.',
-        action: 'The affordability measure is indexed. Confirm the current figure and the safe harbor you use with your advisor. Do not rely on a percentage printed in an old checklist.'
-      }));
+      if (flags.medicalOffered) {
+        cards.push(card({
+          key: 'aca_4980h_b',
+          title: 'ACA affordability penalty',
+          status: 'confirm',
+          exposure: 49,
+          summary: 'A second penalty can apply when coverage is unaffordable or not minimum value and a full-time employee gets a premium tax credit.',
+          description: 'The affordability penalty is not the same as the offer penalty. It can apply when coverage fails affordability or minimum value and a full-time employee receives a premium tax credit.',
+          finding: 'Affordability and minimum value were not confirmed in this checkup.',
+          action: 'The affordability measure is indexed. Confirm the current figure and the safe harbor you use with your advisor. Do not rely on a percentage printed in an old checklist.'
+        }));
+      }
+      cards.push(acaReportingCard());
     } else if (flags.ale === 'confirmAle') {
       cards.push(card({
         key: 'confirm_ale',
@@ -1020,7 +1102,8 @@ var DKQuiz = (function () {
         finding: flags.empCount === '20to49'
           ? 'You reported 20 to 49 full-time employees, with part-time hours that are significant or not confirmed.'
           : 'Full-time headcount is under 20, and part-time hours are significant or not confirmed.',
-        action: 'Finish the full-time-equivalent count before you treat the employer mandate as off.'
+        action: 'Finish the full-time-equivalent count before you treat the employer mandate as off.',
+        cta: toolCta('quote', 'See group medical quotes')
       }));
     } else if (flags.ale === 'confirmSize') {
       cards.push(card({
@@ -1032,6 +1115,7 @@ var DKQuiz = (function () {
         description: 'ACA size uses full-time equivalents. Federal COBRA uses a different employee count.',
         finding: 'Full-time headcount was marked not sure.',
         action: 'Confirm the counts. Include COBRA in that review if the group may be at 20 employees.',
+        cta: toolCta('quote', 'See group medical quotes')
       }));
     }
 
@@ -1062,7 +1146,7 @@ var DKQuiz = (function () {
           : answers.cobraAdmin === 'notSure' || !answers.cobraAdmin
             ? 'COBRA administration was not confirmed.'
             : 'Someone is assigned to COBRA notices.',
-        action: 'Track qualifying events and keep proof of mailing. A general notice also goes to new enrollees.',
+        action: 'Track qualifying events and keep proof of mailing. A general notice also goes to new enrollees. DK Benefits clients get COBRA notice handling at no extra cost, and you keep the 2% admin fee.',
         links: [
           link(URLS.cobraGeneral, 'DOL model general notice', 'For new enrollees.'),
           link(URLS.cobraElection, 'DOL model election notice', 'For qualifying events.'),
@@ -1073,6 +1157,20 @@ var DKQuiz = (function () {
 
     var continuation = stateCard(answers, flags);
     if (continuation) cards.push(continuation);
+
+    if (flags.medicalOffered && answers.medicalFunding === 'notSure') {
+      cards.push(card({
+        key: 'funding_unsure',
+        title: 'Confirm medical funding',
+        status: 'confirm',
+        exposure: 60,
+        summary: 'If the plan is level-funded, self-funded duties apply.',
+        description: 'Level-funded plans are legally self-funded. That brings the PCORI fee, Section 105(h) testing, a HIPAA privacy notice, gag-clause confirmation, and a closer look at parity.',
+        finding: 'Medical funding was marked not sure.',
+        action: 'Ask the carrier whether the contract is fully insured or level-funded. If it is level-funded, treat it as self-funded for those duties.',
+        cta: toolCta('rbp', 'Open the RBP decision tool')
+      }));
+    }
 
     if (flags.levelFunded || flags.selfFunded) {
       cards.push(card({
@@ -1089,20 +1187,39 @@ var DKQuiz = (function () {
     }
 
     if (form5500.status === 'required' || form5500.status === 'confirm') {
+      var filedBefore = form5500.status === 'required' && flags.hasPrior5500;
+      var f5500Status = filedBefore ? 'inPlace' : form5500.status === 'required' ? 'actionNeeded' : 'confirm';
       cards.push(card({
         key: 'form5500',
         title: 'Form 5500',
-        status: form5500.status === 'required' && !flags.hasPrior5500 ? 'actionNeeded' : 'confirm',
-        exposure: form5500.status === 'required' ? 90 : 57,
+        status: f5500Status,
+        exposure: f5500Status === 'inPlace' ? 0 : form5500.status === 'required' ? 90 : 57,
         summary: flags.hasMewa
           ? 'Confirm your association plan files its Form M-1 and Form 5500.'
-          : 'Filing follows enrolled participants, a trust, or a MEWA. It does not follow headcount.',
-        description: 'Form 5500 is an annual filing. It is generally required at 100 enrolled participants on the first day of the plan year, when the plan is funded through a trust, or for a MEWA.',
-        finding: form5500.note || 'Confirm whether a filing is required.',
+          : filedBefore
+            ? 'Form 5500 has been filed for this plan. Keep filing it each year.'
+            : 'Filing follows enrolled participants, a trust, or a MEWA. It does not follow headcount.',
+        description: 'Form 5500 is an annual filing. It is generally required at 100 enrolled participants on the first day of the plan year, when the plan is funded through a trust, or for a MEWA. It is due on the last day of the seventh month after the plan year ends. For a calendar-year plan that is Jul 31. Form 5558 extends that due date by 2.5 months.',
+        finding: filedBefore
+          ? 'You have filed Form 5500 for this plan before, and a filing is still required.'
+          : (form5500.note || 'Confirm whether a filing is required.'),
         action: flags.hasMewa
-          ? 'Confirm your association plan files its Form M-1 and Form 5500.'
-          : 'Count employees enrolled in at least one benefit on the first day of the plan year. Employer-paid life usually means everyone is enrolled. A calendar-year plan files on a later fixed schedule. Ask your filer for the current due date.',
+          ? 'Confirm your association plan files its Form M-1 and Form 5500. The return is due on the last day of the seventh month after the plan year ends. Form 5558 extends that due date by 2.5 months.'
+          : 'Count employees enrolled in at least one benefit on the first day of the plan year. Employer-paid life usually means everyone is enrolled. A calendar-year plan is due Jul 31. Form 5558 extends that due date by 2.5 months.',
         links: []
+      }));
+    }
+
+    if (flags.wellness) {
+      cards.push(card({
+        key: 'wellness',
+        title: 'Wellness program',
+        status: 'note',
+        exposure: 0,
+        summary: 'A wellness program that asks health questions needs its own notice.',
+        description: 'Incentive rules and notice duties depend on whether the program asks about health or requires a medical test.',
+        finding: 'You offer a wellness program.',
+        action: 'Confirm the notice and that any incentive stays inside the current rules.'
       }));
     }
 
@@ -1131,27 +1248,63 @@ var DKQuiz = (function () {
   }
 
   function prioritiesFrom(cards) {
+    var rank = { actionNeeded: 0, confirm: 1 };
     return cards.filter(function (item) {
       return item.status === 'actionNeeded' || item.status === 'confirm';
     }).sort(function (a, b) {
+      var byStatus = rank[a.status] - rank[b.status];
+      if (byStatus) return byStatus;
       return (b.exposure || 0) - (a.exposure || 0);
     }).slice(0, 3);
   }
 
-  function buildCalendar(answers, flags) {
+  function calendarStamp(when) {
+    var slots = {
+      'Oct 15': { month: 10, day: 15 },
+      'Dec 31': { month: 12, day: 31 },
+      '60 days': { month: 3, day: 1 },
+      'Mar 2': { month: 3, day: 2 },
+      'Mar 31': { month: 3, day: 31 },
+      'Jun 1': { month: 6, day: 1 },
+      'Jul 31': { month: 7, day: 31 }
+    };
+    return slots[when] || { month: 12, day: 28 };
+  }
+
+  function sortCalendar(items) {
+    var now = new Date();
+    var year = now.getFullYear();
+    var today = new Date(year, now.getMonth(), now.getDate()).getTime();
+    function nextTime(item) {
+      var slot = calendarStamp(item.when);
+      var when = new Date(year, slot.month - 1, slot.day).getTime();
+      if (when < today) when = new Date(year + 1, slot.month - 1, slot.day).getTime();
+      return when;
+    }
+    return items.slice().sort(function (a, b) { return nextTime(a) - nextTime(b); });
+  }
+
+  function buildCalendar(answers, flags, form5500) {
     var items = [];
     if (flags.medicalOffered) {
       items.push({ when: 'Oct 15', text: 'Send the Medicare Part D creditable coverage notice.' });
+      items.push({ when: '60 days', text: 'Send the Medicare Part D disclosure to CMS within 60 days after the plan year starts.' });
       items.push({ when: 'Jun 1', text: 'RxDC report for the prior calendar year is due.' });
       items.push({ when: 'Dec 31', text: 'Gag clause attestation is due. The carrier usually files it for an insured plan. Self-funded and level-funded plans should confirm it.' });
     }
     if (flags.selfOrLevel || flags.hra) {
       items.push({ when: 'Jul 31', text: 'PCORI fee is due for a self-funded plan or an HRA. Confirm the filing.' });
     }
-    if (flags.ale === 'ale' || flags.ale === 'confirmAle' || flags.ale === 'confirmSize') {
-      items.push({ when: 'Mar 2', text: 'Furnish ACA employee statements if you are an applicable large employer.' });
+    if (form5500 && (form5500.status === 'required' || form5500.status === 'confirm')) {
+      items.push({ when: 'Jul 31', text: 'Form 5500 is due for a calendar-year plan. Form 5558 extends the due date by 2.5 months.' });
     }
-    return items;
+    if (flags.ale === 'ale' || flags.ale === 'confirmAle' || flags.ale === 'confirmSize') {
+      items.push({ when: 'Mar 2', text: 'Furnish Form 1095-C in early March, or post the allowed notice, if you are an applicable large employer.' });
+    }
+    if (flags.ale === 'ale') {
+      items.push({ when: 'Mar 31', text: 'IRS e-file for Forms 1094-C and 1095-C is due.' });
+    }
+    return sortCalendar(items);
   }
 
   function buildSnapshot(answers, flags, form5500) {
@@ -1192,7 +1345,8 @@ var DKQuiz = (function () {
       : flags.ale === 'confirmAle' ? 'Confirm ALE status'
       : flags.ale === 'confirmSize' ? 'Confirm your size'
       : 'Likely does not apply';
-    var f5500Value = form5500.status === 'required' ? 'Likely required'
+    var f5500Value = form5500.status === 'required' && flags.hasPrior5500 ? 'In place'
+      : form5500.status === 'required' ? 'Likely required'
       : form5500.status === 'notRequired' ? 'Likely not required'
       : form5500.status === 'notApplicable' ? 'Not applicable'
       : 'Confirm';
@@ -1201,7 +1355,7 @@ var DKQuiz = (function () {
         { label: 'Plan type', value: funding, status: flags.medicalOffered ? 'neutral' : 'warn' },
         { label: 'Full-time count', value: flags.empCount === 'under20' ? 'Under 20' : flags.empCount === '20to49' ? '20 to 49' : flags.empCount === '50plus' ? '50 or more' : 'Confirm', status: flags.empCount === 'notSure' ? 'warn' : 'neutral' },
         { label: 'ACA status', value: acaLabel, status: flags.ale === 'unlikely' ? 'good' : flags.ale === 'ale' && flags.medicalOffered ? 'neutral' : 'warn' },
-        { label: 'Form 5500', value: f5500Value, status: form5500.status === 'required' ? 'alert' : form5500.status === 'notRequired' ? 'good' : 'warn' }
+        { label: 'Form 5500', value: f5500Value, status: form5500.status === 'required' && flags.hasPrior5500 ? 'good' : form5500.status === 'required' ? 'alert' : form5500.status === 'notRequired' ? 'good' : 'warn' }
       ],
       alert: flags.ale === 'confirmAle' || (flags.ale === 'ale' && !flags.medicalOffered),
       alertText: flags.ale === 'confirmAle' ? 'Confirm ALE status' : (flags.ale === 'ale' && !flags.medicalOffered) ? 'Medical coverage may be required' : '',
@@ -1245,7 +1399,7 @@ var DKQuiz = (function () {
       snapshot: buildSnapshot(answers, flags, form5500),
       priorities: priorities,
       cards: cards,
-      calendar: buildCalendar(answers, flags),
+      calendar: buildCalendar(answers, flags, form5500),
       summary: answerSummary(answers)
     };
   }
@@ -1255,16 +1409,15 @@ var DKQuiz = (function () {
   }
 
   function aboutStepCount(answers) {
-    answers = answers || {};
-    var count = 0;
-    questions.forEach(function (q) {
-      if (!q.showIf || q.showIf(answers)) { count++; return; }
-      var needs = q.needs || [];
-      for (var i = 0; i < needs.length; i++) {
-        if (blank(answers[needs[i]])) { count++; return; }
-      }
-    });
-    return Math.max(count, 1);
+    return Math.max(visibleQuestions(answers).length, 1);
+  }
+
+  function stepProgress(answers, index) {
+    var total = aboutStepCount(answers);
+    var step = (index || 0) + 1;
+    if (step < 1) step = 1;
+    if (step > total) step = total;
+    return { step: step, total: total };
   }
 
   function copyBlob() {
@@ -1285,6 +1438,7 @@ var DKQuiz = (function () {
     readinessFor: readinessFor,
     visibleQuestions: visibleQuestions,
     aboutStepCount: aboutStepCount,
+    stepProgress: stepProgress,
     deriveFlags: deriveFlags,
     determineForm5500: determineForm5500,
     copyBlob: copyBlob,
