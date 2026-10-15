@@ -68,12 +68,18 @@
   }
   function readPlan() {
     var carriers = {};
+    var carrierAddresses = {};
     var waiting = {};
     var tax = {};
+    var benefitFunding = {};
     selectedBenefits().forEach(function (code) {
       carriers[code] = val('carrier_' + code);
+      carrierAddresses[code] = val('carrier_address_' + code);
       waiting[code] = val('waiting_' + code);
       tax[code] = val('tax_' + code);
+      if (code !== 'medical' && code !== 'hra' && code !== 'health_fsa') {
+        benefitFunding[code] = val('benefit_funding_' + code) || 'insured';
+      }
     });
     var params = new URLSearchParams(location.search);
     return {
@@ -96,8 +102,11 @@
       employee_count: val('employee_count'),
       benefits: selectedBenefits(),
       carriers: carriers,
+      carrier_addresses: carrierAddresses,
       waiting: waiting,
       tax: tax,
+      benefit_funding: benefitFunding,
+      discretion: val('discretion') || 'yes',
       funding: val('funding'),
       network: val('network'),
       stop_loss: val('stop_loss'),
@@ -163,63 +172,84 @@
     parent.appendChild(wrap);
     return input;
   }
+  function fieldError(input, id) {
+    var err = document.createElement('p');
+    err.className = 'field-error';
+    err.id = id;
+    input.parentNode.appendChild(err);
+  }
+  function savedValue(id) {
+    var el = $(id);
+    return el ? String(el.value || '') : '';
+  }
+  function fillOptions(select, pairs, current) {
+    pairs.forEach(function (pair) {
+      var opt = document.createElement('option');
+      opt.value = pair[0];
+      opt.textContent = pair[1];
+      select.appendChild(opt);
+    });
+    if (current) select.value = current;
+  }
   function renderBenefitDetails() {
     var host = $('benefitDetail');
+    var codes = selectedBenefits();
+    var saved = {};
+    ['eap_type', 'std_type', 'hra_type', 'ichra_same_class', 'vol_pretax', 'vol_contrib', 'vol_voluntary', 'vol_endorse', 'vol_payroll_only', 'vol_consideration'].forEach(function (id) {
+      saved[id] = savedValue(id);
+    });
+    var savedCarriers = {};
+    var savedWaiting = {};
+    var savedTax = {};
+    var savedAddr = {};
+    var savedFund = {};
+    codes.forEach(function (code) {
+      savedCarriers[code] = savedValue('carrier_' + code);
+      savedWaiting[code] = savedValue('waiting_' + code);
+      savedTax[code] = savedValue('tax_' + code);
+      savedAddr[code] = savedValue('carrier_address_' + code);
+      savedFund[code] = savedValue('benefit_funding_' + code);
+    });
     host.textContent = '';
-    selectedBenefits().forEach(function (code) {
+    codes.forEach(function (code) {
       var block = document.createElement('div');
       var title = document.createElement('h3');
       title.textContent = WpModel.benefitLabel(code);
       block.appendChild(title);
-      addField(block, 'carrier_' + code, 'Carrier or administrator');
-      addField(block, 'waiting_' + code, 'Waiting period for this benefit');
+      var carrierInput = addField(block, 'carrier_' + code, 'Carrier or administrator');
+      carrierInput.value = savedCarriers[code] || '';
+      fieldError(carrierInput, 'err_carrier_' + code);
+      if (code === 'medical' || code === 'dental' || code === 'vision' || code === 'rx' || code === 'eap') {
+        var addr = addField(block, 'carrier_address_' + code, 'Insurer or administrator address');
+        addr.value = savedAddr[code] || '';
+        fieldError(addr, 'err_carrier_address_' + code);
+      }
+      if (code !== 'medical' && code !== 'hra' && code !== 'health_fsa') {
+        var fund = addField(block, 'benefit_funding_' + code, 'Insured or self-funded', 'select');
+        fillOptions(fund, [['insured', 'Fully insured'], ['self', 'Self-funded']], savedFund[code] || 'insured');
+      }
+      var waiting = addField(block, 'waiting_' + code, 'Waiting period for this benefit');
+      waiting.value = savedWaiting[code] || '';
       var tax = addField(block, 'tax_' + code, 'Employee contributions for this benefit', 'select');
-      [['none', 'None'], ['pretax', 'Pre-tax'], ['aftertax', 'After tax']].forEach(function (pair) {
-        var opt = document.createElement('option');
-        opt.value = pair[0];
-        opt.textContent = pair[1];
-        tax.appendChild(opt);
-      });
-      var err = document.createElement('p');
-      err.className = 'field-error';
-      err.id = 'err_carrier_' + code;
-      block.appendChild(err);
+      fillOptions(tax, [['none', 'None'], ['pretax', 'Pre-tax'], ['aftertax', 'After tax']], savedTax[code] || 'none');
       host.appendChild(block);
     });
-    var codes = selectedBenefits();
     if (codes.indexOf('eap') !== -1) {
       var eap = addField(host, 'eap_type', 'EAP type', 'select');
-      [['', 'Choose'], ['referral', 'Referral only (left out of the wrap)'], ['substantive', 'Provides counseling or other care']].forEach(function (pair) {
-        var opt = document.createElement('option');
-        opt.value = pair[0];
-        opt.textContent = pair[1];
-        eap.appendChild(opt);
-      });
+      fillOptions(eap, [['', 'Choose'], ['referral', 'Referral only (left out of the wrap)'], ['substantive', 'Provides counseling or other care']], saved.eap_type);
+      fieldError(eap, 'err_eap_type');
     }
     if (codes.indexOf('std') !== -1) {
       var std = addField(host, 'std_type', 'How short-term disability is paid', 'select');
-      [['', 'Choose'], ['insured', 'Insured policy'], ['general-assets', 'Paid from employer general assets'], ['trust', 'Paid from a trust or separate fund']].forEach(function (pair) {
-        var opt = document.createElement('option');
-        opt.value = pair[0];
-        opt.textContent = pair[1];
-        std.appendChild(opt);
-      });
+      fillOptions(std, [['', 'Choose'], ['insured', 'Insured policy'], ['general-assets', 'Paid from employer general assets'], ['trust', 'Paid from a trust or separate fund']], saved.std_type);
+      fieldError(std, 'err_std_type');
     }
     if (codes.indexOf('hra') !== -1) {
       var hra = addField(host, 'hra_type', 'HRA type', 'select');
-      [['', 'Choose'], ['integrated', 'Integrated'], ['excepted', 'Excepted benefit'], ['ichra', 'Individual coverage (ICHRA)'], ['qsehra', 'Qualified small employer (QSEHRA)']].forEach(function (pair) {
-        var opt = document.createElement('option');
-        opt.value = pair[0];
-        opt.textContent = pair[1];
-        hra.appendChild(opt);
-      });
-      var same = addField(host, 'ichra_same_class', 'If this is an ICHRA, is it offered to a class that can also enroll in group medical?', 'select');
-      [['', 'Not an ICHRA'], ['yes', 'Yes'], ['no', 'No']].forEach(function (pair) {
-        var opt = document.createElement('option');
-        opt.value = pair[0];
-        opt.textContent = pair[1];
-        same.appendChild(opt);
-      });
+      fillOptions(hra, [['', 'Choose'], ['integrated', 'Integrated HRA'], ['excepted', 'Excepted-benefit HRA'], ['ichra', 'Individual coverage HRA'], ['qsehra', 'Qualified small employer HRA']], saved.hra_type);
+      fieldError(hra, 'err_hra_type');
+      var same = addField(host, 'ichra_same_class', 'If this is an individual coverage HRA, is it offered to a class that can also enroll in group medical?', 'select');
+      fillOptions(same, [['', 'Not an individual coverage HRA'], ['yes', 'Yes'], ['no', 'No']], saved.ichra_same_class);
     }
     var vol = ['vol_life', 'vol_add', 'accident', 'critical', 'hospital'].some(function (code) { return codes.indexOf(code) !== -1; });
     if (vol) {
@@ -230,17 +260,20 @@
         ['vol_payroll_only', 'Is the employer limited to payroll deduction?'],
         ['vol_consideration', 'Does the employer receive any consideration beyond reasonable pay for payroll deduction?']].forEach(function (pair) {
         var sel = addField(host, pair[0], pair[1], 'select');
-        [['', 'Choose'], ['no', 'No'], ['yes', 'Yes']].forEach(function (optPair) {
-          var opt = document.createElement('option');
-          opt.value = optPair[0];
-          opt.textContent = optPair[1];
-          sel.appendChild(opt);
-        });
+        fillOptions(sel, [['', 'Choose'], ['no', 'No'], ['yes', 'Yes']], saved[pair[0]]);
+        if (pair[0] === 'vol_consideration') fieldError(sel, 'err_vol_consideration');
       });
     }
   }
   function renderFunding() {
     var host = $('fundingFields');
+    var saved = {
+      funding: savedValue('funding'),
+      network: savedValue('network') || 'traditional',
+      stop_loss: savedValue('stop_loss'),
+      tpa_name: savedValue('tpa_name'),
+      tpa_document: savedValue('tpa_document')
+    };
     host.textContent = '';
     if (selectedBenefits().indexOf('medical') === -1) {
       var note = document.createElement('p');
@@ -249,28 +282,15 @@
       return;
     }
     var funding = addField(host, 'funding', 'Medical funding', 'select');
-    [['', 'Choose'], ['insured', 'Fully insured'], ['level', 'Level-funded'], ['aso', 'Self-funded (ASO)'], ['captive', 'Captive'], ['rbp', 'Reference-based pricing']].forEach(function (pair) {
-      var opt = document.createElement('option');
-      opt.value = pair[0];
-      opt.textContent = pair[1];
-      funding.appendChild(opt);
-    });
+    fillOptions(funding, [['', 'Choose'], ['insured', 'Fully insured'], ['level', 'Level-funded'], ['aso', 'Self-funded (ASO)'], ['captive', 'Captive'], ['rbp', 'Reference-based pricing']], saved.funding);
     var network = addField(host, 'network', 'Network', 'select');
-    [['traditional', 'Traditional network'], ['rbp', 'Reference-based pricing']].forEach(function (pair) {
-      var opt = document.createElement('option');
-      opt.value = pair[0];
-      opt.textContent = pair[1];
-      network.appendChild(opt);
-    });
+    fillOptions(network, [['traditional', 'Traditional network'], ['rbp', 'Reference-based pricing']], saved.network);
     var stop = addField(host, 'stop_loss', 'Is stop-loss in place? Terms are not printed.', 'select');
-    [['', 'Choose'], ['yes', 'Yes'], ['no', 'No']].forEach(function (pair) {
-      var opt = document.createElement('option');
-      opt.value = pair[0];
-      opt.textContent = pair[1];
-      stop.appendChild(opt);
-    });
-    addField(host, 'tpa_name', 'TPA name (self-funded, level-funded, captive, or reference-based pricing)');
-    addField(host, 'tpa_document', 'Name of the TPA plan document or SPD');
+    fillOptions(stop, [['', 'Choose'], ['yes', 'Yes'], ['no', 'No']], saved.stop_loss);
+    var tpa = addField(host, 'tpa_name', 'TPA name (self-funded, level-funded, captive, or reference-based pricing)');
+    tpa.value = saved.tpa_name;
+    var tpaDoc = addField(host, 'tpa_document', 'Name of the TPA plan document or SPD');
+    tpaDoc.value = saved.tpa_document;
     ['funding', 'tpa_name', 'tpa_document', 'stop_loss'].forEach(function (id) {
       var err = document.createElement('p');
       err.className = 'field-error';
@@ -336,8 +356,8 @@
       button.addEventListener('click', function () { triggerDownload(file.bytes, file.name, file.mime); });
       (pdf ? pdfCol : wordCol).appendChild(button);
     });
-    if (pdfCol.childElementCount) list.appendChild(pdfCol);
     if (wordCol.childElementCount) list.appendChild(wordCol);
+    if (pdfCol.childElementCount) list.appendChild(pdfCol);
   }
   function jobsFor(result) {
     var plan = result.plan;
@@ -397,7 +417,7 @@
       plan: result.plan,
       findings: result.findings,
       acknowledgement: { accepted: true, acceptedAt: new Date().toISOString(), termsVersion: WpTerms.VERSION },
-      files: files.slice(0, 8).map(function (file) {
+      files: files.slice(0, 14).map(function (file) {
         return { name: file.name, mime: file.mime, dataBase64: bytesToBase64(file.bytes) };
       })
     };
@@ -411,9 +431,18 @@
     }
     var result = WpModel.validate(readPlan());
     if (!result.ok) {
-      showErrors(result.errors);
-      setText('statusLine', 'Fix the items marked above. Use Back to reach an earlier step.');
-      postParent({ type: 'wp-scroll', step: step });
+      var order = result.mode === 'explain' ? [2, 7] : [2, 4, 5, 6, 7];
+      var target = step;
+      for (var i = 0; i < order.length; i++) {
+        if (errorsOnStep(result.errors, order[i]).length) {
+          target = order[i];
+          break;
+        }
+      }
+      showStep(target);
+      showErrors(errorsOnStep(result.errors, target));
+      if (target === 7) setText('statusLine', 'Fix the items marked above.');
+      postParent({ type: 'wp-scroll', step: target });
       return;
     }
     setText('statusLine', 'Your sample is ready to download.');
@@ -431,16 +460,74 @@
   function saveDraft() {
     try { localStorage.setItem(DRAFT_KEY, JSON.stringify(readPlan())); } catch (err) {}
   }
+  var STEP_FIELDS = {
+    2: ['employer_name', 'employer_ein', 'address', 'plan_number', 'employee_count', 'original_effective_date', 'restatement_date'],
+    4: ['benefits', 'hra_type', 'eap_type', 'std_type', 'vol_consideration'],
+    5: ['funding', 'tpa_name', 'tpa_document', 'stop_loss', 'census_a', 'trustee_name'],
+    6: ['cobra', 'signer_name'],
+    7: ['contact_name', 'contact_email']
+  };
+  function errorsOnStep(errors, n) {
+    var fields = STEP_FIELDS[n] || [];
+    return (errors || []).filter(function (error) {
+      if (fields.indexOf(error.field) !== -1) return true;
+      return n === 4 && error.field.indexOf('carrier_') === 0;
+    });
+  }
+  function stepShouldBlock(result, n) {
+    if (result.mode === 'explain') return n === 2;
+    return n === 2 || n === 4 || n === 5 || n === 6;
+  }
+  function putValue(id, value) {
+    var el = $(id);
+    if (el && value != null && value !== '') el.value = value;
+  }
   function loadDraft() {
     try {
       var raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) return;
       var data = JSON.parse(raw);
+      var later = {
+        benefits: 1, carriers: 1, carrier_addresses: 1, census: 1, waiting: 1, tax: 1, benefit_funding: 1,
+        funding: 1, network: 1, stop_loss: 1, tpa_name: 1, tpa_document: 1,
+        hra_type: 1, ichra_same_class: 1, eap_type: 1, std_type: 1,
+        vol_pretax: 1, vol_contrib: 1, vol_voluntary: 1, vol_endorse: 1, vol_payroll_only: 1, vol_consideration: 1,
+        utm: 1, referrer: 1, address: 1, phi_classes_blank: 1
+      };
       Object.keys(data).forEach(function (key) {
-        if (key === 'benefits' || key === 'carriers' || key === 'census' || key === 'waiting' || key === 'tax') return;
+        if (later[key]) return;
         var el = $(key);
         if (el && data[key]) el.value = data[key];
       });
+      if (data.census) {
+        ['a', 'b', 'c', 'd'].forEach(function (part) {
+          putValue('census_' + part, data.census[part]);
+        });
+      }
+      if (Array.isArray(data.benefits)) {
+        Array.prototype.forEach.call(document.querySelectorAll('input[name="benefits"]'), function (box) {
+          box.checked = data.benefits.indexOf(box.value) !== -1;
+        });
+      }
+      renderBenefitDetails();
+      renderFunding();
+      putValue('funding', data.funding);
+      putValue('network', data.network);
+      putValue('stop_loss', data.stop_loss);
+      putValue('tpa_name', data.tpa_name);
+      putValue('tpa_document', data.tpa_document);
+      putValue('hra_type', data.hra_type);
+      putValue('ichra_same_class', data.ichra_same_class);
+      putValue('eap_type', data.eap_type);
+      putValue('std_type', data.std_type);
+      ['vol_pretax', 'vol_contrib', 'vol_voluntary', 'vol_endorse', 'vol_payroll_only', 'vol_consideration'].forEach(function (key) {
+        putValue(key, data[key]);
+      });
+      Object.keys(data.carriers || {}).forEach(function (code) { putValue('carrier_' + code, data.carriers[code]); });
+      Object.keys(data.carrier_addresses || {}).forEach(function (code) { putValue('carrier_address_' + code, data.carrier_addresses[code]); });
+      Object.keys(data.waiting || {}).forEach(function (code) { putValue('waiting_' + code, data.waiting[code]); });
+      Object.keys(data.tax || {}).forEach(function (code) { putValue('tax_' + code, data.tax[code]); });
+      Object.keys(data.benefit_funding || {}).forEach(function (code) { putValue('benefit_funding_' + code, data.benefit_funding[code]); });
     } catch (err) {}
   }
   function mountTips() {
@@ -491,13 +578,18 @@
     showStep(1);
     $('backBtn').addEventListener('click', function () { if (step > 1) showStep(step - 1); });
     $('nextBtn').addEventListener('click', function () {
-      if (step === 3) renderBenefitDetails();
-      if (step === 4) renderFunding();
-      if (step === 6) {
-        var result = WpModel.validate(readPlan());
-        paintReview(result);
-        if (!result.ok && result.mode === 'plan') showErrors(result.errors);
+      clearErrors();
+      var result = WpModel.validate(readPlan());
+      if (stepShouldBlock(result, step)) {
+        var mine = errorsOnStep(result.errors, step);
+        if (mine.length) {
+          showErrors(mine);
+          postParent({ type: 'wp-scroll', step: step });
+          return;
+        }
       }
+      if (step === 4) renderFunding();
+      if (step === 6) paintReview(result);
       showStep(step + 1);
     });
     $('buildBtn').addEventListener('click', function (event) {
@@ -505,7 +597,10 @@
       build();
     });
     $('wizard').addEventListener('submit', function (event) { event.preventDefault(); build(); });
-    $('wizard').addEventListener('change', syncPanels);
+    $('wizard').addEventListener('change', function (event) {
+      if (event.target && event.target.name === 'benefits') renderBenefitDetails();
+      syncPanels();
+    });
     $('wizard').addEventListener('input', function () { saveDraft(); syncPanels(); });
     syncPanels();
   });

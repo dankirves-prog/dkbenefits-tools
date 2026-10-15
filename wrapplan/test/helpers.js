@@ -39,6 +39,11 @@ function baseInput(overrides) {
     employee_count: '22',
     benefits: ['medical', 'dental', 'vision', 'life'],
     carriers: { medical: 'Florida Blue', dental: 'Sun Life', vision: 'VSP', life: 'Sun Life' },
+    carrier_addresses: {
+      medical: '4800 Deerwood Campus Parkway, Jacksonville, FL 32246',
+      dental: '1 Sun Life Executive Park, Wellesley Hills, MA 02481',
+      vision: '3333 Quality Drive, Rancho Cordova, CA 95670'
+    },
     funding: 'insured',
     network: 'traditional',
     stop_loss: 'no',

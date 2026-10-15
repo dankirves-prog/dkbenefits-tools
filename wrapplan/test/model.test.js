@@ -64,8 +64,14 @@ test('plan number 500 fails and 501 passes; phone is optional; name and email ar
   assert.ok(bad.errors.some(function (error) { return error.field === 'plan_number'; }));
   const good = Wp.validate(baseInput({ plan_number: '501', contact_phone: '' }));
   assert.equal(good.ok, true);
+  const junk = Wp.validate(baseInput({ plan_number: '501a' }));
+  assert.equal(junk.ok, false);
+  assert.ok(junk.errors.some(function (error) { return error.field === 'plan_number'; }));
   const missing = Wp.validate(baseInput({ contact_name: '', contact_email: '' }));
   assert.equal(missing.ok, false);
+  const census = Wp.validate(baseInput({ census: { a: '', b: '0', c: '0', d: '0' } }));
+  assert.equal(census.ok, false);
+  assert.ok(census.errors.some(function (error) { return error.field === 'census_a'; }));
 });
 
 test('self-funded contributions need a Section 125 plan before the exemption is stated', function () {
@@ -124,12 +130,25 @@ test('renewal date moves to the next business morning when the 90-day mark has p
   assert.equal(when, '2026-10-16');
 });
 
-test('lead score awards a phone when present and still scores a lead with no phone', function () {
+test('lead score awards a phone and does not award points for a required name or email', function () {
   const Wp = model();
   const noPhone = Wp.leadScore(Wp.normalize(baseInput({ contact_phone: '', employee_count: '10', census: { a: '10', b: '0', c: '0', d: '0' } })));
   const withPhone = Wp.leadScore(Wp.normalize(baseInput({ contact_phone: '4075550100', employee_count: '10', census: { a: '10', b: '0', c: '0', d: '0' } })));
-  assert.equal(withPhone - noPhone, 20);
-  assert.ok(noPhone > 0);
+  assert.equal(noPhone, 0);
+  assert.equal(withPhone, 20);
+});
+
+test('self-funded nondiscrimination warning does not depend on employee contributions', function () {
+  const Wp = model();
+  const notes = Wp.findingsFor(Wp.normalize(baseInput({
+    funding: 'aso',
+    employee_count: '60',
+    employee_contributions: 'no',
+    census: { a: '40', b: '0', c: '0', d: '0' },
+    phi: 'yes',
+    phi_classes: 'Benefits staff'
+  })));
+  assert.match(notes.join(' '), /nondiscrimination/);
 });
 
 test('allowlist includes the Wix filesusr parent and the editor preview origins', function () {

@@ -150,8 +150,34 @@ var WpModel = (function () {
     }
     return list;
   }
+  var HRA_LABELS = {
+    integrated: 'integrated HRA',
+    excepted: 'excepted-benefit HRA',
+    ichra: 'individual coverage HRA',
+    qsehra: 'qualified small employer HRA'
+  };
   function benefitLabel(code) { return BENEFIT_LABELS[code] || code; }
+  function hraLabel(code) { return HRA_LABELS[code] || code; }
   function fundingLabel(code) { return FUNDING_LABELS[code] || code; }
+  function formatPhone(value) {
+    var digits = String(value || '').replace(/\D/g, '');
+    if (digits.length === 11 && digits.charAt(0) === '1') digits = digits.slice(1);
+    if (digits.length === 10) return digits.slice(0, 3) + '-' + digits.slice(3, 6) + '-' + digits.slice(6);
+    return String(value || '').trim();
+  }
+  function benefitIsInsured(plan, code) {
+    if (code === 'hra' || code === 'health_fsa') return false;
+    if (code === 'std' && plan.std_type === 'trust') return false;
+    if (code === 'medical') return plan.funding === 'insured';
+    return (plan.benefit_funding || {})[code] !== 'self';
+  }
+  function needsCarrierAddress(plan, code) {
+    if (code === 'medical' || code === 'dental' || code === 'vision' || code === 'rx') return true;
+    return code === 'eap' && plan.eap_type === 'substantive';
+  }
+  function anyInsuredBenefit(plan) {
+    return wrappedBenefits(plan).some(function (code) { return benefitIsInsured(plan, code); });
+  }
   function roleLabel(code) { return ROLES[code] || code; }
   function monthName(n) { return MONTHS[num(n)] || ''; }
   function planYearSentence(plan) {
@@ -200,8 +226,6 @@ var WpModel = (function () {
   }
   function leadScore(plan) {
     var score = 0;
-    if (plan.contact_name) score += 10;
-    if (plan.contact_email) score += 15;
     if (plan.contact_phone) score += 20;
     if (num(plan.employee_count) >= 20 || countParticipants(plan) >= 100) score += 15;
     if (plan.funding === 'level') score += 10;
@@ -214,17 +238,8 @@ var WpModel = (function () {
   function push(errors, field, message) {
     errors.push({ field: field, message: message });
   }
-  function findingsFor(plan) {
+  function designNotes(plan) {
     var notes = [];
-    var filing = filingResult(plan);
-    notes.push(countParticipants(plan) + ' covered participants. ' + filing.text);
-    if (countParticipants(plan) >= 100 && yes(plan.prior_small_filing)) {
-      notes.push('A prior small-plan filing does not change this. A Form 5500 is required.');
-    }
-    if (plan.cobra === 'unsure') notes.push('Confirm the federal COBRA employee count before you rely on the COBRA paragraph.');
-    if (plan.cobra === 'no' && countParticipants(plan) >= 100) {
-      notes.push('You answered that federal COBRA did not apply, and the covered-participant count is 100 or more. Those answers usually do not belong together. Confirm the prior-year employee count, including related employers.');
-    }
     if (plan.certificates === 'no') {
       notes.push('You said a certificate, booklet, or TPA plan document is not on hand for every benefit. Attach each one before you give the wrap to employees.');
     }
@@ -257,15 +272,32 @@ var WpModel = (function () {
     } else if (plan.intended_signature_date && !plan.restatement_date && plan.original_effective_date && plan.intended_signature_date > plan.original_effective_date) {
       notes.push('The date you intend to sign is after the effective date. Confirm that this is a restatement.');
     }
-    if (yes(plan.employee_contributions) && num(plan.employee_count) >= 50 && isSelfFundedFunding(plan.funding)) {
+    if (num(plan.employee_count) >= 50 && isSelfFundedFunding(plan.funding)) {
       notes.push('A self-funded health plan can face nondiscrimination rules. Whether the employer is an applicable large employer depends on full-time equivalents, not on this headcount alone. This sample does not decide either question.');
     } else if (num(plan.employee_count) >= 50) {
       notes.push('Whether the employer is an applicable large employer depends on full-time equivalents, not on this headcount alone.');
     } else if (isSelfFundedFunding(plan.funding) && hasBenefit(plan, 'medical')) {
       notes.push('A self-funded health plan can face nondiscrimination rules. This sample does not decide that question.');
     }
+    if (plan.discretion !== 'no' && anyInsuredBenefit(plan)) {
+      notes.push('Some states bar discretionary clauses in insured policies. Confirm that clause before you sign.');
+    }
+    return notes;
+  }
+  function findingsFor(plan) {
+    var notes = [];
+    var filing = filingResult(plan);
+    notes.push(countParticipants(plan) + ' covered participants. ' + filing.text);
+    if (countParticipants(plan) >= 100 && yes(plan.prior_small_filing)) {
+      notes.push('A prior small-plan filing does not change this. A Form 5500 is required.');
+    }
+    if (plan.cobra === 'unsure') notes.push('Confirm the federal COBRA employee count before you rely on the COBRA paragraph.');
+    if (plan.cobra === 'no' && countParticipants(plan) >= 100) {
+      notes.push('You answered that federal COBRA did not apply, and the covered-participant count is 100 or more. Those answers usually do not belong together. Confirm the prior-year employee count, including related employers.');
+    }
+    designNotes(plan).forEach(function (note) { notes.push(note); });
     if (complexFunding(plan)) notes.push(BROKER_LINE);
-    if (plan.phi_classes_blank && (yes(plan.phi) || isSelfFundedFunding(plan.funding))) {
+    if (plan.phi_classes_blank && plan.phi === 'yes') {
       notes.push('Fill in the job classes that may see health information before you sign the HIPAA amendment.');
     }
     return notes;
@@ -293,8 +325,11 @@ var WpModel = (function () {
       employee_count: String(input.employee_count || '').trim(),
       benefits: benefits,
       carriers: input.carriers || {},
+      carrier_addresses: input.carrier_addresses || {},
       waiting: input.waiting || {},
       tax: input.tax || {},
+      benefit_funding: input.benefit_funding || {},
+      discretion: input.discretion === 'no' ? 'no' : 'yes',
       funding: input.funding || '',
       network: input.network || '',
       stop_loss: input.stop_loss || '',
@@ -377,8 +412,9 @@ var WpModel = (function () {
     if (!plan.employer_name) push(errors, 'employer_name', 'Enter the legal employer name.');
     if (!/^\d{2}-?\d{7}$/.test(plan.employer_ein)) push(errors, 'employer_ein', 'Enter a 9-digit EIN.');
     if (!plan.street || !plan.city || !plan.state || !/^\d{5}$/.test(plan.zip)) push(errors, 'address', 'Enter a street, city, state, and 5-digit ZIP code.');
-    var pn = num(plan.plan_number);
-    if (pn < 501 || pn > 999) push(errors, 'plan_number', 'Enter a plan number from 501 through 999.');
+    if (!/^\d{3}$/.test(plan.plan_number) || num(plan.plan_number) < 501 || num(plan.plan_number) > 999) {
+      push(errors, 'plan_number', 'Enter a three-digit plan number from 501 through 999.');
+    }
     if (!plan.original_effective_date) push(errors, 'original_effective_date', 'Enter the original effective date.');
     if (plan.is_restatement === 'yes' && !plan.restatement_date) push(errors, 'restatement_date', 'Enter the restatement date.');
     if (!plan.employee_count || num(plan.employee_count) < 1) push(errors, 'employee_count', 'Enter about how many employees you had last year.');
@@ -389,8 +425,13 @@ var WpModel = (function () {
       if (!plan.tpa_document) push(errors, 'tpa_document', 'Enter the name of the TPA plan document or SPD.');
       if (!plan.stop_loss) push(errors, 'stop_loss', 'Say whether stop-loss is in place.');
     }
+    if (num(plan.census.a) < 1) push(errors, 'census_a', 'Enter at least 1 current employee covered by a wrapped benefit.');
     wrappedBenefits(plan).forEach(function (code) {
       if (!plan.carriers[code]) push(errors, 'carrier_' + code, 'Enter the carrier or administrator for ' + benefitLabel(code) + '.');
+      if (needsCarrierAddress(plan, code)) {
+        var addr = plan.carrier_addresses && plan.carrier_addresses[code];
+        if (!String(addr || '').trim()) push(errors, 'carrier_address_' + code, 'Enter the address for ' + benefitLabel(code) + '.');
+      }
     });
     if (hasBenefit(plan, 'hra') && !plan.hra_type) push(errors, 'hra_type', 'Choose the HRA type.');
     if (hasBenefit(plan, 'eap') && !plan.eap_type) push(errors, 'eap_type', 'Say whether the EAP is referral-only or provides care.');
@@ -443,7 +484,12 @@ var WpModel = (function () {
     ALLOWED_ORIGINS: ALLOWED_ORIGINS,
     BENEFIT_LABELS: BENEFIT_LABELS,
     benefitLabel: benefitLabel,
+    hraLabel: hraLabel,
     fundingLabel: fundingLabel,
+    formatPhone: formatPhone,
+    benefitIsInsured: benefitIsInsured,
+    needsCarrierAddress: needsCarrierAddress,
+    designNotes: designNotes,
     roleLabel: roleLabel,
     hasBenefit: hasBenefit,
     groupHealth: groupHealth,

@@ -119,7 +119,7 @@ function wpLeadMessage_(payload, checked) {
 function wpFiles_(payload) {
   var out = [];
   var files = payload.files || [];
-  for (var i = 0; i < files.length && out.length < 8; i++) {
+  for (var i = 0; i < files.length && out.length < 14; i++) {
     var file = files[i];
     if (!file || (file.mime !== 'application/pdf' && file.mime.indexOf('wordprocessingml') === -1)) continue;
     try {
