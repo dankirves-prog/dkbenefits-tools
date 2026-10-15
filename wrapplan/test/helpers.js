@@ -5,7 +5,7 @@ const vm = require('vm');
 const root = path.join(__dirname, '..');
 
 function loadBrowserScripts() {
-  const context = { console, TextEncoder, Uint8Array, Uint32Array, ArrayBuffer, Buffer };
+  const context = { console, TextEncoder, Uint8Array, Uint32Array, ArrayBuffer, Buffer, setTimeout, clearTimeout };
   context.globalThis = context;
   context.window = context;
   context.self = context;

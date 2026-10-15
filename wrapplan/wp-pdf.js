@@ -209,6 +209,8 @@ var WpPdf = (function () {
         var lines = wrap(text, useFont, size, maxWidth);
         var block = lines.length * lineHeight + gap;
         if (style && y - block < bottom + 36) newPage();
+        var fit = Math.floor((y - bottom) / lineHeight);
+        if (page && lines.length > 1 && lines.length <= 8 && fit < lines.length && (fit < 2 || lines.length - fit <= 1)) newPage();
         ensure(lineHeight);
         lines.forEach(function (line) {
           ensure(lineHeight);

@@ -300,6 +300,7 @@
   function downloadLabel(name) {
     var pdf = /\.pdf$/i.test(name);
     if (/_Wrap_Plan\./.test(name)) return pdf ? 'Download Plan (PDF)' : 'Download Plan (Word)';
+    if (/_SPD\./.test(name)) return pdf ? 'Download SPD (PDF)' : 'Download SPD (Word)';
     if (/_Schedule_A\./.test(name)) return pdf ? 'Download Schedule A (PDF)' : 'Download Schedule A (Word)';
     if (/_Adoption_Resolution\./.test(name)) return pdf ? 'Download Adoption Resolution (PDF)' : 'Download Adoption Resolution (Word)';
     if (/_HIPAA_Amendment\./.test(name)) return pdf ? 'Download HIPAA Amendment (PDF)' : 'Download HIPAA Amendment (Word)';
@@ -344,13 +345,14 @@
       return [{ rows: WpDocgen.explainParagraphs(plan), name: WpDocgen.explainFileName(plan), title: 'About this arrangement' }];
     }
     var jobs = [
-      { rows: WpDocgen.planParagraphs(plan), name: WpDocgen.planFileName(plan), title: 'Wrap Plan Document and SPD' },
+      { rows: WpDocgen.planParagraphs(plan), name: WpDocgen.planFileName(plan), title: 'Wrap Plan Document' },
+      { rows: WpDocgen.spdParagraphs(plan), name: WpDocgen.spdFileName(plan), title: 'Summary Plan Description' },
       { rows: WpDocgen.scheduleParagraphs(plan), name: WpDocgen.scheduleFileName(plan), title: 'Schedule A' },
-      { rows: WpDocgen.resolutionParagraphs(plan), name: WpDocgen.resolutionFileName(plan), title: 'Adoption resolution' }
+      { rows: WpDocgen.resolutionParagraphs(plan), name: WpDocgen.resolutionFileName(plan), title: 'Adoption Resolution' }
     ];
-    if (WpDocgen.needsHipaa(plan)) jobs.push({ rows: WpDocgen.hipaaParagraphs(plan), name: WpDocgen.hipaaFileName(plan), title: 'HIPAA privacy amendment' });
-    if (WpDocgen.needsQmcso(plan)) jobs.push({ rows: WpDocgen.qmcsoParagraphs(plan), name: WpDocgen.qmcsoFileName(plan), title: 'QMCSO procedures' });
-    jobs.push({ rows: WpDocgen.findingsParagraphs(plan, result.findings), name: WpDocgen.findingsFileName(plan), title: 'Findings report' });
+    if (WpDocgen.needsHipaa(plan)) jobs.push({ rows: WpDocgen.hipaaParagraphs(plan), name: WpDocgen.hipaaFileName(plan), title: 'HIPAA Amendment' });
+    if (WpDocgen.needsQmcso(plan)) jobs.push({ rows: WpDocgen.qmcsoParagraphs(plan), name: WpDocgen.qmcsoFileName(plan), title: 'QMCSO Procedures' });
+    jobs.push({ rows: WpDocgen.findingsParagraphs(plan, result.findings), name: WpDocgen.findingsFileName(plan), title: 'Findings Report' });
     return jobs;
   }
   function buildWord(jobs, plan) {

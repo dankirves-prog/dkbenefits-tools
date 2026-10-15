@@ -15,7 +15,8 @@ function planText(context, input) {
   assert.equal(result.ok, true);
   return {
     result: result,
-    spd: context.WpDocgen.plainText(context.WpDocgen.planParagraphs(result.plan)),
+    wrap: context.WpDocgen.plainText(context.WpDocgen.planParagraphs(result.plan)),
+    spd: context.WpDocgen.plainText(context.WpDocgen.spdParagraphs(result.plan)),
     findings: context.WpDocgen.plainText(context.WpDocgen.findingsParagraphs(result.plan, result.findings))
   };
 }
@@ -95,12 +96,14 @@ test('(d) signature lines are blank, the signer is printed, and a restatement ke
     original_effective_date: '2019-07-01',
     intended_signature_date: '2026-08-15'
   }));
-  assert.match(pack.spd, /Authorized signature: ________________________________/);
-  assert.match(pack.spd, /Date: ________________________________/);
-  assert.match(pack.spd, /Name: Alex Rivera/);
-  assert.match(pack.spd, /Title: Managing Member/);
-  assert.match(pack.spd, /originally effective July 1, 2019/);
-  assert.match(pack.spd, /restatement is effective July 1, 2026/);
+  assert.match(pack.wrap, /Authorized signature: ________________________________/);
+  assert.match(pack.wrap, /Date: ________________________________/);
+  assert.match(pack.wrap, /Name: Alex Rivera/);
+  assert.match(pack.wrap, /Title: Managing Member/);
+  assert.match(pack.wrap, /originally effective July 1, 2019/);
+  assert.match(pack.wrap, /restatement is effective July 1, 2026/);
+  const resolution = context.WpDocgen.plainText(context.WpDocgen.resolutionParagraphs(pack.result.plan));
+  assert.match(resolution, /Authorized signature: ________________________________/);
   assert.match(pack.findings, /after the effective date/);
 });
 
@@ -161,11 +164,11 @@ test('referral-only EAP is omitted, and the plan footer is Company title | Page'
   })));
   assert.equal(eap.indexOf('eap'), -1);
   const result = context.WpModel.validate(baseInput());
-  const footer = context.WpDocgen.footerFor(result.plan, 'Wrap Plan Document and SPD');
-  assert.equal(footer, 'Harbor Dental Group LLC Wrap Plan Document and SPD');
+  const footer = context.WpDocgen.footerFor(result.plan, 'Wrap Plan Document');
+  assert.equal(footer, 'Harbor Dental Group LLC Wrap Plan Document');
   const docx = context.WpDocgen.buildDocx(context.WpDocgen.planParagraphs(result.plan), { title: 'Wrap', footer: footer });
   const xml = Buffer.from(docx).toString('utf8');
-  assert.match(xml, /Harbor Dental Group LLC Wrap Plan Document and SPD \| Page /);
+  assert.match(xml, /Harbor Dental Group LLC Wrap Plan Document \| Page /);
   assert.match(xml, /PAGE/);
   assert.match(xml, /NUMPAGES/);
 });
