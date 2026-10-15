@@ -38,6 +38,9 @@ function doPost(e) {
   try {
     var payload = {};
     if (e && e.postData && e.postData.contents) payload = JSON.parse(e.postData.contents);
+    if (clText_(payload.company_website) || clText_(payload.website)) {
+      return clJson_({ ok: true, followUp: 'skipped' });
+    }
     var checked = clValidateLead(payload);
     if (!checked.ok) return clJson_({ ok: false, error: checked.error });
     var saved = clWithLock_(function () { return clAppendLead_(checked.lead); });

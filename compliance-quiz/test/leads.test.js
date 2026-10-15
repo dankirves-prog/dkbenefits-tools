@@ -204,6 +204,20 @@ test('phone-only lead emails Dan and skips the visitor note', () => {
   assert.equal(rows(api)[1][8], 'skipped');
 });
 
+test('a filled honeypot does not email Dan or store a row', () => {
+  const api = world();
+  const saved = post(api, {
+    firstName: 'Ada',
+    company: 'Northwind',
+    email: 'ada@example.com',
+    company_website: 'http://spam.example'
+  });
+  assert.equal(saved.ok, true);
+  assert.equal(saved.followUp, 'skipped');
+  assert.equal(api.gmail.length, 0);
+  assert.equal(api.sheets['DK Compliance Leads'], undefined);
+});
+
 test('lead form requires a name, a company, and email or phone', () => {
   const api = world();
   assert.equal(post(api, { firstName: '', company: 'Harbor', email: 'a@b.co' }).ok, false);

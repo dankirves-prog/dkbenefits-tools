@@ -53,11 +53,21 @@
     return map;
   }
 
+  function syncChrome() {
+    var embedded = window.parent && window.parent !== window;
+    document.body.classList.toggle('is-embedded', !!embedded);
+    document.body.classList.toggle('is-compact', !embedded && !(phase === 'question' && index === 0));
+  }
+
   function measureHeight() {
-    return Math.max(
-      document.body ? document.body.scrollHeight : 0,
-      document.documentElement ? document.documentElement.scrollHeight : 0
-    );
+    var height = 0;
+    ['.preview-banner', '.site-header', '#quiz'].forEach(function (sel) {
+      var el = document.querySelector(sel);
+      if (!el) return;
+      if (window.getComputedStyle(el).display === 'none') return;
+      height += el.offsetHeight;
+    });
+    return Math.ceil(height);
   }
 
   function postHeight() {
@@ -165,6 +175,7 @@
 
   function render(opts) {
     opts = opts || {};
+    syncChrome();
     if (phase === 'results') renderResults();
     else renderQuestion();
     if (opts.focusValue) {
@@ -182,8 +193,9 @@
     if (index > list.length - 1) index = Math.max(0, list.length - 1);
     var q = list[index];
     if (!q) return;
-    var step = index + 1;
-    var about = Math.max(DKQuiz.aboutStepCount(answers), step);
+    var progress = DKQuiz.stepProgress(answers, index);
+    var step = progress.step;
+    var about = progress.total;
     var pct = Math.max(4, Math.min(100, Math.round((step / about) * 100)));
     var chosen = selectedMap(q);
     var role = q.multiSelect ? 'group' : 'radiogroup';
@@ -196,7 +208,7 @@
       : '';
     root.innerHTML =
       '<section class="panel" aria-labelledby="q-text">' +
-        '<p class="progress-label"><span>Step ' + step + ' of about ' + about + '</span><span>About 5 minutes</span></p>' +
+        '<p class="progress-label"><span>Step ' + step + ' of ' + about + '</span><span>About 5 minutes</span></p>' +
         '<div class="progress-track" aria-hidden="true"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
         '<h2 id="q-text" class="q-text" tabindex="-1">' + esc(q.text) + '</h2>' +
         (q.helper ? '<p class="helper">' + esc(q.helper) + '</p>' : '') +
@@ -216,10 +228,12 @@
   function renderPriorities() {
     var items = result.priorities || [];
     if (!items.length) {
-      return '<section class="panel priorities"><h2>Top 3 priorities</h2><p class="helper">Nothing in your answers needs action right now. The notes below are still worth a look.</p></section>';
+      return '<section class="panel priorities"><h2 id="top3">Top 3 priorities</h2><p class="helper">Nothing in your answers needs action right now. The notes below are still worth a look.</p></section>';
     }
     var list = items.map(function (item, i) {
-      return '<li><span class="rank">' + (i + 1) + '</span><div class="priority-copy">' + badge(item.status) + '<strong>' + esc(item.title) + '</strong><p>' + esc(item.summary) + '</p></div></li>';
+      var href = toolHref(item.cta);
+      var button = href ? '<a class="tool-btn" href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(item.cta.label) + '</a>' : '';
+      return '<li><span class="rank">' + (i + 1) + '</span><div class="priority-copy">' + badge(item.status) + '<strong>' + esc(item.title) + '</strong><p>' + esc(item.finding) + '</p>' + button + '</div></li>';
     }).join('');
     return '<section class="panel priorities" aria-labelledby="top3"><h2 id="top3">Top 3 priorities</h2><ol class="priority-list">' + list + '</ol></section>';
   }
@@ -235,7 +249,9 @@
       : '';
     var score = ready.score != null
       ? '<div class="readiness ' + esc(ready.className || '') + '"><div class="score-num" aria-label="Readiness ' + esc(ready.score) + ' out of 10">' + esc(ready.score) + '<span>/10</span></div><div><span class="readiness-label">' + esc(ready.label) + '</span><span class="readiness-sub">' + esc(ready.sub) + '</span></div></div>'
-      : '';
+      : (ready.label
+        ? '<div class="readiness ' + esc(ready.className || '') + '"><div><span class="readiness-label">' + esc(ready.label) + '</span><span class="readiness-sub">' + esc(ready.sub || '') + '</span></div></div>'
+        : '');
     return '<section class="panel snapshot" aria-labelledby="snap-title"><h2 id="snap-title">Snapshot</h2>' + alert + '<div class="snapshot-grid">' + lines + '</div>' + score + '</section>';
   }
 
@@ -283,8 +299,35 @@
       '<p>This compliance checkup is provided for general informational and educational purposes only. It is not legal, tax, accounting, or ERISA advice, and it does not create an advisor-client, broker-client, or fiduciary relationship of any kind.</p>' +
       '<p>The results are based on the answers you selected. They highlight common considerations. They do not confirm that a plan is in compliance. Laws and plan terms vary, and this checkup cannot see documents it did not ask about.</p>' +
       '<p>The employer remains responsible for compliance. DK Benefits LLC does not assume liability for actions taken, or not taken, based on these results.</p>' +
-      '<p>Confirm current requirements with your advisor, counsel, or payroll provider before you file or change a plan. Rules and limits change; confirm current requirements with your advisor.</p>' +
+      '<p>Rules and limits change. Confirm current requirements with your advisor, counsel, or payroll provider before you file or change a plan.</p>' +
       '</details></section>';
+  }
+
+  function honeypotField() {
+    return '<label class="hp">Leave this blank<input name="company_website" tabindex="-1" autocomplete="off"></label>';
+  }
+
+  function renderLeadInner() {
+    var privacy = '<p class="privacy">If you send contact info, we use your name and email or phone only to reply about this checkup.</p>';
+    if (!endpoint()) {
+      return privacy + honeypotField() +
+        '<p class="unconfigured">This form is not connected yet. Call or text 407-476-5076 or email dan@dkbenefits.net.</p>';
+    }
+    if (leadState === 'sent') return '<p class="lead-success">' + esc(leadMessage) + '</p>';
+    return privacy +
+      '<p class="optional">Optional. Your results stay on this page either way.</p>' +
+      '<form id="lead-form" novalidate>' +
+        honeypotField() +
+        '<div class="lead-grid">' +
+          '<label class="field">First name<input name="firstName" autocomplete="given-name" required></label>' +
+          '<label class="field">Company<input name="company" autocomplete="organization" required></label>' +
+          '<label class="field">Email<input name="email" type="email" autocomplete="email" inputmode="email"></label>' +
+          '<label class="field">Phone<input name="phone" type="tel" autocomplete="tel" inputmode="tel"></label>' +
+        '</div>' +
+        '<p class="hint">Email or phone, at least one.</p>' +
+        (leadMessage ? '<p class="field-error">' + esc(leadMessage) + '</p>' : '') +
+        '<div class="quiz-nav"><button class="btn-primary" type="submit"' + (leadState === 'sending' ? ' disabled' : '') + '>' + (leadState === 'sending' ? 'Sending...' : 'Send') + '</button></div>' +
+      '</form>';
   }
 
   function renderContact() {
@@ -295,30 +338,8 @@
         '<a href="tel:4074765076">407-476-5076</a>' +
         '<a href="mailto:dan@dkbenefits.net">dan@dkbenefits.net</a>' +
         '<a href="https://www.dkbenefits.net" target="_blank" rel="noopener">www.dkbenefits.net</a>' +
-      '</div></section>';
-  }
-
-  function renderLead() {
-    if (!endpoint()) {
-      return '<section class="panel lead-panel" id="lead-panel"><h2>Want to review your benefits package with DK Benefits?</h2>' +
-        '<p class="unconfigured">This form is not connected yet. Call or text 407-476-5076 or email dan@dkbenefits.net.</p></section>';
-    }
-    if (leadState === 'sent') {
-      return '<section class="panel lead-panel" id="lead-panel"><p class="lead-success">' + esc(leadMessage) + '</p></section>';
-    }
-    return '<section class="panel lead-panel" id="lead-panel"><h2>Want to review your benefits package with DK Benefits?</h2>' +
-      '<p class="optional">Optional. Your results stay on this page either way.</p>' +
-      '<form id="lead-form" novalidate>' +
-        '<div class="lead-grid">' +
-          '<label class="field">First name<input name="firstName" autocomplete="given-name" required></label>' +
-          '<label class="field">Company<input name="company" autocomplete="organization" required></label>' +
-          '<label class="field">Email<input name="email" type="email" autocomplete="email" inputmode="email"></label>' +
-          '<label class="field">Phone<input name="phone" type="tel" autocomplete="tel" inputmode="tel"></label>' +
-        '</div>' +
-        '<p class="hint">Email or phone, at least one.</p>' +
-        (leadMessage ? '<p class="field-error">' + esc(leadMessage) + '</p>' : '') +
-        '<div class="quiz-nav"><button class="btn-primary" type="submit"' + (leadState === 'sending' ? ' disabled' : '') + '>' + (leadState === 'sending' ? 'Sending...' : 'Send') + '</button></div>' +
-      '</form></section>';
+      '</div>' +
+      '<div class="lead-panel" id="lead-panel">' + renderLeadInner() + '</div></section>';
   }
 
   function renderResults() {
@@ -330,16 +351,19 @@
       renderSnapshot() +
       renderCalendar() +
       renderCards() +
+      (result.flags && result.flags.offersBenefits
+        ? '<p class="strategy-row no-print"><a class="tool-link" href="' + esc(DKQuiz.URLS.quote) + '" target="_blank" rel="noopener">Review quotes and strategy</a></p>'
+        : '') +
       renderDisclaimer() +
       renderContact() +
-      renderLead() +
       '<button type="button" class="btn-text start-over no-print" data-action="restart">Start over</button>';
   }
 
   function findingsText() {
     var ready = result.readiness || {};
     var lines = [];
-    if (ready.label) lines.push('Readiness: ' + ready.label + ' (' + ready.score + '/10)');
+    if (ready.score != null) lines.push('Readiness: ' + ready.label + ' (' + ready.score + '/10)');
+    else if (ready.label) lines.push('Readiness: ' + ready.label);
     (result.priorities || []).forEach(function (item, i) {
       lines.push((i + 1) + '. ' + item.title + ': ' + item.finding);
     });
@@ -347,6 +371,12 @@
   }
 
   function submitLead(form) {
+    if (form.company_website && String(form.company_website.value || '').trim()) {
+      leadState = 'sent';
+      leadMessage = 'Thanks. Your note is on its way. Your results are still on this page.';
+      render();
+      return;
+    }
     var data = {
       firstName: form.firstName.value.trim(),
       company: form.company.value.trim(),
@@ -445,7 +475,7 @@ root.addEventListener('submit', function (event) {
     } else if (event.key === ' ' && option) {
       event.preventDefault();
       onOption(option.getAttribute('data-value'));
-    } else if (event.key === 'Enter') {
+    } else if (event.key === 'Enter' && option) {
       event.preventDefault();
       goNext();
     }
@@ -455,6 +485,8 @@ root.addEventListener('submit', function (event) {
   window.addEventListener('beforeprint', function () {
     root.querySelectorAll('.finding-body').forEach(function (body) { body.removeAttribute('hidden'); });
     root.querySelectorAll('.finding-toggle').forEach(function (btn) { btn.setAttribute('aria-expanded', 'true'); });
+    var notice = root.querySelector('.disclaimer details');
+    if (notice) notice.open = true;
   });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(postHeight);
   window.DKCompliance = { version: DKQuiz.VERSION, measureHeight: measureHeight };

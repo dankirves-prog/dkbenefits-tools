@@ -58,8 +58,8 @@ test('no-benefits 20 to 49 with part-time confirms ALE and scores lower', () => 
   assert.equal(flagged.flags.ale, 'confirmAle');
   assert.equal(line(flagged, 'ACA employer mandate').value, 'Confirm ALE status');
   assert.equal(clear.flags.ale, 'unlikely');
-  assert.ok(flagged.readiness.score < clear.readiness.score);
-  assert.ok(clear.readiness.score - flagged.readiness.score >= 1);
+  assert.equal(flagged.readiness.score, null);
+  assert.equal(clear.readiness.score, null);
 });
 
 test('not sure headcount confirms size and keeps COBRA in view', () => {
@@ -159,9 +159,12 @@ test('top priorities are the three highest action or confirm items', () => {
   scored.priorities.forEach((item) => {
     assert.ok(item.status === 'actionNeeded' || item.status === 'confirm');
   });
-  const exposures = scored.priorities.map((item) => item.exposure);
-  const sorted = exposures.slice().sort((a, b) => b - a);
-  assert.deepEqual(exposures, sorted);
+  const rank = { actionNeeded: 0, confirm: 1 };
+  for (let i = 1; i < scored.priorities.length; i += 1) {
+    const prev = rank[scored.priorities[i - 1].status];
+    const current = rank[scored.priorities[i].status];
+    assert.ok(prev < current || (prev === current && scored.priorities[i - 1].exposure >= scored.priorities[i].exposure));
+  }
 });
 
 test('visitor copy has no em dashes, prices, indexed percentages, or calendar years', () => {
