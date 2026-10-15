@@ -40,6 +40,31 @@ var WpDocgen = (function () {
     }
     return 'The agent for service of legal process is ' + plan.employer_name + ', ' + plan.address + '. Service of legal process may also be made on the plan administrator.';
   }
+  function phoneText(plan) {
+    return WpModel.formatPhone(plan.phone) || 'the number on the employer\'s records';
+  }
+  function administratorIdentity(plan) {
+    return 'The plan administrator is ' + adminName(plan) + '. The administrator\'s business address is ' + plan.address + '. The administrator\'s phone is ' + phoneText(plan) + '.';
+  }
+  function governingBody(plan) {
+    var body = String(plan.governing_body || '').trim();
+    if (!body) return 'the governing body';
+    if (/^the\b/i.test(body)) return body;
+    return 'the ' + body;
+  }
+  function governingVerb(plan) {
+    var body = String(plan.governing_body || '').replace(/^the\s+/i, '');
+    if (/^(llc\s+)?(members|directors|partners|trustees|owners)\b/i.test(body)) return 'adopt';
+    if (/\bmembers\b/i.test(body) && !/^board\b/i.test(body)) return 'adopt';
+    return 'adopts';
+  }
+  function administrationType(plan, code) {
+    if (code === 'hra' || code === 'health_fsa') return 'sponsor administration';
+    if (code === 'medical' && WpModel.isSelfFundedFunding(plan.funding)) return 'contract administration';
+    if (code === 'std' && plan.std_type === 'trust') return 'sponsor administration';
+    if (WpModel.benefitIsInsured(plan, code)) return 'insurer administration';
+    return 'sponsor administration';
+  }
   function fundingSentence(plan) {
     if (plan.funding === 'insured') return 'Medical benefits are fully insured. The insurer administers claims under the certificate.';
     if (plan.funding === 'level') return 'Medical benefits are self-funded under a level-funded arrangement. ' + (plan.tpa_name || 'The TPA') + ' administers claims. The employer is the named fiduciary. Benefits are paid from the employer\'s general assets.';
@@ -62,22 +87,26 @@ var WpDocgen = (function () {
       return 'Federal COBRA continuation coverage applies to the group health benefits under this plan to the extent the employer met the federal employee threshold in the prior calendar year. COBRA is administered by ' + who + '. The general notice and the election notice are part of this package. Those notices state the qualifying events, the election steps, and the deadlines.';
     }
     if (plan.cobra === 'no' && plan.funding === 'insured') {
-      return 'Federal COBRA is not stated as applicable based on the employer\'s answer. State continuation coverage may be available. The certificate and state law control.';
+      return 'Federal COBRA does not apply. State continuation coverage may be available. The certificate and state law control.';
     }
-    if (plan.cobra === 'no') return 'Federal COBRA is not stated as applicable based on the employer\'s answer.';
+    if (plan.cobra === 'no') return 'Federal COBRA does not apply.';
     return '';
   }
-  function erisaRights() {
-    return [
+  function erisaRights(plan) {
+    var rights = [
       'As a participant in the plan, you are entitled to certain rights and protections under the Employee Retirement Income Security Act of 1974. ERISA provides that all plan participants shall be entitled to:',
       'Examine, without charge, at the plan administrator\'s office and at other specified locations, all documents governing the plan, including insurance contracts and a copy of the latest annual report, if any, filed by the plan with the U.S. Department of Labor.',
       'Obtain, upon written request to the plan administrator, copies of documents governing the operation of the plan, including insurance contracts and copies of the latest annual report, if any, and an updated summary plan description. The administrator may make a reasonable charge for the copies.',
-      'Receive a summary of the plan\'s annual financial report if the plan is required to file an annual report. The plan administrator is required by law to furnish each participant with a copy of this summary annual report.',
-      'Prudent actions by plan fiduciaries. In addition to creating rights for plan participants, ERISA imposes duties upon the people who are responsible for the operation of the employee benefit plan. The people who operate your plan, called fiduciaries, have a duty to do so prudently and in the interest of you and other plan participants and beneficiaries.',
-      'Enforce your rights. If your claim for a benefit is denied or ignored, in whole or in part, you have a right to know why this was done, to obtain copies of documents relating to the decision without charge, and to appeal any denial, all within certain time schedules. Under ERISA, there are steps you can take to enforce the above rights. For instance, if you request a copy of plan documents or the latest annual report from the plan and do not receive them within 30 days, you may file suit in a Federal court. In such a case, the court may require the plan administrator to provide the materials and pay you up to $110 a day until you receive the materials, unless the materials were not sent because of reasons beyond the control of the administrator.',
-      'If you have a claim for benefits which is denied or ignored, in whole or in part, you may file suit in a state or Federal court. If it should happen that plan fiduciaries misuse the plan\'s money, or if you are discriminated against for asserting your rights, you may seek assistance from the U.S. Department of Labor, or you may file suit in a Federal court. The court will decide who should pay court costs and legal fees. If you are successful the court may order the person you have sued to pay these costs and fees. If you lose, the court may order you to pay these costs and fees, for example, if it finds your claim is frivolous.',
-      'If you have any questions about your plan, you should contact the plan administrator. If you have any questions about this statement or about your rights under ERISA, or if you need assistance in obtaining documents from the plan administrator, you should contact the nearest office of the Employee Benefits Security Administration, U.S. Department of Labor, or the Division of Technical Assistance and Inquiries, Employee Benefits Security Administration, U.S. Department of Labor, 200 Constitution Avenue N.W., Washington, D.C. 20210. You may also find answers at the Employee Benefits Security Administration website.'
+      'Receive a summary of the plan\'s annual financial report if the plan is required to file an annual report. The plan administrator is required by law to furnish each participant with a copy of this summary annual report.'
     ];
+    if (plan && WpModel.groupHealth(plan) && (plan.cobra === 'yes' || plan.cobra === 'unsure')) {
+      rights.push('Continue Group Health Plan Coverage. Continue health care coverage for yourself, spouse or dependents if there is a loss of coverage under the plan as a result of a qualifying event. You or your dependents may have to pay for such coverage. Review this summary plan description and the documents governing the plan on the rules governing your COBRA continuation coverage rights.');
+    }
+    rights.push('Prudent actions by plan fiduciaries. In addition to creating rights for plan participants, ERISA imposes duties upon the people who are responsible for the operation of the employee benefit plan. The people who operate your plan, called fiduciaries, have a duty to do so prudently and in the interest of you and other plan participants and beneficiaries.');
+    rights.push('Enforce your rights. If your claim for a benefit is denied or ignored, in whole or in part, you have a right to know why this was done, to obtain copies of documents relating to the decision without charge, and to appeal any denial, all within certain time schedules. Under ERISA, there are steps you can take to enforce the above rights. For instance, if you request a copy of plan documents or the latest annual report from the plan and do not receive them within 30 days, you may file suit in a Federal court. In such a case, the court may require the plan administrator to provide the materials and pay you up to $110 a day until you receive the materials, unless the materials were not sent because of reasons beyond the control of the administrator.');
+    rights.push('If you have a claim for benefits which is denied or ignored, in whole or in part, you may file suit in a state or Federal court. If it should happen that plan fiduciaries misuse the plan\'s money, or if you are discriminated against for asserting your rights, you may seek assistance from the U.S. Department of Labor, or you may file suit in a Federal court. The court will decide who should pay court costs and legal fees. If you are successful the court may order the person you have sued to pay these costs and fees. If you lose, the court may order you to pay these costs and fees, for example, if it finds your claim is frivolous.');
+    rights.push('If you have any questions about your plan, you should contact the plan administrator. If you have any questions about this statement or about your rights under ERISA, or if you need assistance in obtaining documents from the plan administrator, you should contact the nearest office of the Employee Benefits Security Administration, U.S. Department of Labor, or the Division of Technical Assistance and Inquiries, Employee Benefits Security Administration, U.S. Department of Labor, 200 Constitution Avenue N.W., Washington, D.C. 20210. You may also find answers at the Employee Benefits Security Administration website.');
+    return rights;
   }
   function addSection(rows, title, paragraphs, level) {
     var texts = (paragraphs || []).filter(function (text) { return !!text; });
@@ -105,9 +134,15 @@ var WpDocgen = (function () {
   }
   function benefitLines(plan) {
     return WpModel.wrappedBenefits(plan).map(function (code) {
-      var line = WpModel.benefitLabel(code) + ' is provided through ' + carrier(plan, code) + '.';
-      if (code === 'hra' && plan.hra_type) line += ' The HRA type is ' + plan.hra_type + '. The separate HRA document is incorporated.';
-      if (code === 'health_fsa') line += ' The separate health FSA document is incorporated.';
+      var addr = (plan.carrier_addresses && plan.carrier_addresses[code]) || '';
+      var line = WpModel.benefitLabel(code) + ' is provided through ' + carrier(plan, code) + (addr ? ', ' + addr : '') + '.';
+      line += ' Type of administration: ' + administrationType(plan, code) + '.';
+      if (WpModel.benefitIsInsured(plan, code) && (code === 'medical' || code === 'dental' || code === 'vision' || code === 'rx' || (code === 'eap' && plan.eap_type === 'substantive'))) {
+        line += ' Benefits are guaranteed under the insurance policy.';
+      }
+      if (code === 'hra' && plan.hra_type) line += ' The HRA type is ' + WpModel.hraLabel(plan.hra_type) + '. The separate HRA document is incorporated.';
+      if (code === 'health_fsa') line += ' The separate health FSA document is incorporated. The health FSA is paid from the employer\'s general assets.';
+      if (code === 'hra') line += ' The HRA is paid from the employer\'s general assets.';
       if (code === 'medical' && plan.network === 'traditional') line += ' Benefits are provided through a provider network named in the certificate.';
       if (code === 'medical' && (plan.network === 'rbp' || plan.funding === 'rbp')) {
         line += ' Reference-based pricing can leave a balance bill. The No Surprises Act protects a participant for emergency care, certain non-emergency care at an in-network facility, and air ambulance services, as that law applies. The certificate controls the detail.';
@@ -135,7 +170,7 @@ var WpDocgen = (function () {
     if (pretax || plan.section125 === 'yes') {
       return 'Where a benefit is offered pre-tax, that choice is made under a separate Section 125 cafeteria plan. This wrap is not the cafeteria plan. The cafeteria plan controls the election, the irrevocability rules, and the permitted changes in status. A pre-tax election does not add a benefit that the certificate does not provide.';
     }
-    return 'The employer did not identify a pre-tax election under a Section 125 plan for the benefits in this wrap. Employee contributions, if any, are taken as the enrollment materials state.';
+    return 'No pre-tax election under a Section 125 plan applies to the benefits in this wrap. Employee contributions, if any, are taken as the enrollment materials state.';
   }
   function cobraBlock(plan, voice) {
     if (!WpModel.groupHealth(plan)) return [];
@@ -145,22 +180,19 @@ var WpDocgen = (function () {
       return [
         'Federal COBRA continuation coverage applies to the group health benefits under this plan to the extent the employer met the federal employee threshold in the prior calendar year. COBRA is administered by ' + who + '. The general notice and the election notice are part of this package. Those notices state the qualifying events, the election steps, and the deadlines.',
         (you ? 'You' : 'A covered person') + ' should read the COBRA notices for the qualifying events, who may elect, how to elect, and how long coverage can last. This wrap does not restate those deadlines. Dental and vision are group health coverage for COBRA when they are wrapped.',
-        'A part-time employee counts as a fraction of an employee for the federal threshold. The fraction is hours worked divided by full-time hours. Related employers under common control are counted together. The plan administrator can require proof of a qualifying event and of timely payment.',
-        plan.cobra === 'unsure'
-          ? 'The employer marked the federal COBRA count as not sure. The federal paragraph is printed so the package is complete, and the employer confirms the count before relying on it.'
-          : 'The employer answered that the federal COBRA threshold was met.'
+        'A part-time employee counts as a fraction of an employee for the federal threshold. The fraction is hours worked divided by full-time hours. Related employers under common control are counted together. The plan administrator can require proof of a qualifying event and of timely payment.'
       ];
     }
     if (plan.cobra === 'no' && plan.funding === 'insured') {
       return [
-        'Federal COBRA is not stated as applicable based on the employer\'s answer. State continuation coverage may be available. The certificate and state law control.',
+        'Federal COBRA does not apply. State continuation coverage may be available. The certificate and state law control.',
         'If a later count shows that the federal threshold was met, the federal COBRA notices control from that point. This document does not state a number of months of continuation.'
       ];
     }
     if (plan.cobra === 'no') {
       return [
-        'Federal COBRA is not stated as applicable based on the employer\'s answer.',
-        'The employer should confirm that answer against the prior-year employee count, including part-time fractions and related employers. This document does not state a number of months of continuation.'
+        'Federal COBRA does not apply.',
+        'This document does not state a number of months of continuation.'
       ];
     }
     return [];
@@ -184,12 +216,17 @@ var WpDocgen = (function () {
     paras.push('For a pre-service claim that is not urgent, the plan notifies the claimant within a reasonable period, and in no event later than 15 days after receipt. The plan may extend that period once, for up to 15 days, when matters beyond its control require the extension and it gives notice before the first period ends. If the claimant did not follow the plan\'s procedure, the plan gives notice within 5 days. If more information is needed, the claimant has at least 45 days to supply it, and the decision clock pauses until the information arrives.');
     paras.push('For a post-service claim, the plan notifies the claimant within a reasonable period, and in no event later than 30 days after receipt. One 15-day extension is available on the same terms as a pre-service claim. If more information is needed, the claimant has at least 45 days to supply it.');
     paras.push('For a concurrent-care decision that reduces or ends an approved course of treatment, the plan gives notice early enough for the claimant to appeal before the benefit is reduced or ends. A request to extend an urgent course of treatment is decided as soon as possible, and within 24 hours when the request is received at least 24 hours before the approved period ends.');
-    paras.push('If a benefit is a disability benefit, the stricter disability time frames apply to that benefit. The administrator decides a disability claim within a reasonable period, and in no event later than 45 days, with up to two 30-day extensions for matters beyond its control. An appeal of a disability denial is decided within 45 days, with one 45-day extension. The denial will identify any internal rule and will state that a copy is available on request. A disagreement about medical judgment will be decided with a consultation that gives no weight to the first decision.');
+    var disability = 'If a benefit is a disability benefit, the stricter disability time frames apply to that benefit. The administrator decides a disability claim within a reasonable period, and in no event later than 45 days, with up to two 30-day extensions for matters beyond its control. An appeal of a disability denial is decided within 45 days, with one 45-day extension. The denial will identify any internal rule and will state that a copy is available on request. A disagreement about medical judgment will be decided with a consultation that gives no weight to the first decision.';
+    var wrappedNow = WpModel.wrappedBenefits(plan);
+    if (wrappedNow.indexOf('std') !== -1 || wrappedNow.indexOf('ltd') !== -1) {
+      disability += ' Before the appeal decision, ' + (you ? 'you' : 'the claimant') + ' may review and respond to new evidence or a new rationale. The final denial states any contractual limitations period and the date it expires.';
+    }
+    paras.push(disability);
     paras.push('An adverse benefit determination explains the reasons, the plan terms, any additional information that would perfect the claim, the appeal steps, and the time limits, including that ' + your + ' right to sue under ERISA follows the appeal. It also describes any internal rule, protocol, or guideline that was relied on, or states that a copy is free on request. If the decision turns on medical judgment or an experimental treatment exclusion, the notice says so and offers the identity of any medical expert.');
-    paras.push(person + ' has at least 180 days after an adverse determination to appeal. The appeal is to the named fiduciary. The reviewer is not the person who made the first decision and is not that person\'s subordinate. The reviewer gives no deference to the first decision. If the decision turns on medical judgment, the reviewer consults a qualified professional who was not involved in the first decision. ' + person + ' may submit written comments, documents, and records, and may receive, free of charge, the records relevant to the claim.');
+    paras.push((you ? 'You have' : person + ' has') + ' at least 180 days after an adverse determination to appeal. The appeal is to the named fiduciary. The reviewer is not the person who made the first decision and is not that person\'s subordinate. The reviewer gives no deference to the first decision. If the decision turns on medical judgment, the reviewer consults a qualified professional who was not involved in the first decision. ' + person + ' may submit written comments, documents, and records, and may receive, free of charge, the records relevant to the claim.');
     paras.push('An urgent appeal is decided as soon as possible, and in no event later than 72 hours after the plan receives it. A pre-service appeal is decided within a reasonable period, and in no event later than 30 days. A post-service appeal is decided within a reasonable period, and in no event later than 60 days. The decision on appeal is in writing and includes the reasons, the plan terms, a statement that ' + (you ? 'you' : 'the claimant') + ' may receive the relevant records free of charge, and a description of any further voluntary appeal and of the right to sue.');
     if (WpModel.hasBenefit(plan, 'medical') || WpModel.groupHealth(plan)) {
-      paras.push('A medical claim that is subject to external review follows the external review process in the certificate and the federal external-review rules. ' + person + ' generally has four months after the final internal denial to request external review. The external reviewer\'s decision is binding on the plan except as other remedies provide. External review is not a new internal appeal, and it does not extend the time to sue except as the notice states.');
+      paras.push('A medical claim that is subject to external review follows the external review process in the certificate and the federal external-review rules. ' + (you ? 'You generally have' : person + ' generally has') + ' four months after the final internal denial to request external review. The external reviewer\'s decision is binding on the plan except as other remedies provide. External review is not a new internal appeal, and it does not extend the time to sue except as the notice states.');
     }
     paras.push('The time to file suit begins when the internal appeal is finished, or earlier if the plan fails to follow its procedures in a way that is more than minor and the failure is not corrected. Exhaustion of the internal appeal is required before suit, except where the procedures say exhaustion is excused. A claimant should read the denial and the appeal decision for the forum and the time limit that apply to that benefit.');
     paras.push('The certificate or booklet for a benefit controls the address for claims, the forms, and any shorter internal deadline that still meets these federal minimums. If this wrap and the certificate describe different time frames, the frame that is lawful and that the certificate uses for that benefit controls, and the employer issues a summary of material modifications if the wrap has to be corrected.');
@@ -205,8 +242,8 @@ var WpDocgen = (function () {
       ];
     }
     return [
-      (you ? 'The plan sponsor has said it does not receive protected health information for plan administration beyond enrollment and disenrollment.' : 'The plan sponsor does not receive protected health information for plan administration beyond enrollment and disenrollment.'),
-      'Enrollment and disenrollment records may be shared with the sponsor so coverage can be started and stopped. If the sponsor later needs identifiable health information to run the plan, the HIPAA amendment and the plan sponsor certification have to be signed before that information is shared. The amendment in this package is the form for that step.'
+      'The plan sponsor does not receive protected health information for plan administration beyond enrollment and disenrollment.',
+      'Enrollment and disenrollment records may be shared with the sponsor so coverage can be started and stopped. A HIPAA amendment and a plan sponsor certification are required before the sponsor receives protected health information.'
     ];
   }
   function noticeBlock(plan, voice) {
@@ -233,12 +270,14 @@ var WpDocgen = (function () {
     return paras;
   }
   function powersBlock(plan) {
-    return [
-      'The plan administrator has full discretionary authority to administer the plan, to interpret the plan and the incorporated certificates, to decide questions of eligibility, and to decide claims and appeals. A decision made under that authority is reviewed with deference to the administrator. The administrator will apply the certificate that governs the benefit.',
-      'The administrator may adopt procedures, appoint and remove a claims administrator or TPA, delegate duties in writing, sign contracts for the plan, correct a clerical error, and recover a payment that was not owed. A delegation does not relieve the named fiduciary of the duty to watch the delegate. The employer is the named fiduciary except where an insurer decides an insured claim under the certificate.',
-      'The administrator keeps the records needed to run the plan and to answer a lawful request for documents. A participant or beneficiary may examine the governing documents and may obtain copies as the statement of ERISA rights describes. The administrator may charge a reasonable amount for copies where the law allows a charge.',
-      'No person speaking for the employer can change this plan by an oral promise. A change is made only by a written amendment adopted as this document describes. A clerical error may be corrected retroactively when the correction matches the intended term and the certificate.'
-    ];
+    var rows = [];
+    if (plan.discretion !== 'no') {
+      rows.push('The plan administrator has full discretionary authority to administer the plan, to interpret the plan and the incorporated certificates, to decide questions of eligibility, and to decide claims and appeals. A decision made under that authority is reviewed with deference to the administrator. The administrator will apply the certificate that governs the benefit.');
+    }
+    rows.push('The administrator may adopt procedures, appoint and remove a claims administrator or TPA, delegate duties in writing, sign contracts for the plan, correct a clerical error, and recover a payment that was not owed. A delegation does not relieve the named fiduciary of the duty to watch the delegate. The employer is the named fiduciary except where an insurer decides an insured claim under the certificate.');
+    rows.push('The administrator keeps the records needed to run the plan and to answer a lawful request for documents. A participant or beneficiary may examine the governing documents and may obtain copies as the statement of ERISA rights describes. The administrator may charge a reasonable amount for copies where the law allows a charge.');
+    rows.push('No person speaking for the employer can change this plan by an oral promise. A change is made only by a written amendment adopted as this document describes. A clerical error may be corrected retroactively when the correction matches the intended term and the certificate.');
+    return rows;
   }
   function subrogationBlock(plan, voice) {
     var you = voice === 'you';
@@ -247,7 +286,7 @@ var WpDocgen = (function () {
     }
     return [
       'This section applies to a self-funded or level-funded benefit, including a health reimbursement arrangement or a health FSA that pays from general assets. It does not enlarge the recovery terms of a fully insured benefit. Those terms stay in the certificate.',
-      (you ? 'If you' : 'If a participant') + ' receive benefits for an injury or illness that someone else may be responsible for, the plan may recover what it paid from any amount ' + (you ? 'you' : 'the participant') + ' or a dependent receive from that person, an insurer, or another source. The right comes first, before the participant is made whole, except where a law that actually applies says otherwise. The plan is not limited to a particular fund.',
+      (you ? 'If you receive' : 'If a participant receives') + ' benefits for an injury or illness that someone else may be responsible for, the plan may recover what it paid from any amount ' + (you ? 'you' : 'the participant') + ' or a dependent receives from that person, an insurer, or another source. The right comes first, before the participant is made whole, except where a law that actually applies says otherwise. The plan is not limited to a particular fund.',
       'The participant will not settle a claim in a way that impairs the plan\'s right without the plan\'s written consent. The participant will cooperate, sign papers, and tell the plan about the claim. The plan may offset later benefits if the recovery is not repaid. Attorneys\' fees are not deducted from the plan\'s share unless the plan agrees in writing. This section is a right of reimbursement and an equitable lien on the recovery.'
     ];
   }
@@ -264,16 +303,16 @@ var WpDocgen = (function () {
       fundingSentence(plan)
     ]);
     addSection(rows, 'Plan identity', [
-      'Plan sponsor: ' + plan.employer_name + '. EIN ' + plan.employer_ein + '. Address: ' + plan.address + '. Phone: ' + (plan.phone || 'the number on the employer\'s records') + '.',
+      'Plan sponsor: ' + plan.employer_name + '. EIN ' + plan.employer_ein + '. Address: ' + plan.address + '. Phone: ' + phoneText(plan) + '.',
       'Plan number: ' + plan.plan_number + '. ' + WpModel.planYearSentence(plan),
-      'The plan administrator is ' + adminName(plan) + '. The administrator\'s address and phone are the sponsor\'s unless a different administrator address is on file.',
+      administratorIdentity(plan),
       agentSentence(plan),
       plan.trust === 'yes'
         ? 'The trustee is ' + plan.trustee_name + (plan.trustee_address ? ', ' + plan.trustee_address : '') + '.'
-        : 'No separate trust was reported for the plan as a whole. Insured benefits are provided under insurance contracts. A benefit paid from a trust or a separate fund, if any was selected, is identified with that benefit.',
+        : 'Plan assets are not held in a trust. Insured benefits are provided under insurance contracts. A benefit paid from a trust or a separate fund, if one is part of this plan, is identified with that benefit.',
       plan.bargaining === 'yes'
         ? 'Some benefits are maintained under a collective bargaining agreement. A copy of that agreement is available from the plan administrator on request.'
-        : 'The employer reported that the wrapped benefits are not maintained under a collective bargaining agreement.'
+        : 'The plan is not maintained under a collective bargaining agreement.'
     ]);
     addSection(rows, 'Definitions', [
       'Certificate means the insurance certificate, the evidence of coverage, the booklet, the schedule of benefits, or the component plan document for a wrapped benefit, including any summary of material modifications to it.',
@@ -281,7 +320,7 @@ var WpDocgen = (function () {
       'Employer means ' + plan.employer_name + ' and any related employer that adopts this plan in writing. A related employer is not a sponsor of this plan until it adopts the plan.',
       'Participant means an employee or former employee who is covered by at least one component benefit, or who contributes to a component benefit, under the participation rules below. A dependent is a beneficiary, not a participant, unless the dependent is covered in the dependent\'s own right.',
       'Plan administrator means ' + adminName(plan) + '. Claims administrator means the insurer, TPA, or other person who decides claims for a component benefit.',
-      'Plan year is the period named above. A limitation year in a component document stays the period that document uses.'
+      'Plan year is the period named above. A policy year in a component document stays the period that document uses.'
     ]);
     addSection(rows, 'Benefits wrapped under this plan', [
       'The following benefits are part of this plan. The certificate, booklet, or TPA document for each benefit is incorporated by reference.'
@@ -327,13 +366,14 @@ var WpDocgen = (function () {
           ? 'Employees contribute toward one or more benefits, as the enrollment materials describe.'
           : 'The employer pays the cost of the wrapped benefits except as a certificate states otherwise.',
       section125Sentence(plan),
+      'Insured benefits are funded through premiums, self-funded benefits are funded from the employer\'s general assets, and participant contributions are applied toward the cost of the benefit elected.',
       WpModel.REVERSION,
       WpModel.isSelfFundedFunding(plan.funding)
         ? 'Stop-loss, if the employer has it, protects the employer. It is not a participant benefit, and its terms are not stated in this document.'
         : ''
     ]);
     addSection(rows, 'Claims and appeals', claimsBlock(plan, 'plan'));
-    addSection(rows, 'Plan administrator powers and discretion', powersBlock(plan));
+    addSection(rows, plan.discretion === 'no' ? 'Plan administrator powers' : 'Plan administrator powers and discretion', powersBlock(plan));
     addSection(rows, 'Subrogation and reimbursement', subrogationBlock(plan, 'plan'));
     addSection(rows, 'Continuation coverage', cobraBlock(plan, 'plan'));
     if (WpModel.groupHealth(plan)) {
@@ -348,7 +388,7 @@ var WpDocgen = (function () {
       addSection(rows, 'Mental health parity', [
         WpModel.parityMode(plan) === 'print'
           ? 'Financial requirements and treatment limits on mental health and substance use benefits are not more restrictive than the limits on medical and surgical benefits, as federal law requires. Quantitative limits and nonquantitative limits are applied as the certificate and federal law require. This plan does not decide a particular exclusion in this sentence.'
-          : 'Mental health and substance use benefits, and any limits on those benefits, are described in the certificate or booklet. The employer\'s reported size is not above the small-plan line that federal law uses for a self-funded parity statement, so this wrap defers to the booklet.'
+          : 'Mental health and substance use benefits, and any limits on those benefits, are described in the certificate or booklet. The employee count is not above the small-plan line that federal law uses for a self-funded parity statement, so this wrap defers to the booklet.'
       ]);
       addSection(rows, 'Newborns and mothers', [
         WpModel.NEWBORNS,
@@ -369,11 +409,11 @@ var WpDocgen = (function () {
     if (WpModel.groupHealth(plan)) {
       addSection(rows, 'Medicare coordination', [
         WpModel.MSP_SENTENCE,
-        'The certificate states how a claim is handled when a covered person also has Medicare. Federal rules decide when this plan pays before Medicare and when Medicare pays first. Those rules look at the reason for Medicare, the size of the employer, and whether the coverage is because of current employment. This wrap does not choose a different order. The employer does not ask for, and this plan does not state, a choice that the plan always pays second.'
+        'The certificate states how a claim is handled when a covered person also has Medicare. Federal rules decide when this plan pays before Medicare and when Medicare pays first. Those rules look at the reason for Medicare, the size of the employer, and whether the coverage is because of current employment.'
       ]);
     }
     addSection(rows, 'Amendment and termination', [
-      'The employer may amend or terminate the plan, or any component benefit, by written action of ' + (plan.governing_body || 'its governing body') + '. An amendment is effective on the date the written action states. A material change is communicated in a summary of material modifications.',
+      'The employer may amend or terminate the plan, or any component benefit, by written action of ' + governingBody(plan) + '. An amendment is effective on the date the written action states. A material change is communicated in a summary of material modifications.',
       'Welfare benefits are not vested. The employer does not promise to continue a benefit for any period, except where an insurance contract or continuation law independently requires it. Termination does not avoid a claim incurred while the benefit was in force, except as the certificate states.',
       WpModel.REVERSION,
       'No plan asset, participant contribution, or participants\' share of an insurer refund or rebate will be used for the employer\'s general business. Reasonable plan expenses may be paid from those amounts when the law allows.'
@@ -401,17 +441,17 @@ var WpDocgen = (function () {
       'Read this summary with the certificate for each benefit you have. The certificate states what is covered, what is excluded, and what you pay at the point of care. This summary does not list every exclusion.'
     ]);
     addSection(rows, 'Plan identity', [
-      'Plan sponsor: ' + plan.employer_name + '. EIN ' + plan.employer_ein + '. Address: ' + plan.address + '. Phone: ' + (plan.phone || 'the number on the employer\'s records') + '.',
+      'Plan sponsor: ' + plan.employer_name + '. EIN ' + plan.employer_ein + '. Address: ' + plan.address + '. Phone: ' + phoneText(plan) + '.',
       'Plan number: ' + plan.plan_number + '. Type of plan: an employee welfare benefit plan. ' + WpModel.planYearSentence(plan),
       fundingSentence(plan),
-      'The plan administrator is ' + adminName(plan) + '. The administrator\'s address and phone are the sponsor\'s unless a different administrator address is on file. You may write to the administrator for a copy of the plan documents.',
+      administratorIdentity(plan) + ' You may write to the administrator for a copy of the plan documents.',
       agentSentence(plan),
       plan.trust === 'yes'
         ? 'The trustee is ' + plan.trustee_name + (plan.trustee_address ? ', ' + plan.trustee_address : '') + '.'
-        : 'The employer reported that plan money for the plan as a whole is not held in a separate trust.',
+        : 'Plan assets are not held in a trust.',
       plan.bargaining === 'yes'
         ? 'Some benefits are maintained under a collective bargaining agreement. You may ask the plan administrator for a copy.'
-        : ''
+        : 'The plan is not maintained under a collective bargaining agreement.'
     ]);
     addSection(rows, 'What the plan covers', [
       'The plan wraps the benefits below. Each one is provided through the carrier or administrator named here, under that benefit\'s certificate or booklet.'
@@ -454,7 +494,7 @@ var WpDocgen = (function () {
         'The plan follows qualified medical child support orders, including a National Medical Support Notice. If an order or a notice arrives, you and each alternate recipient are notified. The administrator decides whether the order is qualified and writes to you with that decision. A qualified order is followed to the extent the certificate allows. You may get a copy of the procedures from the plan administrator without charge.'
       ].concat(hipaaBlock(plan, 'you')).concat([
         WpModel.MSP_SENTENCE,
-        'The certificate states how a claim is handled when you also have Medicare. Federal rules decide the order of payment. This summary does not say the plan always pays second.'
+        'The certificate states how a claim is handled when you also have Medicare. Federal rules decide the order of payment.'
       ]));
     }
     if (WpModel.hasBenefit(plan, 'medical')) {
@@ -472,7 +512,7 @@ var WpDocgen = (function () {
       'If you take family or medical leave that federal law protects, your group health coverage continues during the leave if you pay your contribution the way the employer explains. When you return, coverage is restored without a new waiting period that the leave law forbids, if you are still eligible.'
     ]);
     addSection(rows, 'If the plan changes or ends', [
-      'The employer may amend or end the plan by written action of ' + (plan.governing_body || 'its governing body') + '. You will receive a summary of a material change. Benefits under this welfare plan are not vested.',
+      'The employer may amend or end the plan by written action of ' + governingBody(plan) + '. You will receive a summary of a material change. Benefits under this welfare plan are not vested.',
       WpModel.REVERSION
     ]);
     addSection(rows, 'Other facts you should know', [
@@ -480,7 +520,7 @@ var WpDocgen = (function () {
       'The plan is not a promise of continued employment. Keep your address current so notices reach you. If a payment was too high, the plan may recover it. If a payment was too low, the plan will correct it.',
       'Some federal notices come with your certificate or at enrollment, including a summary of benefits and coverage where one is required, a children\'s health insurance notice, a Medicare prescription notice, and a marketplace notice. Those notices are part of how the plan communicates. They are not reprinted in this summary.'
     ]);
-    addSection(rows, 'Statement of ERISA rights', erisaRights());
+    addSection(rows, 'Statement of ERISA rights', erisaRights(plan));
     return rows;
   }
   function scheduleParagraphs(plan) {
@@ -493,9 +533,12 @@ var WpDocgen = (function () {
       'Attach the current certificate, booklet, or component plan for every row. A wrap without those papers does not tell a participant what is covered. If a paper is missing, get it before you hand out the package.'
     ]);
     addSection(rows, 'Benefit schedule', WpModel.wrappedBenefits(plan).map(function (code) {
-      var funding = code === 'medical' ? WpModel.fundingLabel(plan.funding || 'insured') : 'As stated in the certificate';
+      var funding = 'Fully insured';
+      if (code === 'hra' || code === 'health_fsa') funding = 'Paid from the employer\'s general assets';
+      else if (code === 'medical') funding = WpModel.fundingLabel(plan.funding || 'insured');
+      else if (!WpModel.benefitIsInsured(plan, code)) funding = 'Self-funded';
       var doc = code === 'medical' && plan.tpa_document ? plan.tpa_document : 'Current certificate, booklet, or component plan';
-      if (code === 'hra') doc = 'Separate HRA plan document' + (plan.hra_type ? ' (' + plan.hra_type + ')' : '');
+      if (code === 'hra') doc = 'Separate HRA plan document' + (plan.hra_type ? ' (' + WpModel.hraLabel(plan.hra_type) + ')' : '');
       if (code === 'health_fsa') doc = 'Separate health FSA plan document';
       return WpModel.benefitLabel(code) + '. Carrier or administrator: ' + carrier(plan, code) + '. Attach: ' + doc + '. Funding: ' + funding + '.';
     }).concat([
@@ -520,7 +563,7 @@ var WpDocgen = (function () {
     rows.push(row('Title', 'Adoption resolution', { keepNext: true, keepLines: true }));
     rows.push(row(null, WpModel.DISCLAIMER));
     addSection(rows, 'Resolutions', [
-      'The ' + (plan.governing_body || 'governing body') + ' of ' + plan.employer_name + ' takes the following action.',
+      governingBody(plan).charAt(0).toUpperCase() + governingBody(plan).slice(1) + ' of ' + plan.employer_name + ' ' + governingVerb(plan) + ' the following action.',
       'The employer maintains welfare benefits for its eligible employees and their dependents. The employer intends those benefits to be one employee welfare benefit plan, with each certificate and component document incorporated.',
       plan.employer_name + ' resolves that the ' + plan.plan_name + ', plan number ' + plan.plan_number + ', is adopted effective ' + when + ' when the authorized person signs this resolution.',
       plan.is_restatement === 'yes'
@@ -531,10 +574,6 @@ var WpDocgen = (function () {
       'Welfare benefits under the plan are not vested. The employer may amend or terminate the plan by a later written action of the same governing body.'
     ]);
     rows.push.apply(rows, signatureRows(plan));
-    addSection(rows, 'After it is signed', [
-      'Leave the signature line and the date line blank until the authorized person signs. The name and title are printed so the signer is identified. A date you intend to sign, if you entered one in the tool, is not printed on the signature line.',
-      'Keep the signed resolution with the signed wrap. You do not need to give the resolution to every participant. You do need to be able to show that the plan was adopted.'
-    ]);
     return rows;
   }
   function hipaaParagraphs(plan) {
@@ -547,9 +586,7 @@ var WpDocgen = (function () {
       var rows = [];
       addSection(rows, 'When the sponsor may receive information', [
         'The plan may disclose protected health information to the plan sponsor only for plan administration and only as federal privacy law allows.',
-        plan.phi === 'yes'
-          ? 'The employer reported that the plan sponsor receives protected health information to administer the plan. The classes of people who may see it are: ' + classes + '.'
-          : 'The employer reported that the plan sponsor does not receive protected health information beyond enrollment and disenrollment. Enrollment and disenrollment may be shared so coverage can start and stop. This amendment still states the limits that apply if the sponsor later receives identifiable health information for plan administration.',
+        'The plan sponsor receives protected health information to administer the plan. The classes of people who may see it are: ' + classes + '.',
         'Summary health information that does not identify a person may be disclosed so the sponsor can obtain premium bids or consider changing the plan. Information about whether a person is enrolled may be disclosed. Any other protected health information waits for the certification below.'
       ]);
       addSection(rows, 'Plan sponsor certification', [
@@ -584,7 +621,7 @@ var WpDocgen = (function () {
       'These procedures apply to the group health benefits the plan wraps. They do not create coverage the certificate does not provide. An order cannot require a benefit, a dependent category, or a form of payment that the plan does not offer.'
     ]);
     addSection(rows, 'How an order is received', [
-      'Send an order or a National Medical Support Notice to the plan administrator at the sponsor\'s address. The administrator stamps or otherwise records the date it arrived. A National Medical Support Notice is handled as a medical child support order under federal law, including the part of that law that tells the plan how to treat the notice.',
+      'Send an order or a National Medical Support Notice to the plan administrator at the sponsor\'s address. The administrator stamps or otherwise records the date it arrived. A National Medical Support Notice is handled as a medical child support order under federal law, including the part of that law that tells the plan how to treat the notice. The administrator responds to the issuing agency within 40 business days after the date of the National Medical Support Notice.',
       'The participant, the child, and each alternate recipient may send comments and a copy of the order. An alternate recipient may be the child or a person acting for the child, such as a custodial parent or a state agency. The administrator may ask for a certified copy if the first copy is incomplete.'
     ]);
     addSection(rows, 'Notice', [
@@ -611,20 +648,21 @@ var WpDocgen = (function () {
     var rows = [];
     var filing = WpModel.filingResult(plan);
     var count = WpModel.countParticipants(plan);
-    var notes = findings || WpModel.findingsFor(plan);
     var census = plan.census || {};
     rows.push(row('Title', 'Findings report', { keepNext: true, keepLines: true }));
     rows.push(row(null, WpModel.DISCLAIMER));
     addSection(rows, 'Who this report is for', [
       'This note is for the employer. It is not part of the summary plan description given to employees.',
-      'It explains what the sample package contains, how the Form 5500 answer was reached, what the COBRA and HIPAA answers mean, and what to do next. It is a drafting aid. Your own counsel should take a look before you sign. Nothing in this note tells you to wait for a law firm before you can read or download the sample.'
+      'It explains what the sample package contains, how the Form 5500 answer was reached, what the COBRA and HIPAA answers mean, and what to do next. It is a drafting aid. Your own counsel should take a look before you sign.'
     ]);
     addSection(rows, 'Documents in the sample', [
       'The sample contains a wrap plan document, a summary plan description with the statement of ERISA rights, Schedule A with assembly instructions, and an adoption resolution with a signature block.',
       WpModel.groupHealth(plan)
-        ? 'Because a group health benefit is wrapped, the sample also contains qualified medical child support order procedures, including National Medical Support Notice handling, and a HIPAA privacy amendment with the plan sponsor certification.'
-        : 'No group health benefit was wrapped, so the medical-child-support procedures and the HIPAA amendment were not added.',
-      'Each document is its own file. Each one starts on its own first page. The footer of each file is the employer name, the document title, and the page numbers for that file.',
+        ? 'Because a group health benefit is wrapped, the sample contains qualified medical child support order procedures, including National Medical Support Notice handling.'
+        : 'No group health benefit was wrapped, so the medical child support procedures were not added.',
+      plan.phi === 'yes'
+        ? 'The sample contains a HIPAA privacy amendment and the plan sponsor certification.'
+        : 'The sample does not contain a HIPAA amendment.',
       'The signature lines and the date lines are blank on purpose. The signer\'s name and title are printed. Do not treat an unsigned sample as an adopted plan.'
     ]);
     addSection(rows, 'Form 5500 status', [
@@ -660,23 +698,18 @@ var WpDocgen = (function () {
     ]);
     addSection(rows, 'HIPAA', [
       plan.phi === 'yes'
-        ? 'You reported that the plan sponsor receives protected health information for plan administration. The package includes a HIPAA amendment and a plan sponsor certification. The classes named to see that information are: ' + (plan.phi_classes || 'not yet filled in') + '.'
-        : 'You reported that the plan sponsor does not receive protected health information beyond enrollment and disenrollment. The summary says that. The package still includes the HIPAA amendment and the certification so they are ready if that answer changes. Do not start receiving identifiable health information for plan administration until the certification is signed.',
-      plan.phi_classes_blank
+        ? 'The plan sponsor receives protected health information for plan administration. The package includes a HIPAA amendment and a plan sponsor certification. The classes named to see that information are: ' + (plan.phi_classes || 'not yet filled in') + '.'
+        : 'The plan sponsor does not receive protected health information beyond enrollment and disenrollment. A HIPAA amendment and a plan sponsor certification are needed before the sponsor ever receives protected health information.',
+      plan.phi === 'yes' && plan.phi_classes_blank
         ? 'Fill in the job classes that may see health information before you sign the HIPAA amendment.'
-        : 'The certification states the statutory limits: plan-administration use only, no employment use, agents bound, notice of a misuse, access, amendment, an accounting, access for the federal health department, return or destruction when the job is done, and security safeguards for electronic information.',
+        : plan.phi === 'yes'
+          ? 'The certification states the statutory limits: plan-administration use only, no employment use, agents bound, notice of a misuse, access, amendment, an accounting, access for the federal health department, return or destruction when the job is done, and security safeguards for electronic information.'
+          : '',
       WpModel.isSelfFundedFunding(plan.funding)
         ? 'Self-funded and level-funded medical plans usually involve the sponsor in claim information. If a TPA handles claims, confirm in the TPA contract that the sponsor\'s access matches the class list in the amendment.'
         : 'A fully insured plan can often leave identifiable claims with the insurer. If you receive more than enrollment data, sign the certification first.'
     ]);
-    addSection(rows, 'Other plan design notes', (notes || []).concat([
-      WpModel.parityMode(plan) === 'print'
-        ? 'The medical benefit includes a mental health parity sentence because of the funding and the size you reported.'
-        : WpModel.parityMode(plan) === 'booklet'
-          ? 'The parity sentence is deferred to the booklet because the medical benefit is self-funded or level-funded and the employee count you reported is not above 50.'
-          : '',
-      'Code rules on self-funded nondiscrimination, and the large-employer health-coverage rules, are warnings only. This sample does not decide them. Last year\'s headcount, full-time and part-time, was ' + (plan.employee_count || 'not entered') + '. Full-time equivalents, not this headcount alone, decide the large-employer question.'
-    ]));
+    addSection(rows, 'Other plan design notes', WpModel.designNotes(plan));
     if (WpModel.complexFunding(plan)) {
       addSection(rows, 'Broker-of-record review', [
         WpModel.BROKER_LINE,
@@ -871,7 +904,7 @@ var WpDocgen = (function () {
     return (rows || []).map(function (item) { return item.text || ''; }).join('\n');
   }
   function needsHipaa(plan) {
-    return plan.phi === 'yes' || WpModel.groupHealth(plan);
+    return plan.phi === 'yes';
   }
   function needsQmcso(plan) {
     return WpModel.groupHealth(plan);

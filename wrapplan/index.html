@@ -51,7 +51,7 @@
           <div class="field"><label for="zip">ZIP</label><input id="zip" inputmode="numeric" maxlength="5"></div>
           <p class="field-error span-2" id="err_address" role="alert"></p>
           <div class="field span-2"><label for="plan_name">Plan name</label><input id="plan_name" placeholder="Filled from the employer name if you leave this blank"></div>
-          <div class="field"><label for="plan_number">Plan number <span class="tip-slot" data-tip="plan_number"></span></label><input id="plan_number" value="501" inputmode="numeric"><p class="field-error" id="err_plan_number" role="alert"></p></div>
+          <div class="field"><label for="plan_number">Plan number <span class="tip-slot" data-tip="plan_number"></span></label><input id="plan_number" value="501" inputmode="numeric" maxlength="3"><p class="field-error" id="err_plan_number" role="alert"></p></div>
           <div class="field"><label for="employee_count">About how many employees did you have last year, full-time and part-time? <span class="tip-slot" data-tip="employee_count"></span></label><input id="employee_count" inputmode="numeric"><p class="field-error" id="err_employee_count" role="alert"></p></div>
           <div class="field"><label for="original_effective_date">Original effective date</label><input id="original_effective_date" type="date"><p class="field-error" id="err_original_effective_date" role="alert"></p></div>
           <div class="field"><label for="plan_year_type">Plan year</label>
@@ -102,10 +102,10 @@
       <section class="card" data-step="5" hidden>
         <h2>Funding and headcount</h2>
         <div id="fundingFields"></div>
-        <div class="field"><label for="census_a">Current employees enrolled in or automatically covered by at least one wrapped benefit <span class="tip-slot" data-tip="census_a"></span></label><input id="census_a" inputmode="numeric" value="0"></div>
-        <div class="field"><label for="census_b">Current employees not in that count who contribute (for example a health FSA only) <span class="tip-slot" data-tip="census_b"></span></label><input id="census_b" inputmode="numeric" value="0"></div>
-        <div class="field"><label for="census_c">Former employees on COBRA <span class="tip-slot" data-tip="census_c"></span></label><input id="census_c" inputmode="numeric" value="0"></div>
-        <div class="field"><label for="census_d">Covered retirees <span class="tip-slot" data-tip="census_d"></span></label><input id="census_d" inputmode="numeric" value="0"></div>
+        <div class="field"><label for="census_a">Current employees enrolled in or automatically covered by at least one wrapped benefit <span class="tip-slot" data-tip="census_a"></span></label><input id="census_a" inputmode="numeric"><p class="field-error" id="err_census_a" role="alert"></p></div>
+        <div class="field"><label for="census_b">Current employees not in that count who contribute (for example a health FSA only) <span class="tip-slot" data-tip="census_b"></span></label><input id="census_b" inputmode="numeric"></div>
+        <div class="field"><label for="census_c">Former employees on COBRA <span class="tip-slot" data-tip="census_c"></span></label><input id="census_c" inputmode="numeric"></div>
+        <div class="field"><label for="census_d">Covered retirees <span class="tip-slot" data-tip="census_d"></span></label><input id="census_d" inputmode="numeric"></div>
         <p id="countPreview" class="hint"></p>
         <div class="field"><label for="employee_contributions">Do employees contribute?</label>
           <select id="employee_contributions"><option value="no">No</option><option value="yes">Yes</option></select>
@@ -137,6 +137,9 @@
         <div class="field"><label for="cobra_admin">Who handles COBRA?</label><input id="cobra_admin" placeholder="Employer, WEX, carrier"></div>
         <div class="field"><label for="appeals">Who decides the final internal medical appeal?</label>
           <select id="appeals"><option value="carrier">Carrier or TPA</option><option value="employer">Employer</option></select>
+        </div>
+        <div class="field"><label for="discretion">Discretionary authority clause</label>
+          <select id="discretion"><option value="yes">Include</option><option value="no">Omit</option></select>
         </div>
         <div class="field"><label for="bargaining">Is any wrapped benefit collectively bargained?</label>
           <select id="bargaining"><option value="no">No</option><option value="yes">Yes</option></select>

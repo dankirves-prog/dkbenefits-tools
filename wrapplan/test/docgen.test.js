@@ -74,6 +74,7 @@ test('(c) insured COBRA no mentions state continuation and does not print a numb
   const pack = planText(context, baseInput({ cobra: 'no', funding: 'insured' }));
   assert.match(pack.spd, /State continuation coverage may be available/);
   assert.doesNotMatch(pack.spd, /\d+ months/);
+  assert.doesNotMatch(pack.spd, /Continue Group Health Plan Coverage/);
 });
 
 test('(d) filing status stays in the findings report and out of the SPD', function () {
@@ -132,7 +133,9 @@ test('COBRA not sure prints the federal paragraph and a findings flag', function
   const context = boot();
   const pack = planText(context, baseInput({ cobra: 'unsure' }));
   assert.match(pack.spd, /Federal COBRA continuation coverage applies/);
+  assert.match(pack.spd, /Continue Group Health Plan Coverage/);
   assert.match(pack.findings, /Confirm the federal COBRA employee count/);
+  assert.doesNotMatch(pack.spd, /The employer marked the federal COBRA count/);
 });
 
 test('QSEHRA with medical and ICHRA on the same class are findings, and dependent care is absent from the wrap', function () {
@@ -189,9 +192,76 @@ test('download labels and the page do not promise an email', function () {
   assert.match(js, /Download Plan \(Word\)/);
   assert.match(js, /Download Plan \(PDF\)/);
   assert.match(js, /btn-gold/);
+  assert.ok(js.indexOf('list.appendChild(wordCol)') < js.indexOf('list.appendChild(pdfCol)'));
+  assert.match(js, /slice\(0, 14\)/);
   assert.match(html, /wrapplan\.js/);
   const page = js + '\n' + html;
   assert.doesNotMatch(page, /we will email|we'll email|check your inbox/i);
   const embed = fs.readFileSync(path.join(root, 'embed.html'), 'utf8');
   assert.match(embed, /www-dkbenefits-net\.filesusr\.com/);
+});
+
+test('participant documents do not use You has, form-answer wording, or tool narration', function () {
+  const context = boot();
+  const pack = planText(context, baseInput({
+    benefits: ['medical', 'dental', 'vision', 'life', 'std', 'ltd'],
+    carriers: { medical: 'Florida Blue', dental: 'Sun Life', vision: 'VSP', life: 'Sun Life', std: 'Sun Life', ltd: 'Sun Life' },
+    std_type: 'insured'
+  }));
+  const resolution = context.WpDocgen.plainText(context.WpDocgen.resolutionParagraphs(pack.result.plan));
+  const hipaa = context.WpDocgen.plainText(context.WpDocgen.hipaaParagraphs(pack.result.plan));
+  const output = [pack.wrap, pack.spd, resolution, hipaa].join('\n');
+  assert.doesNotMatch(output, /You has|You generally has/);
+  assert.match(pack.spd, /You have at least 180 days/);
+  assert.match(pack.spd, /You generally have four months/);
+  assert.match(pack.spd, /review and respond to new evidence or a new rationale/);
+  assert.match(pack.spd, /contractual limitations period/);
+  assert.doesNotMatch(output, /The employer reported|The employer answered|The employer marked|The plan sponsor has said/);
+  assert.doesNotMatch(pack.wrap, /does not ask for, and this plan does not state/);
+  assert.doesNotMatch(pack.spd, /does not say the plan always pays second/);
+  assert.doesNotMatch(resolution, /the tool|After it is signed/);
+  assert.match(resolution, /The LLC members of Harbor Dental Group LLC adopt the following action/);
+  assert.doesNotMatch(pack.wrap, /participant receive |dependent receive /);
+  assert.match(pack.wrap, /funded through premiums/);
+  assert.match(pack.wrap, /policy year/);
+  assert.doesNotMatch(pack.wrap, /limitation year/);
+  assert.match(pack.spd, /407-555-0148/);
+  assert.match(pack.spd, /administrator's business address is 100 Colonial Drive, Orlando, FL, 32801/);
+  assert.match(pack.spd, /Benefits are guaranteed under the insurance policy/);
+  assert.match(pack.spd, /Type of administration: insurer administration/);
+  assert.match(pack.wrap, /by written action of the LLC members/);
+  assert.equal(context.WpDocgen.needsHipaa(pack.result.plan), false);
+  assert.match(pack.findings, /before the sponsor ever receives/);
+  assert.match(pack.findings, /Some states bar discretionary clauses/);
+  assert.doesNotMatch(pack.findings, /Nothing in this note tells you to wait/);
+  assert.doesNotMatch(pack.findings, /starts on its own/);
+  const schedule = context.WpDocgen.plainText(context.WpDocgen.scheduleParagraphs(pack.result.plan));
+  assert.match(schedule, /Fully insured/);
+  const qmcso = context.WpDocgen.plainText(context.WpDocgen.qmcsoParagraphs(pack.result.plan));
+  assert.match(qmcso, /40 business days/);
+  const level = planText(context, baseInput({
+    funding: 'level',
+    employee_count: '80',
+    employee_contributions: 'no',
+    benefits: ['medical', 'hra', 'health_fsa'],
+    carriers: { medical: 'Allied', hra: 'Allied', health_fsa: 'WEX' },
+    carrier_addresses: { medical: '200 West Adams Street, Chicago, IL 60606' },
+    tpa_name: 'Allied',
+    tpa_document: 'Level booklet',
+    stop_loss: 'yes',
+    hra_type: 'integrated',
+    phi: 'yes',
+    phi_classes: 'Benefits staff',
+    cobra: 'yes'
+  }));
+  assert.match(level.spd, /integrated HRA/);
+  assert.doesNotMatch(level.spd, /Benefits are guaranteed under the insurance policy/);
+  assert.match(level.findings, /nondiscrimination/);
+  assert.doesNotMatch(level.findings, /discretionary clauses/);
+  const scheduleLevel = context.WpDocgen.plainText(context.WpDocgen.scheduleParagraphs(level.result.plan));
+  assert.match(scheduleLevel, /Paid from the employer's general assets/);
+  assert.equal(context.WpDocgen.needsHipaa(level.result.plan), true);
+  const omitted = planText(context, baseInput({ discretion: 'no' }));
+  assert.doesNotMatch(omitted.wrap, /full discretionary authority/);
+  assert.doesNotMatch(omitted.findings, /discretionary clauses/);
 });
