@@ -4,7 +4,7 @@
  * Fixed notice dates (Oct 15, Dec 31, Mar 2, Jun 1, Jul 31) are intentional.
  */
 var DKQuiz = (function () {
-  var VERSION = '4.2.0';
+  var VERSION = '4.3.0';
 
   var URLS = {
     wrap: 'https://www.dkbenefits.net/wrap-plan-document-tool',
@@ -1473,13 +1473,18 @@ var DKQuiz = (function () {
     if (step > known) step = known;
     var started = answers.offerBenefits === 'yes' || answers.offerBenefits === 'no';
     var about = typicalPathLength(answers);
-    var exact = !!(started && step === known && about > 0 && about <= known);
+    var exact = step === known;
     return {
       step: step,
       total: exact ? known : about,
       showTotal: started,
       exact: exact
     };
+  }
+
+  function contactHref(embedded) {
+    if (embedded) return { href: 'https://www.dkbenefits.net/contact', target: '_top' };
+    return { href: '#contact-box', target: '' };
   }
 
   function progressPercent(previousMax, progress) {
@@ -1515,6 +1520,7 @@ var DKQuiz = (function () {
     typicalPathLength: typicalPathLength,
     stepProgress: stepProgress,
     progressPercent: progressPercent,
+    contactHref: contactHref,
     deriveFlags: deriveFlags,
     determineForm5500: determineForm5500,
     copyBlob: copyBlob,

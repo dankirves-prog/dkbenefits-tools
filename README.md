@@ -11,25 +11,13 @@ Scoring lives in `compliance-quiz/quiz-engine.js`. The pages are thin shells.
 - `compliance-assessment-embed.html` iframes the live Pages URL and forwards `postMessage` both ways. It does not set the iframe height.
 - Optional leads: `compliance-quiz/apps-script/ComplianceLeads.gs`. Leave `QUIZ_LEAD_ENDPOINT` blank until that web app is deployed.
 
-Answers stay in the browser. The page posts `{ type: 'resize', height }` and `{ type: 'scrollTop' }`. It does not post the answers.
+Answers stay in the browser. The page may post `{ type: 'resize', height }` and `{ type: 'scrollTop' }`. Those messages are harmless, and the page does not post the answers. The HtmlComponent has no height property, so Wix should not listen for them.
 
-**Live Wix:** point one HtmlComponent at `compliance-assessment.html`. The page hides its own header when it is inside a frame and posts the content height with no minimum. Velo sets the component height to that number. Do not add a pad and do not use a `Math.max` floor. The page body does not force `min-height: 100vh`.
+**Live Wix:** point one HtmlComponent at `compliance-assessment.html`. Set a fixed height in the editor: 3710px on desktop and 4660px on mobile. That fits the longest collapsed results. The page hides its own header when it is inside a frame. The page body does not force `min-height: 100vh`.
 
-```javascript
-$w.onReady(function () {
-  $w('#html1').onMessage(function (event) {
-    var data = event.data || {};
-    if (data.type === 'resize' && data.height) {
-      $w('#html1').height = data.height;
-    }
-    if (data.type === 'scrollTop') {
-      $w('#html1').scrollTo();
-    }
-  });
-});
-```
+Set the HtmlComponent iframe title to `Benefits compliance checkup`.
 
-`compliance-assessment-v3.html` is the previous live quiz, kept so the Wix component can point back at it.
+`compliance-assessment-v3.html` is the previous live quiz, kept so the Wix component can point back at it. Use the same fixed heights if the component points at that file.
 
 Local preview:
 

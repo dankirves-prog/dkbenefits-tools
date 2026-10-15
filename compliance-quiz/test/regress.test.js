@@ -43,6 +43,13 @@ test('1. no benefits under 20 with no part-time is a short path, last step N of 
   const benefitsAbout = quiz.stepProgress({ offerBenefits: 'yes' }, 0);
   assert.equal(benefitsAbout.exact, false);
   assert.ok(benefitsAbout.total > early.total);
+  const partialVisible = quiz.visibleQuestions({ offerBenefits: 'yes' });
+  const partialLast = quiz.stepProgress({ offerBenefits: 'yes' }, partialVisible.length - 1);
+  assert.equal(partialLast.exact, true);
+  assert.equal(partialLast.step, partialVisible.length);
+  assert.equal(partialLast.total, partialVisible.length);
+  assert.deepEqual(quiz.contactHref(false), { href: '#contact-box', target: '' });
+  assert.deepEqual(quiz.contactHref(true), { href: 'https://www.dkbenefits.net/contact', target: '_top' });
   const forward = quiz.progressPercent(0, quiz.stepProgress({ offerBenefits: 'yes' }, 4));
   const back = quiz.progressPercent(forward, quiz.stepProgress({ offerBenefits: 'yes' }, 1));
   assert.equal(back, forward);
@@ -372,8 +379,14 @@ test('10. iframe Start over shrinks the measured height', async (t) => {
       'No. Headcount will stay about the same',
       'No. Benefits are not a hiring factor'
     ];
-    for (const label of steps) {
-      await choose(frame, label);
+    for (let i = 0; i < steps.length; i += 1) {
+      await choose(frame, steps[i]);
+      if (i === steps.length - 1) {
+        const label = await frame.$eval('.progress-label span', (el) => el.textContent);
+        const button = await frame.$eval('[data-action="next"]', (el) => el.textContent.trim());
+        assert.equal(button, 'See results');
+        assert.equal(label, 'Step ' + steps.length + ' of ' + steps.length);
+      }
       await frame.click('[data-action="next"]');
       await new Promise((r) => setTimeout(r, 40));
     }
