@@ -1,0 +1,8 @@
+{
+  "name": "dkb-wrapplan",
+  "private": true,
+  "description": "Wrap plan sample preview. Tests use Node.",
+  "scripts": {
+    "test": "node --test test/model.test.js test/docgen.test.js test/apps-script.test.js test/lint.test.js"
+  }
+}
