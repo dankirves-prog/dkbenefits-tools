@@ -373,6 +373,7 @@ body {
 .disclaimer p { color: var(--text-light); }
 #results-title:focus { outline: none; }
 
+.finding > .tool-btn { margin: 0 14px 14px; }
 .tool-btn {
   display: inline-block;
   margin-top: 8px;

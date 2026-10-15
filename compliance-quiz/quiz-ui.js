@@ -14,6 +14,7 @@
   var showError = false;
   var leadState = 'idle';
   var leadMessage = '';
+  var maxProgress = 0;
 
   var STATUS_LABEL = {
     actionNeeded: 'Action needed',
@@ -158,6 +159,7 @@
     showError = false;
     leadState = 'idle';
     leadMessage = '';
+    maxProgress = 0;
     scrollTop();
     render({ focusHeading: true });
   }
@@ -195,8 +197,10 @@
     if (!q) return;
     var progress = DKQuiz.stepProgress(answers, index);
     var step = progress.step;
-    var about = progress.total;
-    var pct = Math.max(4, Math.min(100, Math.round((step / about) * 100)));
+    maxProgress = DKQuiz.progressPercent(maxProgress, progress);
+    var stepLabel = progress.showTotal
+      ? (progress.exact ? 'Step ' + step + ' of ' + progress.total : 'Step ' + step + ' of about ' + progress.total)
+      : 'Step ' + step;
     var chosen = selectedMap(q);
     var role = q.multiSelect ? 'group' : 'radiogroup';
     var options = q.options.map(function (opt) {
@@ -208,8 +212,8 @@
       : '';
     root.innerHTML =
       '<section class="panel" aria-labelledby="q-text">' +
-        '<p class="progress-label"><span>Step ' + step + ' of ' + about + '</span><span>About 5 minutes</span></p>' +
-        '<div class="progress-track" aria-hidden="true"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
+        '<p class="progress-label"><span>' + stepLabel + '</span><span>About 5 minutes</span></p>' +
+        '<div class="progress-track" aria-hidden="true"><div class="progress-fill" style="width:' + maxProgress + '%"></div></div>' +
         '<h2 id="q-text" class="q-text" tabindex="-1">' + esc(q.text) + '</h2>' +
         (q.helper ? '<p class="helper">' + esc(q.helper) + '</p>' : '') +
         '<div class="options" role="' + role + '" aria-labelledby="q-text">' + options + '</div>' +
@@ -231,8 +235,7 @@
       return '<section class="panel priorities"><h2 id="top3">Top 3 priorities</h2><p class="helper">Nothing in your answers needs action right now. The notes below are still worth a look.</p></section>';
     }
     var list = items.map(function (item, i) {
-      var href = toolHref(item.cta);
-      var button = href ? '<a class="tool-btn" href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(item.cta.label) + '</a>' : '';
+      var button = toolAnchor(item.cta, 'tool-btn');
       return '<li><span class="rank">' + (i + 1) + '</span><div class="priority-copy">' + badge(item.status) + '<strong>' + esc(item.title) + '</strong><p>' + esc(item.finding) + '</p>' + button + '</div></li>';
     }).join('');
     return '<section class="panel priorities" aria-labelledby="top3"><h2 id="top3">Top 3 priorities</h2><ol class="priority-list">' + list + '</ol></section>';
@@ -264,9 +267,18 @@
     return '<section class="panel calendar" id="calendar" aria-labelledby="cal-title"><h2 id="cal-title">Your compliance calendar</h2><ul class="calendar-list">' + list + '</ul></section>';
   }
 
-  function toolHref(cta) {
-    if (!cta || !DKQuiz.URLS[cta.type]) return '';
-    return DKQuiz.URLS[cta.type];
+  function toolAnchor(cta, className) {
+    if (!cta) return '';
+    var href = '';
+    var external = false;
+    if (cta.type === 'contact') href = '#contact-box';
+    else if (DKQuiz.URLS[cta.type]) {
+      href = DKQuiz.URLS[cta.type];
+      external = true;
+    }
+    if (!href) return '';
+    var extra = external ? ' target="_blank" rel="noopener"' : '';
+    return '<a class="' + className + '" href="' + esc(href) + '"' + extra + '>' + esc(cta.label) + '</a>';
   }
 
   function renderCards() {
@@ -275,14 +287,15 @@
       var links = (card.links || []).map(function (link) {
         return '<a class="notice-link" href="' + esc(link.url) + '" target="_blank" rel="noopener">' + esc(link.label) + (link.helper ? '<span>' + esc(link.helper) + '</span>' : '') + '</a>';
       }).join('');
-      var href = toolHref(card.cta);
-      var cta = href ? '<a class="tool-link" href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(card.cta.label) + '</a>' : '';
+      var contact = card.cta && card.cta.type === 'contact' ? toolAnchor(card.cta, 'tool-btn') : '';
+      var cta = contact ? '' : toolAnchor(card.cta, 'tool-link');
       return '<article class="finding">' +
         '<button type="button" class="finding-toggle" data-action="expand" aria-expanded="false">' +
           '<span class="finding-title">' + esc(card.title) + '</span>' + badge(card.status) +
           '<span class="chevron" aria-hidden="true"></span>' +
           '<p class="finding-summary">' + esc(card.summary) + '</p>' +
         '</button>' +
+        contact +
         '<div class="finding-body" hidden>' +
           '<h3>What we found</h3><p>' + esc(card.finding) + '</p>' +
           '<h3>What it means</h3><p>' + esc(card.description) + '</p>' +
@@ -308,7 +321,7 @@
   }
 
   function renderLeadInner() {
-    var privacy = '<p class="privacy">If you send contact info, we use your name and email or phone only to reply about this checkup.</p>';
+    var privacy = '<p class="privacy">If you send contact info, we use your name and email or phone to follow up about this checkup. Your answers and results are included so we can follow up.</p>';
     if (!endpoint()) {
       return privacy + honeypotField() +
         '<p class="unconfigured">This form is not connected yet. Call or text 407-476-5076 or email dan@dkbenefits.net.</p>';
@@ -352,7 +365,7 @@
       renderCalendar() +
       renderCards() +
       (result.flags && result.flags.offersBenefits
-        ? '<p class="strategy-row no-print"><a class="tool-link" href="' + esc(DKQuiz.URLS.quote) + '" target="_blank" rel="noopener">Review quotes and strategy</a></p>'
+        ? '<p class="strategy-row no-print"><a class="tool-link" href="' + esc(DKQuiz.URLS.quote) + '" target="_blank" rel="noopener">Review free quotes and strategy</a></p>'
         : '') +
       renderDisclaimer() +
       renderContact() +
