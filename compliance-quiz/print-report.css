@@ -1,0 +1,120 @@
+/* Printable checkup. Hidden on screen, shown only when printing. */
+.print-report { display: none; }
+
+@page {
+  size: letter portrait;
+  margin: 0.6in 0.6in 0.72in;
+  @top-left { content: none; }
+  @top-center { content: none; }
+  @top-right { content: none; }
+  @bottom-left { content: none; }
+  @bottom-right { content: none; }
+  @bottom-center {
+    content: "DK Benefits Benefits Compliance Checkup | Page " counter(page) " of " counter(pages);
+    font-family: "Source Sans 3", "Segoe UI", sans-serif;
+    font-size: 9pt;
+    color: #5a6a7e;
+  }
+}
+
+@media print {
+  html, body { background: #fff !important; }
+  .preview-banner,
+  .site-header,
+  .skip,
+  #quiz { display: none !important; }
+  a[href]::after { content: "" !important; }
+
+  .print-report {
+    display: block !important;
+    color: #1a2e4a;
+    font-family: "Source Sans 3", "Segoe UI", sans-serif;
+    font-size: 11pt;
+    line-height: 1.4;
+  }
+  .print-banner {
+    background: #1a2e4a;
+    color: #fff;
+    border-bottom: 4px solid #c8a951;
+    padding: 16px 18px 14px;
+    margin: 0 0 16px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .print-brand {
+    margin: 0;
+    color: #c8a951;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 10pt;
+  }
+  .print-banner h1 {
+    margin: 4px 0 0;
+    color: #fff;
+    font-family: Merriweather, Georgia, serif;
+    font-size: 20pt;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .print-prepared,
+  .print-date { margin: 6px 0 0; color: #f7f9fc; font-size: 11pt; }
+  .print-section { margin: 0 0 14px; }
+  .print-section h2,
+  .print-contact h2,
+  .print-group h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+    margin: 0 0 6px;
+    color: #1a2e4a;
+    font-family: Merriweather, Georgia, serif;
+  }
+  .print-section h2,
+  .print-contact h2 { font-size: 13pt; border-bottom: 2px solid #c8a951; padding-bottom: 2px; }
+  .print-group h3 { font-size: 11pt; margin-top: 8px; }
+  .print-score { margin: 0; font-size: 28pt; font-weight: 700; line-height: 1; }
+  .print-score span { font-size: 12pt; font-weight: 600; color: #5a6a7e; }
+  .print-label { margin: 2px 0; font-weight: 700; }
+  .print-section p,
+  .print-contact p,
+  .print-item p,
+  .print-priority p { margin: 0 0 4px; }
+  .print-priorities,
+  .print-checks,
+  .print-next ul { list-style: none; margin: 0; padding: 0; }
+  .print-priority,
+  .print-item,
+  .print-next li,
+  .print-calendar tr,
+  .print-contact,
+  .print-disclaimer {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .print-priority,
+  .print-item { display: flex; gap: 8px; margin: 0 0 7px; }
+  .print-rank {
+    flex: 0 0 18px;
+    font-weight: 700;
+    color: #c8a951;
+  }
+  .print-box {
+    flex: 0 0 12px;
+    width: 12px;
+    height: 12px;
+    margin-top: 2px;
+    border: 1.5px solid #1a2e4a;
+    background: #fff;
+  }
+  .print-calendar { width: 100%; border-collapse: collapse; }
+  .print-calendar th,
+  .print-calendar td { text-align: left; vertical-align: top; padding: 5px 8px; border-bottom: 1px solid #e8edf3; }
+  .print-calendar th { background: #fbf8ef; font-size: 9pt; letter-spacing: 0.04em; text-transform: uppercase; }
+  .print-calendar td:first-child,
+  .print-calendar th:first-child { width: 88px; font-weight: 700; }
+  .print-calendar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .print-empty { margin: 0; color: #5a6a7e; }
+  .print-contact { margin-top: 8px; }
+  .print-offer { margin-top: 6px; }
+  .print-disclaimer { margin: 12px 0 0; color: #5a6a7e; font-size: 9pt; }
+}
