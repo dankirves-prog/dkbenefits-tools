@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict');
+const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
@@ -28,12 +29,24 @@ test('1. no benefits under 20 with no part-time is a short path, last step N of 
   const visible = quiz.visibleQuestions(answers);
   assert.equal(visible.length, 7);
   const last = quiz.stepProgress(answers, visible.length - 1);
+  assert.equal(last.exact, true);
   assert.equal(last.step, last.total);
   assert.equal(last.total, 7);
   const start = quiz.stepProgress({}, 0);
   assert.equal(start.step, 1);
-  assert.equal(start.total, quiz.visibleQuestions({}).length);
-  assert.ok(start.total < quiz.questions.length);
+  assert.equal(start.showTotal, false);
+  assert.equal(start.total, 0);
+  const early = quiz.stepProgress({ offerBenefits: 'no' }, 0);
+  assert.equal(early.showTotal, true);
+  assert.equal(early.exact, false);
+  assert.equal(early.total, 7);
+  const benefitsAbout = quiz.stepProgress({ offerBenefits: 'yes' }, 0);
+  assert.equal(benefitsAbout.exact, false);
+  assert.ok(benefitsAbout.total > early.total);
+  const forward = quiz.progressPercent(0, quiz.stepProgress({ offerBenefits: 'yes' }, 4));
+  const back = quiz.progressPercent(forward, quiz.stepProgress({ offerBenefits: 'yes' }, 1));
+  assert.equal(back, forward);
+  assert.ok(quiz.progressPercent(back, last) >= back);
   assert.equal(quiz.visibleQuestions({}).some((q) => q.id === 'benefitsOffered'), false);
   assert.equal(quiz.visibleQuestions({}).some((q) => q.id === 'enrolledCount'), false);
   assert.equal(quiz.visibleQuestions({}).some((q) => q.id === 'noticesSent'), false);
@@ -141,6 +154,14 @@ test('6. 50 or more that already files Form 5500 is in place, with no filing ded
   const missing = quiz.scoreAnswers(Object.assign({}, base, { planStructure: ['none'] }));
   assert.equal(filed.form5500.status, 'required');
   assert.equal(card(filed, 'form5500').status, 'inPlace');
+  assert.equal(card(filed, 'cobra').cta.type, 'contact');
+  assert.equal(card(filed, 'cobra').cta.label, 'Talk to our team');
+  [filed, missing].forEach((scored) => {
+    (scored.cards || []).forEach((item) => {
+      if (!item.cta || item.cta.type === 'contact') return;
+      assert.match(item.cta.label, /\bfree\b/);
+    });
+  });
   assert.equal(card(missing, 'form5500').status, 'actionNeeded');
   assert.ok(filed.readiness.score > missing.readiness.score);
   for (let i = 1; i < filed.priorities.length; i += 1) {
@@ -270,15 +291,73 @@ async function choose(page, label) {
   if (missing) throw new Error('Missing "' + label + '" :: ' + missing.join(' | '));
 }
 
-test('10. iframe Start over shrinks the measured height', async () => {
-  const puppeteer = require('/workspace/section128/node_modules/puppeteer-core');
-  const server = await startServer();
-  const port = server.address().port;
-  const browser = await puppeteer.launch({
-    executablePath: '/usr/local/bin/google-chrome',
+function repoRoot() {
+  let dir = __dirname;
+  while (true) {
+    if (fs.existsSync(path.join(dir, '.git'))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) return path.join(__dirname, '../..');
+    dir = parent;
+  }
+}
+
+function loadPuppeteer() {
+  try {
+    return require('puppeteer-core');
+  } catch (err) {
+    // Look through this repo instead of a machine-specific install path.
+  }
+  const root = repoRoot();
+  const candidates = [path.join(root, 'node_modules', 'puppeteer-core')];
+  fs.readdirSync(root, { withFileTypes: true }).forEach((entry) => {
+    if (entry.isDirectory()) candidates.push(path.join(root, entry.name, 'node_modules', 'puppeteer-core'));
+  });
+  for (let i = 0; i < candidates.length; i += 1) {
+    if (fs.existsSync(path.join(candidates[i], 'package.json'))) return require(candidates[i]);
+  }
+  return null;
+}
+
+function commandOnPath(name) {
+  const finder = process.platform === 'win32' ? 'where' : 'which';
+  try {
+    const found = execFileSync(finder, [name], { encoding: 'utf8' }).trim().split(/\r?\n/)[0];
+    return found || '';
+  } catch (err) {
+    return '';
+  }
+}
+
+function findChrome() {
+  if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) return process.env.PUPPETEER_EXECUTABLE_PATH;
+  const names = ['google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser', 'chrome'];
+  for (let i = 0; i < names.length; i += 1) {
+    const found = commandOnPath(names[i]);
+    if (found) return found;
+  }
+  return '';
+}
+
+async function openBrowser(t) {
+  const puppeteer = loadPuppeteer();
+  const executablePath = findChrome();
+  if (!puppeteer || !executablePath) {
+    t.skip('A Chrome binary and puppeteer-core are required for this browser check.');
+    return null;
+  }
+  return puppeteer.launch({
+    executablePath: executablePath,
     headless: 'new',
     args: ['--no-sandbox', '--disable-dev-shm-usage']
   });
+}
+
+test('10. iframe Start over shrinks the measured height', async (t) => {
+  const browser = await openBrowser(t);
+  if (!browser) return;
+  const server = await startServer();
+  const port = server.address().port;
   try {
     const page = await browser.newPage();
     await page.setContent('<!DOCTYPE html><iframe id="frame" style="width:800px;height:4000px;border:0" src="http://127.0.0.1:' + port + '/compliance-assessment-preview.html"></iframe><script>window.heights=[];window.addEventListener("message",function(e){if(e.data&&e.data.type==="resize")window.heights.push(e.data.height);});</script>', { waitUntil: 'load' });
@@ -313,26 +392,29 @@ test('10. iframe Start over shrinks the measured height', async () => {
   }
 });
 
-test('11. Enter on Back goes back', async () => {
-  const puppeteer = require('/workspace/section128/node_modules/puppeteer-core');
+test('11. Enter on Back goes back', async (t) => {
+  const browser = await openBrowser(t);
+  if (!browser) return;
   const server = await startServer();
   const port = server.address().port;
-  const browser = await puppeteer.launch({
-    executablePath: '/usr/local/bin/google-chrome',
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-dev-shm-usage']
-  });
   try {
     const page = await browser.newPage();
     await page.goto('http://127.0.0.1:' + port + '/compliance-assessment-preview.html', { waitUntil: 'networkidle0' });
+    const opening = await page.$eval('.progress-label span', (el) => el.textContent);
+    assert.equal(opening, 'Step 1');
     await choose(page, 'Yes. We currently offer benefits');
+    const about = await page.$eval('.progress-label span', (el) => el.textContent);
+    assert.equal(about, 'Step 1 of about 22');
     await page.click('[data-action="next"]');
     await page.waitForFunction(() => document.getElementById('q-text').textContent.indexOf('full-time') !== -1);
+    const advanced = Number((await page.$eval('.progress-fill', (el) => el.style.width)).replace('%', ''));
     await page.focus('[data-action="back"]');
     await page.keyboard.press('Enter');
     await page.waitForFunction(() => document.getElementById('q-text').textContent.indexOf('currently offer') !== -1);
     const text = await page.$eval('#q-text', (el) => el.textContent);
+    const returned = Number((await page.$eval('.progress-fill', (el) => el.style.width)).replace('%', ''));
     assert.match(text, /currently offer/);
+    assert.ok(returned >= advanced, 'progress fell from ' + advanced + ' to ' + returned);
   } finally {
     await browser.close();
     await new Promise((resolve) => server.close(resolve));
