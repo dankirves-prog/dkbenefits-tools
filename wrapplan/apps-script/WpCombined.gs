@@ -721,13 +721,12 @@ var WpDocgen = (function () {
     if (plan.cobra === 'no' && plan.funding === 'insured') {
       return [
         'Federal COBRA does not apply. State continuation coverage may be available. The certificate and state law control.',
-        'If a later count shows that the federal threshold was met, the federal COBRA notices control from that point. This document does not state a number of months of continuation.'
+        'If a later count shows that the federal threshold was met, the federal COBRA notices control from that point.'
       ];
     }
     if (plan.cobra === 'no') {
       return [
-        'Federal COBRA does not apply.',
-        'This document does not state a number of months of continuation.'
+        'Federal COBRA does not apply.'
       ];
     }
     return [];
