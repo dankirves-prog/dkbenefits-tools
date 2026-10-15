@@ -9,7 +9,7 @@ Scoring lives in `compliance-quiz/quiz-engine.js`. The pages are thin shells.
 - `compliance-assessment.html` is the live checkup, hosted at `https://dankirves-prog.github.io/dkbenefits-tools/compliance-assessment.html`
 - `compliance-assessment-preview.html` is the draft preview, hosted at `https://dankirves-prog.github.io/dkbenefits-tools/compliance-assessment-preview.html` after this version is on `main`. GitHub Pages serves `main` only.
 - `compliance-assessment-embed.html` iframes the live Pages URL and forwards `postMessage` both ways. It does not set the iframe height.
-- Optional leads: `compliance-quiz/apps-script/ComplianceLeads.gs`. Leave `QUIZ_LEAD_ENDPOINT` blank until that web app is deployed.
+- Optional leads: `compliance-quiz/apps-script/ComplianceLeads.gs`. `QUIZ_LEAD_ENDPOINT` in `compliance-quiz/config.js` is the deployed web app.
 
 Answers stay in the browser. The page may post `{ type: 'resize', height }` and `{ type: 'scrollTop' }`. Those messages are harmless, and the page does not post the answers. The HtmlComponent has no height property, so Wix should not listen for them.
 
