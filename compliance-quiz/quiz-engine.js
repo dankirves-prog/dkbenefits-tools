@@ -4,7 +4,7 @@
  * Fixed notice dates (Oct 15, Dec 31, Mar 2, Jun 1, Jul 31) are intentional.
  */
 var DKQuiz = (function () {
-  var VERSION = '4.1.0';
+  var VERSION = '4.2.0';
 
   var URLS = {
     wrap: 'https://www.dkbenefits.net/wrap-plan-document-tool',
@@ -680,7 +680,7 @@ var DKQuiz = (function () {
           description: 'Applicable large employers are generally required to offer affordable, minimum-value medical coverage to full-time employees.',
           finding: 'You reported 50 or more full-time employees and no current benefits.',
           action: 'Two different employer-shared-responsibility penalties can apply. One is for not offering coverage to enough full-time employees. The other is for coverage that is unaffordable or not minimum value when a full-time employee receives a premium tax credit.',
-          cta: toolCta('quote', 'See group medical quotes')
+          cta: toolCta('quote', 'Open the free quote tool')
         }));
       } else if (flags.ale === 'confirmAle') {
         cards.push(card({
@@ -692,7 +692,7 @@ var DKQuiz = (function () {
           description: 'Applicable large employer status uses full-time employees plus full-time equivalents from part-time hours.',
           finding: 'Part-time hours are significant or not confirmed, so the full-time-equivalent count may cross the applicable large employer line.',
           action: 'Add part-time hours into full-time equivalents before you assume the employer mandate does not apply.',
-          cta: toolCta('quote', 'See group medical quotes')
+          cta: toolCta('quote', 'Open the free quote tool')
         }));
       } else if (flags.ale === 'confirmSize') {
         cards.push(card({
@@ -704,7 +704,7 @@ var DKQuiz = (function () {
           description: 'ACA size and federal COBRA size use different counts. Neither one is settled until the headcount is known.',
           finding: 'Full-time headcount was marked not sure.',
           action: 'Count full-time employees, then add part-time hours as full-time equivalents for ACA size. Federal COBRA commonly applies at 20 employees on a prior-year typical business day.',
-          cta: toolCta('quote', 'See group medical quotes')
+          cta: toolCta('quote', 'Open the free quote tool')
         }));
       }
       if (flags.ale === 'confirmSize' || flags.ale === 'confirmAle' || flags.empCount === '20to49' || flags.empCount === '50plus') {
@@ -718,7 +718,8 @@ var DKQuiz = (function () {
           finding: flags.church
             ? 'Church plans are generally not subject to federal COBRA.'
             : 'You are not offering benefits yet. COBRA becomes a live duty when coverage starts, if the group is large enough.',
-          action: 'Confirm the count before you assume COBRA will not apply. The employer notifies the administrator within 30 days, and the administrator sends the election notice within 14 days. An employer that administers its own plan has 44 days total. DK Benefits clients get COBRA notice handling at no extra cost, and you keep the 2% admin fee.'
+          action: 'Confirm the count before you assume COBRA will not apply. The employer notifies the administrator within 30 days, and the administrator sends the election notice within 14 days. An employer that administers its own plan has 44 days total. DK Benefits clients get COBRA notice handling at no extra cost, and you keep the 2% admin fee.',
+          cta: toolCta('contact', 'Talk to our team')
         }));
       }
       if (flags.ale === 'ale') cards.push(acaReportingCard());
@@ -734,7 +735,7 @@ var DKQuiz = (function () {
             ? 'You expect significant hiring over the next year.'
             : 'Hiring plans are not settled.',
           action: 'Recheck size before you assume ACA or COBRA still sits where it does today.',
-          cta: toolCta('quote', 'See group medical quotes')
+          cta: toolCta('quote', 'Open the free quote tool')
         }));
       }
       if (answers.nobenCompetition === 'yes') {
@@ -747,7 +748,7 @@ var DKQuiz = (function () {
           description: 'There is no federal duty to offer benefits at a small size, but hiring can still turn on them.',
           finding: 'You said you compete with employers that offer benefits.',
           action: 'When you are ready, compare a basic package before you assume it is out of reach.',
-          cta: toolCta('quote', 'See group medical quotes')
+          cta: toolCta('quote', 'Open the free quote tool')
         }));
       }
       return cards;
@@ -796,7 +797,7 @@ var DKQuiz = (function () {
         description: 'Private employers generally need a written plan. Carrier certificates alone usually do not do that job. A wrap document is the usual way to cover every benefit in one instrument.',
         finding: wrapFinding,
         action: 'The document should name the benefits, the funding, and the claims path. Update it when benefits or carriers change.',
-        cta: wrapStatus === 'inPlace' ? null : toolCta('wrap', 'Open the wrap plan tool')
+        cta: wrapStatus === 'inPlace' ? null : toolCta('wrap', 'Open the free wrap plan tool')
       }));
     }
 
@@ -995,7 +996,7 @@ var DKQuiz = (function () {
             ? 'Employees have not received the HRA notice.'
             : 'The HRA notice was not confirmed.',
         action: 'For an ICHRA or QSEHRA, deliver the written notice at least 90 days before the plan year. For a standard HRA, keep the plan document and SPD current. The wrap plan tool can draft that document.',
-        cta: hraStatus === 'inPlace' ? null : toolCta('wrap', 'Open the wrap plan tool')
+        cta: hraStatus === 'inPlace' ? null : toolCta('wrap', 'Open the free wrap plan tool')
       }));
     }
 
@@ -1009,7 +1010,7 @@ var DKQuiz = (function () {
         description: 'Post-tax deductions leave payroll taxes on the table. A written premium-only plan is one kind of Section 125 plan and is what lets qualifying premiums come out pre-tax.',
         finding: 'Employee deductions are post-tax today.',
         action: 'You could save payroll taxes with a Section 125 premium-only plan. Without a written plan, pre-tax deductions can be treated as taxable wages for income tax and FICA.',
-        cta: toolCta('section125', 'Open the Section 125 tool')
+        cta: toolCta('section125', 'Open the free Section 125 tool')
       }));
     }
     if (flags.pretaxYes || flags.healthFsa || flags.dcap || flags.hsa) {
@@ -1060,7 +1061,7 @@ var DKQuiz = (function () {
         description: 'A premium-only plan is one kind of Section 125 plan. Health FSAs and dependent care FSAs are other kinds. A premium-only plan is treated as passing nondiscrimination if it passes the eligibility test.',
         finding: s125Finding,
         action: s125Action,
-        cta: s125Status === 'inPlace' ? null : toolCta('section125', 'Open the Section 125 tool')
+        cta: s125Status === 'inPlace' ? null : toolCta('section125', 'Open the free Section 125 tool')
       }));
     }
 
@@ -1076,7 +1077,7 @@ var DKQuiz = (function () {
           ? 'You offer medical coverage. Confirm it is offered widely enough to full-time employees.'
           : 'Medical coverage is not offered, and the group looks like an applicable large employer.',
         action: 'Confirm who is full-time and who received an offer of medical coverage. This is separate from the affordability penalty.',
-        cta: flags.medicalOffered ? null : toolCta('quote', 'See group medical quotes')
+        cta: flags.medicalOffered ? null : toolCta('quote', 'Open the free quote tool')
       }));
       if (flags.medicalOffered) {
         cards.push(card({
@@ -1103,7 +1104,7 @@ var DKQuiz = (function () {
           ? 'You reported 20 to 49 full-time employees, with part-time hours that are significant or not confirmed.'
           : 'Full-time headcount is under 20, and part-time hours are significant or not confirmed.',
         action: 'Finish the full-time-equivalent count before you treat the employer mandate as off.',
-        cta: toolCta('quote', 'See group medical quotes')
+        cta: toolCta('quote', 'Open the free quote tool')
       }));
     } else if (flags.ale === 'confirmSize') {
       cards.push(card({
@@ -1115,7 +1116,7 @@ var DKQuiz = (function () {
         description: 'ACA size uses full-time equivalents. Federal COBRA uses a different employee count.',
         finding: 'Full-time headcount was marked not sure.',
         action: 'Confirm the counts. Include COBRA in that review if the group may be at 20 employees.',
-        cta: toolCta('quote', 'See group medical quotes')
+        cta: toolCta('quote', 'Open the free quote tool')
       }));
     }
 
@@ -1129,7 +1130,8 @@ var DKQuiz = (function () {
         description: 'Church plans are generally outside federal COBRA and outside ERISA. A state rule can still matter.',
         finding: 'You marked the employer as a church.',
         action: 'Confirm with counsel before you build a federal COBRA process. If you are actually a private employer, the 30-day and 14-day notice clocks apply, or 44 days if you administer the plan yourself.',
-        links: [link(URLS.qualifyingEvent, 'Qualifying Event Decision Tool', 'Use this when a covered employer has a life event to sort out.')]
+        links: [link(URLS.qualifyingEvent, 'Qualifying Event Decision Tool', 'Use this when a covered employer has a life event to sort out.')],
+        cta: toolCta('contact', 'Talk to our team')
       }));
     } else if (flags.empCount === '20to49' || flags.empCount === '50plus' || flags.empCount === 'notSure') {
       var cobraStatus = answers.cobraAdmin === 'noOne' ? 'actionNeeded'
@@ -1151,7 +1153,8 @@ var DKQuiz = (function () {
           link(URLS.cobraGeneral, 'DOL model general notice', 'For new enrollees.'),
           link(URLS.cobraElection, 'DOL model election notice', 'For qualifying events.'),
           link(URLS.qualifyingEvent, 'Qualifying Event Decision Tool', 'Sort a life event before you send the notice.')
-        ]
+        ],
+        cta: toolCta('contact', 'Talk to our team')
       }));
     }
 
@@ -1168,7 +1171,7 @@ var DKQuiz = (function () {
         description: 'Level-funded plans are legally self-funded. That brings the PCORI fee, Section 105(h) testing, a HIPAA privacy notice, gag-clause confirmation, and a closer look at parity.',
         finding: 'Medical funding was marked not sure.',
         action: 'Ask the carrier whether the contract is fully insured or level-funded. If it is level-funded, treat it as self-funded for those duties.',
-        cta: toolCta('rbp', 'Open the RBP decision tool')
+        cta: toolCta('rbp', 'Open the free RBP decision tool')
       }));
     }
 
@@ -1182,7 +1185,7 @@ var DKQuiz = (function () {
         description: 'Treat a level-funded plan like a self-funded plan for privacy, PCORI, 105(h), and similar duties. A reference-based design is one way some level-funded plans pay claims.',
         finding: flags.levelFunded ? 'You marked the medical plan as level-funded.' : 'You marked the medical plan as self-funded.',
         action: 'Confirm the TPA work order matches those duties.',
-        cta: toolCta('rbp', 'Open the RBP decision tool')
+        cta: toolCta('rbp', 'Open the free RBP decision tool')
       }));
     }
 
@@ -1232,7 +1235,7 @@ var DKQuiz = (function () {
       description: 'If the employer contributes to employees\' Trump Accounts, a written Section 128 program is what documents that design. The employer decides whether to adopt one.',
       finding: 'This is an optional plan design, not a finding that you already contribute.',
       action: 'The Section 128 tool drafts a written program and, when salary reduction is used, a cafeteria-plan amendment. It does not set a contribution amount.',
-      cta: toolCta('section128', 'Open the Section 128 tool')
+      cta: toolCta('section128', 'Open the free Section 128 tool')
     }));
 
     return cards;
@@ -1408,16 +1411,88 @@ var DKQuiz = (function () {
     return questions.filter(function (q) { return !q.showIf || q.showIf(answers || {}); });
   }
 
-  function aboutStepCount(answers) {
-    return Math.max(visibleQuestions(answers).length, 1);
+  var TYPICAL_PATH = {
+    no: {
+      offerBenefits: 'no',
+      employeeCount: 'under20',
+      partTime: 'no',
+      employerType: 'private',
+      exchangeNotice: 'yes',
+      nobenGrowth: 'no',
+      nobenCompetition: 'no'
+    },
+    yes: {
+      offerBenefits: 'yes',
+      employeeCount: '20to49',
+      partTime: 'no',
+      employerType: 'private',
+      benefitsOffered: ['medical'],
+      medicalFunding: 'fullyInsured',
+      wrapPlanInPlace: 'yes',
+      wrapPlanAge: 'within1year',
+      spdDistributed: 'yes',
+      sbcDistributed: 'yes',
+      employeeContrib: 'yes',
+      pretax: 'yes',
+      section125InPlace: 'yes',
+      section125Tested: 'yes',
+      section125Age: 'within1year',
+      noticesSent: ['partD'],
+      exchangeNotice: 'yes',
+      rxdcStatus: 'carrierFiled',
+      gagClause: 'carrierFiled',
+      cobraAdmin: 'thirdParty',
+      planStructure: ['none'],
+      enrolledCount: 'under100'
+    }
+  };
+
+  function typicalAnswers(answers) {
+    var branch = answers && answers.offerBenefits;
+    if (branch !== 'yes' && branch !== 'no') return null;
+    var merged = {};
+    var base = TYPICAL_PATH[branch];
+    Object.keys(base).forEach(function (key) { merged[key] = base[key]; });
+    Object.keys(answers || {}).forEach(function (key) {
+      if (!blank(answers[key])) merged[key] = answers[key];
+    });
+    return merged;
+  }
+
+  function typicalPathLength(answers) {
+    var merged = typicalAnswers(answers);
+    if (!merged) return 0;
+    return visibleQuestions(merged).length;
   }
 
   function stepProgress(answers, index) {
-    var total = aboutStepCount(answers);
+    answers = answers || {};
+    var known = Math.max(visibleQuestions(answers).length, 1);
     var step = (index || 0) + 1;
     if (step < 1) step = 1;
-    if (step > total) step = total;
-    return { step: step, total: total };
+    if (step > known) step = known;
+    var started = answers.offerBenefits === 'yes' || answers.offerBenefits === 'no';
+    var about = typicalPathLength(answers);
+    var exact = !!(started && step === known && about > 0 && about <= known);
+    return {
+      step: step,
+      total: exact ? known : about,
+      showTotal: started,
+      exact: exact
+    };
+  }
+
+  function progressPercent(previousMax, progress) {
+    var pct = 4;
+    if (progress && progress.showTotal && progress.total) {
+      pct = Math.round((progress.step / progress.total) * 100);
+    }
+    if (progress && progress.exact) pct = 100;
+    if (pct < 4) pct = 4;
+    if (pct > 100) pct = 100;
+    var max = previousMax || 0;
+    if (pct < max) return max;
+    return pct;
   }
 
   function copyBlob() {
@@ -1437,8 +1512,9 @@ var DKQuiz = (function () {
     scoreAnswers: scoreAnswers,
     readinessFor: readinessFor,
     visibleQuestions: visibleQuestions,
-    aboutStepCount: aboutStepCount,
+    typicalPathLength: typicalPathLength,
     stepProgress: stepProgress,
+    progressPercent: progressPercent,
     deriveFlags: deriveFlags,
     determineForm5500: determineForm5500,
     copyBlob: copyBlob,
