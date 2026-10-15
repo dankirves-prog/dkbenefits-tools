@@ -110,7 +110,7 @@ test('payroll-practice disability and safe-harbor voluntary benefits are left ou
   const safe = Wp.normalize(baseInput({
     benefits: ['vol_life'],
     carriers: { vol_life: 'Aflac' },
-    vol_pretax: 'no',
+    tax: { vol_life: 'aftertax' },
     vol_contrib: 'no',
     vol_voluntary: 'yes',
     vol_endorse: 'no',
@@ -118,9 +118,72 @@ test('payroll-practice disability and safe-harbor voluntary benefits are left ou
     vol_consideration: 'no'
   }));
   assert.equal(Wp.voluntaryWrapped(safe).include, false);
-  const pretax = Wp.normalize(Object.assign({}, safe, { vol_pretax: 'yes' }));
+  const pretax = Wp.normalize(Object.assign({}, safe, { tax: { vol_life: 'pretax' } }));
   assert.equal(Wp.voluntaryWrapped(pretax).include, true);
   assert.match(Wp.voluntaryWrapped(pretax).reason, /Pre-tax/);
+});
+
+test('contribution defaults do not treat an HRA or employer-paid benefits as pre-tax', function () {
+  const Wp = model();
+  const hra = Wp.normalize(baseInput({
+    benefits: ['hra', 'life', 'add', 'std', 'ltd', 'eap'],
+    carriers: { hra: 'Employer', life: 'Sun Life', add: 'Sun Life', std: 'Sun Life', ltd: 'Sun Life', eap: 'Guidance' },
+    hra_type: 'integrated',
+    eap_type: 'substantive',
+    std_type: 'insured',
+    tax: { hra: 'pretax' }
+  }));
+  assert.equal(hra.tax.hra, 'none');
+  assert.equal(hra.tax.life, 'none');
+  assert.equal(hra.tax.add, 'none');
+  assert.equal(hra.tax.std, 'none');
+  assert.equal(hra.tax.ltd, 'none');
+  assert.equal(hra.tax.eap, 'none');
+  const medical = Wp.normalize(baseInput({ benefits: ['medical', 'dental', 'vision', 'health_fsa', 'lpfsa'], tax: {}, carriers: { medical: 'Florida Blue', dental: 'Sun Life', vision: 'VSP', health_fsa: 'WEX', lpfsa: 'WEX' } }));
+  assert.equal(medical.tax.medical, 'pretax');
+  assert.equal(medical.tax.lpfsa, 'pretax');
+  assert.equal(medical.tax.health_fsa, 'pretax');
+  const taxed = Wp.validate(baseInput({
+    benefits: ['ltd', 'std'],
+    carriers: { ltd: 'Sun Life', std: 'Sun Life' },
+    std_type: 'insured',
+    tax: { ltd: 'pretax', std: 'pretax' },
+    cobra: 'no'
+  }));
+  assert.equal(taxed.ok, true);
+  assert.match(taxed.findings.join(' '), /Disability benefits paid from pre-tax premiums are taxable income to the employee\./);
+  const missingTax = Wp.validate(baseInput({
+    benefits: ['vol_life'],
+    carriers: { vol_life: 'Aflac' },
+    tax: {},
+    vol_consideration: 'no'
+  }));
+  assert.ok(missingTax.errors.some(function (error) { return error.field === 'tax_vol_life'; }));
+});
+
+test('confirmations have no default and are required', function () {
+  const Wp = model();
+  const blank = Wp.validate(baseInput({
+    section125: '',
+    employee_contributions: '',
+    remitted: '',
+    certificates: '',
+    waiting_period: '',
+    funding: ''
+  }));
+  const fields = blank.errors.map(function (error) { return error.field; });
+  ['section125', 'employee_contributions', 'certificates', 'waiting_period', 'funding'].forEach(function (field) {
+    assert.ok(fields.indexOf(field) !== -1, field);
+  });
+  assert.equal(fields.indexOf('remitted'), -1);
+  const remit = Wp.validate(baseInput({ remitted: '' }));
+  assert.ok(remit.errors.some(function (error) { return error.field === 'remitted'; }));
+  const noContrib = Wp.validate(baseInput({ employee_contributions: 'no', remitted: '' }));
+  assert.equal(noContrib.ok, true);
+  assert.equal(Wp.normalize(baseInput()).plan_number, '501');
+  assert.equal(Wp.normalize(baseInput()).discretion, 'yes');
+  assert.equal(Wp.normalize(baseInput()).trust, 'no');
+  assert.equal(Wp.normalize(baseInput()).bargaining, 'no');
 });
 
 test('renewal date moves to the next business morning when the 90-day mark has passed', function () {

@@ -74,7 +74,8 @@ var WpModel = (function () {
     { id: 'day-31', label: '31st day', menu: '31st day' },
     { id: 'first-following-60', label: 'First of the month following 60 days', menu: 'First of the month following 60 days' },
     { id: 'day-61', label: '61st day', menu: '61st day' },
-    { id: 'day-90', label: '90th day', menu: '90th day (maximum for medical)' },
+    { id: 'day-90', label: '90th day', menu: '90th day' },
+    { id: 'day-91', label: 'The 91st day', menu: 'The 91st day (a 90-day wait, the federal maximum)' },
     { id: 'other', label: 'Other', menu: 'Other' }
   ];
   function waitingText(id, other) {
@@ -161,7 +162,8 @@ var WpModel = (function () {
     var codes = ['vol_life', 'vol_add', 'accident', 'critical', 'hospital'];
     var selected = codes.filter(function (code) { return hasBenefit(plan, code); });
     if (!selected.length) return { include: false, codes: [], reason: '' };
-    if (yes(plan.vol_pretax)) {
+    var pretaxChoice = selected.some(function (code) { return (plan.tax || {})[code] === 'pretax'; });
+    if (pretaxChoice) {
       return { include: true, codes: selected, reason: 'Pre-tax treatment through a Section 125 plan fails the voluntary-plan safe harbor, so these benefits are wrapped.' };
     }
     var fail = yes(plan.vol_contrib) || !yes(plan.vol_voluntary) || yes(plan.vol_endorse) || !yes(plan.vol_payroll_only) || yes(plan.vol_consideration);
@@ -286,6 +288,9 @@ var WpModel = (function () {
     if (hasBenefit(plan, 'std') && plan.std_type === 'trust') {
       notes.push('Short-term disability paid from a trust or separate fund is wrapped. That fund is plan assets, so the small-plan exemption is not available.');
     }
+    if ((hasBenefit(plan, 'ltd') && (plan.tax || {}).ltd === 'pretax') || (hasBenefit(plan, 'std') && (plan.tax || {}).std === 'pretax')) {
+      notes.push('Disability benefits paid from pre-tax premiums are taxable income to the employee.');
+    }
     if (plan.dcap_interest) {
       notes.push('Dependent care stays in the Section 125 plan. It is not part of this wrap.');
     }
@@ -401,7 +406,7 @@ var WpModel = (function () {
       bargaining: input.bargaining || 'no',
       phi: input.phi || '',
       phi_classes: String(input.phi_classes || '').trim(),
-      certificates: input.certificates || 'yes',
+      certificates: input.certificates || '',
       dcap_interest: input.dcap_interest === 'yes',
       agent_choice: input.agent_choice === 'custom' ? 'custom' : 'employer',
       agent_name: String(input.agent_name || '').trim(),
@@ -421,11 +426,27 @@ var WpModel = (function () {
     };
     if (!plan.plan_name && plan.employer_name) plan.plan_name = plan.employer_name + ' Group Welfare Benefit Plan';
     plan.benefits = plan.benefits.filter(function (code) { return code !== 'dcap' && code !== 'lpfsa_disabled'; });
+    applyTaxDefaults(plan);
     applyWaiting(plan, input);
     if (!plan.phi && isSelfFundedFunding(plan.funding) && hasBenefit(plan, 'medical')) plan.phi = 'yes';
     plan.phi_classes_blank = (plan.phi === 'yes' && !plan.phi_classes);
     plan.address = [plan.street, plan.city, plan.state, plan.zip].filter(Boolean).join(', ');
     return plan;
+  }
+  var PRETAC_TAX = { medical: 1, dental: 1, vision: 1, health_fsa: 1, lpfsa: 1 };
+  var EMPLOYER_TAX = { eap: 1, life: 1, add: 1, ltd: 1, std: 1 };
+  function applyTaxDefaults(plan) {
+    var tax = plan.tax || {};
+    (plan.benefits || []).forEach(function (code) {
+      if (code === 'hra') {
+        tax[code] = 'none';
+        return;
+      }
+      if (tax[code]) return;
+      if (PRETAC_TAX[code]) tax[code] = 'pretax';
+      else if (EMPLOYER_TAX[code]) tax[code] = 'none';
+    });
+    plan.tax = tax;
   }
   function applyWaiting(plan, input) {
     var legacy = input.waiting && typeof input.waiting === 'object' ? input.waiting : {};
@@ -440,7 +461,13 @@ var WpModel = (function () {
       plan.waiting = legacy;
       return;
     }
-    var id = input.waiting_period || 'date-of-hire';
+    if (!input.waiting_period) {
+      plan.waiting_period = '';
+      plan.waiting_other = '';
+      plan.waiting = {};
+      return;
+    }
+    var id = input.waiting_period;
     plan.waiting_period = id;
     plan.waiting_other = String(input.waiting_other || '').trim();
     var base = waitingText(id, plan.waiting_other);
@@ -483,6 +510,7 @@ var WpModel = (function () {
     if (plan.intended_signature_date && !isoDate(plan.intended_signature_date)) {
       push(errors, 'intended_signature_date', 'Enter the date as month, day, and year.');
     }
+    if (!plan.waiting_period) push(errors, 'waiting_period', 'Choose the waiting period.');
     if (plan.waiting_period === 'other' && !plan.waiting_other) push(errors, 'waiting_other', 'Describe the waiting period.');
     Object.keys(plan.waiting_overrides || {}).forEach(function (code) {
       if (plan.waiting_overrides[code] === 'other' && !(plan.waiting && plan.waiting[code])) {
@@ -492,12 +520,23 @@ var WpModel = (function () {
     if (!plan.employee_count || num(plan.employee_count) < 1) push(errors, 'employee_count', 'Enter about how many employees you had last year.');
     if (!plan.benefits.length) push(errors, 'benefits', 'Select at least one benefit.');
     if (hasBenefit(plan, 'medical') && !plan.funding) push(errors, 'funding', 'Choose how medical is funded.');
+    if (plan.section125 !== 'yes' && plan.section125 !== 'no') push(errors, 'section125', 'Say whether a Section 125 plan is in place.');
+    if (plan.employee_contributions !== 'yes' && plan.employee_contributions !== 'no') push(errors, 'employee_contributions', 'Say whether employees contribute.');
+    if (plan.employee_contributions === 'yes' && plan.remitted !== 'yes' && plan.remitted !== 'no') {
+      push(errors, 'remitted', 'Say whether contributions are remitted within three months.');
+    }
+    if (plan.certificates !== 'yes' && plan.certificates !== 'no') push(errors, 'certificates', 'Say whether you have the certificate or booklet for each benefit.');
     if (hasBenefit(plan, 'medical') && isSelfFundedFunding(plan.funding)) {
       if (!plan.tpa_name) push(errors, 'tpa_name', 'Enter the TPA name.');
       if (!plan.tpa_document) push(errors, 'tpa_document', 'Enter the name of the TPA plan document or SPD.');
       if (!plan.stop_loss) push(errors, 'stop_loss', 'Say whether stop-loss is in place.');
     }
     if (num(plan.census.a) < 1) push(errors, 'census_a', 'Enter at least 1 current employee covered by a wrapped benefit.');
+    (plan.benefits || []).forEach(function (code) {
+      if (code !== 'hra' && !(plan.tax || {})[code]) {
+        push(errors, 'tax_' + code, 'Choose how employees contribute to ' + benefitLabel(code) + '.');
+      }
+    });
     wrappedBenefits(plan).forEach(function (code) {
       if (!plan.carriers[code]) push(errors, 'carrier_' + code, 'Enter the carrier or administrator for ' + benefitLabel(code) + '.');
       if (needsCarrierAddress(plan, code)) {
@@ -555,6 +594,8 @@ var WpModel = (function () {
     NEWBORNS_INSURED: NEWBORNS_INSURED,
     ALLOWED_ORIGINS: ALLOWED_ORIGINS,
     BENEFIT_LABELS: BENEFIT_LABELS,
+    PRETAC_TAX: PRETAC_TAX,
+    EMPLOYER_TAX: EMPLOYER_TAX,
     WAITING_OPTIONS: WAITING_OPTIONS,
     waitingText: waitingText,
     isoDate: isoDate,

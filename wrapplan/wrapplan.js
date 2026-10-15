@@ -27,7 +27,7 @@
   var SELF_FUNDING = ['level', 'aso', 'captive', 'rbp'];
   var step = 1;
   var startedAt = Date.now();
-  var DRAFT_KEY = 'wp-draft-v2';
+  var DRAFT_KEY = 'wp-draft-v3';
 
   function $(id) { return document.getElementById(id); }
   function val(id) {
@@ -132,7 +132,7 @@
       if (code === 'medical' || code === 'dental' || code === 'vision' || code === 'rx' || (code === 'eap' && val('eap_type') === 'substantive')) {
         carrierAddresses[code] = val('carrier_address_' + code);
       }
-      tax[code] = val('tax_' + code) || 'pretax';
+      if (code !== 'hra') tax[code] = val('tax_' + code);
       if (code !== 'medical' && code !== 'hra' && code !== 'health_fsa' && code !== 'lpfsa' && code !== 'std') {
         benefitFunding[code] = val('benefit_funding_' + code) || 'insured';
       }
@@ -166,14 +166,14 @@
       benefits: codes,
       carriers: carriers,
       carrier_addresses: carrierAddresses,
-      waiting_period: val('waiting_period') || 'date-of-hire',
+      waiting_period: val('waiting_period'),
       waiting_other: val('waiting_other'),
       waiting_overrides: overrides,
       waiting_override_other: overrideOther,
       tax: tax,
       benefit_funding: benefitFunding,
       discretion: val('discretion') || 'yes',
-      funding: hasCode('medical') ? (val('funding') || 'insured') : '',
+      funding: hasCode('medical') ? val('funding') : '',
       network: val('funding') === 'rbp' ? 'rbp' : 'traditional',
       stop_loss: selfMedical ? val('stop_loss') : '',
       tpa_name: selfMedical ? val('tpa_name') : '',
@@ -182,7 +182,6 @@
       ichra_same_class: hasCode('hra') && val('hra_type') === 'ichra' ? val('ichra_same_class') : '',
       eap_type: hasCode('eap') ? val('eap_type') : '',
       std_type: hasCode('std') ? val('std_type') : '',
-      vol_pretax: val('vol_pretax'),
       vol_contrib: val('vol_contrib'),
       vol_voluntary: val('vol_voluntary'),
       vol_endorse: val('vol_endorse'),
@@ -192,9 +191,9 @@
       hours: val('hours'),
       dependents: val('dependents'),
       census: { a: val('census_a'), b: val('census_b') || '0', c: val('census_c') || '0', d: val('census_d') || '0' },
-      employee_contributions: val('employee_contributions') || 'yes',
-      remitted: val('employee_contributions') === 'no' ? 'yes' : (val('remitted') || 'yes'),
-      section125: val('section125') || 'yes',
+      employee_contributions: val('employee_contributions'),
+      remitted: val('employee_contributions') === 'yes' ? val('remitted') : '',
+      section125: val('section125'),
       trust: val('trust') || 'no',
       trustee_name: val('trust') === 'yes' ? val('trustee_name') : '',
       trustee_address: val('trust') === 'yes' ? val('trustee_address') : '',
@@ -204,7 +203,7 @@
       bargaining: val('bargaining') || 'no',
       phi: val('phi') || 'no',
       phi_classes: val('phi') === 'yes' ? val('phi_classes') : '',
-      certificates: val('certificates') || 'yes',
+      certificates: val('certificates'),
       agent_choice: val('agent_choice') || 'employer',
       agent_name: val('agent_name'),
       agent_address: val('agent_address'),
@@ -282,7 +281,7 @@
     return pairs;
   }
   function mountWaiting() {
-    fillOptions($('waiting_period'), waitingPairs(false), 'date-of-hire');
+    fillOptions($('waiting_period'), [['', 'Choose']].concat(waitingPairs(false)), '');
     var host = $('waitingOverrides');
     BENEFITS.forEach(function (pair) {
       var wrap = document.createElement('div');
@@ -328,7 +327,7 @@
       if (code === 'lpfsa') {
         var note = document.createElement('p');
         note.className = 'hint benefit-note';
-        note.textContent = 'For employees enrolled in an HSA-qualified plan.';
+        note.textContent = 'Covers dental and vision expenses, and preventive care if the plan allows, so it stays compatible with a health savings account.';
         item.appendChild(note);
       }
       var panel = document.createElement('div');
@@ -366,12 +365,13 @@
     if (code === 'medical') {
       var funding = addField(panel, 'funding', 'How is medical funded?', 'select', 'funding');
       fillOptions(funding, [
+        ['', 'Choose'],
         ['insured', 'Fully insured'],
         ['level', 'Level-funded'],
         ['aso', 'Self-funded (ASO)'],
         ['captive', 'Captive'],
         ['rbp', 'Reference-based pricing']
-      ], 'insured');
+      ], '');
       fieldError(funding, 'err_funding');
       var self = document.createElement('div');
       self.id = 'selfFundedWrap';
@@ -419,8 +419,13 @@
       fillOptions(std, [['', 'Choose'], ['insured', 'Insured policy'], ['general-assets', 'Paid from employer general assets'], ['trust', 'Paid from a trust or separate fund']], '');
       fieldError(std, 'err_std_type');
     }
+    if (code === 'hra') return;
+    var taxDefault = WpModel.PRETAC_TAX[code] ? 'pretax' : (WpModel.EMPLOYER_TAX[code] ? 'none' : '');
+    var taxPairs = [['pretax', 'Pre-tax'], ['aftertax', 'After tax'], ['none', 'Employer paid']];
+    if (!taxDefault) taxPairs.unshift(['', 'Choose']);
     var tax = addField(panel, 'tax_' + code, 'Employee contributions for this benefit', 'select');
-    fillOptions(tax, [['pretax', 'Pre-tax'], ['aftertax', 'After tax'], ['none', 'Employer paid']], 'pretax');
+    fillOptions(tax, taxPairs, taxDefault);
+    fieldError(tax, 'err_tax_' + code);
   }
   function paintReview(result) {
     var box = $('reviewBox');
@@ -566,13 +571,6 @@
     }
     var findingsJob = jobs[jobs.length - 1];
     var packetJobs = jobs.slice(0, -1);
-    var packetWord = {
-      name: WpDocgen.packetFileName(result.plan),
-      mime: docx,
-      bytes: WpDocgen.buildPacketDocx(packetJobs.map(function (job) {
-        return { rows: job.rows, footer: WpDocgen.footerFor(result.plan, job.title) };
-      }), { title: result.plan.plan_name || 'Plan packet' })
-    };
     var findingsWord = {
       name: findingsJob.name,
       mime: docx,
@@ -581,22 +579,45 @@
     function pdfOf(job) {
       return WpPdf.buildPdf(job.rows, { title: job.title, footer: WpDocgen.footerFor(result.plan, job.title) });
     }
+    function wordPacket(entries) {
+      var coverRows = WpDocgen.coverParagraphs(result.plan, entries);
+      var sections = [{ rows: coverRows, footer: WpDocgen.footerFor(result.plan, 'Plan packet') }].concat(packetJobs.map(function (job) {
+        return { rows: job.rows, footer: WpDocgen.footerFor(result.plan, job.title) };
+      }));
+      return {
+        name: WpDocgen.packetFileName(result.plan),
+        mime: docx,
+        bytes: WpDocgen.buildPacketDocx(sections, { title: result.plan.plan_name || 'Plan packet' }),
+        coverRows: coverRows
+      };
+    }
     Promise.all(packetJobs.map(pdfOf)).then(function (parts) {
-      return WpPdf.mergePdfs(parts, { title: result.plan.plan_name || 'Plan packet' }).then(function (packetPdf) {
-        return pdfOf(findingsJob).then(function (findingsPdf) {
-          return [
-            packetWord,
-            { name: WpDocgen.pdfFileName(packetWord.name), mime: 'application/pdf', bytes: packetPdf },
-            findingsWord,
-            { name: WpDocgen.pdfFileName(findingsJob.name), mime: 'application/pdf', bytes: findingsPdf }
-          ];
+      var PDFLib = window.PDFLib;
+      return Promise.all(parts.map(function (bytes) {
+        return PDFLib.PDFDocument.load(bytes).then(function (doc) { return doc.getPageCount(); });
+      })).then(function (counts) {
+        var entries = packetJobs.map(function (job, index) {
+          return { title: job.title, pages: counts[index] };
+        });
+        var packetWord = wordPacket(entries);
+        return pdfOf({ rows: packetWord.coverRows, title: 'Plan packet' }).then(function (coverPdf) {
+          return WpPdf.mergePdfs([coverPdf].concat(parts), { title: result.plan.plan_name || 'Plan packet' });
+        }).then(function (packetPdf) {
+          return pdfOf(findingsJob).then(function (findingsPdf) {
+            return [
+              packetWord,
+              { name: WpDocgen.pdfFileName(packetWord.name), mime: 'application/pdf', bytes: packetPdf },
+              findingsWord,
+              { name: WpDocgen.pdfFileName(findingsJob.name), mime: 'application/pdf', bytes: findingsPdf }
+            ];
+          });
         });
       });
     }).then(function (files) {
       showDownloads(files);
       sendLead(result, files);
     }).catch(function () {
-      showDownloads([packetWord, findingsWord]);
+      showDownloads([wordPacket(packetJobs.map(function (job) { return { title: job.title }; })), findingsWord]);
       setText('statusLine', 'The Word files are ready. The PDF could not be built in this browser.');
     });
   }
@@ -606,8 +627,8 @@
   var STEP_FIELDS = {
     2: ['employer_name', 'employer_ein', 'address', 'plan_number', 'employee_count', 'wrap_effective_date', 'original_effective_date'],
     4: ['benefits', 'hra_type', 'eap_type', 'std_type', 'vol_consideration', 'funding', 'tpa_name', 'tpa_document', 'stop_loss'],
-    5: ['waiting_other'],
-    6: ['census_a', 'trustee_name'],
+    5: ['waiting_period', 'waiting_other'],
+    6: ['census_a', 'trustee_name', 'section125', 'employee_contributions', 'remitted', 'certificates'],
     7: ['cobra', 'signer_name', 'intended_signature_date'],
     8: ['contact_name', 'contact_email']
   };
@@ -615,7 +636,7 @@
     var fields = STEP_FIELDS[n] || [];
     return (errors || []).filter(function (error) {
       if (fields.indexOf(error.field) !== -1) return true;
-      if (n === 4 && error.field.indexOf('carrier_') === 0) return true;
+      if (n === 4 && (error.field.indexOf('carrier_') === 0 || error.field.indexOf('tax_') === 0)) return true;
       return n === 5 && error.field.indexOf('waitover_') === 0;
     });
   }
@@ -636,7 +657,7 @@
         benefits: 1, carriers: 1, carrier_addresses: 1, census: 1, waiting: 1, tax: 1, benefit_funding: 1,
         funding: 1, network: 1, stop_loss: 1, tpa_name: 1, tpa_document: 1,
         hra_type: 1, ichra_same_class: 1, eap_type: 1, std_type: 1,
-        vol_pretax: 1, vol_contrib: 1, vol_voluntary: 1, vol_endorse: 1, vol_payroll_only: 1, vol_consideration: 1,
+        vol_contrib: 1, vol_voluntary: 1, vol_endorse: 1, vol_payroll_only: 1, vol_consideration: 1,
         utm: 1, referrer: 1, address: 1, phi_classes_blank: 1,
         original_effective_date: 1, restatement_date: 1, wrap_effective_date: 1, intended_signature_date: 1,
         waiting_period: 1, waiting_other: 1, waiting_overrides: 1, waiting_override_other: 1, is_restatement: 1
@@ -651,7 +672,7 @@
       putValue('wrap_effective_date', displayDate(restatement ? (data.restatement_date || data.wrap_effective_date) : (data.wrap_effective_date || data.original_effective_date)));
       if (restatement) putValue('original_effective_date', displayDate(data.original_effective_date));
       putValue('intended_signature_date', displayDate(data.intended_signature_date));
-      putValue('waiting_period', data.waiting_period || 'date-of-hire');
+      putValue('waiting_period', data.waiting_period);
       putValue('waiting_other', data.waiting_other);
       if (data.census) {
         ['a', 'b', 'c', 'd'].forEach(function (part) { putValue('census_' + part, data.census[part]); });
@@ -669,7 +690,7 @@
       putValue('ichra_same_class', data.ichra_same_class);
       putValue('eap_type', data.eap_type);
       putValue('std_type', data.std_type);
-      ['vol_pretax', 'vol_contrib', 'vol_voluntary', 'vol_endorse', 'vol_payroll_only', 'vol_consideration'].forEach(function (key) {
+      ['vol_contrib', 'vol_voluntary', 'vol_endorse', 'vol_payroll_only', 'vol_consideration'].forEach(function (key) {
         putValue(key, data[key]);
       });
       Object.keys(data.carriers || {}).forEach(function (code) { putValue('carrier_' + code, data.carriers[code]); });

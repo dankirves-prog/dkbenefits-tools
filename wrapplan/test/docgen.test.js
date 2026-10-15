@@ -288,7 +288,8 @@ test('limited purpose FSA is wrapped from general assets', function () {
     carriers: { lpfsa: 'WEX' },
     cobra: 'no'
   }));
-  assert.match(pack.wrap, /limited purpose FSA is for employees enrolled in an HSA-qualified plan/);
+  assert.match(pack.wrap, /covers dental and vision expenses, and preventive care if the plan allows/);
+  assert.match(pack.wrap, /compatible with a health savings account/);
   assert.match(pack.wrap, /general assets/);
   const schedule = context.WpDocgen.plainText(context.WpDocgen.scheduleParagraphs(pack.result.plan));
   assert.match(schedule, /Limited purpose FSA/);
@@ -307,11 +308,49 @@ test('a plan packet gives each document its own footer and page count', function
   ];
   const bytes = context.WpDocgen.buildPacketDocx(sections, { title: 'Plan packet' });
   const xml = Buffer.from(bytes).toString('latin1');
-  assert.match(xml, /SECTIONPAGES/);
+  assert.doesNotMatch(xml, /SECTIONPAGES/);
   assert.doesNotMatch(xml, /NUMPAGES/);
+  assert.match(xml, /PAGE/);
   assert.match(xml, /w:start="1"/);
   assert.match(xml, /nextPage/);
   assert.match(xml, /Harbor Dental Group LLC Wrap Plan Document \| Page /);
   assert.match(xml, /Harbor Dental Group LLC HIPAA Amendment \| Page /);
   assert.match(xml, /Qualified medical child support order procedures/);
+});
+
+test('an HRA never describes employee contributions as pre-tax, and the packet cover names who receives each part', function () {
+  const context = boot();
+  const pack = planText(context, baseInput({
+    benefits: ['medical', 'hra'],
+    carriers: { medical: 'Florida Blue', hra: 'Employer' },
+    hra_type: 'integrated',
+    tax: { medical: 'pretax', hra: 'pretax' }
+  }));
+  const hraLine = pack.wrap.split('\n').filter(function (line) { return /Health reimbursement arrangement/.test(line); })[0];
+  assert.match(hraLine, /The employer pays the HRA/);
+  assert.doesNotMatch(hraLine, /pre-tax/);
+  const cover = context.WpDocgen.plainText(context.WpDocgen.coverParagraphs(pack.result.plan, [
+    { title: 'Wrap Plan Document', pages: 10 },
+    { title: 'Summary Plan Description', pages: 8 },
+    { title: 'Schedule A', pages: 2 },
+    { title: 'Adoption Resolution', pages: 1 },
+    { title: 'QMCSO Procedures', pages: 2 },
+    { title: 'HIPAA Amendment', pages: 2 }
+  ]));
+  assert.match(cover, /Wrap Plan Document, pages 1-10/);
+  assert.match(cover, /Adoption Resolution, page 1/);
+  assert.match(cover, /Employees receive the summary plan description and the certificates/);
+  assert.match(cover, /The employer keeps the signed wrap, the adoption resolution, Schedule A, and the HIPAA amendment/);
+  assert.match(cover, /available on request/);
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const js = fs.readFileSync(path.join(root, 'wrapplan.js'), 'utf8');
+  assert.doesNotMatch(html, /id="vol_pretax"/);
+  assert.match(html, /id="section125"[\s\S]{0,220}<option value="">Choose<\/option>/);
+  assert.match(html, /id="employee_contributions"[\s\S]{0,180}<option value="">Choose<\/option>/);
+  assert.match(html, /id="remitted"[\s\S]{0,160}<option value="">Choose<\/option>/);
+  assert.match(html, /id="certificates"[\s\S]{0,120}<option value="">Choose<\/option>/);
+  assert.ok(js.indexOf("[['', 'Choose']].concat(waitingPairs(false))") !== -1);
+  assert.match(js, /\['', 'Choose'\],\s*\['insured', 'Fully insured'\]/);
+  assert.match(js, /if \(code === 'hra'\) return;/);
+  assert.match(html, /Coverage must start no later than the 91st day/);
 });
