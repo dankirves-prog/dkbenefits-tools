@@ -226,11 +226,7 @@ var WpPdf = (function () {
       var contentRoom = (pageHeight - top) - bottom;
       while (index < list.length) {
         var row = list[index];
-        if (row.pageBreak) {
-          newPage();
-          index++;
-          continue;
-        }
+        if (row.pageBreak && page) newPage();
         var end = index;
         while (list[end].keepNext && end + 1 < list.length && !list[end + 1].pageBreak) end++;
         if (end > index) {

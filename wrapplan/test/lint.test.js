@@ -6,7 +6,7 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const FILES = [
   'index.html', 'wrapplan.js', 'wrapplan.css', 'embed.html', 'config.js',
-  'wp-model.js', 'wp-docgen.js', 'wp-pdf.js', 'wp-terms.js', 'wp-tips.js'
+  'wp-model.js', 'wp-docgen.js', 'wp-pdf.js', 'wp-terms.js'
 ];
 
 test('visitor copy has no stale years or dollar amounts beyond the allowed model sentence', function () {
@@ -18,6 +18,7 @@ test('visitor copy has no stale years or dollar amounts beyond the allowed model
     years.forEach(function (year) {
       if (year !== '1974') hits.push(file + ' year ' + year);
     });
+    if (text.indexOf('\u2014') !== -1 || text.indexOf('\u2013') !== -1) hits.push(file + ' dash');
     const dollars = text.match(/\$\d[\d,]*/g) || [];
     dollars.forEach(function (amount) {
       if (amount !== '$110') hits.push(file + ' dollar ' + amount);

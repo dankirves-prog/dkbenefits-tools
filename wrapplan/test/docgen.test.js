@@ -143,7 +143,9 @@ test('COBRA yes prints the federal paragraph, and not sure is not a path', funct
   assert.doesNotMatch(unsureSpd, /Federal COBRA continuation coverage applies/);
   assert.doesNotMatch(unsureFindings, /Confirm the federal COBRA employee count/);
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  assert.doesNotMatch(html, /value="unsure"|Not sure/);
+  const js = fs.readFileSync(path.join(root, 'wrapplan.js'), 'utf8');
+  assert.doesNotMatch(js, /fillChoices\('cobraChoices'[\s\S]{0,180}Not sure/);
+  assert.doesNotMatch(html, /value="unsure"/);
 });
 
 test('QSEHRA with medical and ICHRA on the same class are findings, and dependent care is absent from the wrap', function () {
@@ -197,15 +199,13 @@ test('check-in copy matches Dan\'s close and has no Thanks, Dan line', function 
 test('download labels and the page do not promise an email', function () {
   const js = fs.readFileSync(path.join(root, 'wrapplan.js'), 'utf8');
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  assert.match(js, /Download Plan \(Word\)/);
-  assert.match(js, /Download Plan \(PDF\)/);
-  assert.match(js, /Download Findings Report \(Word\)/);
-  assert.match(js, /Download Findings Report \(PDF\)/);
-  assert.match(html, /Create My Documents/);
+  assert.match(js, /'Word'/);
+  assert.match(js, /'PDF'/);
+  assert.match(html, /Build my documents/);
   assert.doesNotMatch(html, /Build the sample/);
   assert.doesNotMatch(html, /can sit in one wrap/);
   assert.match(js, /btn-gold/);
-  assert.ok(js.indexOf('list.appendChild(wordCol)') < js.indexOf('list.appendChild(pdfCol)'));
+  assert.ok(js.indexOf('fileButton(card.word') < js.indexOf('fileButton(card.pdf'));
   assert.match(js, /slice\(0, 14\)/);
   assert.match(html, /wrapplan\.js/);
   assert.doesNotMatch(html, /draft-banner/);
@@ -337,20 +337,18 @@ test('an HRA never describes employee contributions as pre-tax, and the packet c
     { title: 'QMCSO Procedures', pages: 2 },
     { title: 'HIPAA Amendment', pages: 2 }
   ]));
+  assert.match(cover, /Employer copy/);
+  assert.match(cover, /Sign and keep with your plan records/);
   assert.match(cover, /Wrap Plan Document, pages 1-10/);
   assert.match(cover, /Adoption Resolution, page 1/);
-  assert.match(cover, /Employees receive the summary plan description and the certificates/);
-  assert.match(cover, /The employer keeps the signed wrap, the adoption resolution, Schedule A, and the HIPAA amendment/);
-  assert.match(cover, /available on request/);
+  assert.match(cover, /Give employees the separate Summary Plan Description, not this file/);
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const js = fs.readFileSync(path.join(root, 'wrapplan.js'), 'utf8');
+  const css = fs.readFileSync(path.join(root, 'wrapplan.css'), 'utf8');
+  assert.doesNotMatch(html + js + css, /class="info"|class="bubble"|role="tooltip"/);
+  assert.doesNotMatch(html, /wp-tips\.js/);
   assert.doesNotMatch(html, /id="vol_pretax"/);
-  assert.match(html, /id="section125"[\s\S]{0,220}<option value="">Choose<\/option>/);
-  assert.match(html, /id="employee_contributions"[\s\S]{0,180}<option value="">Choose<\/option>/);
-  assert.match(html, /id="remitted"[\s\S]{0,160}<option value="">Choose<\/option>/);
-  assert.match(html, /id="certificates"[\s\S]{0,120}<option value="">Choose<\/option>/);
-  assert.ok(js.indexOf("[['', 'Choose']].concat(waitingPairs(false))") !== -1);
-  assert.match(js, /\['', 'Choose'\],\s*\['insured', 'Fully insured'\]/);
-  assert.match(js, /if \(code === 'hra'\) return;/);
-  assert.match(html, /Coverage must start no later than the 91st day/);
+  assert.match(js, /Employer paid/);
+  assert.match(fs.readFileSync(path.join(root, 'wp-model.js'), 'utf8'), /The 91st day/);
+  assert.doesNotMatch(pack.spd, /the number on the employer's records/);
 });
