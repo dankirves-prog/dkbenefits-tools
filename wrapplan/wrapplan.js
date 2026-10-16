@@ -691,8 +691,10 @@
     $('phiInsured').hidden = formMedicalSelf() || !hasCode('medical');
     var phiField = $('phiStep');
     if (phiField) {
-      if (formMedicalSelf()) $('selfMedicalStep').appendChild(phiField);
-      else if (checkedRadio('phi') === 'yes') $('phiLess').appendChild(phiField);
+      var phiHome = null;
+      if (formMedicalSelf()) phiHome = $('selfMedicalStep');
+      else if (checkedRadio('phi') === 'yes') phiHome = $('phiLess');
+      if (phiHome && phiField.parentNode !== phiHome) phiHome.appendChild(phiField);
     }
     if ($('phiLess')) $('phiLess').hidden = checkedRadio('phi') !== 'yes' || formMedicalSelf();
     $('trusteeWrap').hidden = checkedRadio('trust') !== 'yes';
@@ -708,7 +710,43 @@
     paintPlanLine();
     paintAdopter();
   }
-  function showStep(n) {
+  function embeddedFrame() {
+    try { return window.self !== window.top; } catch (err) { return true; }
+  }
+  function documentOffsetTop(el) {
+    var top = 0;
+    var node = el;
+    while (node) {
+      top += node.offsetTop || 0;
+      node = node.offsetParent;
+    }
+    return top;
+  }
+  function notifyParentScroll(el) {
+    if (!el || !embeddedFrame()) return;
+    var data = { type: 'wp-scroll', top: documentOffsetTop(el), step: step };
+    [
+      'https://www.dkbenefits.net',
+      'https://dkbenefits.net',
+      'https://dankirves-prog.github.io',
+      'https://www-dkbenefits-net.filesusr.com',
+      'https://editor.wix.com',
+      'https://create.editorx.com',
+      'https://manage.wix.com'
+    ].forEach(function (origin) {
+      try { window.parent.postMessage(data, origin); } catch (err) {}
+    });
+  }
+  function scrollToStep() {
+    var target = document.getElementById('stepTitle') || document.querySelector('[data-step="' + step + '"]');
+    if (embeddedFrame()) {
+      if (target && target.scrollIntoView) target.scrollIntoView({ block: 'start', behavior: 'auto' });
+      notifyParentScroll(target);
+    } else {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
+  }
+  function showStep(n, options) {
     step = n;
     Array.prototype.forEach.call(document.querySelectorAll('[data-step]'), function (section) {
       section.hidden = Number(section.getAttribute('data-step')) !== n;
@@ -736,8 +774,17 @@
     $('buildBtn').hidden = n !== 6 || resumeBuild;
     $('navRow').hidden = n === 7;
     if (n === 6) paintAnswers();
+    Array.prototype.forEach.call(document.querySelectorAll('h2[id="stepTitle"]'), function (heading) {
+      heading.removeAttribute('id');
+    });
     var title = document.querySelector('[data-step="' + n + '"] h2');
-    if (title) title.focus();
+    var allowScroll = !options || options.scroll !== false;
+    if (title) {
+      title.id = 'stepTitle';
+      title.setAttribute('tabindex', '-1');
+      if (allowScroll && title.focus) title.focus({ preventScroll: true });
+    }
+    if (allowScroll) scrollToStep();
   }
   function paintAnswers() {
     var plan = WpModel.normalize(readPlan());
@@ -1051,7 +1098,7 @@
     bits[0] += '.';
     return {
       employer: bits[0],
-      spd: 'Give this to every covered employee, with each insurance certificate behind it.',
+      spd: 'Give this to every covered employee, with each certificate. Electronic delivery works under the DOL rules, such as posting it in a benefits system like Ease or Employee Navigator, or by email. Tell employees where to find it and that a free paper copy is available on request. Printing and handing out paper is optional.',
       guide: 'What to do next, with your dates and deadlines.'
     };
   }
@@ -1061,7 +1108,7 @@
     list.textContent = '';
     [
       'Review and sign. Who signs: ' + plan.signer_name + ', ' + plan.signer_title + '.',
-      'Give the summary plan description and certificates to covered employees as soon as the plan is signed.',
+      'Give the summary plan description and certificates to covered employees as soon as the plan is signed. Electronic delivery works under the DOL rules. Tell them where to find it, and that a free paper copy is available on request. Paper is optional.',
       'Put the dates from your guide on your calendar.'
     ].forEach(function (text) {
       var item = document.createElement('li');
@@ -1227,5 +1274,5 @@
   paintEffective();
   sync();
   loadDraft();
-  showStep(0);
+  showStep(0, { scroll: false });
 })();

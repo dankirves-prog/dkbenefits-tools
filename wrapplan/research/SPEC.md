@@ -66,17 +66,20 @@ Level-funded is included in that sentence because the document will describe it 
 
 **Leads** go to a new Google Sheet in dan@dkbenefits.net through a new Apps Script, on the same pattern as Section 125. Dan is emailed immediately with the files and the findings. One short check-in goes to the visitor 12 minutes later, and only from 7:00 a.m. through 6:59 p.m. Eastern. If the 12 minutes lands outside that window, the note waits until the next 7:00 a.m. Eastern. A renewal reminder is emailed to Dan only, never to the visitor. The reminder date is 90 days before the next plan-year start. If that date has already passed, Dan is reminded the next business morning.
 
-**The check-in close and signature are fixed.** After a short opener, the note ends with these two sentences, then the signature. There is no "Thanks, Dan" line.
+**The check-in close and signature are fixed.** After the greeting and the two opening paragraphs, the note ends with these two sentences, then the signature. There is no "Thanks, Dan" line.
 
 Since this is a free tool, it's always a good idea to have your own counsel take a quick look before you sign.
 
 If you don't want to hear from me that's fine too just let me know.
 
 Daniel Kirves
-Benefits Broker | 20 Years Exp | DK Benefits
-407-476-5076 | www.dkbenefits.net
-6000 Metrowest Blvd #200 Orlando, FL 32835
-Agency Lic# L109331
+Benefits Broker | 20 Years Exp | DK Benefits LLC
+☎ 407-476-5076 | 🌐 www.dkbenefits.net
+🏢 6000 Metrowest Blvd. Suite 200, Orlando, FL 32835
+💼 Expert Guidance. Smarter Benefits. Better Savings.
+Florida Agency Lic# L109331
+Agent License# FL: W588866 | GA: 3366904
+SC: 19265263 | IL: 19265263 | TN: 3003674757
 
 **No years and no stale dollar amounts** in visitor copy or in the documents, except the model ERISA rights sentence that says $110 a day. That figure is allowed. Dates the employer typed (effective date, restatement date) are allowed because they are that employer's dates. The name of the statute may say 1974. Day counts that are the law (48 hours, 96 hours, 90 days, 120 days, 210 days, age 26, the 20-employee COBRA test, the 100-participant filing line, plan numbers 501 through 999) stay. A year-numbered bulletin or a year-numbered Form 5500 instruction booklet is not quoted in the tool.
 
@@ -322,23 +325,28 @@ New spreadsheet: **DK Benefits Wrap Plan Leads**. New Apps Script, execute as da
 
 **Visitor check-in, one time.** Queued only after Dan's email succeeds. Sent 12 minutes later if that moment is from 7:00 a.m. through 6:59 p.m. Eastern. Otherwise held until the next 7:00 a.m. Eastern. No attachments. No links. No images. Reply-To dan@dkbenefits.net. From name Daniel Kirves. The phone and the site stay plain text. The note does not print Dan's email address. Greeting is "Hi {first name}," or "Hi there," if the name is blank.
 
-The note is short:
+The note is:
 
 Hi {first name},
 
-I hope the wrap document was useful.
+I noticed you created your wrap plan document, and I hope it's useful for you.
+
+I'm an independent employee benefits broker, and I'd be happy to take a look at your benefits package and see if there's anything we can do for you. Just reply or call me at 407-476-5076.
 
 Since this is a free tool, it's always a good idea to have your own counsel take a quick look before you sign.
 
 If you don't want to hear from me that's fine too just let me know.
 
 Daniel Kirves
-Benefits Broker | 20 Years Exp | DK Benefits
-407-476-5076 | www.dkbenefits.net
-6000 Metrowest Blvd #200 Orlando, FL 32835
-Agency Lic# L109331
+Benefits Broker | 20 Years Exp | DK Benefits LLC
+☎ 407-476-5076 | 🌐 www.dkbenefits.net
+🏢 6000 Metrowest Blvd. Suite 200, Orlando, FL 32835
+💼 Expert Guidance. Smarter Benefits. Better Savings.
+Florida Agency Lic# L109331
+Agent License# FL: W588866 | GA: 3366904
+SC: 19265263 | IL: 19265263 | TN: 3003674757
 
-Nothing before the signature except the greeting, the one-line hope, a blank line, and those two sentences. In particular there is no "Thanks, Dan" line.
+The HTML version bolds the name and italicizes the tagline. There is no "Thanks, Dan" line.
 
 **Renewal reminder, Dan only.** Column `renewal_reminder_on` is 90 days before the next plan-year start. If that date has already passed when the lead arrives, the date stored is the next business morning. The five-minute trigger emails dan@dkbenefits.net on that date with the company name. It never emails the visitor. A separate column `renewal_emailed_dan` records the internal send.
 

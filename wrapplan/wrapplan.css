@@ -29,7 +29,7 @@ body {
 .bar { height: 4px; background: #e8edf3; border-radius: 99px; margin: 0 0 12px; }
 .bar span { display: block; height: 100%; background: var(--navy); border-radius: 99px; }
 .card { background: #fff; border: 1px solid #e8edf3; border-radius: 8px; padding: 18px 16px 8px; }
-.card h2 { font-family: Merriweather, Georgia, serif; font-size: 1.35rem; margin: 0 0 8px; }
+.card h2 { font-family: Merriweather, Georgia, serif; font-size: 1.35rem; margin: 0 0 8px; scroll-margin-top: 90px; }
 .card h3 { font-size: 1rem; margin: 14px 0 6px; }
 .lede, .fit { margin: 0 0 12px; }
 .field { display: flex; flex-direction: column; gap: 4px; margin: 0 0 12px; }

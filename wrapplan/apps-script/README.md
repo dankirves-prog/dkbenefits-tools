@@ -56,7 +56,9 @@ After the URL is saved and the page is published, a submission on `https://danki
 
 Subject: `Your wrap plan sample`. A test submission (`?test=1`) uses `[TEST] Your wrap plan sample`.
 
-The note is a short check-in. It hopes the wrap document was useful, suggests the employer's own counsel take a look before anyone signs, and closes with: `If you don't want to hear from me that's fine too just let me know.` Then Daniel Kirves's signature. It does not say the person was added to a list, and it has no unsubscribe line. It has no links.
+The note says Dan noticed the wrap plan document was created, offers to look at the benefits package, suggests the employer's own counsel take a look before anyone signs, and closes with: `If you don't want to hear from me that's fine too just let me know.` Then Daniel Kirves's signature, including the phone, the site, the Orlando address, the tagline, and the agency and agent license numbers. The HTML version bolds the name and italicizes the tagline. It does not say the person was added to a list, and it has no unsubscribe line. The phone and the site stay plain text.
+
+To change a deployment that is already live, paste the new `WpCombined.gs` over the script and save. Then Deploy, Manage deployments, edit the existing web app, choose New version, and Deploy. That keeps the same `/exec` URL. Do not create a second deployment.
 
 Reply-To is dan@dkbenefits.net. The From name is Daniel Kirves. One note per address per day, and at most three an hour. The trigger runs every 5 minutes.
 
@@ -70,7 +72,17 @@ Use `wrapplan/embed.html`, or point a Wix HTML component at `https://dankirves-p
 
 Do not change the live wrap page until the attorney-review question is answered. The preview can be published on GitHub Pages on its own.
 
-The tool posts `{ type: 'wp-scroll', step }` when the employer changes steps. In the Wix page code, scroll the HTML component only when that message arrives.
+The tool posts `{ type: 'wp-scroll', top, step }` when the employer changes steps. It does not post that message on load. In the Wix page code, scroll the HTML component only when that message arrives. Do not scroll the component when the page loads.
+
+```javascript
+$w.onReady(function () {
+  $w('#html1').onMessage(function (event) {
+    if (event.data && event.data.type === 'wp-scroll') {
+      $w('#html1').scrollTo();
+    }
+  });
+});
+```
 
 ## 9. A safe test after deploy
 

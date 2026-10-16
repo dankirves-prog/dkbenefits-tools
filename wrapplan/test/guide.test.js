@@ -341,7 +341,15 @@ test('info icons are 18px, do not inflate fields, and open on click', async func
   assert.ok(log);
   assert.equal(log.blankRows, 15);
   assert.equal(log.columns[0], 'Employee');
-  assert.equal(log.columns[1], 'Delivered by (hand, mail, email)');
+  assert.equal(log.columns[1], 'Method (system, email, mail, or hand)');
+  assert.equal(log.columns[3], 'Where it was sent or posted');
+  assert.match(context.WpDocgen.plainText(guide), /Electronic delivery works under the DOL rules/);
+  assert.match(context.WpDocgen.plainText(guide), /Ease or Employee Navigator/);
+  assert.match(context.WpDocgen.plainText(guide), /free paper copy is available on request/);
+  const spd = context.WpDocgen.plainText(context.WpDocgen.spdParagraphs(context.WpModel.normalize(baseInput())));
+  assert.match(spd, /electronically under the DOL rules/);
+  assert.match(spd, /free paper copy/);
+  assert.match(fs.readFileSync(path.join(root, 'wrapplan.js'), 'utf8'), /Electronic delivery works under the DOL rules/);
   const heading = guide.filter(function (item) { return item.text === 'Delivery log'; })[0];
   assert.equal(heading.pageBreak, true);
   assert.match(context.WpDocgen.plainText(guide), /\[ \] Step 1\./);
