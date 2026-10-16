@@ -111,7 +111,8 @@ function wpLeadMessage_(payload, checked) {
     'Renewal reminder for Dan: ' + WpModel.renewalReminderOn(plan, new Date()),
     '',
     'Findings',
-    (checked.findings || []).join('\n')
+    'Things to look at',
+    (Array.isArray(payload.findings) && payload.findings.length ? payload.findings : (checked.findings || [])).join('\n')
   ];
   return { to: WP_NOTIFY_EMAIL, subject: subject, body: lines.join('\n'), attachments: wpFiles_(payload) };
 }

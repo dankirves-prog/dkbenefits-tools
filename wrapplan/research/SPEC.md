@@ -90,7 +90,7 @@ Mirror the Section 125 folder. New code lives in `wrapplan/` with a `wp-` prefix
 
 | Path | Role |
 | --- | --- |
-| `wrapplan/index.html` | The tool page |
+| `wrapplan/index.html` | The tool page. Labels, one-line hints, and three closed "How do I know?" expanders. No hover tips. |
 | `wrapplan/wrapplan.js` | Wizard, downloads, and the lead post |
 | `wrapplan/embed.html` | Wix shim. Iframes the GitHub Pages URL and forwards messages |
 | `wrapplan/wrapplan.css` | Layout, mobile first |
@@ -98,7 +98,6 @@ Mirror the Section 125 folder. New code lives in `wrapplan/` with a `wp-` prefix
 | `wrapplan/wp-terms.js` | Short terms, versioned, for counsel to read before go-live |
 | `wrapplan/wp-docgen.js` | Word files |
 | `wrapplan/wp-pdf.js` | PDFs |
-| `wrapplan/wp-tips.js` | Plain-English help under questions |
 | `wrapplan/config.js` | Apps Script `/exec` URL. Empty until Dan deploys |
 | `wrapplan/vendor/pdf-lib.min.js` | Same vendored library the other tools use |
 | `wrapplan/apps-script/Code.gs` | Sheet, Dan's email, visitor check-in, Dan-only renewal |

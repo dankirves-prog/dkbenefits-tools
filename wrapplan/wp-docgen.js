@@ -41,10 +41,11 @@ var WpDocgen = (function () {
     return 'The agent for service of legal process is ' + plan.employer_name + ', ' + plan.address + '. Service of legal process may also be made on the plan administrator.';
   }
   function phoneText(plan) {
-    return WpModel.formatPhone(plan.phone) || 'the number on the employer\'s records';
+    return WpModel.formatPhone(plan.phone);
   }
   function administratorIdentity(plan) {
-    return 'The plan administrator is ' + adminName(plan) + '. The administrator\'s business address is ' + plan.address + '. The administrator\'s phone is ' + phoneText(plan) + '.';
+    var phone = phoneText(plan);
+    return 'The plan administrator is ' + adminName(plan) + '. The administrator\'s business address is ' + plan.address + '.' + (phone ? ' The administrator\'s phone is ' + phone + '.' : '');
   }
   function governingBody(plan) {
     var body = String(plan.governing_body || '').trim();
@@ -137,6 +138,7 @@ var WpDocgen = (function () {
     return WpModel.wrappedBenefits(plan).map(function (code) {
       var addr = (plan.carrier_addresses && plan.carrier_addresses[code]) || '';
       var line = WpModel.benefitLabel(code) + ' is provided through ' + carrier(plan, code) + (addr ? ', ' + addr : '') + '.';
+      if (!addr && WpModel.needsCarrierAddress(plan, code)) line += ' Address: ________________ (copy it from your certificate).';
       line += ' Type of administration: ' + administrationType(plan, code) + '.';
       if (WpModel.benefitIsInsured(plan, code) && (code === 'medical' || code === 'dental' || code === 'vision' || code === 'rx' || (code === 'eap' && plan.eap_type === 'substantive'))) {
         line += ' Benefits are guaranteed under the insurance policy.';
@@ -304,7 +306,7 @@ var WpDocgen = (function () {
       fundingSentence(plan)
     ]);
     addSection(rows, 'Plan identity', [
-      'Plan sponsor: ' + plan.employer_name + '. EIN ' + plan.employer_ein + '. Address: ' + plan.address + '. Phone: ' + phoneText(plan) + '.',
+      'Plan sponsor: ' + plan.employer_name + '. EIN ' + plan.employer_ein + '. Address: ' + plan.address + '.' + (phoneText(plan) ? ' Phone: ' + phoneText(plan) + '.' : ''),
       'Plan number: ' + plan.plan_number + '. ' + WpModel.planYearSentence(plan),
       administratorIdentity(plan),
       agentSentence(plan),
@@ -442,7 +444,7 @@ var WpDocgen = (function () {
       'Read this summary with the certificate for each benefit you have. The certificate states what is covered, what is excluded, and what you pay at the point of care. This summary does not list every exclusion.'
     ]);
     addSection(rows, 'Plan identity', [
-      'Plan sponsor: ' + plan.employer_name + '. EIN ' + plan.employer_ein + '. Address: ' + plan.address + '. Phone: ' + phoneText(plan) + '.',
+      'Plan sponsor: ' + plan.employer_name + '. EIN ' + plan.employer_ein + '. Address: ' + plan.address + '.' + (phoneText(plan) ? ' Phone: ' + phoneText(plan) + '.' : ''),
       'Plan number: ' + plan.plan_number + '. Type of plan: an employee welfare benefit plan. ' + WpModel.planYearSentence(plan),
       fundingSentence(plan),
       administratorIdentity(plan) + ' You may write to the administrator for a copy of the plan documents.',
@@ -522,17 +524,25 @@ var WpDocgen = (function () {
       'Some federal notices come with your certificate or at enrollment, including a summary of benefits and coverage where one is required, a children\'s health insurance notice, a Medicare prescription notice, and a marketplace notice. Those notices are part of how the plan communicates. They are not reprinted in this summary.'
     ]);
     addSection(rows, 'Statement of ERISA rights', erisaRights(plan));
-    return rows;
+    var certs = [row('Heading1', 'Your benefit certificates', { keepNext: true, keepLines: true, pageBreak: true })];
+    certs.push(row(null, 'Your employer attaches these behind this page.', { keepLines: true }));
+    WpModel.wrappedBenefits(plan).forEach(function (code) {
+      certs.push(row(null, certificateLine(plan, code), { keepLines: true }));
+    });
+    return rows.concat(certs);
+  }
+  function certificateLine(plan, code) {
+    var name = carrier(plan, code);
+    if (code === 'hra') return 'Health reimbursement arrangement: Separate HRA plan document.';
+    if (code === 'health_fsa') return 'Health FSA: Separate health FSA plan document.';
+    if (code === 'lpfsa') return 'Limited purpose FSA: Separate limited purpose FSA plan document.';
+    if (code === 'medical' && plan.tpa_document) return 'Medical: ' + plan.tpa_document + '.';
+    return WpModel.benefitLabel(code) + ': ' + name + ' certificate of coverage.';
   }
   function scheduleParagraphs(plan) {
     var rows = [];
-    rows.push(row('Title', 'Schedule A: Documents to attach', { keepNext: true, keepLines: true }));
+    rows.push(row('Title', 'Schedule A', { keepNext: true, keepLines: true }));
     rows.push(row(null, WpModel.DISCLAIMER));
-    addSection(rows, 'What this schedule is', [
-      'This schedule is the employer\'s attachment list for the wrap plan document and the summary plan description. It names each wrapped benefit, the carrier or administrator, the funding in a word, and the paper the employer attaches.',
-      'This list is not the insurance schedule filed with a Form 5500. Do not staple this page into a filing in place of the official schedule. Use it to build the participant package.',
-      'Attach the current certificate, booklet, or component plan for every row. A wrap without those papers does not tell a participant what is covered. If a paper is missing, get it before you hand out the package.'
-    ]);
     addSection(rows, 'Benefit schedule', WpModel.wrappedBenefits(plan).map(function (code) {
       var funding = 'Fully insured';
       if (code === 'hra' || code === 'health_fsa' || code === 'lpfsa') funding = 'Paid from the employer\'s general assets';
@@ -542,21 +552,8 @@ var WpDocgen = (function () {
       if (code === 'hra') doc = 'Separate HRA plan document' + (plan.hra_type ? ' (' + WpModel.hraLabel(plan.hra_type) + ')' : '');
       if (code === 'health_fsa') doc = 'Separate health FSA plan document';
       if (code === 'lpfsa') doc = 'Separate limited purpose FSA plan document';
-      return WpModel.benefitLabel(code) + '. Carrier or administrator: ' + carrier(plan, code) + '. Attach: ' + doc + '. Funding: ' + funding + '.';
-    }).concat([
-      WpModel.wrappedBenefits(plan).length ? 'Attach the papers in the order of the rows above, after the wrap plan document.' : 'No wrapped benefit was selected, so there is nothing to attach under this schedule.'
-    ]));
-    addSection(rows, 'How to assemble the package', [
-      'Put the wrap plan document first. Put the summary plan description next, or give the summary as the front piece if you would rather hand participants the summary with the certificates behind it. Then attach each certificate, booklet, and component plan in the order of the benefit schedule. Add the claim procedure if it is not already inside the certificate.',
-      'Add the qualified medical child support order procedures if a group health benefit is wrapped. Add the HIPAA amendment if the plan sponsor receives protected health information, and keep the signed certification with the plan records. The adoption resolution stays with the employer\'s signed copy. It does not have to be in the participant envelope.',
-      'Give that package to participants. A person who becomes covered should receive it within 90 days after coverage begins. If the plan has just become subject to the reporting rules, give it within 120 days after that date. A material change is described in a summary of material modifications within 210 days after the plan year in which the change was adopted. Restate the summary plan description every five years if material changes were made, and every ten years if they were not.',
-      'You may hand the package out, mail it, or deliver it electronically if the recipient can actually access it and you follow the electronic-disclosure rule that applies to that person. Keep proof of what you sent, the date, and who received it.',
-      'Keep the signed wrap, the signed adoption resolution, the signed HIPAA certification if you use it, and a record of distribution. When a certificate is replaced at renewal, swap the old certificate out of the package and keep a copy of the version that was in force for each plan year.'
-    ]);
-    addSection(rows, 'What does not belong in the package', [
-      'Do not include a stop-loss contract, a broker compensation schedule, or an internal rate sheet. Those are employer papers. Participants receive the certificate and this plan, not the employer\'s reimbursement contract.',
-      'Dependent care, a health savings account, and a referral-only assistance program are not rows on this schedule. A voluntary benefit that met the safe harbor and was left out of the wrap is not a row either. If you are unsure, look at the findings report before you copy the package.'
-    ]);
+      return WpModel.benefitLabel(code) + '. Insurer or administrator: ' + carrier(plan, code) + '. Funding: ' + funding + '. Document to attach: ' + doc + '.';
+    }));
     return rows;
   }
   function resolutionParagraphs(plan) {
@@ -735,6 +732,88 @@ var WpDocgen = (function () {
     return rows;
   }
 
+  function guideParagraphs(plan) {
+    var rows = [];
+    var today = new Date();
+    var prepared = MONTHS[today.getMonth() + 1] + ' ' + today.getDate() + ', ' + today.getFullYear();
+    var filing = WpModel.filingResult(plan);
+    var count = WpModel.countParticipants(plan);
+    var phone = phoneText(plan);
+    var cal = WpModel.guideCalendar(plan);
+    var when = plan.is_restatement === 'yes' ? longDate(plan.restatement_date) : longDate(plan.original_effective_date);
+    rows.push(row('Title', plan.plan_name || 'Your plan', { keepNext: true, keepLines: true }));
+    rows.push(row('Heading1', 'Your step-by-step guide', { keepNext: true, keepLines: true }));
+    rows.push(row(null, 'Prepared ' + prepared + ' for ' + plan.employer_name + '.'));
+    addSection(rows, 'What you have', [
+      'ERISA requires a written plan document for your employee benefits and a summary plan description (SPD) for your employees. Insurance certificates alone usually do not meet those rules. A wrap plan document ties your benefits into one written plan and fills in what the certificates leave out. You have two files to use and this guide.',
+      'Plan documents to sign and keep. This is the official plan. Keep it with your records.',
+      'Summary plan description for employees. Give it to each covered employee with their certificates.'
+    ]);
+    var glance = [
+      'Plan: ' + plan.plan_name + ', plan number ' + plan.plan_number + '.',
+      'Plan year: ' + WpModel.planYearSentence(plan),
+      plan.is_restatement === 'yes'
+        ? 'Effective date: ' + when + '. This replaces the plan first effective ' + longDate(plan.original_effective_date) + '.'
+        : 'Effective date: ' + when + '.'
+    ];
+    WpModel.wrappedBenefits(plan).forEach(function (code) {
+      var pay = (plan.tax || {})[code];
+      var payText = pay === 'pretax' ? 'employees pay part pre-tax' : pay === 'aftertax' ? 'employees pay part after tax' : 'employer paid';
+      var fund = code === 'medical' ? WpModel.fundingLabel(plan.funding || 'insured').toLowerCase() : (WpModel.benefitIsInsured(plan, code) ? 'fully insured' : 'self-funded');
+      if (code === 'hra' || code === 'health_fsa' || code === 'lpfsa') fund = 'general assets';
+      glance.push(WpModel.benefitLabel(code) + ', ' + carrier(plan, code) + ', ' + fund + ', ' + payText + '.');
+    });
+    glance.push('Plan administrator: ' + adminName(plan) + (phone ? ', ' + phone : '') + '.');
+    glance.push('Covered people: ' + count + '.');
+    glance.push(filing.code === 'required' ? 'Form 5500: Required. See the calendar.' : 'Form 5500: Not required this year.');
+    glance.push(plan.cobra === 'yes'
+      ? 'Federal COBRA: Applies. ' + (plan.cobra_admin || 'The plan administrator') + ' sends the notices.'
+      : 'Federal COBRA: Does not apply. State continuation may apply. See your certificate.');
+    addSection(rows, 'Your plan at a glance', glance);
+    var steps = [];
+    steps.push('Step 1. Gather your certificates. ' + WpModel.wrappedBenefits(plan).map(function (code) {
+      return WpModel.benefitLabel(code) + ' (' + carrier(plan, code) + ')';
+    }).join('; ') + '. Ask your broker or download them from each insurance company\'s employer website.');
+    if (WpModel.isSelfFundedFunding(plan.funding) && plan.tpa_document) {
+      steps.push('For medical, use the TPA document "' + plan.tpa_document + '".');
+    }
+    var accountDocs = [];
+    if (WpModel.hasBenefit(plan, 'hra')) accountDocs.push('HRA');
+    if (WpModel.hasBenefit(plan, 'health_fsa') || WpModel.hasBenefit(plan, 'lpfsa')) accountDocs.push('FSA');
+    if (accountDocs.length) steps.push('Include the separate ' + accountDocs.join(' and ') + ' plan documents.');
+    steps.push('Step 2. Review before you sign. Read the eligibility, waiting period, and who-pays lines against each certificate. If they differ, fix the plan document before you sign. The certificate controls the benefit details.');
+    if (WpModel.anyPretax(plan) && plan.section125 !== 'yes') {
+      steps.push('Your employees pay some premiums pre-tax. That needs a signed Section 125 plan document. Build one free at dkbenefits.net/section125plantool, and sign it before you sign this plan.');
+    }
+    WpModel.wrappedBenefits(plan).forEach(function (code) {
+      var addr = plan.carrier_addresses && plan.carrier_addresses[code];
+      if (!addr && WpModel.needsCarrierAddress(plan, code)) {
+        steps.push('Fill in the ' + WpModel.benefitLabel(code) + ' insurer address. Copy it from your certificate.');
+      }
+    });
+    if (plan.phi === 'yes' && !plan.phi_classes) steps.push('Fill in the job titles that may see employee health information.');
+    steps.push('Since this is a free tool, it\'s a good idea to have your own counsel take a quick look before you sign.');
+    var signer = (plan.signer_name || 'The signer') + (plan.signer_title ? ', ' + plan.signer_title : '');
+    steps.push('Step 3. Sign. ' + signer + ' signs the adoption resolution, the wrap signature page' + (plan.phi === 'yes' ? ', and the HIPAA certification' : '') + '. Date each signature with the day you actually sign. Do not backdate. The resolution states the effective date of ' + when + '. Electronic signatures are fine.');
+    if (plan.is_restatement === 'yes') steps.push('Keep the old document. The new one replaces it from ' + when + '.');
+    steps.push('Step 4. Build the employee packet. For each covered employee, use the SPD, then the certificates for the benefits that employee has, in the order on the SPD\'s last page. One PDF per benefit set, or a shared folder link, both work.');
+    var who = 'every covered employee' + (plan.cobra === 'yes' ? ', plus anyone on COBRA' : '');
+    steps.push('Step 5. Give it to employees. Who: ' + who + '. When: as soon as the plan is signed, then each new person within 90 days after coverage starts. How, pick one per person: hand it to them at work; mail it first class to their home; or email it if they use a computer as part of their job, and for anyone else only after they agree in writing. Tell everyone they can ask for a free paper copy. Record delivery in the log.');
+    steps.push('Step 6. Keep your records. Keep the signed documents, the certificates in force each year, and the delivery log, for at least six years. At each renewal, add the new certificates and keep the old ones.');
+    addSection(rows, 'Put your plan in place', steps);
+    var look = WpModel.thingsToLookAt(plan);
+    if (look.length) addSection(rows, 'Things to look at', look);
+    addSection(rows, 'Your yearly calendar', ['Every year:'].concat(cal.yearly).concat(['Every new hire:']).concat(cal.hire).concat(['When something changes:']).concat(cal.changes));
+    var first = String(plan.contact_name || plan.signer_name || '').trim().split(/\s+/)[0] || 'there';
+    addSection(rows, 'Templates', [
+      'Email subject: Your ' + plan.employer_name + ' benefits plan summary.',
+      'Hi ' + first + ', Attached is the Summary Plan Description for the ' + plan.plan_name + ', with the certificate for each benefit you have. It explains who is eligible, how to file a claim, and your rights under federal law. Please keep it with your records. If you would like a paper copy, let me know and I will get you one at no cost. ' + (plan.signer_name || '') + (plan.signer_title ? ', ' + plan.signer_title : '') + '.',
+      'Delivery log: Employee | Delivered by (hand, mail, email) | Date | Address or email used | Notes.',
+      'Optional employee receipt: I received the Summary Plan Description for the ' + plan.plan_name + ' on ________. Signature ________.'
+    ]);
+    addSection(rows, 'Need help?', [WpModel.helpOffer(plan)]);
+    return rows;
+  }
   function explainParagraphs(plan) {
     var text = 'This tool drafts an ERISA wrap for a private employer. It does not fit this arrangement, so no ERISA plan document was prepared.';
     if (plan.erisa_path === 'governmental') text = 'A governmental plan is generally outside ERISA. An ERISA wrap is the wrong document. This tool did not prepare one.';
@@ -777,7 +856,8 @@ var WpDocgen = (function () {
     if (item.keepNext) bits.push('<w:keepNext/>');
     if (item.keepLines) bits.push('<w:keepLines/>');
     var pPr = bits.length ? '<w:pPr>' + bits.join('') + '</w:pPr>' : '';
-    return '<w:p>' + pPr + '<w:r><w:t xml:space="preserve">' + xml(item.text || '') + '</w:t></w:r></w:p>';
+    var br = item.pageBreak ? '<w:p><w:r><w:br w:type="page"/></w:r></w:p>' : '';
+    return br + '<w:p>' + pPr + '<w:r><w:t xml:space="preserve">' + xml(item.text || '') + '</w:t></w:r></w:p>';
   }
   function documentXml(rows) {
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
@@ -804,13 +884,8 @@ var WpDocgen = (function () {
   }
   function coverParagraphs(plan, entries) {
     var rows = [];
-    var hasHipaa = false;
-    var hasQmcso = false;
-    (entries || []).forEach(function (entry) {
-      if (entry.title === 'HIPAA Amendment') hasHipaa = true;
-      if (entry.title === 'QMCSO Procedures') hasQmcso = true;
-    });
-    rows.push(row('Title', (plan.plan_name || 'Plan packet') + ' packet', { keepNext: true, keepLines: true }));
+    rows.push(row('Title', 'Employer copy', { keepNext: true, keepLines: true }));
+    rows.push(row(null, 'Sign and keep with your plan records.'));
     rows.push(row(null, WpModel.DISCLAIMER));
     addSection(rows, 'Contents', (entries || []).map(function (entry) {
       var pages = entry.pages || 0;
@@ -818,15 +893,16 @@ var WpDocgen = (function () {
       var span = pages === 1 ? 'page 1' : 'pages 1-' + pages;
       return entry.title + ', ' + span + '.';
     }));
-    var who = [
-      'Employees receive the summary plan description and the certificates.',
-      hasHipaa
-        ? 'The employer keeps the signed wrap, the adoption resolution, Schedule A, and the HIPAA amendment.'
-        : 'The employer keeps the signed wrap, the adoption resolution, and Schedule A.'
-    ];
-    if (hasQmcso) who.push('The qualified medical child support order procedures are available on request.');
-    addSection(rows, 'Who receives what', who);
+    rows.push(row(null, 'Give employees the separate Summary Plan Description, not this file.'));
     return rows;
+  }
+  function spdCoverParagraphs(plan) {
+    var phone = phoneText(plan);
+    return [
+      row('Title', plan.plan_name || 'Summary Plan Description', { keepNext: true, keepLines: true }),
+      row('Heading1', 'Summary Plan Description', { keepNext: true, keepLines: true }),
+      row(null, 'Keep this with your benefit certificates. It explains who is eligible, how to file a claim, and your rights under federal law. Questions: ' + plan.employer_name + (phone ? ', ' + phone : '') + '.')
+    ];
   }
   function stylesXml() {
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="' + W + '">' +
@@ -975,7 +1051,8 @@ var WpDocgen = (function () {
     return zipStore(files);
   }
   function planFileName(plan) { return safe(plan.employer_name) + '_Wrap_Plan.docx'; }
-  function packetFileName(plan) { return safe(plan.employer_name) + '_Plan.docx'; }
+  function packetFileName(plan) { return safe(plan.employer_name) + '_Plan_Documents.docx'; }
+  function guideFileName(plan) { return safe(plan.employer_name) + '_Step_by_Step_Guide.docx'; }
   function spdFileName(plan) { return safe(plan.employer_name) + '_SPD.docx'; }
   function scheduleFileName(plan) { return safe(plan.employer_name) + '_Schedule_A.docx'; }
   function resolutionFileName(plan) { return safe(plan.employer_name) + '_Adoption_Resolution.docx'; }
@@ -1005,6 +1082,8 @@ var WpDocgen = (function () {
     hipaaParagraphs: hipaaParagraphs,
     qmcsoParagraphs: qmcsoParagraphs,
     findingsParagraphs: findingsParagraphs,
+    guideParagraphs: guideParagraphs,
+    spdCoverParagraphs: spdCoverParagraphs,
     explainParagraphs: explainParagraphs,
     followUpEmailText: followUpEmailText,
     followUpEmailHtml: followUpEmailHtml,
@@ -1013,6 +1092,7 @@ var WpDocgen = (function () {
     coverParagraphs: coverParagraphs,
     planFileName: planFileName,
     packetFileName: packetFileName,
+    guideFileName: guideFileName,
     spdFileName: spdFileName,
     scheduleFileName: scheduleFileName,
     resolutionFileName: resolutionFileName,

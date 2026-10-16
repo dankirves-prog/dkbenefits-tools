@@ -135,3 +135,47 @@ The renewal reminder to Dan is 90 days before the next plan-year start. If that 
 - Stop-loss deductibles, attachment percentages, and carrier names
 - State continuation month counts
 - Any dollar amount other than the allowed $110 model figure
+
+## Guide calendar and SPD delivery, October 16, 2026
+
+This section is the current tool. Earlier notes in this record that say the phone is optional, that the preview asks four census boxes, that certificates are a findings question, or that voluntary benefits use five safe-harbor questions, describe the prior preview. The page now requires a 10-digit business phone, stores one covered-person count as census (a) with (b), (c), and (d) still accepted when an older payload sends them, treats missing certificates as a guide task, and asks one include-or-leave-out question for after-tax voluntary benefits. Pre-tax or employer-paid voluntary benefits are included without that question. The five-question safe harbor still runs when an older payload sends those answers and does not send the new include answer.
+
+29 CFR 2520.102-3(f). The SPD names the plan administrator and prints a business telephone number. The page requires that phone. The SPD does not print a sentence that the number is "on the employer's records." Needs counsel: a line-by-line check that the administrator block still matches (f), including the address lines.
+
+29 CFR 2520.102-3(q). The SPD keeps the existing statement of ERISA rights, including the model "$110 a day" sentence. Needs counsel: this rebuild did not re-compare that paragraph to the current model text.
+
+29 CFR 2520.104b-2(a) and (b). (a) is the 90-day SPD rule after coverage starts. (b) is the 120-day rule after a plan first becomes subject to the reporting rules. The guide says to give the SPD as soon as the plan is signed, and to each new person within 90 days after coverage starts. Needs counsel: the approved guide does not add the 120-day new-plan sentence. Counsel can add it later if they want both clocks stated.
+
+29 CFR 2520.104b-3(a) and (d). (a) is the summary of material modifications within 210 days after the plan year of the change. (d) is notice of a reduction in group health benefits. The guide states both: 210 days for a material change, and within 60 days for a cut in group health benefits. Needs counsel: (d) measures 60 days from adoption. The guide says "within 60 days" and does not add the word "adoption."
+
+29 CFR 2520.104b-1(b) and (c). (b) is hand delivery or first-class mail. (c) is the electronic safe harbor: a worker who uses a computer as part of the job, and anyone else only after written agreement, with a paper copy on request. The guide states those three methods and the free paper copy. Needs counsel: whether one sentence is enough for the rest of (c), including the steps that show the person actually received it.
+
+ERISA section 107. Records that support a filing are kept for at least six years after the filing date. The guide says to keep the signed documents, the certificates in force each year, and the delivery log for at least six years. Needs counsel: for a plan that files, six years runs from the filing date, which can be longer than six years after the document was signed. The guide states the floor the brief approved.
+
+FLSA section 18B and Technical Release 2013-02. The marketplace notice goes to a new hire within 14 days after the start date. The guide says that. The release number and year stay in this record only.
+
+42 CFR 423.56. This is the creditable-coverage notice to people who are eligible for Medicare Part D. The guide puts that notice by October 15 when medical or a separate drug benefit is wrapped. The guide also puts the CMS creditable-coverage disclosure within 60 days after the plan year starts. Needs counsel: the CMS filing sits in CMS guidance, not only in 423.56. The day is computed from the employer's plan-year start and is not a fixed year.
+
+ERISA section 701(f)(3)(B). This is the employer CHIP notice about Medicaid and CHIP premium assistance. The open-enrollment calendar line for medical includes the CHIP notice. Needs counsel: the statute is an employer notice to employees, and it can go with enrollment materials. The guide names it and does not reprint the model notice.
+
+ERISA section 713. This is the women's health notice. The same open-enrollment line names the WHCRA notice. The medical SPD still prints the newborns text from 29 CFR 2520.102-3(u)(2).
+
+29 CFR 2590.701-6(c). The special-enrollment notice is due at or before the chance to enroll. The guide puts it at open enrollment and again at enrollment for a new hire when medical is wrapped.
+
+29 CFR 2590.606-1. The COBRA general notice. The guide adds it to the new-hire list only when the employer answered that federal COBRA applies. Under 20 employees last year, the page derives that federal COBRA does not apply.
+
+29 CFR 2590.715-2715. The summary of benefits and coverage. The guide names the SBC at open enrollment, at medical enrollment, and when a mid-year group health change needs 60 days' notice before it takes effect.
+
+Form 5500 and Form 5558 instructions. The Form 5500 for a calendar year is due July 31. A plan year that starts July 1 ends in June, and the due date is the following January 31. That is the last day of the seventh month after the plan year ends. The guide states a two-and-a-half-month extension on Form 5558. The instruction-booklet year stays in this record only. The one-line count in the guide is: each covered person once, on the first day of the plan year, and spouses and children are not counted.
+
+29 CFR 2520.104b-10. A summary annual report follows a required Form 5500, nine months after the plan year ends, unless every wrapped benefit is paid only from general assets. The guide omits that row in the all-general-assets case. Needs counsel: an all-self-funded plan that takes employee contributions. Contributions can be plan assets, so "paid only from general assets" may not be the right SAR exemption for that plan. The tool follows the funding label. It does not decide the contributions case.
+
+Code section 4376. The PCORI fee on Form 720 is due July 31 of the calendar year after the plan year ends. The guide says "By July 31" for level-funded, self-funded, captive, reference-based pricing, or an HRA. Needs counsel: a fiscal plan year still lands on a July 31, and the guide does not add "the following year."
+
+ERISA section 724. The gag-clause attestation. The guide says December 31 when medical is wrapped, and that the insurer or TPA usually files it, so the employer should get that in writing. Needs counsel: the employer stays responsible if the vendor does not file.
+
+ERISA section 725. Prescription-drug data collection. The guide says June 1 when medical is wrapped, with the same "usually files it, get that in writing" note. Needs counsel: the annual day is set in agency instructions and can move. The guide uses the day the brief approved.
+
+Code sections 6055 and 6056. Section 6055 is the coverage statement. The insurer files it for an insured medical plan. The employer files it for self-funded medical. Section 6056 is the applicable-large-employer statement. The guide shows "ACA forms 1094 and 1095" early in the year when last year's headcount is 50 or more, or when medical is self-funded. Needs counsel: the exact day of those filings moves, so the guide says "early in the year" and does not print a day.
+
+26 CFR 54.4980B-2, Q&A-5. The federal COBRA small-employer test counts a part-time employee as weekly hours divided by full-time hours, and looks at more than half of the typical business days in the prior year. The "How do I know?" text on the COBRA question says that. The question is hidden, and the answer is derived as no, when the most employees at one time last year was under 20.

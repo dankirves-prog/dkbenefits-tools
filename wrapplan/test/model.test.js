@@ -172,12 +172,15 @@ test('confirmations have no default and are required', function () {
     funding: ''
   }));
   const fields = blank.errors.map(function (error) { return error.field; });
-  ['section125', 'employee_contributions', 'certificates', 'waiting_period', 'funding'].forEach(function (field) {
+  ['section125', 'waiting_period', 'funding'].forEach(function (field) {
     assert.ok(fields.indexOf(field) !== -1, field);
   });
-  assert.equal(fields.indexOf('remitted'), -1);
-  const remit = Wp.validate(baseInput({ remitted: '' }));
-  assert.ok(remit.errors.some(function (error) { return error.field === 'remitted'; }));
+  ['employee_contributions', 'remitted', 'certificates'].forEach(function (field) {
+    assert.equal(fields.indexOf(field), -1, field);
+  });
+  const derived = Wp.normalize(baseInput({ employee_contributions: '', remitted: '', funding: 'insured' }));
+  assert.equal(derived.employee_contributions, 'yes');
+  assert.equal(derived.remitted, 'yes');
   const noContrib = Wp.validate(baseInput({ employee_contributions: 'no', remitted: '' }));
   assert.equal(noContrib.ok, true);
   assert.equal(Wp.normalize(baseInput()).plan_number, '501');

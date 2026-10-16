@@ -8,6 +8,16 @@ var WpModel = (function () {
   var TERMS_VERSION = 'wp-terms-1';
   var DISCLAIMER = 'Sample prepared for review by the employer\'s own counsel. DK Benefits is not a law firm.';
   var BROKER_LINE = 'DK Benefits can do an in-depth review of this arrangement once DK Benefits is the broker of record.';
+  var HELP_LINE = 'DK Benefits reviews wrap plan documents like this one for our clients. Want to talk it over? Call 407-476-5076 or visit dkbenefits.net.';
+  var STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
+  var BUSINESS_TYPES = {
+    llc: 'Members',
+    scorp: 'Board of Directors',
+    ccorp: 'Board of Directors',
+    partnership: 'Partners',
+    sole: 'Owner',
+    nonprofit: 'Board of Directors'
+  };
   var MSP_SENTENCE = 'Coordination with Medicare follows the federal Medicare Secondary Payer rules and the certificate.';
   var REVERSION = 'Any plan assets, including participant contributions and the participants\' share of any insurer refund or rebate, will be used only for benefits and reasonable plan expenses and will not revert to the employer.';
   var NEWBORNS = 'Group health plans and health insurance issuers generally may not, under Federal law, restrict benefits for any hospital length of stay in connection with childbirth for the mother or newborn child to less than 48 hours following a vaginal delivery, or less than 96 hours following a cesarean section. However, Federal law generally does not prohibit the mother\'s or newborn\'s attending provider, after consulting with the mother, from discharging the mother or her newborn earlier than 48 hours (or 96 hours as applicable). In any case, plans and issuers may not, under Federal law, require that a provider obtain authorization from the plan or the insurance issuer for prescribing a length of stay not in excess of 48 hours (or 96 hours).';
@@ -158,13 +168,26 @@ var WpModel = (function () {
   function complexFunding(plan) {
     return isSelfFundedFunding(plan.funding);
   }
+  function voluntaryCodes(plan) {
+    return ['vol_life', 'vol_add', 'accident', 'critical', 'hospital'].filter(function (code) { return hasBenefit(plan, code); });
+  }
   function voluntaryWrapped(plan) {
-    var codes = ['vol_life', 'vol_add', 'accident', 'critical', 'hospital'];
-    var selected = codes.filter(function (code) { return hasBenefit(plan, code); });
+    var selected = voluntaryCodes(plan);
     if (!selected.length) return { include: false, codes: [], reason: '' };
-    var pretaxChoice = selected.some(function (code) { return (plan.tax || {})[code] === 'pretax'; });
+    var tax = plan.tax || {};
+    var pretaxChoice = selected.some(function (code) { return tax[code] === 'pretax'; });
     if (pretaxChoice) {
       return { include: true, codes: selected, reason: 'Pre-tax treatment through a Section 125 plan fails the voluntary-plan safe harbor, so these benefits are wrapped.' };
+    }
+    var employerPaid = selected.some(function (code) { return tax[code] === 'none'; });
+    if (employerPaid) {
+      return { include: true, codes: selected, reason: 'Employer-paid voluntary benefits are part of the plan.' };
+    }
+    if (plan.vol_include === 'no') {
+      return { include: false, codes: selected, reason: 'The voluntary benefits meet the safe harbor and are left out of the wrap.' };
+    }
+    if (plan.vol_include === 'yes') {
+      return { include: true, codes: selected, reason: 'These voluntary benefits are included in the plan.' };
     }
     var fail = yes(plan.vol_contrib) || !yes(plan.vol_voluntary) || yes(plan.vol_endorse) || !yes(plan.vol_payroll_only) || yes(plan.vol_consideration);
     if (fail) {
@@ -385,6 +408,10 @@ var WpModel = (function () {
       vol_endorse: input.vol_endorse || '',
       vol_payroll_only: input.vol_payroll_only || '',
       vol_consideration: input.vol_consideration || '',
+      vol_include: input.vol_include || '',
+      business_type: input.business_type || '',
+      plan_year_start_month: String(input.plan_year_start_month || ''),
+      first_wrap: input.first_wrap || '',
       classes: String(input.classes || '').trim(),
       hours: String(input.hours || '').trim(),
       dependents: String(input.dependents || '').trim(),
@@ -428,10 +455,196 @@ var WpModel = (function () {
     plan.benefits = plan.benefits.filter(function (code) { return code !== 'dcap' && code !== 'lpfsa_disabled'; });
     applyTaxDefaults(plan);
     applyWaiting(plan, input);
+    applyPlanYear(plan);
+    applyDerivedAnswers(plan);
     if (!plan.phi && isSelfFundedFunding(plan.funding) && hasBenefit(plan, 'medical')) plan.phi = 'yes';
     plan.phi_classes_blank = (plan.phi === 'yes' && !plan.phi_classes);
     plan.address = [plan.street, plan.city, plan.state, plan.zip].filter(Boolean).join(', ');
     return plan;
+  }
+  function applyPlanYear(plan) {
+    var start = num(plan.plan_year_start_month);
+    if (!start) return;
+    plan.plan_year_start_month = String(start);
+    if (start === 1) {
+      plan.plan_year_type = 'calendar';
+      plan.plan_year_end_month = '12';
+      return;
+    }
+    plan.plan_year_type = 'fiscal';
+    plan.plan_year_end_month = String(start - 1);
+  }
+  function anyEmployeePaid(plan) {
+    var tax = plan.tax || {};
+    return (plan.benefits || []).some(function (code) {
+      return code !== 'hra' && (tax[code] === 'pretax' || tax[code] === 'aftertax');
+    });
+  }
+  function anyPretax(plan) {
+    var tax = plan.tax || {};
+    return (plan.benefits || []).some(function (code) { return code !== 'hra' && tax[code] === 'pretax'; });
+  }
+  function applyDerivedAnswers(plan) {
+    if (!plan.governing_body && BUSINESS_TYPES[plan.business_type]) plan.governing_body = BUSINESS_TYPES[plan.business_type];
+    if (!plan.employee_contributions) plan.employee_contributions = anyEmployeePaid(plan) ? 'yes' : 'no';
+    if (!plan.remitted && !isSelfFundedFunding(plan.funding)) plan.remitted = 'yes';
+    if (num(plan.employee_count) > 0 && num(plan.employee_count) < 20) {
+      plan.cobra = groupHealth(plan) || plan.cobra ? 'no' : plan.cobra;
+      if (groupHealth(plan)) plan.cobra = 'no';
+    }
+  }
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function dateISO(year, month, day) { return year + '-' + pad2(month) + '-' + pad2(day); }
+  function planYearFromStart(month) {
+    var start = num(month);
+    if (start < 1 || start > 12) return null;
+    if (start === 1) return { plan_year_start_month: '1', plan_year_type: 'calendar', plan_year_end_month: '12' };
+    return { plan_year_start_month: String(start), plan_year_type: 'fiscal', plan_year_end_month: String(start - 1) };
+  }
+  function effectiveDateChoices(startMonth, asOf) {
+    asOf = asOf || new Date();
+    var start = num(startMonth) || 1;
+    var year = asOf.getFullYear();
+    if (asOf.getMonth() + 1 < start) year -= 1;
+    return {
+      current: dateISO(year, start, 1),
+      next: dateISO(year + 1, start, 1)
+    };
+  }
+  function lastDay(month) {
+    var days = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    return days[month] || 30;
+  }
+  function planEndMonth(plan) {
+    return plan.plan_year_type === 'fiscal' ? (num(plan.plan_year_end_month) || 12) : 12;
+  }
+  function dueAfterEnd(plan, monthsLater) {
+    var endMonth = planEndMonth(plan);
+    var dueMonth = ((endMonth - 1 + monthsLater) % 12) + 1;
+    var label = monthName(dueMonth) + ' ' + lastDay(dueMonth);
+    if (dueMonth < startMonthOf(plan)) label = 'the following ' + label;
+    return { month: dueMonth, day: lastDay(dueMonth), label: label };
+  }
+  function form5500Due(plan) { return dueAfterEnd(plan, 7); }
+  function summaryAnnualDue(plan) { return dueAfterEnd(plan, 9); }
+  function startMonthOf(plan) {
+    if (num(plan.plan_year_start_month)) return num(plan.plan_year_start_month);
+    var end = planEndMonth(plan);
+    return end === 12 ? 1 : end + 1;
+  }
+  function monthDayAfterStart(plan, days) {
+    var month = startMonthOf(plan);
+    var day = 1 + days;
+    while (day > lastDay(month)) {
+      day -= lastDay(month);
+      month += 1;
+      if (month > 12) month = 1;
+    }
+    return monthName(month) + ' ' + day;
+  }
+  function renewalMonthLabel(plan) {
+    var start = startMonthOf(plan);
+    var month = start - 2;
+    if (month < 1) month += 12;
+    return monthName(month);
+  }
+  function paidFromGeneralAssets(plan, code) {
+    if (code === 'hra' || code === 'health_fsa' || code === 'lpfsa') return true;
+    if (code === 'medical') return isSelfFundedFunding(plan.funding);
+    if (code === 'std' && plan.std_type === 'trust') return false;
+    return !benefitIsInsured(plan, code);
+  }
+  function allGeneralAssets(plan) {
+    var list = wrappedBenefits(plan);
+    return list.length > 0 && list.every(function (code) { return paidFromGeneralAssets(plan, code); });
+  }
+  function helpOffer(plan) {
+    return complexFunding(plan) ? BROKER_LINE : HELP_LINE;
+  }
+  function thingsToLookAt(plan) {
+    var notes = [];
+    var count = countParticipants(plan);
+    var filing = filingResult(plan);
+    if (count >= 100) {
+      notes.push('You have ' + count + ' covered people, so a Form 5500 is required each year. See the calendar.');
+      notes.push('We count each covered person once on the first day of the plan year. Spouses and children are not counted.');
+    } else if (count >= 80) {
+      notes.push('At 100 on the first day of a plan year, a Form 5500 is required. Check the count before each plan year starts.');
+      notes.push('We count each covered person once on the first day of the plan year. Spouses and children are not counted.');
+    }
+    if (count >= 100 && yes(plan.prior_small_filing)) notes.push('A prior small-plan filing does not change this. A Form 5500 is required.');
+    if ((hasBenefit(plan, 'ltd') && (plan.tax || {}).ltd === 'pretax') || (hasBenefit(plan, 'std') && (plan.tax || {}).std === 'pretax')) {
+      notes.push('Disability benefits paid from pre-tax premiums are taxable income to the employee.');
+    }
+    var vol = voluntaryWrapped(plan);
+    if (vol.include && vol.codes.some(function (code) { return (plan.tax || {})[code] === 'pretax'; })) {
+      notes.push('Pre-tax voluntary benefits are part of the plan.');
+    } else if (vol.include && vol.codes.some(function (code) { return (plan.tax || {})[code] === 'none'; })) {
+      notes.push('Employer-paid voluntary benefits are part of the plan.');
+    }
+    if (hasBenefit(plan, 'hra') && plan.hra_type === 'qsehra' && hasBenefit(plan, 'medical')) {
+      notes.push('A small employer HRA is only for employers that do not offer group health coverage. Ask your advisor before you sign.');
+    }
+    if (hasBenefit(plan, 'hra') && plan.hra_type === 'ichra') {
+      notes.push('The individual coverage notice and the individual policy sit outside this wrap.');
+      if (hasBenefit(plan, 'medical') && plan.ichra_same_class !== 'no') {
+        notes.push('This individual coverage HRA is offered to a class that can also enroll in group medical. Ask your advisor before you sign.');
+      }
+    }
+    if (plan.discretion !== 'no' && anyInsuredBenefit(plan)) {
+      notes.push('Some states limit discretionary clauses in insured plans. Your counsel can tell you whether to keep it.');
+    }
+    if (num(plan.employee_count) >= 50 && isSelfFundedFunding(plan.funding)) {
+      notes.push('A self-funded health plan can face nondiscrimination rules. Whether you are an applicable large employer depends on full-time equivalents. Ask your payroll provider or advisor.');
+    } else if (num(plan.employee_count) >= 50) {
+      notes.push('Whether you are an applicable large employer depends on full-time equivalents. Ask your payroll provider or advisor.');
+    } else if (isSelfFundedFunding(plan.funding) && hasBenefit(plan, 'medical')) {
+      notes.push('A self-funded health plan can face nondiscrimination rules. This sample does not decide that question.');
+    }
+    if (hasBenefit(plan, 'eap') && plan.eap_type === 'referral') notes.push('A referral-only employee assistance program is left out of the plan.');
+    if (hasBenefit(plan, 'std') && plan.std_type === 'general-assets') notes.push('Short-term disability paid from general assets is left out of the plan. State disability rules may still apply.');
+    if (hasBenefit(plan, 'std') && plan.std_type === 'trust') notes.push('Short-term disability paid from a trust is in the plan. That fund is plan assets, so the small-plan exemption is not available.');
+    if (plan.cobra === 'no' && count >= 100) notes.push('You said federal COBRA does not apply, and 100 or more people are covered. Confirm the prior-year employee count, including related companies.');
+    if (plan.phi === 'yes' && plan.phi_classes_blank) notes.push('Fill in the job titles that may see employee health information before you sign.');
+    if (complexFunding(plan)) notes.push(BROKER_LINE);
+    if (filing.code === 'unconfirmed') notes.push(filing.text);
+    return notes;
+  }
+  function guideCalendar(plan) {
+    var yearly = [];
+    var hire = [];
+    var changes = [];
+    var filing = filingResult(plan);
+    var medical = hasBenefit(plan, 'medical');
+    var drugs = medical || hasBenefit(plan, 'rx');
+    var selfMedical = medical && isSelfFundedFunding(plan.funding);
+    yearly.push(renewalMonthLabel(plan) + ': Renewal. Get the new certificates. If anything changed, tell employees.');
+    if (medical) yearly.push('Open enrollment: SBC, CHIP notice, WHCRA notice, and HIPAA special enrollment notice.');
+    if (drugs) {
+      yearly.push('By October 15: Medicare Part D notice.');
+      yearly.push('Within 60 days after the plan year starts, by ' + monthDayAfterStart(plan, 60) + ': CMS creditable coverage disclosure.');
+    }
+    if (medical) {
+      yearly.push('By June 1: RxDC. The insurer or TPA usually files it, so get that in writing.');
+      yearly.push('By December 31: gag clause attestation. The insurer or TPA usually files it, so get that in writing.');
+    }
+    if (selfMedical || hasBenefit(plan, 'hra') || plan.funding === 'level' || plan.funding === 'captive' || plan.funding === 'rbp' || plan.funding === 'aso') {
+      yearly.push('By July 31: PCORI fee on Form 720.');
+    }
+    if (filing.code === 'required') {
+      yearly.push('By ' + form5500Due(plan).label + ': Form 5500, with a 2 and a half month extension on Form 5558.');
+      if (!allGeneralAssets(plan)) yearly.push('By ' + summaryAnnualDue(plan).label + ': summary annual report.');
+    }
+    if (num(plan.employee_count) >= 50 || selfMedical) yearly.push('Early in the year: ACA forms 1094 and 1095.');
+    hire.push('Marketplace notice within 14 days after the start date.');
+    if (medical) hire.push('SBC and HIPAA special enrollment notice at enrollment.');
+    hire.push('SPD and certificates within 90 days after coverage starts.');
+    if (plan.cobra === 'yes') hire.push('COBRA general notice with the new-hire papers.');
+    changes.push('A new insurer, a new benefit, or a change in eligibility, waiting period, or who pays: a summary of material modifications within 210 days after the end of that plan year.');
+    if (groupHealth(plan)) changes.push('A cut in group health benefits: notice within 60 days.');
+    if (medical) changes.push('A mid-year group health change: 60 days notice before it takes effect, with an updated SBC.');
+    changes.push('A new SPD every 5 years if anything changed, and every 10 years at the latest.');
+    return { yearly: yearly, hire: hire, changes: changes };
   }
   var PRETAC_TAX = { medical: 1, dental: 1, vision: 1, health_fsa: 1, lpfsa: 1 };
   var EMPLOYER_TAX = { eap: 1, life: 1, add: 1, ltd: 1, std: 1 };
@@ -497,6 +710,9 @@ var WpModel = (function () {
     }
     if (!plan.employer_name) push(errors, 'employer_name', 'Enter the legal employer name.');
     if (!/^\d{2}-?\d{7}$/.test(plan.employer_ein)) push(errors, 'employer_ein', 'Enter a 9-digit EIN.');
+    var phoneDigits = String(plan.phone || '').replace(/\D/g, '');
+    if (phoneDigits.length === 11 && phoneDigits.charAt(0) === '1') phoneDigits = phoneDigits.slice(1);
+    if (phoneDigits.length !== 10) push(errors, 'phone', 'Enter a 10-digit business phone.');
     if (!plan.street || !plan.city || !plan.state || !/^\d{5}$/.test(plan.zip)) push(errors, 'address', 'Enter a street, city, state, and 5-digit ZIP code.');
     if (!/^\d{3}$/.test(plan.plan_number) || num(plan.plan_number) < 501 || num(plan.plan_number) > 999) {
       push(errors, 'plan_number', 'Enter a three-digit plan number from 501 through 999.');
@@ -520,12 +736,9 @@ var WpModel = (function () {
     if (!plan.employee_count || num(plan.employee_count) < 1) push(errors, 'employee_count', 'Enter about how many employees you had last year.');
     if (!plan.benefits.length) push(errors, 'benefits', 'Select at least one benefit.');
     if (hasBenefit(plan, 'medical') && !plan.funding) push(errors, 'funding', 'Choose how medical is funded.');
-    if (plan.section125 !== 'yes' && plan.section125 !== 'no') push(errors, 'section125', 'Say whether a Section 125 plan is in place.');
-    if (plan.employee_contributions !== 'yes' && plan.employee_contributions !== 'no') push(errors, 'employee_contributions', 'Say whether employees contribute.');
-    if (plan.employee_contributions === 'yes' && plan.remitted !== 'yes' && plan.remitted !== 'no') {
-      push(errors, 'remitted', 'Say whether contributions are remitted within three months.');
+    if (anyPretax(plan) && plan.section125 !== 'yes' && plan.section125 !== 'no' && plan.section125 !== 'notsure') {
+      push(errors, 'section125', 'Say whether a Section 125 plan document is signed.');
     }
-    if (plan.certificates !== 'yes' && plan.certificates !== 'no') push(errors, 'certificates', 'Say whether you have the certificate or booklet for each benefit.');
     if (hasBenefit(plan, 'medical') && isSelfFundedFunding(plan.funding)) {
       if (!plan.tpa_name) push(errors, 'tpa_name', 'Enter the TPA name.');
       if (!plan.tpa_document) push(errors, 'tpa_document', 'Enter the name of the TPA plan document or SPD.');
@@ -539,22 +752,26 @@ var WpModel = (function () {
     });
     wrappedBenefits(plan).forEach(function (code) {
       if (!plan.carriers[code]) push(errors, 'carrier_' + code, 'Enter the carrier or administrator for ' + benefitLabel(code) + '.');
-      if (needsCarrierAddress(plan, code)) {
-        var addr = plan.carrier_addresses && plan.carrier_addresses[code];
-        if (!String(addr || '').trim()) push(errors, 'carrier_address_' + code, 'Enter the address for ' + benefitLabel(code) + '.');
-      }
     });
     if (hasBenefit(plan, 'hra') && !plan.hra_type) push(errors, 'hra_type', 'Choose the HRA type.');
     if (hasBenefit(plan, 'eap') && !plan.eap_type) push(errors, 'eap_type', 'Say whether the EAP is referral-only or provides care.');
     if (hasBenefit(plan, 'std') && !plan.std_type) push(errors, 'std_type', 'Say how short-term disability is paid.');
-    if (groupHealth(plan) && plan.cobra !== 'yes' && plan.cobra !== 'no') push(errors, 'cobra', 'Answer yes or no on the federal COBRA count.');
+    if (groupHealth(plan) && num(plan.employee_count) >= 20 && plan.cobra !== 'yes' && plan.cobra !== 'no') {
+      push(errors, 'cobra', 'Answer yes or no on the federal COBRA count.');
+    }
     if (!plan.signer_name || !plan.signer_title) push(errors, 'signer_name', 'Enter the signer name and title.');
     if (!plan.contact_name) push(errors, 'contact_name', 'Enter your name.');
     if (!plan.contact_email || plan.contact_email.indexOf('@') === -1) push(errors, 'contact_email', 'Enter an email address.');
     if (yes(plan.trust) && !plan.trustee_name) push(errors, 'trustee_name', 'Enter the trustee name.');
-    var volCodes = ['vol_life', 'vol_add', 'accident', 'critical', 'hospital'];
-    var anyVol = volCodes.some(function (code) { return hasBenefit(plan, code); });
-    if (anyVol && !plan.vol_consideration) push(errors, 'vol_consideration', 'Answer whether the employer receives consideration beyond reasonable pay for payroll deduction.');
+    var selectedVol = voluntaryCodes(plan);
+    var askVol = selectedVol.length && selectedVol.every(function (code) {
+      var tax = (plan.tax || {})[code];
+      return tax && tax !== 'pretax' && tax !== 'none';
+    });
+    var legacyVol = plan.vol_consideration === 'yes' || plan.vol_consideration === 'no';
+    if (askVol && !legacyVol && plan.vol_include !== 'yes' && plan.vol_include !== 'no') {
+      push(errors, 'vol_include', 'Say whether to include the voluntary benefits.');
+    }
     return {
       ok: errors.length === 0,
       errors: errors,
@@ -588,6 +805,9 @@ var WpModel = (function () {
     TERMS_VERSION: TERMS_VERSION,
     DISCLAIMER: DISCLAIMER,
     BROKER_LINE: BROKER_LINE,
+    HELP_LINE: HELP_LINE,
+    STATES: STATES,
+    BUSINESS_TYPES: BUSINESS_TYPES,
     MSP_SENTENCE: MSP_SENTENCE,
     REVERSION: REVERSION,
     NEWBORNS: NEWBORNS,
@@ -624,6 +844,15 @@ var WpModel = (function () {
     validate: validate,
     validateSubmission: validateSubmission,
     originAllowed: originAllowed,
-    monthName: monthName
+    monthName: monthName,
+    planYearFromStart: planYearFromStart,
+    effectiveDateChoices: effectiveDateChoices,
+    form5500Due: form5500Due,
+    summaryAnnualDue: summaryAnnualDue,
+    guideCalendar: guideCalendar,
+    thingsToLookAt: thingsToLookAt,
+    helpOffer: helpOffer,
+    anyPretax: anyPretax,
+    allGeneralAssets: allGeneralAssets
   };
 })();
