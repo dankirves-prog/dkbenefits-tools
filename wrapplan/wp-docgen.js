@@ -760,9 +760,10 @@ var WpDocgen = (function () {
       var pay = (plan.tax || {})[code];
       var payText = pay === 'pretax' ? 'employees pay part pre-tax' : pay === 'aftertax' ? 'employees pay part after tax' : 'employer paid';
       if (code === 'health_fsa' || code === 'lpfsa') payText = 'employees contribute pre-tax';
+      if (code === 'hra') payText = '';
       var fund = code === 'medical' ? WpModel.fundingLabel(plan.funding || 'insured').toLowerCase() : (WpModel.benefitIsInsured(plan, code) ? 'fully insured' : 'self-funded');
       if (code === 'hra' || code === 'health_fsa' || code === 'lpfsa') fund = 'paid by the company';
-      glance.push(WpModel.benefitLabel(code) + ', ' + carrier(plan, code) + ', ' + fund + ', ' + payText + '.');
+      glance.push(WpModel.benefitLabel(code) + ', ' + carrier(plan, code) + ', ' + fund + (payText ? ', ' + payText : '') + '.');
     });
     var effectIso = plan.is_restatement === 'yes' ? plan.restatement_date : plan.original_effective_date;
     if (WpModel.dateBeforeToday(effectIso)) {

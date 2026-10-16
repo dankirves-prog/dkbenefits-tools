@@ -580,7 +580,7 @@ var WpModel = (function () {
     return 'Your SPD has ' + count + ' blank insurer ' + noun + '. Add them now or fill them in the Word file before you hand it out.';
   }
   function blankPhiDoneText() {
-    return 'Your HIPAA amendment has a blank job-title line. Add them now or fill it in the Word file before you hand it out.';
+    return 'Your HIPAA amendment has a blank job-title line. Add it now or fill it in the Word file before you sign.';
   }
   function dateBeforeToday(iso) {
     var match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
@@ -697,7 +697,7 @@ var WpModel = (function () {
       dated('By ' + formDue.label + ': Form 5500, with a 2 and a half month extension on Form 5558.', formDue.month, formDue.day);
       if (!allGeneralAssets(plan)) dated('By ' + sarDue.label + ': summary annual report.', sarDue.month, sarDue.day);
     }
-    if (num(plan.employee_count) >= 50 || selfMedical) dated('Early in the year: ACA forms 1094 and 1095.', start, 8);
+    if (num(plan.employee_count) >= 50 || selfMedical) dated('Early in the year: ACA forms 1094 and 1095.', 1, 8);
     yearly.sort(function (a, b) {
       function key(item) {
         var month = item.month - start;
