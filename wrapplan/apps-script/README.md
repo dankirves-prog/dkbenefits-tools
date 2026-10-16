@@ -70,7 +70,17 @@ Use `wrapplan/embed.html`, or point a Wix HTML component at `https://dankirves-p
 
 Do not change the live wrap page until the attorney-review question is answered. The preview can be published on GitHub Pages on its own.
 
-The tool posts `{ type: 'wp-scroll', step }` when the employer changes steps. In the Wix page code, scroll the HTML component only when that message arrives.
+The tool posts `{ type: 'wp-scroll', top, step }` when the employer changes steps. It does not post that message on load. In the Wix page code, scroll the HTML component only when that message arrives. Do not scroll the component when the page loads.
+
+```javascript
+$w.onReady(function () {
+  $w('#html1').onMessage(function (event) {
+    if (event.data && event.data.type === 'wp-scroll') {
+      $w('#html1').scrollTo();
+    }
+  });
+});
+```
 
 ## 9. A safe test after deploy
 
