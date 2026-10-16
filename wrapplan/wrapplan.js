@@ -21,6 +21,9 @@
   var DRAFT_KEY = 'wp-draft-v4';
   var planCustom = false;
   var adopterCustom = false;
+  var fromReview = false;
+  var resumeBuild = false;
+  var restoring = false;
 
   function $(id) { return document.getElementById(id); }
   function val(id) {
@@ -482,9 +485,9 @@
     pays.setAttribute('aria-label', 'Who pays?');
     var taxDefault = WpModel.PRETAC_TAX[code] ? 'pretax' : (WpModel.EMPLOYER_TAX[code] ? 'none' : '');
     [
-      ['none', 'Employer pays all'],
-      ['pretax', 'Pre-tax'],
-      ['aftertax', 'After tax']
+      ['none', 'Employer pays'],
+      ['pretax', 'Employees pay, pre-tax'],
+      ['aftertax', 'Employees pay, after tax']
     ].forEach(function (option) {
       var node = segment('tax_' + code, option[0], option[1]);
       if (taxDefault && option[0] === taxDefault) node.querySelector('input').checked = true;
@@ -722,10 +725,14 @@
       kicker.hidden = true;
       bar.hidden = true;
     }
+    if (n === 6) fromReview = false;
+    if (n === 0 || n === 7) resumeBuild = false;
     $('backBtn').hidden = n === 0 || n === 7;
-    $('nextBtn').hidden = n === 6 || n === 7;
+    $('reviewBtn').hidden = !fromReview || n === 0 || n === 6 || n === 7;
+    $('nextBtn').hidden = n === 6 || n === 7 || (resumeBuild && n !== 0);
     $('nextBtn').textContent = n === 0 ? 'Start' : 'Next';
-    $('buildBtn').hidden = n !== 6;
+    $('returnBtn').hidden = !resumeBuild || n === 0 || n === 7;
+    $('buildBtn').hidden = n !== 6 || resumeBuild;
     $('navRow').hidden = n === 7;
     if (n === 6) paintAnswers();
     var title = document.querySelector('[data-step="' + n + '"] h2');
@@ -745,7 +752,7 @@
       [3, WpModel.wrappedBenefits(plan).map(function (code) {
         return WpModel.benefitLabel(code) + ' (' + ((plan.carriers || {})[code] || 'carrier') + (code === 'medical' && plan.funding ? ', ' + WpModel.fundingLabel(plan.funding).toLowerCase() : '') + ')';
       }).join(', ') + '.'],
-      [4, (plan.classes || 'Eligible employees') + ', ' + (plan.hours || '') + '. Coverage starts ' + ((plan.waiting && plan.waiting[plan.benefits[0]]) || 'when you choose') + '.'],
+      [4, (plan.classes || 'Eligible employees') + ', ' + (plan.hours || '') + '. Coverage starts ' + lowerFirst((plan.waiting && plan.waiting[plan.benefits[0]]) || 'when you choose') + '.'],
       [5, (plan.census.a || '0') + ' people covered. ' + (plan.cobra === 'yes' ? 'Federal COBRA applies.' : 'Federal COBRA does not apply.')]
     ];
     lines.forEach(function (line) {
@@ -757,7 +764,10 @@
       edit.type = 'button';
       edit.className = 'text-link';
       edit.textContent = 'Edit';
-      edit.addEventListener('click', function () { showStep(line[0]); });
+      edit.addEventListener('click', function () {
+        fromReview = true;
+        showStep(line[0]);
+      });
       row.appendChild(text);
       row.appendChild(edit);
       card.appendChild(row);
@@ -790,8 +800,133 @@
       if (el) el.setAttribute('aria-invalid', 'true');
     });
   }
+  function lowerFirst(text) {
+    text = String(text || '');
+    if (!text) return text;
+    return text.charAt(0).toLowerCase() + text.slice(1);
+  }
+  function snapshotFields() {
+    var fields = [];
+    Array.prototype.forEach.call(document.querySelectorAll('#wizard input, #wizard select, #wizard textarea'), function (el) {
+      if (el.type === 'radio') {
+        if (el.checked) fields.push({ radio: true, name: el.name, value: el.value });
+      } else if (el.type === 'checkbox') {
+        fields.push({ box: true, id: el.id || '', name: el.name || '', value: el.value || '', checked: !!el.checked });
+      } else if (el.id) {
+        fields.push({ id: el.id, value: el.value || '' });
+      }
+    });
+    return fields;
+  }
   function saveDraft() {
-    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(readPlan())); } catch (err) {}
+    if (restoring) return;
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        fields: snapshotFields(),
+        planCustom: planCustom,
+        adopterCustom: adopterCustom
+      }));
+    } catch (err) {}
+  }
+  function applyFields(data) {
+    if (data.planCustom) {
+      planCustom = true;
+      $('planCustom').hidden = false;
+      $('planDefault').hidden = true;
+    }
+    if (data.adopterCustom) {
+      adopterCustom = true;
+      $('adopterCustom').hidden = false;
+    }
+    (data.fields || []).forEach(function (field) {
+      if (field.radio || field.box) return;
+      var el = $(field.id);
+      if (el) el.value = field.value || '';
+    });
+    paintEffective();
+    (data.fields || []).forEach(function (field) {
+      if (field.radio) {
+        var radio = document.querySelector('input[name="' + field.name + '"][value="' + field.value + '"]');
+        if (radio) radio.checked = true;
+      } else if (field.box) {
+        var box = field.id ? $(field.id) : document.querySelector('input[name="' + field.name + '"][value="' + field.value + '"]');
+        if (box) box.checked = !!field.checked;
+      }
+    });
+    var overrides = $('waitingOverrides');
+    if (overrides) {
+      var customWait = BENEFITS.some(function (pair) {
+        var sel = $('waitover_sel_' + pair[0]);
+        return sel && sel.value && sel.value !== 'same';
+      });
+      if (customWait) {
+        overrides.hidden = false;
+        $('waitingOverrideLink').hidden = true;
+      }
+    }
+    sync();
+  }
+  function draftHasAnswers(data) {
+    return (data.fields || []).some(function (field) {
+      if (field.radio) return !!field.value;
+      if (field.box) return !!field.checked && field.id !== 'consent';
+      return String(field.value || '').trim() !== '';
+    });
+  }
+  function loadDraft() {
+    var raw = '';
+    try { raw = localStorage.getItem(DRAFT_KEY) || ''; } catch (err) { return; }
+    if (!raw) return;
+    var data;
+    try { data = JSON.parse(raw); } catch (err) { return; }
+    if (!data || !data.fields || !draftHasAnswers(data)) return;
+    restoring = true;
+    applyFields(data);
+    restoring = false;
+    $('resumeNote').hidden = false;
+  }
+  function gapButton(before, after, go) {
+    var p = document.createElement('p');
+    p.className = 'note';
+    p.appendChild(document.createTextNode(before));
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'text-link';
+    button.textContent = 'Add them now';
+    button.addEventListener('click', go);
+    p.appendChild(button);
+    p.appendChild(document.createTextNode(after));
+    return p;
+  }
+  function paintGaps(plan) {
+    var host = $('gapNotes');
+    if (!host) return;
+    host.textContent = '';
+    var count = WpModel.missingAddressLabels(plan).length;
+    if (count) {
+      var address = WpModel.blankAddressDoneText(count);
+      var split = address.split('Add them now');
+      host.appendChild(gapButton(split[0], split[1] || '', function () {
+        resumeBuild = true;
+        showStep(3);
+      }));
+    }
+    if (plan.phi === 'yes' && !plan.phi_classes) {
+      var phi = WpModel.blankPhiDoneText();
+      var parts = phi.split('Add them now');
+      host.appendChild(gapButton(parts[0], parts[1] || '', function () {
+        resumeBuild = true;
+        if (!formMedicalSelf()) {
+          var yes = document.querySelector('input[name="phi"][value="yes"]');
+          if (yes) yes.checked = true;
+          if ($('lessCommon')) $('lessCommon').open = true;
+          sync();
+          showStep(6);
+        } else {
+          showStep(5);
+        }
+      }));
+    }
   }
   function validateStep(n) {
     clearErrors();
@@ -959,8 +1094,8 @@
     var employerJobs = groups[0].jobs;
     var spdRows = groups[1].rows;
     var guideRows = groups[2].rows;
-    function pdfOf(rows, title, footer) {
-      return WpPdf.buildPdf(rows, { title: title, footer: footer });
+    function pdfOf(rows, title, footer, extra) {
+      return WpPdf.buildPdf(rows, Object.assign({ title: title, footer: footer }, extra || {}));
     }
     Promise.all(employerJobs.map(function (job) {
       return pdfOf(job.rows, job.title, WpDocgen.footerFor(result.plan, job.title));
@@ -980,11 +1115,12 @@
           return WpPdf.mergePdfs([coverPdf].concat(parts), { title: result.plan.plan_name || 'Plan documents' }).then(function (employerPdf) {
             var spdCover = WpDocgen.spdCoverParagraphs(result.plan);
             var spdName = WpDocgen.spdFileName(result.plan);
+            var spdFooter = WpDocgen.footerFor(result.plan, 'Summary Plan Description');
             var spdWord = WpDocgen.buildPacketDocx([
-              { rows: spdCover, footer: WpDocgen.footerFor(result.plan, 'Summary Plan Description') },
-              { rows: spdRows, footer: WpDocgen.footerFor(result.plan, 'Summary Plan Description') }
+              { rows: spdCover, footer: spdFooter, pageNumbers: false },
+              { rows: spdRows, footer: spdFooter }
             ], { title: 'Summary Plan Description' });
-            return pdfOf(spdCover, 'Summary Plan Description', WpDocgen.footerFor(result.plan, 'Summary Plan Description')).then(function (spdCoverPdf) {
+            return pdfOf(spdCover, 'Summary Plan Description', spdFooter, { pageNumbers: false }).then(function (spdCoverPdf) {
               return pdfOf(spdRows, 'Summary Plan Description', WpDocgen.footerFor(result.plan, 'Summary Plan Description')).then(function (spdPdf) {
                 return WpPdf.mergePdfs([spdCoverPdf, spdPdf], { title: 'Summary Plan Description' }).then(function (spdMerged) {
                   var guideName = WpDocgen.guideFileName(result.plan);
@@ -1005,6 +1141,7 @@
       });
     }).then(function (cards) {
       showDownloads(cards);
+      paintGaps(result.plan);
       paintNext(result);
       showStep(7);
       var files = [];
@@ -1040,7 +1177,11 @@
     if (el.id === 'employer_ein') formatEinInput(el);
     if (el.id === 'wrap_effective_date' || el.id === 'original_effective_date') formatDateInput(el);
     if (el.id === 'plan_year_start_month') paintEffective();
+    if ($('sameAsSigner') && $('sameAsSigner').checked && (el.id === 'signer_name' || el.id === 'sameAsSigner')) {
+      $('contact_name').value = val('signer_name');
+    }
     sync();
+    saveDraft();
   }
   document.addEventListener('input', onInput);
   document.addEventListener('change', onInput);
@@ -1057,6 +1198,16 @@
   window.addEventListener('resize', function () { if (openTipBtn) placeTip(openTipBtn); });
   $('nextBtn').addEventListener('click', goNext);
   $('backBtn').addEventListener('click', function () { if (step > 0) showStep(step - 1); });
+  $('reviewBtn').addEventListener('click', function () { showStep(6); });
+  $('returnBtn').addEventListener('click', function () {
+    if (step >= 1 && step <= 6 && !validateStep(step)) return;
+    build();
+  });
+  $('changeAnswers').addEventListener('click', function () { showStep(6); });
+  $('startOver').addEventListener('click', function () {
+    try { localStorage.removeItem(DRAFT_KEY); } catch (err) {}
+    location.reload();
+  });
   $('buildBtn').addEventListener('click', function (event) { event.preventDefault(); build(); });
   $('wizard').addEventListener('submit', function (event) { event.preventDefault(); build(); });
   $('seeApplies').addEventListener('click', function () { $('explainPanel').hidden = !$('explainPanel').hidden; });
@@ -1074,5 +1225,6 @@
   ensurePopover();
   paintEffective();
   sync();
+  loadDraft();
   showStep(0);
 })();

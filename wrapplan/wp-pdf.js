@@ -303,7 +303,7 @@ var WpPdf = (function () {
       }
 
       var footerName = props.footer || props.title || '';
-      pages.forEach(function (pg, index) {
+      if (props.pageNumbers !== false) pages.forEach(function (pg, index) {
         var label = (footerName ? footerName + ' | ' : '') + 'Page ' + (index + 1) + ' of ' + pages.length;
         var size = 8;
         var lines = wrap(label, font, size, maxWidth);

@@ -117,6 +117,20 @@ test('guide calendar rows follow funding, size, and the Form 5500 month', functi
   assert.match(levelText, /5500/);
   assert.match(levelText, /summary annual report/);
   assert.match(levelText, /ACA/);
+  assert.match(levelRows.hire.join(' '), /COBRA general notice to the employee and spouse within 90 days after coverage starts/);
+  function at(rows, pattern) {
+    const index = rows.findIndex(function (row) { return pattern.test(row); });
+    assert.ok(index >= 0, String(pattern));
+    return index;
+  }
+  const year = levelRows.yearly;
+  assert.ok(at(year, /ACA/) < at(year, /by March 1/));
+  assert.ok(at(year, /by March 1/) < at(year, /RxDC/));
+  assert.ok(at(year, /RxDC/) < at(year, /PCORI/));
+  assert.ok(at(year, /PCORI/) < at(year, /Form 5500/));
+  assert.ok(at(year, /Medicare Part D/) < at(year, /Renewal/));
+  const july = Wp.guideCalendar(Wp.normalize(baseInput({ plan_year_start_month: '7', benefits: ['medical'], funding: 'insured' })));
+  assert.match(july.yearly.join(' '), /by August 29/);
   const calendar = Wp.form5500Due(Wp.normalize(baseInput({ plan_year_type: 'calendar' })));
   assert.equal(calendar.label, 'July 31');
   const fiscal = Wp.form5500Due(Wp.normalize(baseInput({ plan_year_start_month: '7' })));
@@ -135,10 +149,148 @@ test('the SPD file has its own cover and a certificate page', function () {
   assert.match(spd, /Your employer attaches these behind this page/);
   assert.match(spd, /Medical: Florida Blue certificate of coverage/);
   const bytes = context.WpDocgen.buildPacketDocx([
-    { rows: context.WpDocgen.spdCoverParagraphs(result.plan), footer: 'SPD' },
+    { rows: context.WpDocgen.spdCoverParagraphs(result.plan), footer: 'SPD', pageNumbers: false },
     { rows: context.WpDocgen.spdParagraphs(result.plan), footer: 'SPD' }
   ], { title: 'SPD' });
   assert.ok(bytes.length > 100);
+  const xml = Buffer.from(bytes).toString('latin1');
+  const coverFooter = xml.split('word/footer1.xml')[1].split('word/footer2.xml')[0];
+  assert.doesNotMatch(coverFooter, /PAGE/);
+  assert.match(xml, /PAGE/);
+});
+
+test('the employee email template does not use the visitor name', function () {
+  const context = boot();
+  const guide = context.WpDocgen.plainText(context.WpDocgen.guideParagraphs(context.WpModel.normalize(baseInput())));
+  assert.match(guide, /Hi \[employee name\],/);
+  assert.doesNotMatch(guide, /Hi Alex/);
+  assert.match(guide, /Alex Rivera, Managing Member, signs the adoption resolution and the wrap signature page/);
+  assert.match(guide, /Print more copies of this page as needed/);
+});
+
+test('blank insurer addresses and HIPAA job titles are named for the guide and the done screen', function () {
+  const context = boot();
+  const Wp = context.WpModel;
+  const dental = Wp.normalize(baseInput({
+    carrier_addresses: { medical: '1 Main', dental: '', vision: '' }
+  }));
+  assert.equal(
+    Wp.missingAddressGuideLine(dental),
+    'Fill in the Dental and Vision insurer addresses in the Word version of the SPD, then save it as a PDF. Copy the address from your certificate.'
+  );
+  assert.equal(Wp.blankAddressDoneText(2), 'Your SPD has 2 blank insurer addresses. Add them now or fill them in the Word file before you hand it out.');
+  const one = Wp.normalize(baseInput({
+    benefits: ['dental'],
+    carriers: { dental: 'Sun Life' },
+    carrier_addresses: { dental: '' }
+  }));
+  assert.equal(
+    Wp.missingAddressGuideLine(one),
+    'Fill in the Dental insurer address in the Word version of the SPD, then save it as a PDF. Copy the address from your certificate.'
+  );
+  const phi = Wp.normalize(baseInput({ phi: 'yes', phi_classes: '' }));
+  assert.match(Wp.missingPhiGuideLine(phi), /Word version of the HIPAA amendment/);
+  assert.match(Wp.blankPhiDoneText(), /blank job-title line/);
+  const guide = context.WpDocgen.plainText(context.WpDocgen.guideParagraphs(dental));
+  assert.match(guide, /Fill in the Dental and Vision insurer addresses in the Word version of the SPD/);
+  const page = fs.readFileSync(path.join(root, 'wrapplan.js'), 'utf8');
+  assert.match(page, /blankAddressDoneText/);
+  assert.match(page, /showStep\(3\)/);
+  assert.match(page, /blankPhiDoneText/);
+});
+
+test('a saved draft is restored and start over clears it', async function () {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const js = fs.readFileSync(path.join(root, 'wrapplan.js'), 'utf8');
+  assert.match(html, /Welcome back\. We kept your answers\./);
+  assert.match(html, /Start over/);
+  assert.match(html, /Back to review/);
+  assert.match(html, /Change my answers/);
+  assert.match(js, /localStorage\.getItem\(DRAFT_KEY\)/);
+  assert.match(js, /localStorage\.removeItem\(DRAFT_KEY\)/);
+  assert.match(js, /fromReview = true/);
+  const chrome = '/usr/local/bin/google-chrome';
+  if (!fs.existsSync(chrome)) return;
+  const http = require('http');
+  const { spawn } = require('child_process');
+  const port = 8796;
+  const debug = 9356;
+  const server = http.createServer(function (req, res) {
+    const file = path.join(root, req.url.split('?')[0] === '/' ? 'index.html' : req.url.split('?')[0]);
+    if (!file.startsWith(root) || !fs.existsSync(file)) { res.writeHead(404); res.end('no'); return; }
+    res.writeHead(200); fs.createReadStream(file).pipe(res);
+  }).listen(port, '127.0.0.1');
+  const child = spawn(chrome, ['--headless=new', '--disable-gpu', '--no-sandbox', '--remote-debugging-port=' + debug, '--user-data-dir=/tmp/wp-draft-chrome', 'about:blank'], { stdio: 'ignore' });
+  await new Promise(function (resolve) { setTimeout(resolve, 700); });
+  const tab = await fetch('http://127.0.0.1:' + debug + '/json/new?http://127.0.0.1:' + port + '/index.html', { method: 'PUT' }).then(function (res) { return res.json(); });
+  const ws = new WebSocket(tab.webSocketDebuggerUrl);
+  await new Promise(function (resolve) { ws.addEventListener('open', resolve); });
+  let seq = 0;
+  const pending = new Map();
+  ws.addEventListener('message', function (ev) {
+    const msg = JSON.parse(ev.data);
+    if (msg.id && pending.has(msg.id)) {
+      const job = pending.get(msg.id);
+      pending.delete(msg.id);
+      if (msg.error) job.reject(new Error(JSON.stringify(msg.error)));
+      else job.resolve(msg.result);
+    }
+  });
+  function send(method, params) {
+    const id = ++seq;
+    return new Promise(function (resolve, reject) {
+      pending.set(id, { resolve: resolve, reject: reject });
+      ws.send(JSON.stringify({ id: id, method: method, params: params || {} }));
+    });
+  }
+  function waitExpr(body) {
+    return `new Promise(function (resolve, reject) {
+      var started = Date.now();
+      var timer = setInterval(function () {
+        try {
+          var value = (${body})();
+          if (value) { clearInterval(timer); resolve(value); }
+        } catch (err) {}
+        if (Date.now() - started > 8000) { clearInterval(timer); reject(new Error('timed out')); }
+      }, 40);
+    })`;
+  }
+  await send('Page.enable');
+  await send('Runtime.evaluate', {
+    awaitPromise: true,
+    expression: waitExpr(`function () { return !!document.querySelector('label[for="employer_ein"] .info'); }`)
+  });
+  await send('Runtime.evaluate', {
+    expression: `document.getElementById('employer_name').value = 'Harbor Dental Group LLC';
+      document.getElementById('employer_name').dispatchEvent(new Event('input', { bubbles: true }));`
+  });
+  await send('Page.reload', { ignoreCache: true });
+  const restored = await send('Runtime.evaluate', {
+    awaitPromise: true,
+    returnByValue: true,
+    expression: waitExpr(`function () {
+      var note = document.getElementById('resumeNote');
+      var name = document.getElementById('employer_name');
+      if (note && name && !note.hidden && name.value === 'Harbor Dental Group LLC') return note.textContent;
+      return '';
+    }`)
+  });
+  assert.match(restored.result.value, /Welcome back/);
+  await send('Runtime.evaluate', { expression: `document.getElementById('startOver').click()` });
+  const cleared = await send('Runtime.evaluate', {
+    awaitPromise: true,
+    returnByValue: true,
+    expression: waitExpr(`function () {
+      var note = document.getElementById('resumeNote');
+      var name = document.getElementById('employer_name');
+      if (note && name && note.hidden && name.value === '' && document.querySelector('.info')) return true;
+      return false;
+    }`)
+  });
+  assert.equal(cleared.result.value, true);
+  child.kill();
+  server.close();
+  ws.close();
 });
 
 test('info icons are 18px, do not inflate fields, and open on click', async function () {
@@ -152,6 +304,8 @@ test('info icons are 18px, do not inflate fields, and open on click', async func
   assert.match(css, /\.info\s*\{[^}]*width:\s*18px/);
   assert.match(css, /\.info\s*\{[^}]*padding:\s*0/);
   assert.match(css, /\.info\s*\{[^}]*border-radius:\s*50%/);
+  assert.match(css, /\.info::before\s*\{[^}]*width:\s*24px/);
+  assert.match(css, /\.info::before\s*\{[^}]*height:\s*24px/);
   assert.match(js, /className = 'info'/);
   assert.match(js, /aria-expanded/);
   assert.match(js, /role', 'dialog'/);

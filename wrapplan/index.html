@@ -26,6 +26,7 @@
 
       <section class="card" data-step="0">
         <h2 id="stepTitle">Build your wrap plan document</h2>
+        <p class="hint" id="resumeNote" hidden>Welcome back. We kept your answers. <button type="button" class="text-link" id="startOver">Start over</button></p>
         <p class="lede">A free ERISA wrap plan document and summary plan description for your employee benefits. About 10 minutes.</p>
         <h3>What you get</h3>
         <ul>
@@ -69,7 +70,7 @@
 
       <section class="card" data-step="2" hidden>
         <h2>Your plan</h2>
-        <div class="field"><label for="plan_year_start_month" data-tip="plan_year">What month does your plan year start?</label><select id="plan_year_start_month"></select><p class="hint">Usually the month your medical plan renews.</p><p class="field-error" id="err_plan_year_start_month" role="alert"></p></div>
+        <div class="field"><label for="plan_year_start_month" data-tip="plan_year">What month does your plan year start?</label><select id="plan_year_start_month"></select><p class="field-error" id="err_plan_year_start_month" role="alert"></p></div>
         <fieldset class="plain">
           <legend data-tip="first_wrap">Is this your first wrap plan document?</legend>
           <div class="choices" id="firstWrapChoices"></div>
@@ -79,7 +80,6 @@
         <fieldset class="plain">
           <legend data-tip="effective">When should this document take effect?</legend>
           <div class="choices" id="effectiveChoices"></div>
-          <p class="hint">Most employers use the start of the current plan year.</p>
           <p class="field-error" id="err_wrap_effective_date" role="alert"></p>
         </fieldset>
         <div class="field" id="otherDateWrap" hidden><label for="wrap_effective_date">Effective date</label><input id="wrap_effective_date" type="text" inputmode="numeric" maxlength="10" placeholder="MM/DD/YYYY" autocomplete="off"></div>
@@ -88,7 +88,7 @@
           <div class="field"><label for="plan_name">Plan name</label><input id="plan_name" type="text"></div>
           <div class="field"><label for="plan_number">Plan number</label><input id="plan_number" type="text" value="501" inputmode="numeric" maxlength="3"><p class="field-error" id="err_plan_number" role="alert"></p></div>
         </div>
-        <div class="field"><label for="employee_count" data-tip="employee_count">Most employees you had at one time last year</label><input id="employee_count" type="text" inputmode="numeric"><p class="hint">Include part-time employees and any related companies you own.</p><p class="field-error" id="err_employee_count" role="alert"></p></div>
+        <div class="field"><label for="employee_count" data-tip="employee_count">Most employees you had at one time last year</label><input id="employee_count" type="text" inputmode="numeric"><p class="field-error" id="err_employee_count" role="alert"></p></div>
       </section>
 
       <section class="card" data-step="3" hidden>
@@ -187,6 +187,8 @@
             <div id="phiLess"></div>
           </div>
         </details>
+        <h3>Your contact information</h3>
+        <label class="check-line"><input id="sameAsSigner" type="checkbox"> Same as signer</label>
         <div class="pair">
           <div class="field"><label for="contact_name">Your name</label><input id="contact_name" type="text"><p class="field-error" id="err_contact_name" role="alert"></p></div>
           <div class="field"><label for="contact_email">Email</label><input id="contact_email" type="email"><p class="field-error" id="err_contact_email" role="alert"></p></div>
@@ -201,7 +203,9 @@
 
       <section class="card" data-step="7" hidden>
         <h2>Your wrap plan is ready</h2>
+        <div id="gapNotes"></div>
         <div id="downloadList"></div>
+        <p><button type="button" class="text-link" id="changeAnswers">Change my answers</button></p>
         <h3>What happens next</h3>
         <ol id="nextSteps"></ol>
         <div class="help-card" id="helpCard"></div>
@@ -210,7 +214,9 @@
 
       <div class="nav-row" id="navRow">
         <button type="button" class="btn btn-back" id="backBtn">Back</button>
+        <button type="button" class="btn btn-back" id="reviewBtn" hidden>Back to review</button>
         <button type="button" class="btn btn-next" id="nextBtn">Start</button>
+        <button type="button" class="btn btn-gold" id="returnBtn" hidden>Back to your documents</button>
         <button type="submit" class="btn btn-gold" id="buildBtn" hidden>Build my documents</button>
       </div>
     </form>
