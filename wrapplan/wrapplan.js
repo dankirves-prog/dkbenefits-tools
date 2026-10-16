@@ -724,6 +724,7 @@
     } else {
       kicker.hidden = true;
       bar.hidden = true;
+      if (n === 7) document.title = 'Your wrap plan is ready';
     }
     if (n === 6) fromReview = false;
     if (n === 0 || n === 7) resumeBuild = false;
@@ -885,14 +886,14 @@
     restoring = false;
     $('resumeNote').hidden = false;
   }
-  function gapButton(before, after, go) {
+  function gapButton(before, link, after, go) {
     var p = document.createElement('p');
     p.className = 'note';
     p.appendChild(document.createTextNode(before));
     var button = document.createElement('button');
     button.type = 'button';
     button.className = 'text-link';
-    button.textContent = 'Add them now';
+    button.textContent = link;
     button.addEventListener('click', go);
     p.appendChild(button);
     p.appendChild(document.createTextNode(after));
@@ -906,15 +907,15 @@
     if (count) {
       var address = WpModel.blankAddressDoneText(count);
       var split = address.split('Add them now');
-      host.appendChild(gapButton(split[0], split[1] || '', function () {
+      host.appendChild(gapButton(split[0], 'Add them now', split[1] || '', function () {
         resumeBuild = true;
         showStep(3);
       }));
     }
     if (plan.phi === 'yes' && !plan.phi_classes) {
       var phi = WpModel.blankPhiDoneText();
-      var parts = phi.split('Add them now');
-      host.appendChild(gapButton(parts[0], parts[1] || '', function () {
+      var parts = phi.split('Add it now');
+      host.appendChild(gapButton(parts[0], 'Add it now', parts[1] || '', function () {
         resumeBuild = true;
         if (!formMedicalSelf()) {
           var yes = document.querySelector('input[name="phi"][value="yes"]');

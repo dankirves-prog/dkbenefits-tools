@@ -131,6 +131,15 @@ test('guide calendar rows follow funding, size, and the Form 5500 month', functi
   assert.ok(at(year, /Medicare Part D/) < at(year, /Renewal/));
   const july = Wp.guideCalendar(Wp.normalize(baseInput({ plan_year_start_month: '7', benefits: ['medical'], funding: 'insured' })));
   assert.match(july.yearly.join(' '), /by August 29/);
+  const julyYear = Wp.guideCalendar(Wp.normalize(baseInput({
+    plan_year_start_month: '7',
+    employee_count: '120',
+    census: { a: '120', b: '0', c: '0', d: '0' },
+    benefits: ['medical'],
+    funding: 'insured'
+  }))).yearly;
+  assert.ok(at(julyYear, /December 31/) < at(julyYear, /ACA/));
+  assert.ok(at(julyYear, /ACA/) < at(julyYear, /January 31/));
   const calendar = Wp.form5500Due(Wp.normalize(baseInput({ plan_year_type: 'calendar' })));
   assert.equal(calendar.label, 'July 31');
   const fiscal = Wp.form5500Due(Wp.normalize(baseInput({ plan_year_start_month: '7' })));
@@ -190,13 +199,25 @@ test('blank insurer addresses and HIPAA job titles are named for the guide and t
   );
   const phi = Wp.normalize(baseInput({ phi: 'yes', phi_classes: '' }));
   assert.match(Wp.missingPhiGuideLine(phi), /Word version of the HIPAA amendment/);
-  assert.match(Wp.blankPhiDoneText(), /blank job-title line/);
+  assert.equal(Wp.blankPhiDoneText(), 'Your HIPAA amendment has a blank job-title line. Add it now or fill it in the Word file before you sign.');
+  const hraPlan = Wp.normalize(baseInput({
+    benefits: ['medical', 'hra', 'health_fsa'],
+    carriers: { medical: 'Allied', hra: 'Allied', health_fsa: 'WEX' },
+    funding: 'level',
+    hra_type: 'integrated'
+  }));
+  const glance = context.WpDocgen.plainText(context.WpDocgen.guideParagraphs(hraPlan));
+  assert.match(glance, /Health reimbursement arrangement, Allied, paid by the company\./);
+  assert.doesNotMatch(glance, /paid by the company, employer paid/);
+  assert.match(glance, /Health FSA, WEX, paid by the company, employees contribute pre-tax\./);
   const guide = context.WpDocgen.plainText(context.WpDocgen.guideParagraphs(dental));
   assert.match(guide, /Fill in the Dental and Vision insurer addresses in the Word version of the SPD/);
   const page = fs.readFileSync(path.join(root, 'wrapplan.js'), 'utf8');
   assert.match(page, /blankAddressDoneText/);
   assert.match(page, /showStep\(3\)/);
   assert.match(page, /blankPhiDoneText/);
+  assert.match(page, /Add it now/);
+  assert.match(page, /Your wrap plan is ready/);
 });
 
 test('a saved draft is restored and start over clears it', async function () {
