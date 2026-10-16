@@ -52,23 +52,72 @@ input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select {
 }
 input[type=checkbox], input[type=radio] { width: 18px; height: 18px; min-height: 0; margin: 2px 8px 0 0; flex: 0 0 auto; }
 button { font: inherit; font-weight: 700; min-height: 44px; border-radius: 8px; border: 0; cursor: pointer; }
+.info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  margin-left: 6px;
+  min-height: 0;
+  height: 18px;
+  width: 18px;
+  padding: 0;
+  border-radius: 50%;
+  flex: 0 0 18px;
+  background: var(--navy);
+  color: #fff;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 12px;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+}
+.info:hover, .info:focus { background: var(--gold); color: var(--navy); outline: none; }
+.tip-pop {
+  position: fixed;
+  z-index: 30;
+  width: min(300px, calc(100vw - 16px));
+  max-width: 300px;
+  background: #fff;
+  color: var(--navy);
+  border: 1px solid #e8edf3;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(26, 46, 74, 0.16);
+  padding: 10px 12px;
+}
+.tip-pop p { margin: 0; font-size: 14px; font-weight: 400; line-height: 1.45; }
 .btn { padding: 10px 16px; }
 .btn-next, .btn-gold { background: var(--navy); color: #fff; }
 .btn-gold { background: var(--gold); color: var(--navy); }
 .btn-back { background: #fff; color: var(--navy); border: 1.5px solid var(--line); }
 .text-link { background: none; border: 0; color: var(--navy); text-decoration: underline; min-height: 0; padding: 0; font: inherit; font-weight: 700; cursor: pointer; }
 .nav-row { display: flex; justify-content: space-between; gap: 12px; margin-top: 12px; }
-.choices { display: flex; flex-direction: column; gap: 8px; }
-.choice { display: flex; align-items: flex-start; border: 1.5px solid var(--line); border-radius: 8px; padding: 10px 12px; background: #fff; cursor: pointer; }
+.choices { display: flex; flex-direction: column; gap: 6px; }
+.choice { display: flex; align-items: flex-start; border: 1.5px solid var(--line); border-radius: 8px; padding: 8px 12px; background: #fff; cursor: pointer; }
+.segment { display: flex; border: 1.5px solid var(--line); border-radius: 8px; overflow: hidden; }
+.segment-item { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; min-height: 40px; padding: 6px 6px; font-size: 13px; font-weight: 700; line-height: 1.2; cursor: pointer; border-right: 1.5px solid var(--line); }
+.segment-item:last-child { border-right: 0; }
+.segment-item input { position: absolute; opacity: 0; width: 1px; height: 1px; min-height: 0; margin: 0; }
+.segment-item:has(input:checked) { background: var(--navy); color: #fff; }
+.segment-item:focus-within { outline: 2px solid var(--gold); outline-offset: -2px; }
+.q-label { font-weight: 700; margin: 8px 0 6px; }
+.pay-row { display: flex; flex-direction: column; gap: 4px; margin: 2px 0 8px; }
+.pay-row .q-label { margin: 0; }
+.label-line { display: inline-flex; align-items: center; gap: 0; font-weight: 700; }
 .choice:has(input:checked) { border-color: var(--navy); background: #f4f7fb; }
 .choice-name { font-weight: 700; display: block; }
 .check-line { display: flex; align-items: flex-start; margin: 6px 0; font-weight: 600; }
-.benefit-block { margin: 0 0 14px; }
-.benefit-grid { display: block; }
-.benefit-item { padding: 4px 0; }
+.benefit-block { margin: 0 0 10px; }
+.benefit-block h3 { margin: 8px 0 4px; }
+.benefit-grid { display: flex; flex-wrap: wrap; gap: 2px 12px; align-items: flex-start; }
+.benefit-item { flex: 1 1 180px; min-width: 0; max-width: 100%; padding: 2px 0; }
 .benefit-item.is-disabled { opacity: 0.6; }
 .benefit-note { margin: 0 0 8px 26px; }
-.benefit-fields { margin: 6px 0 8px 26px; }
+.benefit-fields { margin: 2px 0 6px 26px; }
+.benefit-fields .field { margin-bottom: 4px; }
+.benefit-fields .hint { margin: 0; line-height: 1.25; }
+.benefit-item.is-open .benefit-fields { margin-left: 0; }
+#fundingChoices .choice { padding: 6px 10px; }
 .how { margin: 0 0 12px; }
 .how summary { cursor: pointer; font-weight: 700; }
 .note, .answer-card, .help-card, .file-card { background: #f4f7fb; border: 1px solid #e8edf3; border-radius: 8px; padding: 12px; margin: 0 0 12px; }
@@ -84,7 +133,27 @@ ul, ol { margin: 0 0 12px; padding-left: 1.2rem; }
 @media (min-width: 720px) {
   .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .trio { display: grid; grid-template-columns: 1.4fr 0.7fr 0.8fr; gap: 12px; }
-  .benefit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
+  .benefit-item.is-open:not(.is-wide):not(.is-line) { flex: 1 1 calc(50% - 12px); }
+  .benefit-item.is-line,
+  .benefit-item.is-wide,
+  .benefit-item.has-note { flex-basis: 100%; }
+  .benefit-item.is-line .benefit-fields { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-start; }
+  .benefit-item.is-line .pair-fields { display: contents; }
+  .benefit-item.is-line .field { flex: 1 1 220px; margin: 0; }
+  .benefit-item.is-line .pay-row { flex: 1.15 1 240px; margin: 0; }
+  .benefit-item.is-line .check-line { flex: 1 1 100%; margin: 0; }
+  .benefit-item.is-open:not(.is-wide):not(.is-line) .pay-row { flex-direction: row; align-items: center; gap: 8px; }
+  .benefit-item.is-open:not(.is-wide):not(.is-line) .pay-row .segment { flex: 1; }
+  #fundingChoices { display: flex; flex-direction: column; gap: 4px; }
+  #fundingChoices .choice { padding: 4px 8px; align-items: flex-start; }
+  #fundingChoices .choice-name,
+  #fundingChoices .choice-line { font-size: 14px; line-height: 1.3; }
+  #fundingChoices .choice-name { display: inline; }
+  #fundingChoices .choice-name::after { content: ". "; }
+  #fundingChoices .choice-line { display: inline; }
+  .benefit-item.is-wide .pay-row { flex-direction: row; align-items: center; gap: 10px; }
+  .benefit-item.is-wide .pay-row .segment { flex: 1; }
+  .benefit-item.is-wide .pair-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 }
 @media (max-width: 719px) {
   .nav-row { flex-direction: column-reverse; }

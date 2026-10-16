@@ -741,10 +741,10 @@ var WpDocgen = (function () {
     var phone = phoneText(plan);
     var cal = WpModel.guideCalendar(plan);
     var when = plan.is_restatement === 'yes' ? longDate(plan.restatement_date) : longDate(plan.original_effective_date);
-    rows.push(row('Title', plan.plan_name || 'Your plan', { keepNext: true, keepLines: true }));
-    rows.push(row('Heading1', 'Your step-by-step guide', { keepNext: true, keepLines: true }));
-    rows.push(row(null, 'Prepared ' + prepared + ' for ' + plan.employer_name + '.'));
-    addSection(rows, 'What you have', [
+    rows.push(row('Title', plan.plan_name || 'Your plan', { keepNext: true, keepLines: true, loose: true }));
+    rows.push(guideHeading('Your step-by-step guide'));
+    rows.push(guideBody('Prepared ' + prepared + ' for ' + plan.employer_name + '.'));
+    guideSection(rows, 'What you have', [
       'ERISA requires a written plan document for your employee benefits and a summary plan description (SPD) for your employees. Insurance certificates alone usually do not meet those rules. A wrap plan document ties your benefits into one written plan and fills in what the certificates leave out. You have two files to use and this guide.',
       'Plan documents to sign and keep. This is the official plan. Keep it with your records.',
       'Summary plan description for employees. Give it to each covered employee with their certificates.'
@@ -769,50 +769,81 @@ var WpDocgen = (function () {
     glance.push(plan.cobra === 'yes'
       ? 'Federal COBRA: Applies. ' + (plan.cobra_admin || 'The plan administrator') + ' sends the notices.'
       : 'Federal COBRA: Does not apply. State continuation may apply. See your certificate.');
-    addSection(rows, 'Your plan at a glance', glance);
-    var steps = [];
-    steps.push('Step 1. Gather your certificates. ' + WpModel.wrappedBenefits(plan).map(function (code) {
+    guideSection(rows, 'Your plan at a glance', glance);
+    var checks = [];
+    checks.push('Step 1. Gather your certificates. ' + WpModel.wrappedBenefits(plan).map(function (code) {
       return WpModel.benefitLabel(code) + ' (' + carrier(plan, code) + ')';
     }).join('; ') + '. Ask your broker or download them from each insurance company\'s employer website.');
     if (WpModel.isSelfFundedFunding(plan.funding) && plan.tpa_document) {
-      steps.push('For medical, use the TPA document "' + plan.tpa_document + '".');
+      checks.push('For medical, use the TPA document "' + plan.tpa_document + '".');
     }
     var accountDocs = [];
     if (WpModel.hasBenefit(plan, 'hra')) accountDocs.push('HRA');
     if (WpModel.hasBenefit(plan, 'health_fsa') || WpModel.hasBenefit(plan, 'lpfsa')) accountDocs.push('FSA');
-    if (accountDocs.length) steps.push('Include the separate ' + accountDocs.join(' and ') + ' plan documents.');
-    steps.push('Step 2. Review before you sign. Read the eligibility, waiting period, and who-pays lines against each certificate. If they differ, fix the plan document before you sign. The certificate controls the benefit details.');
+    if (accountDocs.length) checks.push('Include the separate ' + accountDocs.join(' and ') + ' plan documents.');
+    checks.push('Step 2. Review before you sign. Read the eligibility, waiting period, and who-pays lines against each certificate. If they differ, fix the plan document before you sign. The certificate controls the benefit details.');
     if (WpModel.anyPretax(plan) && plan.section125 !== 'yes') {
-      steps.push('Your employees pay some premiums pre-tax. That needs a signed Section 125 plan document. Build one free at dkbenefits.net/section125plantool, and sign it before you sign this plan.');
+      checks.push('Your employees pay some premiums pre-tax. That needs a signed Section 125 plan document. Build one free at dkbenefits.net/section125plantool, and sign it before you sign this plan.');
     }
     WpModel.wrappedBenefits(plan).forEach(function (code) {
       var addr = plan.carrier_addresses && plan.carrier_addresses[code];
       if (!addr && WpModel.needsCarrierAddress(plan, code)) {
-        steps.push('Fill in the ' + WpModel.benefitLabel(code) + ' insurer address. Copy it from your certificate.');
+        checks.push('Fill in the ' + WpModel.benefitLabel(code) + ' insurer address. Copy it from your certificate.');
       }
     });
-    if (plan.phi === 'yes' && !plan.phi_classes) steps.push('Fill in the job titles that may see employee health information.');
-    steps.push('Since this is a free tool, it\'s a good idea to have your own counsel take a quick look before you sign.');
+    if (plan.phi === 'yes' && !plan.phi_classes) checks.push('Fill in the job titles that may see employee health information.');
+    checks.push('Since this is a free tool, it\'s a good idea to have your own counsel take a quick look before you sign.');
     var signer = (plan.signer_name || 'The signer') + (plan.signer_title ? ', ' + plan.signer_title : '');
-    steps.push('Step 3. Sign. ' + signer + ' signs the adoption resolution, the wrap signature page' + (plan.phi === 'yes' ? ', and the HIPAA certification' : '') + '. Date each signature with the day you actually sign. Do not backdate. The resolution states the effective date of ' + when + '. Electronic signatures are fine.');
-    if (plan.is_restatement === 'yes') steps.push('Keep the old document. The new one replaces it from ' + when + '.');
-    steps.push('Step 4. Build the employee packet. For each covered employee, use the SPD, then the certificates for the benefits that employee has, in the order on the SPD\'s last page. One PDF per benefit set, or a shared folder link, both work.');
+    checks.push('Step 3. Sign. ' + signer + ' signs the adoption resolution, the wrap signature page' + (plan.phi === 'yes' ? ', and the HIPAA certification' : '') + '. Date each signature with the day you actually sign. Do not backdate. The resolution states the effective date of ' + when + '. Electronic signatures are fine.');
+    if (plan.is_restatement === 'yes') checks.push('Keep the old document. The new one replaces it from ' + when + '.');
+    checks.push('Step 4. Build the employee packet. For each covered employee, use the SPD, then the certificates for the benefits that employee has, in the order on the SPD\'s last page. One PDF per benefit set, or a shared folder link, both work.');
     var who = 'every covered employee' + (plan.cobra === 'yes' ? ', plus anyone on COBRA' : '');
-    steps.push('Step 5. Give it to employees. Who: ' + who + '. When: as soon as the plan is signed, then each new person within 90 days after coverage starts. How, pick one per person: hand it to them at work; mail it first class to their home; or email it if they use a computer as part of their job, and for anyone else only after they agree in writing. Tell everyone they can ask for a free paper copy. Record delivery in the log.');
-    steps.push('Step 6. Keep your records. Keep the signed documents, the certificates in force each year, and the delivery log, for at least six years. At each renewal, add the new certificates and keep the old ones.');
-    addSection(rows, 'Put your plan in place', steps);
+    checks.push('Step 5. Give it to employees. Who: ' + who + '. When: as soon as the plan is signed, then each new person within 90 days after coverage starts. How, pick one per person: hand it to them at work; mail it first class to their home; or email it if they use a computer as part of their job, and for anyone else only after they agree in writing. Tell everyone they can ask for a free paper copy. Record delivery in the log.');
+    checks.push('Step 6. Keep your records. Keep the signed documents, the certificates in force each year, and the delivery log, for at least six years. At each renewal, add the new certificates and keep the old ones.');
+    rows.push(guideHeading('Put your plan in place'));
+    checks.forEach(function (text) { rows.push(guideCheck(text)); });
     var look = WpModel.thingsToLookAt(plan);
-    if (look.length) addSection(rows, 'Things to look at', look);
-    addSection(rows, 'Your yearly calendar', ['Every year:'].concat(cal.yearly).concat(['Every new hire:']).concat(cal.hire).concat(['When something changes:']).concat(cal.changes));
+    if (look.length) guideSection(rows, 'Things to look at', look);
+    rows.push(guideHeading('Your yearly calendar'));
+    rows.push(guideSubhead('Every year'));
+    cal.yearly.forEach(function (text) { rows.push(guideBody(text)); });
+    rows.push(guideSubhead('Every new hire'));
+    cal.hire.forEach(function (text) { rows.push(guideBody(text)); });
+    rows.push(guideSubhead('When something changes'));
+    cal.changes.forEach(function (text) { rows.push(guideBody(text)); });
     var first = String(plan.contact_name || plan.signer_name || '').trim().split(/\s+/)[0] || 'there';
-    addSection(rows, 'Templates', [
+    guideSection(rows, 'Templates', [
       'Email subject: Your ' + plan.employer_name + ' benefits plan summary.',
       'Hi ' + first + ', Attached is the Summary Plan Description for the ' + plan.plan_name + ', with the certificate for each benefit you have. It explains who is eligible, how to file a claim, and your rights under federal law. Please keep it with your records. If you would like a paper copy, let me know and I will get you one at no cost. ' + (plan.signer_name || '') + (plan.signer_title ? ', ' + plan.signer_title : '') + '.',
-      'Delivery log: Employee | Delivered by (hand, mail, email) | Date | Address or email used | Notes.',
       'Optional employee receipt: I received the Summary Plan Description for the ' + plan.plan_name + ' on ________. Signature ________.'
     ]);
-    addSection(rows, 'Need help?', [WpModel.helpOffer(plan)]);
+    rows.push(guideHeading('Delivery log', { pageBreak: true }));
+    rows.push(guideBody('Write one line each time you give an employee the summary and the certificates.'));
+    rows.push({
+      columns: ['Employee', 'Delivered by (hand, mail, email)', 'Date', 'Address or email used', 'Notes'],
+      blankRows: 15,
+      widths: [1800, 2300, 1200, 2796, 1840]
+    });
+    guideSection(rows, 'Need help?', [WpModel.helpOffer(plan)]);
     return rows;
+  }
+  function guideHeading(text, extra) {
+    return row('Heading1', text, Object.assign({ keepNext: true, keepLines: true, loose: true }, extra || {}));
+  }
+  function guideSubhead(text) {
+    return row('Heading2', text, { keepNext: true, keepLines: true, loose: true });
+  }
+  function guideBody(text) {
+    return row(null, text, { loose: true, keepLines: true });
+  }
+  function guideCheck(text) {
+    return row(null, '[ ] ' + text, { loose: true, keepLines: true, check: true });
+  }
+  function guideSection(rows, title, paragraphs) {
+    var texts = (paragraphs || []).filter(function (text) { return !!text; });
+    if (!texts.length) return;
+    rows.push(guideHeading(title));
+    texts.forEach(function (text) { rows.push(guideBody(text)); });
   }
   function explainParagraphs(plan) {
     var text = 'This tool drafts an ERISA wrap for a private employer. It does not fit this arrangement, so no ERISA plan document was prepared.';
@@ -851,13 +882,41 @@ var WpDocgen = (function () {
   }
 
   function paragraphXml(item) {
+    if (item.columns) return tableXml(item);
     var bits = [];
     if (item.style) bits.push('<w:pStyle w:val="' + xml(item.style) + '"/>');
     if (item.keepNext) bits.push('<w:keepNext/>');
     if (item.keepLines) bits.push('<w:keepLines/>');
+    if (item.loose) {
+      var before = item.style === 'Heading1' ? '280' : item.style === 'Heading2' ? '200' : '60';
+      var after = item.style ? '80' : '160';
+      bits.push('<w:spacing w:before="' + before + '" w:after="' + after + '"/>');
+    }
     var pPr = bits.length ? '<w:pPr>' + bits.join('') + '</w:pPr>' : '';
     var br = item.pageBreak ? '<w:p><w:r><w:br w:type="page"/></w:r></w:p>' : '';
     return br + '<w:p>' + pPr + '<w:r><w:t xml:space="preserve">' + xml(item.text || '') + '</w:t></w:r></w:p>';
+  }
+  function tableXml(item) {
+    var cols = item.columns || [];
+    var widths = item.widths || cols.map(function () { return Math.floor(9936 / Math.max(cols.length, 1)); });
+    var borders = ['top', 'left', 'bottom', 'right', 'insideH', 'insideV'].map(function (edge) {
+      return '<w:' + edge + ' w:val="single" w:sz="4" w:space="0" w:color="1A2E4A"/>';
+    }).join('');
+    function cell(text, header, width) {
+      return '<w:tc><w:tcPr><w:tcW w:w="' + width + '" w:type="dxa"/>' +
+        (header ? '<w:shd w:val="clear" w:color="auto" w:fill="F4F7FB"/>' : '') +
+        '</w:tcPr><w:p><w:r><w:rPr>' + (header ? '<w:b/>' : '') + '<w:sz w:val="18"/></w:rPr><w:t xml:space="preserve">' +
+        xml(text || ' ') + '</w:t></w:r></w:p></w:tc>';
+    }
+    function tr(values, header) {
+      return '<w:tr><w:trPr><w:trHeight w:val="' + (header ? '420' : '400') + '" w:hRule="atLeast"/></w:trPr>' +
+        values.map(function (value, index) { return cell(value, header, widths[index]); }).join('') + '</w:tr>';
+    }
+    var body = tr(cols, true);
+    var blankCount = item.blankRows || 15;
+    for (var i = 0; i < blankCount; i++) body += tr(cols.map(function () { return ''; }), false);
+    return '<w:tbl><w:tblPr><w:tblW w:w="9936" w:type="dxa"/><w:tblBorders>' + borders + '</w:tblBorders></w:tblPr><w:tblGrid>' +
+      widths.map(function (width) { return '<w:gridCol w:w="' + width + '"/>'; }).join('') + '</w:tblGrid>' + body + '</w:tbl>';
   }
   function documentXml(rows) {
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
@@ -1065,7 +1124,10 @@ var WpDocgen = (function () {
     return plan.employer_name + ' ' + title;
   }
   function plainText(rows) {
-    return (rows || []).map(function (item) { return item.text || ''; }).join('\n');
+    return (rows || []).map(function (item) {
+      if (item.columns) return item.columns.join(' | ');
+      return item.text || '';
+    }).join('\n');
   }
   function needsHipaa(plan) {
     return plan.phi === 'yes';

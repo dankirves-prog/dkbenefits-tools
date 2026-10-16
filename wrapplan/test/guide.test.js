@@ -141,11 +141,118 @@ test('the SPD file has its own cover and a certificate page', function () {
   assert.ok(bytes.length > 100);
 });
 
-test('the page has no hover tips', function () {
+test('info icons are 18px, do not inflate fields, and open on click', async function () {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const js = fs.readFileSync(path.join(root, 'wrapplan.js'), 'utf8');
   const css = fs.readFileSync(path.join(root, 'wrapplan.css'), 'utf8');
-  const blob = html + js + css;
-  assert.doesNotMatch(blob, /class="info"|class="bubble"|role="tooltip"|wp-tips/);
-  assert.equal(fs.existsSync(path.join(root, 'wp-tips.js')), false);
+  const tips = fs.readFileSync(path.join(root, 'wp-tips.js'), 'utf8');
+  assert.match(html, /wp-tips\.js/);
+  assert.match(css, /\.info\s*\{[^}]*min-height:\s*0/);
+  assert.match(css, /\.info\s*\{[^}]*height:\s*18px/);
+  assert.match(css, /\.info\s*\{[^}]*width:\s*18px/);
+  assert.match(css, /\.info\s*\{[^}]*padding:\s*0/);
+  assert.match(css, /\.info\s*\{[^}]*border-radius:\s*50%/);
+  assert.match(js, /className = 'info'/);
+  assert.match(js, /aria-expanded/);
+  assert.match(js, /role', 'dialog'/);
+  assert.match(js, /Escape/);
+  assert.doesNotMatch(html + js + css, /class="bubble"|role="tooltip"/);
+  assert.doesNotMatch(tips, /\u2014|\u2013/);
+  assert.match(tips, /ein:/);
+  assert.match(tips, /waiting_period:/);
+  const context = boot();
+  const guide = context.WpDocgen.guideParagraphs(context.WpModel.normalize(baseInput()));
+  const log = guide.filter(function (item) { return item.columns; })[0];
+  assert.ok(log);
+  assert.equal(log.blankRows, 15);
+  assert.equal(log.columns[0], 'Employee');
+  assert.equal(log.columns[1], 'Delivered by (hand, mail, email)');
+  const heading = guide.filter(function (item) { return item.text === 'Delivery log'; })[0];
+  assert.equal(heading.pageBreak, true);
+  assert.match(context.WpDocgen.plainText(guide), /\[ \] Step 1\./);
+  const bytes = context.WpDocgen.buildDocx(guide, { title: 'Guide', footer: 'Guide' });
+  const xml = Buffer.from(bytes).toString('latin1');
+  assert.match(xml, /<w:tbl>/);
+  assert.equal(xml.split('<w:tr>').length - 1, 16);
+  const chrome = '/usr/local/bin/google-chrome';
+  if (!fs.existsSync(chrome)) return;
+  const http = require('http');
+  const { spawn } = require('child_process');
+  const port = 8788;
+  const debug = 9344;
+  const server = http.createServer(function (req, res) {
+    const file = path.join(root, req.url.split('?')[0] === '/' ? 'index.html' : req.url.split('?')[0]);
+    if (!file.startsWith(root) || !fs.existsSync(file)) { res.writeHead(404); res.end('no'); return; }
+    res.writeHead(200); fs.createReadStream(file).pipe(res);
+  }).listen(port, '127.0.0.1');
+  const child = spawn(chrome, ['--headless=new', '--disable-gpu', '--no-sandbox', '--remote-debugging-port=' + debug, '--user-data-dir=/tmp/wp-tip-chrome', 'about:blank'], { stdio: 'ignore' });
+  await new Promise(function (resolve) { setTimeout(resolve, 700); });
+  const tab = await fetch('http://127.0.0.1:' + debug + '/json/new?http://127.0.0.1:' + port + '/index.html', { method: 'PUT' }).then(function (res) { return res.json(); });
+  const ws = new WebSocket(tab.webSocketDebuggerUrl);
+  await new Promise(function (resolve) { ws.addEventListener('open', resolve); });
+  let seq = 0;
+  const pending = new Map();
+  ws.addEventListener('message', function (ev) {
+    const msg = JSON.parse(ev.data);
+    if (msg.id && pending.has(msg.id)) {
+      const job = pending.get(msg.id);
+      pending.delete(msg.id);
+      if (msg.error) job.reject(new Error(JSON.stringify(msg.error)));
+      else job.resolve(msg.result);
+    }
+  });
+  function send(method, params) {
+    const id = ++seq;
+    return new Promise(function (resolve, reject) {
+      pending.set(id, { resolve: resolve, reject: reject });
+      ws.send(JSON.stringify({ id: id, method: method, params: params || {} }));
+    });
+  }
+  await send('Page.enable');
+  await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+  await send('Runtime.evaluate', {
+    awaitPromise: true,
+    expression: `new Promise(function (resolve) {
+      var timer = setInterval(function () {
+        if (document.querySelector('label[for="employer_ein"] .info')) { clearInterval(timer); resolve(true); }
+      }, 40);
+    })`
+  });
+  await send('Runtime.evaluate', { expression: "document.getElementById('nextBtn').click()", awaitPromise: true });
+  const measured = await send('Runtime.evaluate', {
+    returnByValue: true,
+    expression: `(function () {
+      var info = document.querySelector('label[for="employer_ein"] .info');
+      var name = document.getElementById('employer_name');
+      var ein = document.getElementById('employer_ein');
+      info.click();
+      var pop = document.getElementById('tipPopover');
+      var open = {
+        height: Math.round(info.getBoundingClientRect().height),
+        width: Math.round(info.getBoundingClientRect().width),
+        nameH: Math.round(name.getBoundingClientRect().height),
+        einH: Math.round(ein.getBoundingClientRect().height),
+        expanded: info.getAttribute('aria-expanded'),
+        role: pop.getAttribute('role'),
+        hidden: pop.hidden,
+        text: document.getElementById('tipBody').textContent
+      };
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      open.closed = document.getElementById('tipPopover').hidden;
+      return open;
+    })()`
+  });
+  child.kill();
+  server.close();
+  ws.close();
+  const open = measured.result.value;
+  assert.equal(open.height, 18);
+  assert.equal(open.width, 18);
+  assert.equal(open.nameH, open.einH);
+  assert.equal(open.einH, 44);
+  assert.equal(open.expanded, 'true');
+  assert.equal(open.role, 'dialog');
+  assert.equal(open.hidden, false);
+  assert.match(open.text, /employer identification number/);
+  assert.equal(open.closed, true);
 });

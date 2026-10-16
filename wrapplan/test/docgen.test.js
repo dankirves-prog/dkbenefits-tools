@@ -345,8 +345,9 @@ test('an HRA never describes employee contributions as pre-tax, and the packet c
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const js = fs.readFileSync(path.join(root, 'wrapplan.js'), 'utf8');
   const css = fs.readFileSync(path.join(root, 'wrapplan.css'), 'utf8');
-  assert.doesNotMatch(html + js + css, /class="info"|class="bubble"|role="tooltip"/);
-  assert.doesNotMatch(html, /wp-tips\.js/);
+  assert.match(html, /wp-tips\.js/);
+  assert.match(css, /\.info\s*\{[^}]*height:\s*18px/);
+  assert.doesNotMatch(html + js + css, /class="bubble"|role="tooltip"/);
   assert.doesNotMatch(html, /id="vol_pretax"/);
   assert.match(js, /Employer paid/);
   assert.match(fs.readFileSync(path.join(root, 'wp-model.js'), 'utf8'), /The 91st day/);

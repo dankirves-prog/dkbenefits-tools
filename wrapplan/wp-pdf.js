@@ -94,21 +94,33 @@ var WpPdf = (function () {
         if (!page || y - height < bottom) newPage();
       }
 
-      function typeFor(style) {
+      function typeFor(style, loose) {
         var size = style === 'Title' ? 16 : style === 'Heading1' ? 13 : style === 'Heading2' ? 12 : 11;
         var before = style === 'Heading1' ? 11 : style === 'Heading2' ? 8 : 0;
         var gap = style === 'Title' ? 10 : style === 'Heading1' ? 4 : style === 'Heading2' ? 3 : 5;
+        var lineHeight = size + 4;
+        if (loose) {
+          before = style === 'Heading1' ? 16 : style === 'Heading2' ? 12 : 6;
+          gap = 8;
+          lineHeight = size + 6;
+        }
         return {
           size: size,
           before: before,
           gap: gap,
-          lineHeight: size + 4,
+          lineHeight: lineHeight,
           useFont: style ? bold : font,
           color: style ? navy : body
         };
       }
 
       function metricsFor(row) {
+        if (row.columns) {
+          var headerH = 34;
+          var rowH = 26;
+          var count = row.blankRows || 15;
+          return { columns: true, height: headerH + count * rowH + 6, headerH: headerH, rowH: rowH, cols: row.columns, count: count };
+        }
         if (row.table) {
           var labelWidth = 150;
           var valueWidth = maxWidth - labelWidth - 12;
@@ -123,7 +135,7 @@ var WpPdf = (function () {
         }
         var text = row.text || '';
         var style = row.style;
-        var type = typeFor(style);
+        var type = typeFor(style, row.loose);
         var before = row.spaceBefore ? row.spaceBefore / 20 : type.before;
         if (!text) {
           return { empty: true, before: before, height: before + 8, size: type.size, useFont: type.useFont, color: type.color, lines: [], lineHeight: type.lineHeight, gap: type.gap, style: style };
@@ -164,7 +176,41 @@ var WpPdf = (function () {
         y -= 10;
       }
 
+      function drawColumns(metrics) {
+        var weights = [1.15, 1.55, 0.85, 1.55, 1];
+        var weightSum = 0;
+        metrics.cols.forEach(function (label, index) { weightSum += weights[index] || 1; });
+        var widths = metrics.cols.map(function (label, index) { return maxWidth * (weights[index] || 1) / weightSum; });
+        var topY = y;
+        var headerFill = PDFLib.rgb(0.956, 0.969, 0.984);
+        page.drawRectangle({ x: left, y: topY - metrics.headerH, width: maxWidth, height: metrics.headerH, color: headerFill });
+        var x = left;
+        metrics.cols.forEach(function (label, index) {
+          var lines = wrap(label, bold, 8, widths[index] - 8);
+          lines.forEach(function (line, lineIndex) {
+            page.drawText(line, { x: x + 4, y: topY - 12 - lineIndex * 10, size: 8, font: bold, color: navy });
+          });
+          x += widths[index];
+        });
+        var totalH = metrics.headerH + metrics.count * metrics.rowH;
+        for (var r = 0; r <= metrics.count + 1; r++) {
+          var lineY = topY - (r === 0 ? 0 : metrics.headerH + (r - 1) * metrics.rowH);
+          page.drawLine({ start: { x: left, y: lineY }, end: { x: left + maxWidth, y: lineY }, thickness: 0.4, color: navy });
+        }
+        var edge = left;
+        page.drawLine({ start: { x: edge, y: topY }, end: { x: edge, y: topY - totalH }, thickness: 0.4, color: navy });
+        widths.forEach(function (width) {
+          edge += width;
+          page.drawLine({ start: { x: edge, y: topY }, end: { x: edge, y: topY - totalH }, thickness: 0.4, color: navy });
+        });
+        y = topY - totalH - 8;
+      }
+
       function drawMeasured(metrics) {
+        if (metrics.columns) {
+          drawColumns(metrics);
+          return;
+        }
         if (metrics.table) {
           drawTable(metrics);
           return;
@@ -182,6 +228,12 @@ var WpPdf = (function () {
       }
 
       function drawLegacy(row) {
+        if (row.columns) {
+          var grid = metricsFor(row);
+          if (!page || y - grid.height < bottom) newPage();
+          drawColumns(grid);
+          return;
+        }
         if (row.table) {
           var metrics = metricsFor(row);
           if (!page || y - metrics.height < bottom) newPage();
@@ -190,7 +242,7 @@ var WpPdf = (function () {
         }
         var text = row.text || '';
         var style = row.style;
-        var type = typeFor(style);
+        var type = typeFor(style, row.loose);
         var size = type.size;
         var useFont = type.useFont;
         var color = type.color;
