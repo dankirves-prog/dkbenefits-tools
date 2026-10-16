@@ -72,7 +72,7 @@ Use `wrapplan/embed.html`, or point a Wix HTML component at `https://dankirves-p
 
 Do not change the live wrap page until the attorney-review question is answered. The preview can be published on GitHub Pages on its own.
 
-The tool posts `{ type: 'wp-scroll', top, step }` when the employer changes steps. It does not post that message on load. In the Wix page code, scroll the HTML component only when that message arrives. Do not scroll the component when the page loads.
+The tool posts `{ type: 'wp-scroll', top, step }` when the employer changes steps. `top` is the offset of the dark blue header inside the tool, usually 0. Scroll the parent to the iframe top plus that offset so the header stays at the top of the view. Do not scroll to the step heading. It does not post that message on load. In the Wix page code, scroll the HTML component only when that message arrives. Do not scroll the component when the page loads.
 
 ```javascript
 $w.onReady(function () {

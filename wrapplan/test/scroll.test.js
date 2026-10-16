@@ -13,8 +13,9 @@ test('a step change scrolls to the top and tells the Wix parent', async function
   const embed = fs.readFileSync(path.join(root, 'embed.html'), 'utf8');
   assert.match(js, /type: 'wp-scroll'/);
   assert.match(js, /https:\/\/www-dkbenefits-net\.filesusr\.com/);
-  assert.match(js, /window\.scrollTo\(\{ top: 0, left: 0, behavior: 'auto' \}\)/);
-  assert.match(js, /scrollIntoView\(\{ block: 'start', behavior: 'auto' \}\)/);
+  assert.match(js, /\.site-header/);
+  assert.match(js, /window\.scrollTo\(\{ top: top, left: 0, behavior: 'auto' \}\)/);
+  assert.doesNotMatch(js, /scrollIntoView/);
   assert.match(js, /showStep\(0, \{ scroll: false \}\)/);
   assert.doesNotMatch(js, /postMessage\([^)]*'\*'/);
   assert.match(js, /showStep\(step \+ 1\)/);
@@ -112,13 +113,25 @@ test('a step change scrolls to the top and tells the Wix parent', async function
       await new Promise(function (resolve) { setTimeout(resolve, 50); });
       var afterNext = window.scrollY;
       var nextTitle = document.getElementById('stepTitle').textContent;
+      var banner = document.querySelector('.site-header').getBoundingClientRect();
+      var title = document.getElementById('stepTitle').getBoundingClientRect();
       window.scrollTo(0, 900);
       document.getElementById('backBtn').click();
       await new Promise(function (resolve) { setTimeout(resolve, 50); });
-      return JSON.stringify({ before: before, afterNext: afterNext, afterBack: window.scrollY, nextTitle: nextTitle, step: document.getElementById('stepTitle').textContent });
+      return JSON.stringify({
+        before: before,
+        afterNext: afterNext,
+        afterBack: window.scrollY,
+        nextTitle: nextTitle,
+        step: document.getElementById('stepTitle').textContent,
+        bannerTop: Math.round(banner.top),
+        titleTop: Math.round(title.top)
+      });
     })()`));
     assert.ok(standalone.before > 100, JSON.stringify(standalone));
     assert.ok(standalone.afterNext < 5, JSON.stringify(standalone));
+    assert.ok(standalone.bannerTop >= -2 && standalone.bannerTop <= 4, JSON.stringify(standalone));
+    assert.ok(standalone.titleTop > 40, JSON.stringify(standalone));
     assert.equal(standalone.nextTitle, 'Your company');
     assert.ok(standalone.afterBack < 5, JSON.stringify(standalone));
     assert.equal(standalone.step, 'Build your wrap plan document');
@@ -138,8 +151,9 @@ test('a step change scrolls to the top and tells the Wix parent', async function
       var message = files.length ? files[files.length - 1].data : null;
       if (message) {
         var frameTop = frame.getBoundingClientRect().top + window.scrollY;
-        window.scrollTo(0, Math.max(0, frameTop + message.top - 90));
+        window.scrollTo(0, Math.max(0, frameTop + message.top));
       }
+      var banner = doc.querySelector('.site-header').getBoundingClientRect();
       var title = doc.getElementById('stepTitle').getBoundingClientRect();
       var frameBox = frame.getBoundingClientRect();
       return JSON.stringify({
@@ -148,6 +162,7 @@ test('a step change scrolls to the top and tells the Wix parent', async function
         origins: files.length,
         message: message,
         keys: message ? Object.keys(message).sort() : [],
+        parentBannerTop: Math.round(frameBox.top + banner.top),
         parentTitleTop: Math.round(frameBox.top + title.top),
         iframeTop: Math.round(frameBox.top),
         stepText: doc.getElementById('stepTitle').textContent
@@ -158,10 +173,11 @@ test('a step change scrolls to the top and tells the Wix parent', async function
     assert.equal(embedded.message.type, 'wp-scroll');
     assert.equal(embedded.message.step, 1);
     assert.equal(typeof embedded.message.top, 'number');
-    assert.ok(embedded.message.top > 0);
+    assert.ok(embedded.message.top >= 0 && embedded.message.top < 8, JSON.stringify(embedded));
     assert.deepEqual(embedded.keys, ['step', 'top', 'type']);
     assert.equal(embedded.stepText, 'Your company');
-    assert.ok(embedded.parentTitleTop >= 70 && embedded.parentTitleTop <= 120, JSON.stringify(embedded));
+    assert.ok(embedded.parentBannerTop >= -2 && embedded.parentBannerTop <= 8, JSON.stringify(embedded));
+    assert.ok(embedded.parentTitleTop > embedded.parentBannerTop + 40, JSON.stringify(embedded));
     ws.close();
   } finally {
     child.kill();
