@@ -691,8 +691,10 @@
     $('phiInsured').hidden = formMedicalSelf() || !hasCode('medical');
     var phiField = $('phiStep');
     if (phiField) {
-      if (formMedicalSelf()) $('selfMedicalStep').appendChild(phiField);
-      else if (checkedRadio('phi') === 'yes') $('phiLess').appendChild(phiField);
+      var phiHome = null;
+      if (formMedicalSelf()) phiHome = $('selfMedicalStep');
+      else if (checkedRadio('phi') === 'yes') phiHome = $('phiLess');
+      if (phiHome && phiField.parentNode !== phiHome) phiHome.appendChild(phiField);
     }
     if ($('phiLess')) $('phiLess').hidden = checkedRadio('phi') !== 'yes' || formMedicalSelf();
     $('trusteeWrap').hidden = checkedRadio('trust') !== 'yes';
@@ -1096,7 +1098,7 @@
     bits[0] += '.';
     return {
       employer: bits[0],
-      spd: 'Give this to every covered employee, with each insurance certificate behind it.',
+      spd: 'Give this to every covered employee, with each certificate. Electronic delivery works under the DOL rules, such as posting it in a benefits system like Ease or Employee Navigator, or by email. Tell employees where to find it and that a free paper copy is available on request. Printing and handing out paper is optional.',
       guide: 'What to do next, with your dates and deadlines.'
     };
   }
@@ -1106,7 +1108,7 @@
     list.textContent = '';
     [
       'Review and sign. Who signs: ' + plan.signer_name + ', ' + plan.signer_title + '.',
-      'Give the summary plan description and certificates to covered employees as soon as the plan is signed.',
+      'Give the summary plan description and certificates to covered employees as soon as the plan is signed. Electronic delivery works under the DOL rules. Tell them where to find it, and that a free paper copy is available on request. Paper is optional.',
       'Put the dates from your guide on your calendar.'
     ].forEach(function (text) {
       var item = document.createElement('li');

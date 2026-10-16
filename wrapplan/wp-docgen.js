@@ -441,7 +441,8 @@ var WpDocgen = (function () {
     addSection(rows, 'About this summary', [
       'This summary plan description tells you, in ordinary language, how the plan is set up and where to find the rules for each benefit. It is written for participants and beneficiaries. The wrap plan document and the certificates are the controlling documents. If this summary and a certificate disagree about a covered service, the certificate controls. If they disagree about the name of the plan, the sponsor, the administrator, or the plan year, the wrap controls.',
       effectiveSentence(plan),
-      'Read this summary with the certificate for each benefit you have. The certificate states what is covered, what is excluded, and what you pay at the point of care. This summary does not list every exclusion.'
+      'Read this summary with the certificate for each benefit you have. The certificate states what is covered, what is excluded, and what you pay at the point of care. This summary does not list every exclusion.',
+      'The employer may give you this summary and your certificates electronically under the DOL rules. That includes posting them in a benefits system such as Ease or Employee Navigator, or sending them by email. The employer will tell you where to find them. You may ask for a free paper copy. Printing and handing out paper is optional when electronic delivery is used.'
     ]);
     addSection(rows, 'Plan identity', [
       'Plan sponsor: ' + plan.employer_name + '. EIN ' + plan.employer_ein + '. Address: ' + plan.address + '.' + (phoneText(plan) ? ' Phone: ' + phoneText(plan) + '.' : ''),
@@ -747,7 +748,7 @@ var WpDocgen = (function () {
     guideSection(rows, 'What you have', [
       'ERISA requires a written plan document for your employee benefits and a summary plan description (SPD) for your employees. Insurance certificates alone usually do not meet those rules. A wrap plan document ties your benefits into one written plan and fills in what the certificates leave out. You have two files to use and this guide.',
       'Plan documents to sign and keep. This is the official plan. Keep it with your records.',
-      'Summary plan description for employees. Give it to each covered employee with their certificates.'
+      'Summary plan description for employees. Give it to each covered employee with their certificates. Electronic delivery works under the DOL rules, including a benefits system such as Ease or Employee Navigator, or email. Tell employees where to find it, and that a free paper copy is available on request. Paper is optional when you deliver it electronically.'
     ]);
     var glance = [
       'Plan: ' + plan.plan_name + ', plan number ' + plan.plan_number + '.',
@@ -805,7 +806,7 @@ var WpDocgen = (function () {
     if (plan.is_restatement === 'yes') checks.push('Keep the old document. The new one replaces it from ' + when + '.');
     checks.push('Step 4. Build the employee packet. For each covered employee, use the SPD, then the certificates for the benefits that employee has, in the order on the SPD\'s last page. One PDF per benefit set, or a shared folder link, both work.');
     var who = 'every covered employee' + (plan.cobra === 'yes' ? ', plus anyone on COBRA' : '');
-    checks.push('Step 5. Give it to employees. Who: ' + who + '. When: as soon as the plan is signed, then each new person within 90 days after coverage starts. How, pick one per person: hand it to them at work; mail it first class to their home; or email it if they use a computer as part of their job, and for anyone else only after they agree in writing. Tell everyone they can ask for a free paper copy. Record delivery in the log.');
+    checks.push('Step 5. Give it to employees. Who: ' + who + '. When: as soon as the plan is signed, then each new person within 90 days after coverage starts. Electronic delivery works under the DOL rules. Post the summary and the certificates in a benefits system such as Ease or Employee Navigator, or send them by email. Tell each employee where to find them, and that a free paper copy is available on request. Printing and handing out paper is optional when electronic delivery is used. You can still hand a copy out at work or mail it. Record each delivery in the log.');
     checks.push('Step 6. Keep your records. Keep the signed documents, the certificates in force each year, and the delivery log, for at least six years. At each renewal, add the new certificates and keep the old ones.');
     rows.push(guideHeading('Put your plan in place'));
     checks.forEach(function (text) { rows.push(guideCheck(text)); });
@@ -825,11 +826,11 @@ var WpDocgen = (function () {
       'Optional employee receipt: I received the Summary Plan Description for the ' + plan.plan_name + ' on ________. Signature ________.'
     ]);
     rows.push(guideHeading('Delivery log', { pageBreak: true }));
-    rows.push(guideBody('Write one line each time you give an employee the summary and the certificates.'));
+    rows.push(guideBody('Write one line each time you give an employee the summary and the certificates. A benefits system or an email counts. Note the method and where the employee was told to look.'));
     rows.push({
-      columns: ['Employee', 'Delivered by (hand, mail, email)', 'Date', 'Address or email used', 'Notes'],
+      columns: ['Employee', 'Method (system, email, mail, or hand)', 'Date', 'Where it was sent or posted', 'Notes'],
       blankRows: 15,
-      widths: [1800, 2300, 1200, 2796, 1840]
+      widths: [1600, 2500, 1100, 2896, 1840]
     });
     rows.push(guideBody('Print more copies of this page as needed.'));
     guideSection(rows, 'Need help?', [WpModel.helpOffer(plan)]);
