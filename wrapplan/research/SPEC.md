@@ -90,7 +90,8 @@ Mirror the Section 125 folder. New code lives in `wrapplan/` with a `wp-` prefix
 
 | Path | Role |
 | --- | --- |
-| `wrapplan/index.html` | The tool page. Labels, one-line hints, and three closed "How do I know?" expanders. No hover tips. |
+| `wrapplan/index.html` | The tool page. Labels, one-line hints, three closed "How do I know?" expanders, and (i) notes that open on click. |
+| `wrapplan/wp-tips.js` | Plain-English text for those (i) notes. |
 | `wrapplan/wrapplan.js` | Wizard, downloads, and the lead post |
 | `wrapplan/embed.html` | Wix shim. Iframes the GitHub Pages URL and forwards messages |
 | `wrapplan/wrapplan.css` | Layout, mobile first |

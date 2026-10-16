@@ -113,12 +113,118 @@
     err.setAttribute('role', 'alert');
     parent.appendChild(err);
   }
-  function addInput(parent, id, labelText) {
+  var openTipBtn = null;
+  function infoButton(tipId) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'info';
+    btn.textContent = 'i';
+    btn.setAttribute('data-tip', tipId);
+    btn.setAttribute('aria-label', 'More information');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.setAttribute('aria-controls', 'tipPopover');
+    btn.addEventListener('click', function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleTip(btn);
+    });
+    return btn;
+  }
+  function ensurePopover() {
+    var pop = $('tipPopover');
+    if (pop) return pop;
+    pop = document.createElement('div');
+    pop.id = 'tipPopover';
+    pop.className = 'tip-pop';
+    pop.setAttribute('role', 'dialog');
+    pop.hidden = true;
+    var text = document.createElement('p');
+    text.id = 'tipBody';
+    pop.appendChild(text);
+    document.body.appendChild(pop);
+    return pop;
+  }
+  function closeTip() {
+    var pop = $('tipPopover');
+    if (pop) pop.hidden = true;
+    if (openTipBtn) {
+      openTipBtn.setAttribute('aria-expanded', 'false');
+      openTipBtn.removeAttribute('aria-describedby');
+      openTipBtn = null;
+    }
+  }
+  function placeTip(btn) {
+    var pop = $('tipPopover');
+    var rect = btn.getBoundingClientRect();
+    var width = Math.min(300, window.innerWidth - 16);
+    pop.style.width = width + 'px';
+    var left = rect.left;
+    if (left + width > window.innerWidth - 8) left = window.innerWidth - 8 - width;
+    if (left < 8) left = 8;
+    var top = rect.bottom + 6;
+    pop.style.left = left + 'px';
+    pop.style.top = top + 'px';
+    var box = pop.getBoundingClientRect();
+    var phone = window.innerWidth < 720;
+    if (!phone && box.bottom > window.innerHeight - 8) {
+      var above = rect.top - box.height - 6;
+      if (above >= 8) pop.style.top = above + 'px';
+    }
+    box = pop.getBoundingClientRect();
+    if (box.bottom > window.innerHeight - 8) {
+      var fitted = Math.max(rect.bottom + 6, window.innerHeight - box.height - 8);
+      if (phone) fitted = Math.min(fitted, window.innerHeight - box.height - 8);
+      pop.style.top = Math.max(8, fitted) + 'px';
+    }
+  }
+  function toggleTip(btn) {
+    var pop = ensurePopover();
+    if (openTipBtn === btn && !pop.hidden) {
+      closeTip();
+      return;
+    }
+    closeTip();
+    $('tipBody').textContent = (window.WpTips && WpTips.text(btn.getAttribute('data-tip'))) || '';
+    pop.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    btn.setAttribute('aria-describedby', 'tipBody');
+    openTipBtn = btn;
+    placeTip(btn);
+  }
+  function mountTips() {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-tip]'), function (el) {
+      if (el.classList.contains('info')) return;
+      if (el.querySelector('.info')) return;
+      el.appendChild(infoButton(el.getAttribute('data-tip')));
+    });
+  }
+  function questionLabel(text, tipId) {
+    var p = document.createElement('p');
+    p.className = 'q-label';
+    p.appendChild(document.createTextNode(text));
+    if (tipId) p.appendChild(infoButton(tipId));
+    return p;
+  }
+  function segment(name, value, title) {
+    var label = document.createElement('label');
+    label.className = 'segment-item';
+    var input = document.createElement('input');
+    input.type = 'radio';
+    input.name = name;
+    input.value = value;
+    var text = document.createElement('span');
+    text.textContent = title;
+    label.appendChild(input);
+    label.appendChild(text);
+    return label;
+  }
+  function addInput(parent, id, labelText, tipId) {
     var wrap = document.createElement('div');
     wrap.className = 'field';
     var lab = document.createElement('label');
     lab.htmlFor = id;
-    lab.textContent = labelText;
+    lab.appendChild(document.createTextNode(labelText));
+    if (tipId) lab.appendChild(infoButton(tipId));
     var input = document.createElement('input');
     input.type = 'text';
     input.id = id;
@@ -352,6 +458,7 @@
     boxLabel.appendChild(document.createTextNode(' ' + label));
     item.appendChild(boxLabel);
     if (code === 'lpfsa') {
+      item.classList.add('has-note');
       var note = document.createElement('p');
       note.className = 'hint benefit-note';
       note.textContent = 'Covers dental and vision expenses, and preventive care if the plan allows, so it stays compatible with a health savings account.';
@@ -365,13 +472,59 @@
     item.appendChild(panel);
     return item;
   }
+  function paySegment(panel, code) {
+    var row = document.createElement('div');
+    row.className = 'pay-row';
+    row.appendChild(questionLabel('Who pays?', 'who_pays'));
+    var pays = document.createElement('div');
+    pays.className = 'segment';
+    pays.setAttribute('role', 'radiogroup');
+    pays.setAttribute('aria-label', 'Who pays?');
+    var taxDefault = WpModel.PRETAC_TAX[code] ? 'pretax' : (WpModel.EMPLOYER_TAX[code] ? 'none' : '');
+    [
+      ['none', 'Employer pays all'],
+      ['pretax', 'Pre-tax'],
+      ['aftertax', 'After tax']
+    ].forEach(function (option) {
+      var node = segment('tax_' + code, option[0], option[1]);
+      if (taxDefault && option[0] === taxDefault) node.querySelector('input').checked = true;
+      pays.appendChild(node);
+    });
+    row.appendChild(pays);
+    panel.appendChild(row);
+    fieldError(panel, 'err_tax_' + code);
+  }
+  function selfBox(panel, code) {
+    var self = document.createElement('label');
+    self.className = 'check-line';
+    var selfInput = document.createElement('input');
+    selfInput.type = 'checkbox';
+    selfInput.id = 'self_' + code;
+    self.appendChild(selfInput);
+    self.appendChild(document.createTextNode(' Self-funded?'));
+    self.appendChild(infoButton('self_funded'));
+    panel.appendChild(self);
+  }
   function fillPanel(panel, code) {
-    addInput(panel, 'carrier_' + code, 'Insurance company or administrator');
-    fieldError(panel, 'err_carrier_' + code);
+    var top = document.createElement('div');
+    top.className = 'pair-fields';
+    addInput(top, 'carrier_' + code, 'Insurance company or administrator');
+    fieldError(top, 'err_carrier_' + code);
+    if (code === 'medical' || code === 'dental' || code === 'vision' || code === 'eap') {
+      var addr = addInput(top, 'carrier_address_' + code, 'Insurer mailing address (optional)');
+      var hint = document.createElement('p');
+      hint.className = 'hint';
+      hint.textContent = 'On your certificate. Leave blank to fill in later.';
+      addr.parentNode.appendChild(hint);
+      if (code === 'eap') addr.parentNode.id = 'eapAddressWrap';
+    }
+    panel.appendChild(top);
     if (code === 'hra') {
       var fixed = document.createElement('p');
+      fixed.className = 'q-label';
       fixed.textContent = 'Employer paid';
       panel.appendChild(fixed);
+      panel.appendChild(questionLabel('HRA type', 'hra_type'));
       var types = document.createElement('div');
       types.id = 'hra_type_group';
       types.className = 'choices';
@@ -395,31 +548,10 @@
       panel.appendChild(ichra);
       return;
     }
-    var pays = document.createElement('div');
-    pays.className = 'choices';
-    var taxDefault = WpModel.PRETAC_TAX[code] ? 'pretax' : (WpModel.EMPLOYER_TAX[code] ? 'none' : '');
-    [
-      ['none', 'Employer pays all', ''],
-      ['pretax', 'Employees pay some or all, pre-tax', ''],
-      ['aftertax', 'Employees pay some or all, after tax', '']
-    ].forEach(function (option) {
-      var node = choice('tax_' + code, option[0], option[1], option[2]);
-      if (taxDefault && option[0] === taxDefault) node.querySelector('input').checked = true;
-      pays.appendChild(node);
-    });
-    panel.appendChild(pays);
-    fieldError(panel, 'err_tax_' + code);
-    if (SELF_BOX[code]) {
-      var self = document.createElement('label');
-      self.className = 'check-line';
-      var selfBox = document.createElement('input');
-      selfBox.type = 'checkbox';
-      selfBox.id = 'self_' + code;
-      self.appendChild(selfBox);
-      self.appendChild(document.createTextNode(' Self-funded?'));
-      panel.appendChild(self);
-    }
+    paySegment(panel, code);
+    if (SELF_BOX[code]) selfBox(panel, code);
     if (code === 'medical') {
+      panel.appendChild(questionLabel('How is medical funded?', 'funding'));
       var funding = document.createElement('div');
       funding.className = 'choices';
       funding.id = 'fundingChoices';
@@ -441,11 +573,12 @@
       selfWrap.hidden = true;
       addInput(selfWrap, 'tpa_name', 'TPA name');
       fieldError(selfWrap, 'err_tpa_name');
-      addInput(selfWrap, 'tpa_document', 'TPA plan document or SPD name');
+      addInput(selfWrap, 'tpa_document', 'TPA plan document or SPD name', 'tpa_document');
       fieldError(selfWrap, 'err_tpa_document');
+      selfWrap.appendChild(questionLabel('Stop-loss', 'stop_loss'));
       var stop = document.createElement('div');
       stop.className = 'choices';
-      [['yes', 'Stop-loss: Yes', ''], ['no', 'Stop-loss: No', '']].forEach(function (option) { stop.appendChild(choice('stop_loss', option[0], option[1], option[2])); });
+      [['yes', 'Yes', ''], ['no', 'No', '']].forEach(function (option) { stop.appendChild(choice('stop_loss', option[0], option[1], option[2])); });
       selfWrap.appendChild(stop);
       fieldError(selfWrap, 'err_stop_loss');
       var network = document.createElement('div');
@@ -456,15 +589,8 @@
       selfWrap.appendChild(network);
       panel.appendChild(selfWrap);
     }
-    if (code === 'medical' || code === 'dental' || code === 'vision' || code === 'eap') {
-      var addr = addInput(panel, 'carrier_address_' + code, 'Insurer mailing address (optional)');
-      var hint = document.createElement('p');
-      hint.className = 'hint';
-      hint.textContent = 'On your certificate. Leave blank to fill in later.';
-      addr.parentNode.appendChild(hint);
-      if (code === 'eap') addr.parentNode.id = 'eapAddressWrap';
-    }
     if (code === 'eap') {
+      panel.appendChild(questionLabel('What does the EAP provide?', 'eap_type'));
       var eap = document.createElement('div');
       eap.className = 'choices';
       [['substantive', 'Counseling sessions', ''], ['referral', 'Only referrals', '']].forEach(function (option) {
@@ -474,6 +600,7 @@
       fieldError(panel, 'err_eap_type');
     }
     if (code === 'std') {
+      panel.appendChild(questionLabel('How is short-term disability paid?', 'std_type'));
       var std = document.createElement('div');
       std.className = 'choices';
       [
@@ -526,7 +653,17 @@
     selectedBenefits();
     BENEFITS.forEach(function (pair) {
       var panel = $('panel_' + pair[0]);
-      if (panel) panel.hidden = !hasCode(pair[0]);
+      if (panel) {
+        panel.hidden = !hasCode(pair[0]);
+        if (panel.parentNode) {
+          var open = !!hasCode(pair[0]);
+          var wide = pair[0] === 'medical' || pair[0] === 'hra' || pair[0] === 'eap' || pair[0] === 'std';
+          var side = pair[0] === 'dental' || pair[0] === 'vision';
+          panel.parentNode.classList.toggle('is-open', open);
+          panel.parentNode.classList.toggle('is-wide', open && wide);
+          panel.parentNode.classList.toggle('is-line', open && !wide && !side);
+        }
+      }
       var over = $('waitover_' + pair[0]);
       if (over) over.hidden = !hasCode(pair[0]) || $('waitingOverrides').hidden;
     });
@@ -907,6 +1044,17 @@
   }
   document.addEventListener('input', onInput);
   document.addEventListener('change', onInput);
+  document.addEventListener('click', function (event) {
+    if (!openTipBtn) return;
+    if (openTipBtn.contains(event.target)) return;
+    var pop = $('tipPopover');
+    if (pop && pop.contains(event.target)) return;
+    closeTip();
+  });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') closeTip();
+  });
+  window.addEventListener('resize', function () { if (openTipBtn) placeTip(openTipBtn); });
   $('nextBtn').addEventListener('click', goNext);
   $('backBtn').addEventListener('click', function () { if (step > 0) showStep(step - 1); });
   $('buildBtn').addEventListener('click', function (event) { event.preventDefault(); build(); });
@@ -922,6 +1070,8 @@
   });
   mountStatic();
   mountBenefits();
+  mountTips();
+  ensurePopover();
   paintEffective();
   sync();
   showStep(0);

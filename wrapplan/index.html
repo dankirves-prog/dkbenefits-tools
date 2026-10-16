@@ -54,7 +54,7 @@
         <h2>Your company</h2>
         <div class="field"><label for="employer_name">Legal business name</label><input id="employer_name" type="text" autocomplete="organization"><p class="field-error" id="err_employer_name" role="alert"></p></div>
         <div class="pair">
-          <div class="field"><label for="employer_ein">EIN</label><input id="employer_ein" type="text" inputmode="numeric" maxlength="10" autocomplete="off"><p class="field-error" id="err_employer_ein" role="alert"></p></div>
+          <div class="field"><label for="employer_ein" data-tip="ein">EIN</label><input id="employer_ein" type="text" inputmode="numeric" maxlength="10" autocomplete="off"><p class="field-error" id="err_employer_ein" role="alert"></p></div>
           <div class="field"><label for="phone">Business phone</label><input id="phone" type="tel" inputmode="tel" maxlength="12" autocomplete="tel"><p class="hint">Printed in the plan as the administrator's phone.</p><p class="field-error" id="err_phone" role="alert"></p></div>
         </div>
         <div class="field"><label for="street">Street</label><input id="street" type="text" autocomplete="address-line1"></div>
@@ -64,31 +64,31 @@
           <div class="field"><label for="zip">ZIP</label><input id="zip" type="text" inputmode="numeric" maxlength="5" autocomplete="postal-code"></div>
         </div>
         <p class="field-error" id="err_address" role="alert"></p>
-        <div class="field"><label for="business_type">Business type</label><select id="business_type"></select><p class="field-error" id="err_business_type" role="alert"></p></div>
+        <div class="field"><label for="business_type" data-tip="business_type">Business type</label><select id="business_type"></select><p class="field-error" id="err_business_type" role="alert"></p></div>
       </section>
 
       <section class="card" data-step="2" hidden>
         <h2>Your plan</h2>
-        <div class="field"><label for="plan_year_start_month">What month does your plan year start?</label><select id="plan_year_start_month"></select><p class="hint">Usually the month your medical plan renews.</p><p class="field-error" id="err_plan_year_start_month" role="alert"></p></div>
+        <div class="field"><label for="plan_year_start_month" data-tip="plan_year">What month does your plan year start?</label><select id="plan_year_start_month"></select><p class="hint">Usually the month your medical plan renews.</p><p class="field-error" id="err_plan_year_start_month" role="alert"></p></div>
         <fieldset class="plain">
-          <legend>Is this your first wrap plan document?</legend>
+          <legend data-tip="first_wrap">Is this your first wrap plan document?</legend>
           <div class="choices" id="firstWrapChoices"></div>
           <p class="field-error" id="err_first_wrap" role="alert"></p>
         </fieldset>
         <div class="field" id="originalWrap" hidden><label for="original_effective_date">When did your benefits plan first start?</label><input id="original_effective_date" type="text" inputmode="numeric" maxlength="10" placeholder="MM/DD/YYYY" autocomplete="off"><p class="field-error" id="err_original_effective_date" role="alert"></p></div>
         <fieldset class="plain">
-          <legend>When should this document take effect?</legend>
+          <legend data-tip="effective">When should this document take effect?</legend>
           <div class="choices" id="effectiveChoices"></div>
           <p class="hint">Most employers use the start of the current plan year.</p>
           <p class="field-error" id="err_wrap_effective_date" role="alert"></p>
         </fieldset>
         <div class="field" id="otherDateWrap" hidden><label for="wrap_effective_date">Effective date</label><input id="wrap_effective_date" type="text" inputmode="numeric" maxlength="10" placeholder="MM/DD/YYYY" autocomplete="off"></div>
-        <p class="plan-line" id="planDefault">Plan name: <span id="planDefaultText"></span> <button type="button" class="text-link" id="planChange">Change</button></p>
+        <p class="plan-line" id="planDefault"><span class="label-line" data-tip="plan_name">Plan name:</span> <span id="planDefaultText"></span> <button type="button" class="text-link" id="planChange">Change</button></p>
         <div id="planCustom" hidden>
           <div class="field"><label for="plan_name">Plan name</label><input id="plan_name" type="text"></div>
           <div class="field"><label for="plan_number">Plan number</label><input id="plan_number" type="text" value="501" inputmode="numeric" maxlength="3"><p class="field-error" id="err_plan_number" role="alert"></p></div>
         </div>
-        <div class="field"><label for="employee_count">Most employees you had at one time last year</label><input id="employee_count" type="text" inputmode="numeric"><p class="hint">Include part-time employees and any related companies you own.</p><p class="field-error" id="err_employee_count" role="alert"></p></div>
+        <div class="field"><label for="employee_count" data-tip="employee_count">Most employees you had at one time last year</label><input id="employee_count" type="text" inputmode="numeric"><p class="hint">Include part-time employees and any related companies you own.</p><p class="field-error" id="err_employee_count" role="alert"></p></div>
       </section>
 
       <section class="card" data-step="3" hidden>
@@ -100,7 +100,7 @@
         </div>
         <div id="volAsk" hidden>
           <fieldset class="plain">
-            <legend>Include these voluntary benefits in the plan?</legend>
+            <legend data-tip="vol_include">Include these voluntary benefits in the plan?</legend>
             <div class="choices" id="volIncludeChoices"></div>
           </fieldset>
           <p class="field-error" id="err_vol_include" role="alert"></p>
@@ -110,10 +110,10 @@
 
       <section class="card" data-step="4" hidden>
         <h2>Who is eligible</h2>
-        <div class="field"><label for="classes">Eligible employees</label><input id="classes" type="text" value="All full-time employees"></div>
+        <div class="field"><label for="classes" data-tip="classes">Eligible employees</label><input id="classes" type="text" value="All full-time employees"></div>
         <div class="field"><label for="hours">Minimum hours</label><input id="hours" type="text" value="30 hours a week"></div>
         <div class="field"><label for="dependents">Dependents you cover</label><input id="dependents" type="text" value="Spouse and children to age 26"></div>
-        <div class="field"><label for="waiting_period">Waiting period</label><select id="waiting_period"></select><p class="hint">Group health coverage must start by the 91st day.</p><p class="field-error" id="err_waiting_period" role="alert"></p><p class="field-error" id="err_waiting_other" role="alert"></p></div>
+        <div class="field"><label for="waiting_period" data-tip="waiting_period">Waiting period</label><select id="waiting_period"></select><p class="hint">Group health coverage must start by the 91st day.</p><p class="field-error" id="err_waiting_period" role="alert"></p><p class="field-error" id="err_waiting_other" role="alert"></p></div>
         <div class="field" id="waitingOtherWrap" hidden><label for="waiting_other">Describe the waiting period</label><input id="waiting_other" type="text"></div>
         <button type="button" class="text-link" id="waitingOverrideLink">Use a different waiting period for a benefit</button>
         <div id="waitingOverrides" hidden></div>
@@ -121,11 +121,11 @@
 
       <section class="card" data-step="5" hidden>
         <h2>Plan size and COBRA</h2>
-        <div class="field"><label for="census_a">How many people are covered by at least one of these benefits today?</label><input id="census_a" type="text" inputmode="numeric"><p class="hint">Count each person once. Include COBRA and retirees. Not spouses or children.</p><p class="context" id="autoCoverNote" hidden></p><p class="field-error" id="err_census_a" role="alert"></p></div>
+        <div class="field"><label for="census_a" data-tip="census">How many people are covered by at least one of these benefits today?</label><input id="census_a" type="text" inputmode="numeric"><p class="hint">Count each person once. Include COBRA and retirees. Not spouses or children.</p><p class="context" id="autoCoverNote" hidden></p><p class="field-error" id="err_census_a" role="alert"></p></div>
         <details class="how"><summary>How do I know?</summary><p>Count each current employee who is enrolled in, or automatically covered by, any benefit you checked. Add employees who only put money in an FSA, former employees on COBRA, and retirees who are still covered. Count each person once.</p></details>
         <div id="section125Wrap" hidden>
           <fieldset class="plain">
-            <legend>Do you have a signed Section 125 plan document? (Also called a premium-only plan or cafeteria plan.)</legend>
+            <legend data-tip="section125">Do you have a signed Section 125 plan document? (Also called a premium-only plan or cafeteria plan.)</legend>
             <div class="choices" id="section125Choices"></div>
           </fieldset>
           <p class="note" id="section125Note" hidden>Pre-tax payroll deductions need one. <a href="https://dkbenefits.net/section125plantool">Build it free with our Section 125 tool.</a></p>
@@ -133,7 +133,7 @@
         </div>
         <div id="cobraWrap" hidden>
           <fieldset class="plain">
-            <legend>Last year, did you have 20 or more employees on more than half of your business days?</legend>
+            <legend data-tip="cobra">Last year, did you have 20 or more employees on more than half of your business days?</legend>
             <div class="choices" id="cobraChoices"></div>
           </fieldset>
           <details class="how"><summary>How do I know?</summary><p>Count each full-time employee as 1. Count a part-time employee as their weekly hours divided by your full-time hours, for example 20 / 40 = 0.5. Include related companies you own. If the total was 20 or more on more than half of your business days, answer Yes.</p></details>
@@ -141,7 +141,7 @@
         </div>
         <div id="cobraWhoWrap" hidden>
           <fieldset class="plain">
-            <legend>Who sends COBRA notices?</legend>
+            <legend data-tip="cobra_who">Who sends COBRA notices?</legend>
             <div class="choices" id="cobraWhoChoices"></div>
           </fieldset>
           <div class="field" id="cobraAdminWrap" hidden><label for="cobra_admin">COBRA administrator name</label><input id="cobra_admin" type="text"></div>
@@ -149,11 +149,11 @@
         </div>
         <div id="selfMedicalStep" hidden>
           <fieldset class="plain">
-            <legend>Who decides the final medical appeal?</legend>
+            <legend data-tip="appeals">Who decides the final medical appeal?</legend>
             <div class="choices" id="appealChoices"></div>
             <p class="hint">Check your TPA agreement.</p>
           </fieldset>
-          <div class="field" id="phiStep"><label for="phi_classes">Which job titles may see employee health information to run the plan?</label><input id="phi_classes" type="text"><p class="hint">For example: benefits manager, owner.</p></div>
+          <div class="field" id="phiStep"><label for="phi_classes" data-tip="phi">Which job titles may see employee health information to run the plan?</label><input id="phi_classes" type="text"><p class="hint">For example: benefits manager, owner.</p></div>
         </div>
       </section>
 
@@ -161,23 +161,23 @@
         <h2>Sign and finish</h2>
         <div class="answer-card" id="answerCard"></div>
         <div class="pair">
-          <div class="field"><label for="signer_name">Signer name</label><input id="signer_name" type="text"><p class="field-error" id="err_signer_name" role="alert"></p></div>
+          <div class="field"><label for="signer_name" data-tip="signer">Signer name</label><input id="signer_name" type="text"><p class="field-error" id="err_signer_name" role="alert"></p></div>
           <div class="field"><label for="signer_title">Signer title</label><input id="signer_title" type="text"><p class="hint">Usually an owner or officer.</p></div>
         </div>
-        <p class="plan-line">Adopted by: <span id="adopterText"></span> <button type="button" class="text-link" id="adopterChange">Change</button></p>
+        <p class="plan-line"><span class="label-line" data-tip="business_type">Adopted by:</span> <span id="adopterText"></span> <button type="button" class="text-link" id="adopterChange">Change</button></p>
         <div class="field" id="adopterCustom" hidden><label for="governing_body">Adopted by</label><input id="governing_body" type="text"></div>
         <details id="lessCommon">
           <summary>Less common situations (most employers can skip this)</summary>
-          <fieldset class="plain"><legend>Is any plan money held in a trust?</legend><div class="choices" id="trustChoices"></div></fieldset>
+          <fieldset class="plain"><legend data-tip="trust">Is any plan money held in a trust?</legend><div class="choices" id="trustChoices"></div></fieldset>
           <div id="trusteeWrap" hidden>
             <div class="field"><label for="trustee_name">Trustee name</label><input id="trustee_name" type="text"><p class="field-error" id="err_trustee_name" role="alert"></p></div>
             <div class="field"><label for="trustee_address">Trustee address</label><input id="trustee_address" type="text"></div>
           </div>
-          <fieldset class="plain"><legend>Is any benefit under a union contract?</legend><div class="choices" id="bargainChoices"></div></fieldset>
-          <fieldset class="plain"><legend>Discretionary clause</legend><div class="choices" id="discretionChoices"></div></fieldset>
-          <fieldset class="plain"><legend>Plan administrator</legend><div class="choices" id="adminChoices"></div></fieldset>
+          <fieldset class="plain"><legend data-tip="bargaining">Is any benefit under a union contract?</legend><div class="choices" id="bargainChoices"></div></fieldset>
+          <fieldset class="plain"><legend data-tip="discretion">Discretionary clause</legend><div class="choices" id="discretionChoices"></div></fieldset>
+          <fieldset class="plain"><legend data-tip="admin">Plan administrator</legend><div class="choices" id="adminChoices"></div></fieldset>
           <div class="field" id="adminWrap" hidden><label for="admin_name">Administrator name</label><input id="admin_name" type="text"></div>
-          <fieldset class="plain"><legend>Agent for legal papers</legend><div class="choices" id="agentChoices"></div></fieldset>
+          <fieldset class="plain"><legend data-tip="agent">Agent for legal papers</legend><div class="choices" id="agentChoices"></div></fieldset>
           <div id="agentWrap" hidden>
             <div class="field"><label for="agent_name">Agent name</label><input id="agent_name" type="text"></div>
             <div class="field"><label for="agent_address">Agent address</label><input id="agent_address" type="text"></div>
@@ -221,6 +221,7 @@
   <script src="wp-docgen.js"></script>
   <script src="vendor/pdf-lib.min.js"></script>
   <script src="wp-pdf.js"></script>
+  <script src="wp-tips.js"></script>
   <script src="wrapplan.js"></script>
 </body>
 </html>

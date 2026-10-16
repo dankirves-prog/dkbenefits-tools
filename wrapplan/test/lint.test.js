@@ -6,7 +6,7 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const FILES = [
   'index.html', 'wrapplan.js', 'wrapplan.css', 'embed.html', 'config.js',
-  'wp-model.js', 'wp-docgen.js', 'wp-pdf.js', 'wp-terms.js'
+  'wp-model.js', 'wp-docgen.js', 'wp-pdf.js', 'wp-terms.js', 'wp-tips.js'
 ];
 
 test('visitor copy has no stale years or dollar amounts beyond the allowed model sentence', function () {
