@@ -89,7 +89,13 @@ test('(e) a good submit emails Dan with findings, and the visitor note waits for
   context.wpSendDueFollowUps();
   const note = context.sent[context.sent.length - 1];
   assert.notEqual(note.to, 'dan@dkbenefits.net');
+  assert.match(note.body, /Hi Alex,/);
+  assert.match(note.body, /I noticed you created your wrap plan document, and I hope it's useful for you\./);
+  assert.match(note.body, /I'm an independent employee benefits broker/);
   assert.match(note.body, /If you don't want to hear from me that's fine too just let me know\./);
+  assert.match(note.body, /Florida Agency Lic# L109331/);
+  assert.match(note.htmlBody, /<strong>Daniel Kirves<\/strong>/);
+  assert.match(note.htmlBody, /<em>Expert Guidance\. Smarter Benefits\. Better Savings\.<\/em>/);
   assert.doesNotMatch(note.body, /Thanks, Dan/);
 });
 

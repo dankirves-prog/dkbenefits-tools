@@ -189,11 +189,37 @@ test('referral-only EAP is omitted, and the plan footer is Company title | Page'
 test('check-in copy matches Dan\'s close and has no Thanks, Dan line', function () {
   const context = boot();
   const text = context.WpDocgen.followUpEmailText({ employer_name: 'Harbor' }, { contact_name: 'Alex Rivera' });
-  assert.match(text, /Since this is a free tool, it's always a good idea to have your own counsel take a quick look before you sign\./);
-  assert.match(text, /If you don't want to hear from me that's fine too just let me know\./);
-  assert.match(text, /Daniel Kirves/);
-  assert.match(text, /Agency Lic# L109331/);
+  assert.equal(text, [
+    'Hi Alex,',
+    '',
+    'I noticed you created your wrap plan document, and I hope it\'s useful for you.',
+    '',
+    'I\'m an independent employee benefits broker, and I\'d be happy to take a look at your benefits package and see if there\'s anything we can do for you. Just reply or call me at 407-476-5076.',
+    '',
+    'Since this is a free tool, it\'s always a good idea to have your own counsel take a quick look before you sign.',
+    '',
+    'If you don\'t want to hear from me that\'s fine too just let me know.',
+    '',
+    'Daniel Kirves',
+    'Benefits Broker | 20 Years Exp | DK Benefits LLC',
+    '☎ 407-476-5076 | 🌐 www.dkbenefits.net',
+    '🏢 6000 Metrowest Blvd. Suite 200, Orlando, FL 32835',
+    '💼 Expert Guidance. Smarter Benefits. Better Savings.',
+    'Florida Agency Lic# L109331',
+    'Agent License# FL: W588866 | GA: 3366904',
+    'SC: 19265263 | IL: 19265263 | TN: 3003674757'
+  ].join('\n'));
+  assert.match(context.WpDocgen.followUpEmailText({}, { contact_name: '   ' }), /^Hi there,\n/);
+  const html = context.WpDocgen.followUpEmailHtml({ employer_name: 'Harbor' }, { contact_name: 'Alex Rivera' });
+  assert.match(html, /<strong>Daniel Kirves<\/strong>/);
+  assert.match(html, /💼 <em>Expert Guidance\. Smarter Benefits\. Better Savings\.<\/em>/);
+  assert.doesNotMatch(html, /<a\s/i);
   assert.doesNotMatch(text, /Thanks, Dan/);
+  const combined = fs.readFileSync(path.join(root, 'apps-script', 'WpCombined.gs'), 'utf8');
+  assert.match(combined, /I noticed you created your wrap plan document/);
+  assert.match(combined, /Expert Guidance\. Smarter Benefits\. Better Savings\./);
+  assert.match(combined, /<strong>/);
+  assert.match(combined, /<em>/);
 });
 
 test('download labels and the page do not promise an email', function () {

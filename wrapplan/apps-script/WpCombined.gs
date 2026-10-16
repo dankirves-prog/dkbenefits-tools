@@ -1284,21 +1284,29 @@ var WpDocgen = (function () {
     return [
       first ? ('Hi ' + first + ',') : 'Hi there,',
       '',
-      'I hope the wrap document was useful.',
+      'I noticed you created your wrap plan document, and I hope it\'s useful for you.',
+      '',
+      'I\'m an independent employee benefits broker, and I\'d be happy to take a look at your benefits package and see if there\'s anything we can do for you. Just reply or call me at 407-476-5076.',
       '',
       'Since this is a free tool, it\'s always a good idea to have your own counsel take a quick look before you sign.',
       '',
       'If you don\'t want to hear from me that\'s fine too just let me know.',
       '',
       'Daniel Kirves',
-      'Benefits Broker | 20 Years Exp | DK Benefits',
-      '407-476-5076 | www.dkbenefits.net',
-      '6000 Metrowest Blvd #200 Orlando, FL 32835',
-      'Agency Lic# L109331'
+      'Benefits Broker | 20 Years Exp | DK Benefits LLC',
+      '☎ 407-476-5076 | 🌐 www.dkbenefits.net',
+      '🏢 6000 Metrowest Blvd. Suite 200, Orlando, FL 32835',
+      '💼 Expert Guidance. Smarter Benefits. Better Savings.',
+      'Florida Agency Lic# L109331',
+      'Agent License# FL: W588866 | GA: 3366904',
+      'SC: 19265263 | IL: 19265263 | TN: 3003674757'
     ].join('\n');
   }
   function followUpEmailHtml(plan, lead) {
+    var tagline = 'Expert Guidance. Smarter Benefits. Better Savings.';
     return '<div>' + followUpEmailText(plan, lead).split('\n').map(function (line) {
+      if (line === 'Daniel Kirves') return '<strong>' + xml(line) + '</strong>';
+      if (line.indexOf(tagline) !== -1) return xml(line).replace(tagline, '<em>' + tagline + '</em>');
       return xml(line);
     }).join('<br>\n') + '</div>';
   }
