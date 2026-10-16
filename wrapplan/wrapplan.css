@@ -53,6 +53,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select {
 input[type=checkbox], input[type=radio] { width: 18px; height: 18px; min-height: 0; margin: 2px 8px 0 0; flex: 0 0 auto; }
 button { font: inherit; font-weight: 700; min-height: 44px; border-radius: 8px; border: 0; cursor: pointer; }
 .info {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -71,6 +72,15 @@ button { font: inherit; font-weight: 700; min-height: 44px; border-radius: 8px; 
   font-style: italic;
   font-weight: 700;
   line-height: 1;
+}
+.info::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
 }
 .info:hover, .info:focus { background: var(--gold); color: var(--navy); outline: none; }
 .tip-pop {

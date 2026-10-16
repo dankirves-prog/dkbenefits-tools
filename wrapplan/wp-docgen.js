@@ -759,10 +759,15 @@ var WpDocgen = (function () {
     WpModel.wrappedBenefits(plan).forEach(function (code) {
       var pay = (plan.tax || {})[code];
       var payText = pay === 'pretax' ? 'employees pay part pre-tax' : pay === 'aftertax' ? 'employees pay part after tax' : 'employer paid';
+      if (code === 'health_fsa' || code === 'lpfsa') payText = 'employees contribute pre-tax';
       var fund = code === 'medical' ? WpModel.fundingLabel(plan.funding || 'insured').toLowerCase() : (WpModel.benefitIsInsured(plan, code) ? 'fully insured' : 'self-funded');
-      if (code === 'hra' || code === 'health_fsa' || code === 'lpfsa') fund = 'general assets';
+      if (code === 'hra' || code === 'health_fsa' || code === 'lpfsa') fund = 'paid by the company';
       glance.push(WpModel.benefitLabel(code) + ', ' + carrier(plan, code) + ', ' + fund + ', ' + payText + '.');
     });
+    var effectIso = plan.is_restatement === 'yes' ? plan.restatement_date : plan.original_effective_date;
+    if (WpModel.dateBeforeToday(effectIso)) {
+      glance.push('Your plan takes effect before you sign. That is normal when you put an existing plan in writing.');
+    }
     glance.push('Plan administrator: ' + adminName(plan) + (phone ? ', ' + phone : '') + '.');
     glance.push('Covered people: ' + count + '.');
     glance.push(filing.code === 'required' ? 'Form 5500: Required. See the calendar.' : 'Form 5500: Not required this year.');
@@ -785,16 +790,17 @@ var WpDocgen = (function () {
     if (WpModel.anyPretax(plan) && plan.section125 !== 'yes') {
       checks.push('Your employees pay some premiums pre-tax. That needs a signed Section 125 plan document. Build one free at dkbenefits.net/section125plantool, and sign it before you sign this plan.');
     }
-    WpModel.wrappedBenefits(plan).forEach(function (code) {
-      var addr = plan.carrier_addresses && plan.carrier_addresses[code];
-      if (!addr && WpModel.needsCarrierAddress(plan, code)) {
-        checks.push('Fill in the ' + WpModel.benefitLabel(code) + ' insurer address. Copy it from your certificate.');
-      }
-    });
-    if (plan.phi === 'yes' && !plan.phi_classes) checks.push('Fill in the job titles that may see employee health information.');
+    var addressLine = WpModel.missingAddressGuideLine(plan);
+    if (addressLine) checks.push(addressLine);
+    var phiLine = WpModel.missingPhiGuideLine(plan);
+    if (phiLine) checks.push(phiLine);
     checks.push('Since this is a free tool, it\'s a good idea to have your own counsel take a quick look before you sign.');
-    var signer = (plan.signer_name || 'The signer') + (plan.signer_title ? ', ' + plan.signer_title : '');
-    checks.push('Step 3. Sign. ' + signer + ' signs the adoption resolution, the wrap signature page' + (plan.phi === 'yes' ? ', and the HIPAA certification' : '') + '. Date each signature with the day you actually sign. Do not backdate. The resolution states the effective date of ' + when + '. Electronic signatures are fine.');
+    var signerName = plan.signer_name || 'The signer';
+    var signerBit = plan.signer_title ? signerName + ', ' + plan.signer_title + ',' : signerName;
+    var signDocs = plan.phi === 'yes'
+      ? 'the adoption resolution, the wrap signature page, and the HIPAA certification'
+      : 'the adoption resolution and the wrap signature page';
+    checks.push('Step 3. Sign. ' + signerBit + ' signs ' + signDocs + '. Date each signature with the day you actually sign. Do not backdate. The resolution states the effective date of ' + when + '. Electronic signatures are fine.');
     if (plan.is_restatement === 'yes') checks.push('Keep the old document. The new one replaces it from ' + when + '.');
     checks.push('Step 4. Build the employee packet. For each covered employee, use the SPD, then the certificates for the benefits that employee has, in the order on the SPD\'s last page. One PDF per benefit set, or a shared folder link, both work.');
     var who = 'every covered employee' + (plan.cobra === 'yes' ? ', plus anyone on COBRA' : '');
@@ -811,10 +817,10 @@ var WpDocgen = (function () {
     cal.hire.forEach(function (text) { rows.push(guideBody(text)); });
     rows.push(guideSubhead('When something changes'));
     cal.changes.forEach(function (text) { rows.push(guideBody(text)); });
-    var first = String(plan.contact_name || plan.signer_name || '').trim().split(/\s+/)[0] || 'there';
+    var signerClose = (plan.signer_name || '') + (plan.signer_title ? ', ' + plan.signer_title : '');
     guideSection(rows, 'Templates', [
       'Email subject: Your ' + plan.employer_name + ' benefits plan summary.',
-      'Hi ' + first + ', Attached is the Summary Plan Description for the ' + plan.plan_name + ', with the certificate for each benefit you have. It explains who is eligible, how to file a claim, and your rights under federal law. Please keep it with your records. If you would like a paper copy, let me know and I will get you one at no cost. ' + (plan.signer_name || '') + (plan.signer_title ? ', ' + plan.signer_title : '') + '.',
+      'Hi [employee name], Attached is the Summary Plan Description for the ' + plan.plan_name + ', with the certificate for each benefit you have. It explains who is eligible, how to file a claim, and your rights under federal law. Please keep it with your records. If you would like a paper copy, let me know and I will get you one at no cost. ' + signerClose + '.',
       'Optional employee receipt: I received the Summary Plan Description for the ' + plan.plan_name + ' on ________. Signature ________.'
     ]);
     rows.push(guideHeading('Delivery log', { pageBreak: true }));
@@ -824,6 +830,7 @@ var WpDocgen = (function () {
       blankRows: 15,
       widths: [1800, 2300, 1200, 2796, 1840]
     });
+    rows.push(guideBody('Print more copies of this page as needed.'));
     guideSection(rows, 'Need help?', [WpModel.helpOffer(plan)]);
     return rows;
   }
@@ -934,6 +941,9 @@ var WpDocgen = (function () {
       '<w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>1</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r>';
   }
   function footerXml(label, mode) {
+    if (mode === 'none') {
+      return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr xmlns:w="' + W + '"><w:p/></w:ftr>';
+    }
     var name = xml(label || '');
     var total = mode === 'section' ? 'SECTIONPAGES' : 'NUMPAGES';
     var pageOnly = mode === 'page';
@@ -1104,7 +1114,7 @@ var WpDocgen = (function () {
       { name: 'word/styles.xml', text: stylesXml() }
     ];
     sections.forEach(function (section, index) {
-      files.push({ name: 'word/footer' + (index + 1) + '.xml', text: footerXml(section.footer || '', 'page') });
+      files.push({ name: 'word/footer' + (index + 1) + '.xml', text: footerXml(section.pageNumbers === false ? '' : (section.footer || ''), section.pageNumbers === false ? 'none' : 'page') });
     });
     files.push({ name: 'word/_rels/document.xml.rels', text: packetRels(sections.length) });
     return zipStore(files);

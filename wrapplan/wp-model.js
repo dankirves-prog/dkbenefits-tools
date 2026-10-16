@@ -533,14 +533,68 @@ var WpModel = (function () {
     return end === 12 ? 1 : end + 1;
   }
   function monthDayAfterStart(plan, days) {
+    var lengths = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
     var month = startMonthOf(plan);
-    var day = 1 + days;
-    while (day > lastDay(month)) {
-      day -= lastDay(month);
-      month += 1;
-      if (month > 12) month = 1;
+    var day = 1;
+    var left = Math.max(0, days - 1);
+    while (left > 0) {
+      var room = lengths[month] - day;
+      if (left <= room) {
+        day += left;
+        left = 0;
+      } else {
+        left -= room + 1;
+        day = 1;
+        month += 1;
+        if (month > 12) month = 1;
+      }
     }
-    return monthName(month) + ' ' + day;
+    return { month: month, day: day, label: monthName(month) + ' ' + day };
+  }
+  function englishList(items) {
+    if (!items.length) return '';
+    if (items.length === 1) return items[0];
+    if (items.length === 2) return items[0] + ' and ' + items[1];
+    return items.slice(0, -1).join(', ') + ', and ' + items[items.length - 1];
+  }
+  function missingAddressLabels(plan) {
+    return wrappedBenefits(plan).filter(function (code) {
+      var addr = plan.carrier_addresses && String(plan.carrier_addresses[code] || '').trim();
+      return !addr && needsCarrierAddress(plan, code);
+    }).map(benefitLabel);
+  }
+  function missingAddressGuideLine(plan) {
+    var labels = missingAddressLabels(plan);
+    if (!labels.length) return '';
+    var noun = labels.length === 1 ? 'insurer address' : 'insurer addresses';
+    return 'Fill in the ' + englishList(labels) + ' ' + noun + ' in the Word version of the SPD, then save it as a PDF. Copy the address from your certificate.';
+  }
+  function missingPhiGuideLine(plan) {
+    if (plan.phi === 'yes' && !String(plan.phi_classes || '').trim()) {
+      return 'Fill in the job titles that may see employee health information in the Word version of the HIPAA amendment, then save it as a PDF.';
+    }
+    return '';
+  }
+  function blankAddressDoneText(count) {
+    var noun = count === 1 ? 'address' : 'addresses';
+    return 'Your SPD has ' + count + ' blank insurer ' + noun + '. Add them now or fill them in the Word file before you hand it out.';
+  }
+  function blankPhiDoneText() {
+    return 'Your HIPAA amendment has a blank job-title line. Add them now or fill it in the Word file before you hand it out.';
+  }
+  function dateBeforeToday(iso) {
+    var match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+    if (!match) return false;
+    var now = new Date();
+    var year = Number(match[1]);
+    var month = Number(match[2]);
+    var day = Number(match[3]);
+    var todayYear = now.getFullYear();
+    var todayMonth = now.getMonth() + 1;
+    var todayDay = now.getDate();
+    if (year !== todayYear) return year < todayYear;
+    if (month !== todayMonth) return month < todayMonth;
+    return day < todayDay;
   }
   function renewalMonthLabel(plan) {
     var start = startMonthOf(plan);
@@ -606,7 +660,6 @@ var WpModel = (function () {
     if (hasBenefit(plan, 'std') && plan.std_type === 'trust') notes.push('Short-term disability paid from a trust is in the plan. That fund is plan assets, so the small-plan exemption is not available.');
     if (plan.cobra === 'no' && count >= 100) notes.push('You said federal COBRA does not apply, and 100 or more people are covered. Confirm the prior-year employee count, including related companies.');
     if (plan.phi === 'yes' && plan.phi_classes_blank) notes.push('Fill in the job titles that may see employee health information before you sign.');
-    if (complexFunding(plan)) notes.push(BROKER_LINE);
     if (filing.code === 'unconfirmed') notes.push(filing.text);
     return notes;
   }
@@ -618,28 +671,46 @@ var WpModel = (function () {
     var medical = hasBenefit(plan, 'medical');
     var drugs = medical || hasBenefit(plan, 'rx');
     var selfMedical = medical && isSelfFundedFunding(plan.funding);
-    yearly.push(renewalMonthLabel(plan) + ': Renewal. Get the new certificates. If anything changed, tell employees.');
-    if (medical) yearly.push('Open enrollment: SBC, CHIP notice, WHCRA notice, and HIPAA special enrollment notice.');
+    var start = startMonthOf(plan);
+    function dated(text, month, day) { yearly.push({ text: text, month: month, day: day }); }
+    var renewMonth = start - 2;
+    if (renewMonth < 1) renewMonth += 12;
+    var enrollMonth = start - 1;
+    if (enrollMonth < 1) enrollMonth += 12;
+    dated(renewalMonthLabel(plan) + ': Renewal. Get the new certificates. If anything changed, tell employees.', renewMonth, 1);
+    if (medical) dated('Open enrollment: SBC, CHIP notice, WHCRA notice, and HIPAA special enrollment notice.', enrollMonth, 15);
     if (drugs) {
-      yearly.push('By October 15: Medicare Part D notice.');
-      yearly.push('Within 60 days after the plan year starts, by ' + monthDayAfterStart(plan, 60) + ': CMS creditable coverage disclosure.');
+      var cms = monthDayAfterStart(plan, 60);
+      dated('By October 15: Medicare Part D notice.', 10, 15);
+      dated('Within 60 days after the plan year starts, by ' + cms.label + ': CMS creditable coverage disclosure.', cms.month, cms.day);
     }
     if (medical) {
-      yearly.push('By June 1: RxDC. The insurer or TPA usually files it, so get that in writing.');
-      yearly.push('By December 31: gag clause attestation. The insurer or TPA usually files it, so get that in writing.');
+      dated('By June 1: RxDC. The insurer or TPA usually files it, so get that in writing.', 6, 1);
+      dated('By December 31: gag clause attestation. The insurer or TPA usually files it, so get that in writing.', 12, 31);
     }
     if (selfMedical || hasBenefit(plan, 'hra') || plan.funding === 'level' || plan.funding === 'captive' || plan.funding === 'rbp' || plan.funding === 'aso') {
-      yearly.push('By July 31: PCORI fee on Form 720.');
+      dated('By July 31: PCORI fee on Form 720.', 7, 31);
     }
     if (filing.code === 'required') {
-      yearly.push('By ' + form5500Due(plan).label + ': Form 5500, with a 2 and a half month extension on Form 5558.');
-      if (!allGeneralAssets(plan)) yearly.push('By ' + summaryAnnualDue(plan).label + ': summary annual report.');
+      var formDue = form5500Due(plan);
+      var sarDue = summaryAnnualDue(plan);
+      dated('By ' + formDue.label + ': Form 5500, with a 2 and a half month extension on Form 5558.', formDue.month, formDue.day);
+      if (!allGeneralAssets(plan)) dated('By ' + sarDue.label + ': summary annual report.', sarDue.month, sarDue.day);
     }
-    if (num(plan.employee_count) >= 50 || selfMedical) yearly.push('Early in the year: ACA forms 1094 and 1095.');
+    if (num(plan.employee_count) >= 50 || selfMedical) dated('Early in the year: ACA forms 1094 and 1095.', start, 8);
+    yearly.sort(function (a, b) {
+      function key(item) {
+        var month = item.month - start;
+        if (month < 0) month += 12;
+        return month * 40 + item.day;
+      }
+      return key(a) - key(b);
+    });
+    yearly = yearly.map(function (item) { return item.text; });
     hire.push('Marketplace notice within 14 days after the start date.');
     if (medical) hire.push('SBC and HIPAA special enrollment notice at enrollment.');
     hire.push('SPD and certificates within 90 days after coverage starts.');
-    if (plan.cobra === 'yes') hire.push('COBRA general notice with the new-hire papers.');
+    if (plan.cobra === 'yes') hire.push('COBRA general notice to the employee and spouse within 90 days after coverage starts.');
     changes.push('A new insurer, a new benefit, or a change in eligibility, waiting period, or who pays: a summary of material modifications within 210 days after the end of that plan year.');
     if (groupHealth(plan)) changes.push('A cut in group health benefits: notice within 60 days.');
     if (medical) changes.push('A mid-year group health change: 60 days notice before it takes effect, with an updated SBC.');
@@ -850,6 +921,13 @@ var WpModel = (function () {
     form5500Due: form5500Due,
     summaryAnnualDue: summaryAnnualDue,
     guideCalendar: guideCalendar,
+    monthDayAfterStart: monthDayAfterStart,
+    missingAddressLabels: missingAddressLabels,
+    missingAddressGuideLine: missingAddressGuideLine,
+    missingPhiGuideLine: missingPhiGuideLine,
+    blankAddressDoneText: blankAddressDoneText,
+    blankPhiDoneText: blankPhiDoneText,
+    dateBeforeToday: dateBeforeToday,
     thingsToLookAt: thingsToLookAt,
     helpOffer: helpOffer,
     anyPretax: anyPretax,
