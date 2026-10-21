@@ -55,27 +55,42 @@ test('bad email and a partial phone are rejected', function () {
   assert.match(checked.errors.filter(function (item) { return item.field === 'phone'; })[0].message, /10-digit/);
 });
 
-test('the auto reply matches the plain-text note and has no em dash', function () {
+test('the auto reply keeps the message and uses the full signature in text and HTML', function () {
+  const message = 'Thanks for reaching out to DK Benefits. I got your message and will get back to you within one business day. If it\'s urgent, call or text me at 407-476-5076.';
+  const signature = [
+    'Daniel Kirves',
+    'Benefits Broker | 20 Years Exp | DK Benefits LLC',
+    '☎ 407-476-5076 | 🌐 www.dkbenefits.net',
+    'https://www.dkbenefits.net',
+    '🏢 6000 Metrowest Blvd. Suite 200, Orlando, FL 32835',
+    '💼 Expert Guidance. Smarter Benefits. Better Savings.',
+    '',
+    'Florida Agency Lic# L138779',
+    'Georgia Agency Lic# 247922',
+    'Agent License# FL: W588866 | GA: 3366904',
+    'SC: 19265263 | IL: 19265263 | TN: 3003674757'
+  ];
   const body = ContactModel.replyBody('Mary Ann');
-  assert.equal(body, [
-    'Hi Mary,',
-    '',
-    'Thanks for reaching out to DK Benefits. I got your message and will get back to you within one business day. If it\'s urgent, call or text me at 407-476-5076.',
-    '',
-    'Daniel Kirves',
-    'DK Benefits'
-  ].join('\n'));
-  assert.equal(ContactModel.replyBody(''), [
-    'Hi there,',
-    '',
-    'Thanks for reaching out to DK Benefits. I got your message and will get back to you within one business day. If it\'s urgent, call or text me at 407-476-5076.',
-    '',
-    'Daniel Kirves',
-    'DK Benefits'
-  ].join('\n'));
+  assert.equal(body, ['Hi Mary,', '', message, ''].concat(signature).join('\n'));
+  assert.equal(ContactModel.replyBody(''), ['Hi there,', '', message, ''].concat(signature).join('\n'));
   assert.equal(ContactModel.REPLY_SUBJECT, 'Thanks for reaching out to DK Benefits');
   assert.equal(body.indexOf('\u2014'), -1);
   assert.equal(body.indexOf('\u2013'), -1);
+  assert.equal(body.indexOf('L109331'), -1);
+  const html = ContactModel.replyHtml('Mary Ann');
+  assert.match(html, /font-family:Arial,Helvetica,sans-serif/);
+  assert.match(html, /font-size:13px/);
+  assert.match(html, /color:#1A1A1A/);
+  assert.match(html, /<strong style="font-size:18px">Daniel Kirves<\/strong>/);
+  assert.match(html, /<em>Expert Guidance\. Smarter Benefits\. Better Savings\.<\/em>/);
+  assert.match(html, /<a href="https:\/\/www\.dkbenefits\.net">www\.dkbenefits\.net<\/a>/);
+  assert.match(html, /Florida Agency Lic# L138779<br>/);
+  assert.match(html, /Georgia Agency Lic# 247922<br>/);
+  assert.equal(html.indexOf('L109331'), -1);
+  assert.match(html, />Hi Mary,</);
+  assert.match(html, new RegExp(message.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(ContactModel.replyHtml('Ann&Bob'), /Hi Ann&amp;Bob,/);
+  assert.match(ContactModel.replyHtml('A<B>"C"'), /Hi A&lt;B&gt;&quot;C&quot;,/);
 });
 
 test('an em dash typed into a name is stored as a hyphen', function () {

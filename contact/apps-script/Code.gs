@@ -219,15 +219,16 @@ function contactAppendFollowUp_(payload, checked) {
 function contactFollowUpMessage_(row) {
   var subject = ContactModel.REPLY_SUBJECT;
   if (String(row[6]) === 'yes') subject = '[TEST] ' + subject;
+  var firstName = String(row[2] || '');
   var message = {
     to: String(row[1] || ''),
     subject: subject,
-    body: ContactModel.replyBody(String(row[2] || '')),
+    body: ContactModel.replyBody(firstName),
+    htmlBody: ContactModel.replyHtml(firstName),
     name: 'Daniel Kirves',
     replyTo: CONTACT_NOTIFY_EMAIL
   };
   if (message.attachments) delete message.attachments;
-  if (message.htmlBody) delete message.htmlBody;
   return message;
 }
 
@@ -356,8 +357,13 @@ function contactSendDueFollowUps() {
         if (message.to !== email || message.replyTo !== CONTACT_NOTIFY_EMAIL || message.name !== 'Daniel Kirves') {
           throw new Error('reply recipient');
         }
+        if (!message.htmlBody || message.htmlBody.indexOf('Florida Agency Lic# L138779') === -1 || message.htmlBody.indexOf('Georgia Agency Lic# 247922') === -1 || message.htmlBody.indexOf('https://www.dkbenefits.net') === -1) {
+          throw new Error('reply signature');
+        }
+        if (message.htmlBody.indexOf('L109331') !== -1 || String(message.body || '').indexOf('L109331') !== -1) {
+          throw new Error('reply signature');
+        }
         if (message.attachments) delete message.attachments;
-        if (message.htmlBody) delete message.htmlBody;
         MailApp.sendEmail(message);
         var sentAt = new Date(contactNow_()).toISOString();
         sheet.getRange(rowNumber, 6).setValue('sent');
