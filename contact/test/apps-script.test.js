@@ -176,7 +176,7 @@ test('doGet confirms the service is deployed', function () {
   assert.match(ctx.doGet().getContent(), /DK Benefits contact form is deployed/);
 });
 
-test('a valid lead emails only Dan and queues a plain-text reply', function () {
+test('a valid lead emails only Dan and queues an HTML reply', function () {
   const ctx = boot();
   const base = Date.parse('2026-10-08T15:00:00.000Z');
   ctx.CONTACT_TEST_NOW = base;
@@ -220,9 +220,14 @@ test('a valid lead emails only Dan and queues a plain-text reply', function () {
   assert.equal(note.name, 'Daniel Kirves');
   assert.equal(note.replyTo, 'dan@dkbenefits.net');
   assert.equal(note.subject, '[TEST] Thanks for reaching out to DK Benefits');
-  assert.equal(note.htmlBody, undefined);
+  assert.equal(note.htmlBody, ctx.ContactModel.replyHtml('Ada'));
+  assert.match(note.htmlBody, /<strong style="font-size:18px">Daniel Kirves<\/strong>/);
+  assert.match(note.htmlBody, /Florida Agency Lic# L138779/);
+  assert.match(note.htmlBody, /Georgia Agency Lic# 247922/);
+  assert.equal(note.htmlBody.indexOf('L109331'), -1);
   assert.equal(note.attachments, undefined);
   assert.equal(note.body, ctx.ContactModel.replyBody('Ada'));
+  assert.equal(ctx.sent[0].htmlBody, undefined);
   assert.match(note.body, /^Hi Ada,/);
   assert.equal(ctx.sheets.FollowUps.rows[1][5], 'sent');
   assert.equal(danMessages(ctx).length, 1);

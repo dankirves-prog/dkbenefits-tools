@@ -8,7 +8,7 @@ Live page, after this is on `main`:
 https://dankirves-prog.github.io/dkbenefits-tools/contact/
 ```
 
-The only address that receives a lead alert is **dan@dkbenefits.net**. The script will not send that alert anywhere else. About 10 minutes later, the visitor gets one short plain-text note from Daniel Kirves. Reply-To on that note is dan@dkbenefits.net.
+The only address that receives a lead alert is **dan@dkbenefits.net**. The script will not send that alert anywhere else. About 10 minutes later, the visitor gets one short note from Daniel Kirves. Reply-To on that note is dan@dkbenefits.net. The note is HTML, with the same words in plain text for mail programs that do not show HTML.
 
 Until `contact/config.js` has the web app URL, the form still checks the fields, but it does not say the message was sent. It tells the visitor to call or email instead.
 
@@ -82,7 +82,7 @@ After Pages updates, a real submission:
 - adds a **FollowUps** row
 - about 10 minutes later, emails the visitor the note below
 
-The timer runs every 5 minutes, so the note can arrive a few minutes after the 10 minute mark. It is plain text, with no attachment and no link.
+The timer runs every 5 minutes, so the note can arrive a few minutes after the 10 minute mark. There is no attachment. The message stays the same. The signature is HTML: Arial, about 13px, color #1A1A1A. Daniel Kirves is bold and larger. The tagline is italic. www.dkbenefits.net links to https://www.dkbenefits.net.
 
 Subject: `Thanks for reaching out to DK Benefits`
 
@@ -92,7 +92,16 @@ Hi [First name],
 Thanks for reaching out to DK Benefits. I got your message and will get back to you within one business day. If it's urgent, call or text me at 407-476-5076.
 
 Daniel Kirves
-DK Benefits
+Benefits Broker | 20 Years Exp | DK Benefits LLC
+☎ 407-476-5076 | 🌐 www.dkbenefits.net
+https://www.dkbenefits.net
+🏢 6000 Metrowest Blvd. Suite 200, Orlando, FL 32835
+💼 Expert Guidance. Smarter Benefits. Better Savings.
+
+Florida Agency Lic# L138779
+Georgia Agency Lic# 247922
+Agent License# FL: W588866 | GA: 3366904
+SC: 19265263 | IL: 19265263 | TN: 3003674757
 ```
 
 A `[TEST]` submission uses the subject `[TEST] Thanks for reaching out to DK Benefits`. The words of the note stay the same.

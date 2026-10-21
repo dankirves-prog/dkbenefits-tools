@@ -55,10 +55,58 @@ var ContactModel = (function () {
     return text.split(' ')[0];
   }
 
-  function replyBody(firstName) {
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function replyGreeting(firstName) {
     var word = firstWord(firstName);
-    var greeting = word ? ('Hi ' + word + ',') : 'Hi there,';
-    return [greeting, '', REPLY_LINE, '', 'Daniel Kirves', 'DK Benefits'].join('\n');
+    return word ? ('Hi ' + word + ',') : 'Hi there,';
+  }
+
+  function replyBody(firstName) {
+    return [
+      replyGreeting(firstName),
+      '',
+      REPLY_LINE,
+      '',
+      'Daniel Kirves',
+      'Benefits Broker | 20 Years Exp | DK Benefits LLC',
+      '☎ 407-476-5076 | 🌐 www.dkbenefits.net',
+      'https://www.dkbenefits.net',
+      '🏢 6000 Metrowest Blvd. Suite 200, Orlando, FL 32835',
+      '💼 Expert Guidance. Smarter Benefits. Better Savings.',
+      '',
+      'Florida Agency Lic# L138779',
+      'Georgia Agency Lic# 247922',
+      'Agent License# FL: W588866 | GA: 3366904',
+      'SC: 19265263 | IL: 19265263 | TN: 3003674757'
+    ].join('\n');
+  }
+
+  function replyHtml(firstName) {
+    var text = 'font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#1A1A1A;line-height:1.45;margin:0';
+    return '<div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#1A1A1A;line-height:1.45">' +
+      '<p style="' + text + '">' + escapeHtml(replyGreeting(firstName)) + '</p>' +
+      '<p style="' + text + ';margin-top:12px">' + escapeHtml(REPLY_LINE) + '</p>' +
+      '<p style="' + text + ';margin-top:16px">' +
+        '<strong style="font-size:18px">Daniel Kirves</strong><br>' +
+        'Benefits Broker | 20 Years Exp | DK Benefits LLC<br>' +
+        '☎ 407-476-5076 | 🌐 <a href="https://www.dkbenefits.net">www.dkbenefits.net</a><br>' +
+        '🏢 6000 Metrowest Blvd. Suite 200, Orlando, FL 32835<br>' +
+        '💼 <em>Expert Guidance. Smarter Benefits. Better Savings.</em>' +
+      '</p>' +
+      '<p style="' + text + ';margin-top:12px">' +
+        'Florida Agency Lic# L138779<br>' +
+        'Georgia Agency Lic# 247922<br>' +
+        'Agent License# FL: W588866 | GA: 3366904<br>' +
+        'SC: 19265263 | IL: 19265263 | TN: 3003674757' +
+      '</p>' +
+      '</div>';
   }
 
   function push(errors, field, message) {
@@ -113,6 +161,7 @@ var ContactModel = (function () {
     REPLY_SUBJECT: REPLY_SUBJECT,
     validate: validate,
     replyBody: replyBody,
+    replyHtml: replyHtml,
     firstWord: firstWord,
     formatPhone: formatPhone,
     cleanLine: cleanLine
