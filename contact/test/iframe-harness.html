@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contact form embed harness</title>
+  <style>
+    body { margin: 0; background: #fff; font-family: Inter, "Segoe UI", sans-serif; color: #16233A; }
+    .page { max-width: 880px; margin: 0 auto; padding: 28px 20px 40px; }
+    h1 { margin: 0 0 8px; color: #172E4D; font-size: 2rem; }
+    p { margin: 0 0 16px; color: #3A4657; }
+    iframe { width: 100%; border: 0; display: block; background: #F3F6FA; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Send Us a Message</h1>
+    <p>Please fill in the form below to get in touch with us.</p>
+    <iframe id="tool" title="Contact DK Benefits" height="860"></iframe>
+  </div>
+  <script>
+    var frame = document.getElementById('tool');
+    var params = new URLSearchParams(window.location.search);
+    frame.src = params.get('src') || '/contact/';
+  </script>
+</body>
+</html>

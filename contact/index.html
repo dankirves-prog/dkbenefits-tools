@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contact DK Benefits</title>
+  <meta name="description" content="Send a message to Daniel Kirves at DK Benefits. He replies within one business day.">
+  <!-- Wix iframe height: 820px desktop, 1020px phone (or 1020px for both). See apps-script/README.md. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="contact.css">
+  <script>
+    try {
+      if (window.self !== window.top) document.documentElement.classList.add('is-framed');
+    } catch (err) {
+      document.documentElement.classList.add('is-framed');
+    }
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  </script>
+</head>
+<body>
+  <main class="shell">
+    <form id="contactForm" novalidate>
+      <div class="hp-wrap" aria-hidden="true">
+        <label for="company_website">Company website</label>
+        <input id="company_website" name="company_website" type="text" tabindex="-1" autocomplete="off">
+      </div>
+
+      <div class="card" id="formCard">
+        <div class="intro">
+          <p class="eyebrow">DK Benefits</p>
+          <h1>Send a message</h1>
+          <p class="lede">Tell me what you need. I read every note and reply within one business day.</p>
+        </div>
+        <p class="required-note">First name, email, and message are required.</p>
+        <div id="formBanner" class="banner" hidden role="alert"></div>
+
+        <div class="grid">
+          <div class="field">
+            <label for="firstName">First name <span class="req" aria-hidden="true">*</span></label>
+            <input id="firstName" name="firstName" type="text" autocomplete="given-name" maxlength="60" aria-required="true" aria-describedby="err_firstName">
+            <p class="field-error" id="err_firstName"></p>
+          </div>
+          <div class="field">
+            <label for="lastName">Last name</label>
+            <input id="lastName" name="lastName" type="text" autocomplete="family-name" maxlength="60" aria-describedby="err_lastName">
+            <p class="field-error" id="err_lastName"></p>
+          </div>
+          <div class="field span-2">
+            <label for="company">Company</label>
+            <input id="company" name="company" type="text" autocomplete="organization" maxlength="120" aria-describedby="err_company">
+            <p class="field-error" id="err_company"></p>
+          </div>
+          <div class="field">
+            <label for="email">Email <span class="req" aria-hidden="true">*</span></label>
+            <input id="email" name="email" type="email" autocomplete="email" maxlength="254" inputmode="email" aria-required="true" aria-describedby="err_email">
+            <p class="field-error" id="err_email"></p>
+          </div>
+          <div class="field">
+            <label for="phone">Phone</label>
+            <input id="phone" name="phone" type="tel" autocomplete="tel" maxlength="24" inputmode="tel" aria-describedby="err_phone">
+            <p class="field-error" id="err_phone"></p>
+          </div>
+          <div class="field span-2">
+            <label for="message">Message <span class="req" aria-hidden="true">*</span></label>
+            <textarea id="message" name="message" rows="5" maxlength="4000" aria-required="true" aria-describedby="err_message" placeholder="How can I help?"></textarea>
+            <p class="field-error" id="err_message"></p>
+          </div>
+        </div>
+
+        <button class="send" id="sendButton" type="submit">Send Message</button>
+        <p class="fine">Or call or text <a href="tel:4074765076">407-476-5076</a>.</p>
+      </div>
+
+      <div class="card success" id="successCard" hidden>
+        <div class="success-mark" aria-hidden="true"></div>
+        <p id="successText" class="success-copy" role="status" tabindex="-1">Thanks! Your message is on its way. I'll be in touch within one business day.</p>
+        <p class="fine">If it's urgent, call or text <a href="tel:4074765076">407-476-5076</a>.</p>
+      </div>
+    </form>
+    <noscript>
+      <p class="banner notice">This form needs JavaScript. Call or text 407-476-5076 or email dan@dkbenefits.net.</p>
+    </noscript>
+  </main>
+  <script src="contact-validate.js"></script>
+  <script src="config.js"></script>
+  <script src="contact.js"></script>
+</body>
+</html>
