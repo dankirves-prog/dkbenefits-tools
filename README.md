@@ -27,6 +27,12 @@ http://localhost:8000/compliance-assessment-preview.html
 http://localhost:8000/compliance-assessment-embed.html
 ```
 
+## Contact form
+
+- `contact/` is the contact form for dkbenefits.net/contact, hosted at `https://dankirves-prog.github.io/dkbenefits-tools/contact/`
+- Wix embeds that GitHub Pages URL in an iframe. Deploy steps and the iframe height are in `contact/apps-script/README.md`.
+- The Apps Script URL is the single `CONTACT_ENDPOINT` value in `contact/config.js`. Until that is a real `/exec` URL, the form does not say a message was sent.
+
 ## Section 128 Trump Account Program Draft
 
 - `section128/` — guided draft generator for a Section 128 employer plan, hosted at `https://dankirves-prog.github.io/dkbenefits-tools/section128/`
