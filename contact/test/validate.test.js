@@ -123,5 +123,5 @@ test('user-facing contact files do not contain an em dash or any other email add
   assert.doesNotMatch(css, /min-height:\s*100vh/);
   assert.match(css, /color-scheme:\s*light/);
   assert.equal((config.match(/CONTACT_ENDPOINT\s*=/g) || []).length, 1);
-  assert.match(config, /CONTACT_ENDPOINT = ''/);
+  assert.match(config, /CONTACT_ENDPOINT = 'https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec'/);
 });
