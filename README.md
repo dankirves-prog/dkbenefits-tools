@@ -33,6 +33,12 @@ http://localhost:8000/compliance-assessment-embed.html
 - Wix embeds that GitHub Pages URL in an iframe. Deploy steps and the iframe height are in `contact/apps-script/README.md`.
 - The Apps Script URL is the single `CONTACT_ENDPOINT` value in `contact/config.js`. Until that is a real `/exec` URL, the form does not say a message was sent.
 
+## Meet the Team
+
+- `team/` is the Meet the Team section for dkbenefits.net/aboutus, hosted at `https://dankirves-prog.github.io/dkbenefits-tools/team/`
+- Wix "Embed a Site" loads that URL in an iframe. The page background is transparent, and the body does not scroll.
+- Set a fixed iframe height. At about 980px wide (the column inside a 1280px browser): **975px**. At about 360px wide: **2043px**.
+
 ## Section 128 Trump Account Program Draft
 
 - `section128/` — guided draft generator for a Section 128 employer plan, hosted at `https://dankirves-prog.github.io/dkbenefits-tools/section128/`
