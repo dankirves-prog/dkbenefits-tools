@@ -61,14 +61,6 @@ body {
 }
 .site-header p { margin: 0; color: #d5deea; max-width: 42rem; }
 
-.draft-banner {
-  background: var(--warning-bg);
-  border-bottom: 1px solid var(--warning-border);
-  color: #5c4810;
-}
-.draft-banner-inner { max-width: 880px; margin: 0 auto; padding: 12px 20px; font-size: 0.95rem; }
-.draft-banner strong { color: #3f3208; }
-
 .wrap { max-width: 880px; margin: 0 auto; padding: 20px 20px 48px; }
 
 .progress {
@@ -253,6 +245,7 @@ fieldset {
 }
 .ack input { margin-top: 4px; width: 20px; height: 20px; flex: 0 0 auto; }
 .ack span { font-weight: 500; }
+.soft-note { color: var(--text-light); font-size: 14px; margin: 0 0 16px; }
 
 .tip-btn {
   width: 22px;
