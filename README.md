@@ -37,7 +37,15 @@ http://localhost:8000/compliance-assessment-embed.html
 
 - `team/` is the Meet the Team section for dkbenefits.net/aboutus, hosted at `https://dankirves-prog.github.io/dkbenefits-tools/team/`
 - Wix "Embed a Site" loads that URL in an iframe. The page background is transparent, and the body does not scroll.
-- Set a fixed iframe height. At about 980px wide (the column inside a 1280px browser): **975px**. At about 360px wide: **2043px**.
+- Set a fixed iframe height. At about 980px wide (the column inside a 1280px browser): **975px**. At 320px wide (Wix mobile embeds): **2127px**. A taller frame, such as 2350px, leaves empty space under the cards. At 360px wide the height is **2043px**.
+
+## About
+
+- `about/` is the about-page embed for dkbenefits.net/aboutus, hosted at `https://dankirves-prog.github.io/dkbenefits-tools/about/`
+- It is one page: a navy hero, About Us and Our Mission cards, then the same Meet the Team section. `/team/` stays available on its own.
+- Wix "Embed a Site" loads that URL. The hero is solid navy. The rest of the page is `#F5F7FA`, and the body does not scroll.
+- The "See Instant Rates" button opens `https://www.dkbenefits.net/instant-group-quote` in the top window.
+- Fixed iframe height: **980px wide: 1435px**. **320px wide: 2937px**.
 
 ## Section 128 Trump Account Program Draft
 
