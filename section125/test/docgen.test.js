@@ -176,6 +176,12 @@ test('the follow-up note is a short check-in with a plain-text signature', funct
   assert.match(S125Terms.PARAGRAPHS.join('\n'), /Confirm the current amounts with your third-party administrator or advisor/);
   assert.doesNotMatch(S125Terms.PARAGRAPHS.join('\n'), /October 9, 2026|as of October/);
   assert.match(S125Terms.FOOTER, /educational tool/);
+  const page = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  assert.doesNotMatch(page, /draft-banner/);
+  assert.doesNotMatch(page, /\u2014/);
+  assert.match(page, /id="terms_ack"/);
+  assert.match(page, /I understand this is an educational tool, not legal or tax advice, and my company is responsible for what it adopts\. I agree to the <button type="button" class="linkish" id="openTerms">Terms of use<\/button>/);
+  assert.equal((page.match(/Since this is a free educational sample, not legal or tax advice, have your own counsel or advisor take a look before you sign\./g) || []).length, 2);
   fs.writeFileSync(path.join(artifactDir(), 'follow-up-email.txt'), email);
 });
 

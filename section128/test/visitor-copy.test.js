@@ -69,6 +69,12 @@ test('combined visitor email and guide stay educational', function () {
   assert.equal((html.match(/<a /g) || []).length, 0);
   assert.doesNotMatch(html, /mailto:|tel:|<img|utm_/i);
   assert.equal(S128Terms.CHECKBOX, 'I understand this is an educational tool, not legal or tax advice, and my company is responsible for what it adopts. I agree to the Terms of use.');
+  const page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.doesNotMatch(page, /draft-banner/);
+  assert.doesNotMatch(page, /\u2014/);
+  assert.match(page, /id="terms_ack"[^>]*required/);
+  assert.match(page, /I understand this is an educational tool, not legal or tax advice, and my company is responsible for what it adopts\. I agree to the <button type="button" class="linkish" id="openTerms">Terms of use<\/button>/);
+  assert.equal((page.match(/Since this is a free educational sample, not legal or tax advice, have your own counsel or advisor take a look before you sign\./g) || []).length, 2);
   assert.match(S128Terms.PARAGRAPHS.join('\n'), /hold harmless/);
   assert.match(S128Terms.PARAGRAPHS.join('\n'), /attorney-client/);
   assert.equal(S128Terms.VERSION, 's128-terms-2026-10-09');
