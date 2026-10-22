@@ -15,6 +15,8 @@ html, body {
   color: var(--ink);
   font-family: Inter, "Segoe UI", sans-serif;
   overflow: hidden;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
 }
 
 .team {
@@ -24,7 +26,7 @@ html, body {
   padding: 4px 8px 8px;
 }
 
-h1 {
+.team h1 {
   margin: 0;
   text-align: center;
   color: var(--navy);
@@ -72,7 +74,7 @@ h1 {
   background: #F5F7FA;
 }
 
-h2 {
+.team h2 {
   margin: 0;
   color: var(--navy);
   font-size: 18px;
@@ -132,7 +134,7 @@ h2 {
 }
 
 @media (max-width: 719px) {
-  h1 { font-size: 28px; }
+  .team h1 { font-size: 28px; }
 
   .cards { grid-template-columns: 1fr; }
 
