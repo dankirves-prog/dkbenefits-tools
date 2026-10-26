@@ -53,6 +53,20 @@ http://localhost:8000/compliance-assessment-embed.html
 - The page builds the Word and PDF drafts in the browser. Email starts only after `section128/config.js` has the dedicated Apps Script URL. Deploy steps are in `section128/apps-script/README.md`.
 - Research notes: `section128/research/RESEARCH_RECORD.md`
 
+## Qualifying Event Decision Tool
+
+- `qualifying-event/index.html` — Section 125 mid-year election change decision tool, hosted at `https://dankirves-prog.github.io/dkbenefits-tools/qualifying-event/` after this is on `main`. GitHub Pages serves `main` only.
+- `qualifying-event/embed.html` — Wix HtmlComponent shim. It iframes that Pages URL and forwards `postMessage` both ways (same pattern as `wrapplan/embed.html`).
+- The tool is the same page that is pasted into the HTML component on [dkbenefits.net/qualifying-event-decision-tool](https://www.dkbenefits.net/qualifying-event-decision-tool). It fills the iframe (`height: 100vh`) and scrolls inside the step. It does not post a resize height.
+- Keep the component size already set in Wix: **639×720** on desktop and **320×453** on mobile. The white frame grows with the iframe. A shorter frame scrolls inside the step, which is how the page works today.
+- Paste this into the Wix HTML embed (website address): `https://dankirves-prog.github.io/dkbenefits-tools/qualifying-event/embed.html`
+
+Local preview of the tool (the embed iframe points at the Pages URL, so it stays blank until this is on `main`):
+
+```text
+http://localhost:8000/qualifying-event/
+```
+
 ## Section 125 Plan Tool
 
 - `section125.html` — Section 125 cafeteria plan wizard, hosted on GitHub Pages at `https://dankirves-prog.github.io/dkbenefits-tools/section125.html`
