@@ -1,0 +1,30 @@
+/* Shared banner for the Section 125, Section 128, Wrap Plan, and compliance quiz pages.
+   Set --banner-max on :root when the content column is not 880px. */
+
+.site-header {
+  background: var(--navy);
+  color: #fff;
+  border-bottom: 4px solid var(--gold);
+  padding: 22px 20px 18px;
+}
+.site-header-inner { max-width: var(--banner-max, 880px); margin: 0 auto; }
+.brand {
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold-light);
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+.site-header h1 {
+  font-family: Merriweather, Georgia, serif;
+  font-size: 1.7rem;
+  line-height: 1.25;
+  margin: 0 0 8px;
+  font-weight: 700;
+}
+.site-header p { margin: 0; color: #d5deea; max-width: 42rem; }
+
+@media (max-width: 720px) {
+  .site-header h1 { font-size: 1.35rem; }
+}

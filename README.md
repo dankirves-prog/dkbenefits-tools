@@ -13,11 +13,11 @@ Scoring lives in `compliance-quiz/quiz-engine.js`. The pages are thin shells.
 
 Answers stay in the browser. The page may post `{ type: 'resize', height }` and `{ type: 'scrollTop' }`. Those messages are harmless, and the page does not post the answers. The HtmlComponent has no height property, so Wix should not listen for them.
 
-**Live Wix:** point one HtmlComponent at `compliance-assessment.html`. Set a fixed height in the editor: 3710px on desktop and 4660px on mobile. That fits the longest collapsed results. The page hides its own header when it is inside a frame. The page body does not force `min-height: 100vh`.
+**Live Wix:** point one HtmlComponent at `compliance-assessment.html`. The quiz shows the same navy banner as the Section 125, Section 128, and Wrap Plan tools, including inside the iframe. The page still posts `{ type: 'resize', height }`, and that height includes the banner. Wix does not apply that message, so set a fixed height in the editor. The banner is 130px tall when the title fits on one line, and 173px at 320px and 390px wide. A frame that used to fit the quiz exactly should grow by that amount. The longest collapsed results, including the banner, measure 4640px at 980px and 1280px wide, 5985px at 390px wide, and 6943px at 320px wide. The page body does not force `min-height: 100vh`.
 
 Set the HtmlComponent iframe title to `Benefits compliance checkup`.
 
-`compliance-assessment-v3.html` is the previous live quiz, kept so the Wix component can point back at it. Use the same fixed heights if the component points at that file.
+`compliance-assessment-v3.html` is the previous live quiz, kept so the Wix component can point back at it. That file does not use this banner. If the component points at it, the earlier fixed heights were 3710px on desktop and 4660px on mobile.
 
 Local preview:
 
