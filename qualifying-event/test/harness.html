@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Qualifying event height harness</title>
+  <style>
+    html, body { margin: 0; padding: 0; }
+    iframe { border: 0; width: 100%; height: 200px; display: block; }
+  </style>
+</head>
+<body>
+  <iframe id="tool" title="Qualifying event decision tool" src="../index.html"></iframe>
+  <script>
+    window.__messages = [];
+    var frame = document.getElementById('tool');
+    window.addEventListener('message', function (event) {
+      var data = event.data || {};
+      if (data.tool !== 'qualifying-event') return;
+      window.__messages.push(data);
+      if (data.type === 'resize' && typeof data.height === 'number') {
+        frame.style.height = data.height + 'px';
+        document.documentElement.style.height = data.height + 'px';
+        document.body.style.height = data.height + 'px';
+      }
+    });
+  </script>
+</body>
+</html>
