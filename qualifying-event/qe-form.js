@@ -255,13 +255,24 @@ var QEForm = (function () {
         pageUrl: pageUrl()
       });
       setSending(true);
+      // A plain POST with no custom headers stays a simple request. Apps Script
+      // answers that, then redirects. The final response is the JSON result.
       fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        redirect: 'follow',
         body: JSON.stringify(record)
       }).then(function (response) {
-        return response.json().catch(function () {
-          return { ok: false, error: 'Your question could not be sent. Call or text 407-476-5076 or email dan@dkbenefits.net.' };
+        return response.text().then(function (text) {
+          var body = null;
+          try {
+            body = JSON.parse(String(text || '').replace(/^\uFEFF/, '').trim());
+          } catch (err) {
+            body = null;
+          }
+          if (!body || typeof body !== 'object' || Array.isArray(body)) {
+            return { ok: false, error: 'Your question could not be sent. Call or text 407-476-5076 or email dan@dkbenefits.net.' };
+          }
+          return body;
         });
       }).then(function (body) {
         setSending(false);

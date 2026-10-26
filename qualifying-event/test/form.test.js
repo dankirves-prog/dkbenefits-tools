@@ -185,12 +185,18 @@ test('the question form rejects a missing question, a bad email, and a short pho
   assert.equal(optional.fields.phone, '');
 });
 
-test('the page keeps one empty endpoint constant', function () {
+test('the page posts to the deployed web app as a simple request', function () {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  assert.equal((html.match(/var QE_QUESTION_ENDPOINT = '';/g) || []).length, 1);
+  const form = fs.readFileSync(path.join(root, 'qe-form.js'), 'utf8');
+  assert.equal((html.match(/var QE_QUESTION_ENDPOINT =/g) || []).length, 1);
+  assert.match(html, /var QE_QUESTION_ENDPOINT = 'https:\/\/script\.google\.com\/macros\/s\/AKfycbyQLz93oRRkrZV8Vj6DTbUvIXIyfZO3IfnJ92DHR3upMiNP9GIykZ23GoP5CZvlVMYStQ\/exec';/);
   assert.match(html, /qualifying-event\/apps-script\/SETUP\.md/);
   assert.match(html, /id="questionForm"/);
   assert.match(html, /src="qe-form\.js"/);
+  assert.match(form, /redirect:\s*'follow'/);
+  assert.equal(form.indexOf('headers:'), -1);
+  assert.match(form, /body\.emailed === true/);
+  assert.match(html, /Thanks\. Dan will reply by email\./);
 });
 
 test('the script emails only Dan and does not reply to the visitor', function () {

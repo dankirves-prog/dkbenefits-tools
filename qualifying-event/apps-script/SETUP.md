@@ -4,7 +4,7 @@ This form is only for the mid-year election change tool. It is a new Google Shee
 
 The alert goes to dan@dkbenefits.net. The person who fills out the form does not get an automatic email.
 
-Until the web app URL is pasted into `qualifying-event/index.html`, the form checks the fields but does not say the question was sent. It tells the visitor to call or email instead.
+The deployed web app URL is the `QE_QUESTION_ENDPOINT` line in `qualifying-event/index.html`. If that line is empty, the form checks the fields but does not say the question was sent. It tells the visitor to call or email instead.
 
 ## 1. Create the spreadsheet
 
@@ -53,21 +53,15 @@ DK Benefits qualifying event questions are deployed. Submit the form to send a q
 
 If you change the script later, deploy a new version (Deploy, Manage deployments, edit, New version, Deploy). The URL stays the same.
 
-## 5. Send the URL
+## 5. Put the URL in the tool
 
-Send the web app URL back so it can be pasted into this one line in `qualifying-event/index.html`:
-
-```js
-var QE_QUESTION_ENDPOINT = '';
-```
-
-Example, with your own deployment id:
+The current deployment is already on this line in `qualifying-event/index.html`:
 
 ```js
-var QE_QUESTION_ENDPOINT = 'https://script.google.com/macros/s/PASTE_THE_DEPLOYMENT_ID/exec';
+var QE_QUESTION_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyQLz93oRRkrZV8Vj6DTbUvIXIyfZO3IfnJ92DHR3upMiNP9GIykZ23GoP5CZvlVMYStQ/exec';
 ```
 
-Leave the quotes empty in the repo until that URL is ready. Do not put this URL in the contact form or any other tool.
+If you deploy again and the URL changes, replace that one line and publish the page. Do not put this URL in the contact form or any other tool.
 
 After the site is updated, a real submission:
 

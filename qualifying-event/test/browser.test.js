@@ -211,7 +211,21 @@ async function typeQuestion(page) {
 function watchQuestionPosts(page, state) {
   return page.setRequestInterception(true).then(function () {
     page.on('request', function (request) {
-      if (request.url().indexOf('/qe-question') === -1) {
+      var url = request.url();
+      if (url.indexOf('script.google.com') !== -1) {
+        request.abort('failed').catch(function () {});
+        state.live = true;
+        return;
+      }
+      if (url.indexOf('/qe-question-result') !== -1) {
+        request.respond({
+          status: 200,
+          contentType: 'text/plain;charset=utf-8',
+          body: JSON.stringify(state.body)
+        }).catch(function () {});
+        return;
+      }
+      if (url.indexOf('/qe-question') === -1) {
         request.continue().catch(function () {});
         return;
       }
@@ -220,6 +234,15 @@ function watchQuestionPosts(page, state) {
         return;
       }
       state.hits.push(JSON.parse(request.postData()));
+      state.methods.push(request.method());
+      state.types.push((request.headers()['content-type'] || ''));
+      if (state.mode === 'redirect') {
+        request.respond({
+          status: 302,
+          headers: { Location: new URL('/qe-question-result', url).href }
+        }).catch(function () {});
+        return;
+      }
       request.respond({
         status: 200,
         contentType: 'application/json',
@@ -231,6 +254,7 @@ function watchQuestionPosts(page, state) {
 
 test('question form sends the scenario only when the box stays on', { timeout: 120000 }, async function () {
   const page = await openPage(1280, 900);
+  await page.evaluate(function () { window.QE_QUESTION_ENDPOINT = ''; });
   await typeQuestion(page);
   await page.click('#questionSend');
   await page.waitForFunction(function () {
@@ -239,7 +263,7 @@ test('question form sends the scenario only when the box stays on', { timeout: 1
   });
   assert.equal(await page.$eval('#questionForm', function (el) { return el.hidden; }), false);
 
-  const state = { mode: 'error', hits: [], body: { ok: false, error: 'The sheet could not be reached.' } };
+  const state = { mode: 'error', hits: [], methods: [], types: [], live: false, body: { ok: false, error: 'The sheet could not be reached.' } };
   await watchQuestionPosts(page, state);
   await page.evaluate(function () {
     window.QE_QUESTION_ENDPOINT = window.location.origin + '/qe-question';
@@ -254,6 +278,9 @@ test('question form sends the scenario only when the box stays on', { timeout: 1
   assert.equal(state.hits[0].includeScenario, false);
   assert.equal(state.hits[0].scenario, null);
   assert.equal(state.hits[0].question, 'Can we add the spouse this month?');
+  assert.equal(state.methods[0], 'POST');
+  assert.match(state.types[0], /^text\/plain/i);
+  assert.equal(state.live, false);
   assert.equal(await page.$eval('#questionForm', function (el) { return el.hidden; }), false);
 
   await page.evaluate(function () {
@@ -269,7 +296,7 @@ test('question form sends the scenario only when the box stays on', { timeout: 1
   assert.equal(await page.$eval('#includeScenario', function (el) { return el.checked; }), true);
   await page.click('#includeScenario');
   state.body = { ok: true, emailed: true };
-  state.mode = 'ok';
+  state.mode = 'redirect';
   await page.click('#questionSend');
   await page.waitForFunction(function () {
     var card = document.getElementById('questionSuccess');
@@ -285,7 +312,7 @@ test('question form sends the scenario only when the box stays on', { timeout: 1
 
   const again = await openPage(390, 844);
   await typeQuestion(again);
-  const phoneState = { mode: 'abort', hits: [], body: { ok: true, emailed: true } };
+  const phoneState = { mode: 'abort', hits: [], methods: [], types: [], live: false, body: { ok: true, emailed: true } };
   await watchQuestionPosts(again, phoneState);
   await again.evaluate(function () {
     window.QE_QUESTION_ENDPOINT = window.location.origin + '/qe-question';
@@ -306,7 +333,7 @@ test('question form sends the scenario only when the box stays on', { timeout: 1
   });
   assert.equal(await again.$eval('#questionForm', function (el) { return el.hidden; }), false);
   assert.equal(await again.$eval('#qeScenarioBox', function (el) { return el.hidden; }), false);
-  phoneState.mode = 'ok';
+  phoneState.mode = 'redirect';
   await again.click('#questionSend');
   await again.waitForFunction(function () {
     var card = document.getElementById('questionSuccess');
@@ -321,5 +348,8 @@ test('question form sends the scenario only when the box stays on', { timeout: 1
   assert.match(phoneState.hits[0].scenarioSummary, /Who: Not specified/);
   assert.match(phoneState.hits[0].scenarioSummary, /Timing: Within 30 days/);
   assert.match(phoneState.hits[0].scenarioSummary, /Result: Generally allowed/);
+  assert.equal(phoneState.methods[0], 'POST');
+  assert.match(phoneState.types[0], /^text\/plain/i);
+  assert.equal(phoneState.live, false);
   await again.close();
 });
