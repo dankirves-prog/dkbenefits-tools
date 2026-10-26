@@ -1,7 +1,7 @@
 /**
  * Page for the mid-year election change tool.
  * Decisions live in qe-model.js. This file only asks the questions and shows the result.
- * window.QE.scenario is the object a later form can read.
+ * window.QE.scenario is the object the question form reads.
  */
 (function () {
   var model = window.QEModel;
@@ -329,6 +329,7 @@
       window.scrollTo(0, 0);
       post({ type: 'scrollTop', tool: 'qualifying-event' });
     }
+    if (window.QEForm && window.QEForm.refresh) window.QEForm.refresh();
     scheduleHeight();
   }
 

@@ -3,8 +3,8 @@
   "private": true,
   "description": "Mid-year election change decision tool. Tests use Node and puppeteer-core against system Chrome.",
   "scripts": {
-    "test": "node --test test/paths.test.js",
-    "test:unit": "node --test test/paths.test.js",
+    "test": "node --test test/paths.test.js test/form.test.js",
+    "test:unit": "node --test test/paths.test.js test/form.test.js",
     "test:browser": "node --test test/browser.test.js"
   },
   "devDependencies": {

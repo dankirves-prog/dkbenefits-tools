@@ -88,6 +88,16 @@ async function walk(page, prefix) {
   assert.equal(meta.buttons, 5);
   assert.match(meta.text, /DK BENEFITS LLC/);
   assert.match(meta.text, /These are general rules/);
+  assert.match(meta.text, /Questions about this change/);
+  assert.match(meta.text, /Send question/);
+  assert.equal(await page.$eval('#qeScenarioBox', function (el) { return el.hidden; }), true);
+  const sendStyle = await page.$eval('#questionSend', function (el) {
+    var style = getComputedStyle(el);
+    return { color: style.color, outlineStyle: style.outlineStyle, background: style.backgroundColor };
+  });
+  assert.equal(sendStyle.color, 'rgb(22, 35, 58)');
+  assert.equal(sendStyle.outlineStyle, 'none');
+  assert.equal(sendStyle.background, 'rgb(201, 162, 39)');
   assertStep(meta);
   await shot(page, prefix + '-start.png');
 
@@ -131,6 +141,13 @@ async function walk(page, prefix) {
   assert.deepEqual(scenario.coverage.map(function (item) { return item.id; }), ['medical']);
   assert.equal(scenario.result.code, 'allowed');
   assert.equal(scenario.result.nudgeUrl, 'https://www.dkbenefits.net/section125plantool');
+  const summaryText = await page.$eval('#qeScenarioSummary', function (el) { return el.innerText; });
+  assert.match(summaryText, /Marriage/);
+  assert.match(summaryText, /Not specified/);
+  assert.match(summaryText, /Within 30 days/);
+  assert.match(summaryText, /Generally allowed/);
+  assert.equal(await page.$eval('#includeScenario', function (el) { return el.checked; }), true);
+  assert.equal(await page.$eval('#qeScenarioBox', function (el) { return el.hidden; }), false);
   await shot(page, prefix + '-allowed.png');
 
   await page.click('#backBtn');
@@ -149,6 +166,7 @@ async function walk(page, prefix) {
   await page.waitForFunction(function () {
     return window.QE.scenario === null && document.getElementById('stepCount').textContent.trim() === 'Step 1 of 5';
   });
+  assert.equal(await page.$eval('#qeScenarioBox', function (el) { return el.hidden; }), true);
   await page.close();
 }
 
@@ -179,4 +197,159 @@ test('iframe height follows the tool', { timeout: 60000 }, async function () {
   });
   assert.ok(Math.abs(box.height - posted) < 2);
   await page.close();
+});
+
+async function typeQuestion(page) {
+  await page.click('#qeName');
+  await page.type('#qeName', 'Ada Lovelace');
+  await page.click('#qeEmail');
+  await page.type('#qeEmail', 'ada@northwind.example');
+  await page.click('#qeQuestion');
+  await page.type('#qeQuestion', 'Can we add the spouse this month?');
+}
+
+function watchQuestionPosts(page, state) {
+  return page.setRequestInterception(true).then(function () {
+    page.on('request', function (request) {
+      var url = request.url();
+      if (url.indexOf('script.google.com') !== -1) {
+        request.abort('failed').catch(function () {});
+        state.live = true;
+        return;
+      }
+      if (url.indexOf('/qe-question-result') !== -1) {
+        request.respond({
+          status: 200,
+          contentType: 'text/plain;charset=utf-8',
+          body: JSON.stringify(state.body)
+        }).catch(function () {});
+        return;
+      }
+      if (url.indexOf('/qe-question') === -1) {
+        request.continue().catch(function () {});
+        return;
+      }
+      if (state.mode === 'abort') {
+        request.abort('failed').catch(function () {});
+        return;
+      }
+      state.hits.push(JSON.parse(request.postData()));
+      state.methods.push(request.method());
+      state.types.push((request.headers()['content-type'] || ''));
+      if (state.mode === 'redirect') {
+        request.respond({
+          status: 302,
+          headers: { Location: new URL('/qe-question-result', url).href }
+        }).catch(function () {});
+        return;
+      }
+      request.respond({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(state.body)
+      }).catch(function () {});
+    });
+  });
+}
+
+test('question form sends the scenario only when the box stays on', { timeout: 120000 }, async function () {
+  const page = await openPage(1280, 900);
+  await page.evaluate(function () { window.QE_QUESTION_ENDPOINT = ''; });
+  await typeQuestion(page);
+  await page.click('#questionSend');
+  await page.waitForFunction(function () {
+    var banner = document.getElementById('questionBanner');
+    return banner && !banner.hidden && /not connected yet/.test(banner.textContent);
+  });
+  assert.equal(await page.$eval('#questionForm', function (el) { return el.hidden; }), false);
+
+  const state = { mode: 'error', hits: [], methods: [], types: [], live: false, body: { ok: false, error: 'The sheet could not be reached.' } };
+  await watchQuestionPosts(page, state);
+  await page.evaluate(function () {
+    window.QE_QUESTION_ENDPOINT = window.location.origin + '/qe-question';
+  });
+  await new Promise(function (resolve) { setTimeout(resolve, 3200); });
+  await page.click('#questionSend');
+  await page.waitForFunction(function () {
+    return /could not be reached/.test(document.getElementById('questionBanner').textContent || '');
+  });
+  assert.equal(state.hits.length, 1);
+  assert.equal(state.hits[0].event, 'qe_question');
+  assert.equal(state.hits[0].includeScenario, false);
+  assert.equal(state.hits[0].scenario, null);
+  assert.equal(state.hits[0].question, 'Can we add the spouse this month?');
+  assert.equal(state.methods[0], 'POST');
+  assert.match(state.types[0], /^text\/plain/i);
+  assert.equal(state.live, false);
+  assert.equal(await page.$eval('#questionForm', function (el) { return el.hidden; }), false);
+
+  await page.evaluate(function () {
+    window.QE.scenario = window.QEModel.scenario({
+      event: 'marriage',
+      benefits: ['medical'],
+      answers: { change: 'add_family' },
+      timing: 'within_30'
+    });
+    window.QEForm.refresh();
+  });
+  assert.match(await page.$eval('#qeScenarioSummary', function (el) { return el.innerText; }), /Marriage/);
+  assert.equal(await page.$eval('#includeScenario', function (el) { return el.checked; }), true);
+  await page.click('#includeScenario');
+  state.body = { ok: true, emailed: true };
+  state.mode = 'redirect';
+  await page.click('#questionSend');
+  await page.waitForFunction(function () {
+    var card = document.getElementById('questionSuccess');
+    return card && !card.hidden && /Dan will reply by email/.test(document.getElementById('questionSuccessText').textContent);
+  });
+  assert.equal(state.hits.length, 2);
+  assert.equal(state.hits[1].includeScenario, false);
+  assert.equal(state.hits[1].scenario, null);
+  assert.equal(state.hits[1].scenarioSummary, '');
+  assert.equal(state.hits[1].name, 'Ada Lovelace');
+  assert.equal(state.hits[1].email, 'ada@northwind.example');
+  await page.close();
+
+  const again = await openPage(390, 844);
+  await typeQuestion(again);
+  const phoneState = { mode: 'abort', hits: [], methods: [], types: [], live: false, body: { ok: true, emailed: true } };
+  await watchQuestionPosts(again, phoneState);
+  await again.evaluate(function () {
+    window.QE_QUESTION_ENDPOINT = window.location.origin + '/qe-question';
+    window.QE.scenario = window.QEModel.scenario({
+      event: 'marriage',
+      benefits: ['medical'],
+      answers: { change: 'add_family' },
+      timing: 'within_30'
+    });
+    window.QEForm.refresh();
+  });
+  assert.equal(await again.$eval('#includeScenario', function (el) { return el.checked; }), true);
+  await new Promise(function (resolve) { setTimeout(resolve, 3200); });
+  await again.click('#questionSend');
+  await again.waitForFunction(function () {
+    var banner = document.getElementById('questionBanner');
+    return banner && !banner.hidden && /could not be sent/.test(banner.textContent || '');
+  });
+  assert.equal(await again.$eval('#questionForm', function (el) { return el.hidden; }), false);
+  assert.equal(await again.$eval('#qeScenarioBox', function (el) { return el.hidden; }), false);
+  phoneState.mode = 'redirect';
+  await again.click('#questionSend');
+  await again.waitForFunction(function () {
+    var card = document.getElementById('questionSuccess');
+    return card && !card.hidden && /Dan will reply by email/.test(document.getElementById('questionSuccessText').textContent);
+  });
+  assert.equal(phoneState.hits.length, 1);
+  assert.equal(phoneState.hits[0].includeScenario, true);
+  assert.equal(phoneState.hits[0].scenario.event.id, 'marriage');
+  assert.equal(phoneState.hits[0].scenario.change.id, 'add_family');
+  assert.equal(phoneState.hits[0].scenario.result.code, 'allowed');
+  assert.match(phoneState.hits[0].scenarioSummary, /Event: Marriage/);
+  assert.match(phoneState.hits[0].scenarioSummary, /Who: Not specified/);
+  assert.match(phoneState.hits[0].scenarioSummary, /Timing: Within 30 days/);
+  assert.match(phoneState.hits[0].scenarioSummary, /Result: Generally allowed/);
+  assert.equal(phoneState.methods[0], 'POST');
+  assert.match(phoneState.types[0], /^text\/plain/i);
+  assert.equal(phoneState.live, false);
+  await again.close();
 });

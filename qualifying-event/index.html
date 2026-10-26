@@ -23,11 +23,74 @@
     <form id="wizard" novalidate>
       <section class="card" id="panel" aria-labelledby="stepTitle"></section>
     </form>
+    <section class="card question-card" id="questionCard" aria-labelledby="questionTitle">
+      <form id="questionForm" novalidate>
+        <div class="hp-wrap" aria-hidden="true">
+          <label for="company_website">Company website</label>
+          <input id="company_website" name="company_website" type="text" tabindex="-1" autocomplete="off">
+        </div>
+        <h2 id="questionTitle">Questions about this change</h2>
+        <p class="lede">Send a question about a mid-year change. Dan will reply by email.</p>
+        <p class="required-note">Name, email, and your question are required. Phone and company are optional.</p>
+        <div id="questionBanner" class="banner" hidden role="alert"></div>
+        <div class="q-grid">
+          <div class="field">
+            <label for="qeName">Name <span class="req" aria-hidden="true">*</span></label>
+            <input id="qeName" name="name" type="text" autocomplete="name" maxlength="120" aria-required="true" aria-describedby="err_name">
+            <p class="field-error" id="err_name"></p>
+          </div>
+          <div class="field">
+            <label for="qeEmail">Email <span class="req" aria-hidden="true">*</span></label>
+            <input id="qeEmail" name="email" type="email" autocomplete="email" maxlength="254" inputmode="email" aria-required="true" aria-describedby="err_email">
+            <p class="field-error" id="err_email"></p>
+          </div>
+          <div class="field">
+            <label for="qePhone">Phone</label>
+            <input id="qePhone" name="phone" type="tel" autocomplete="tel" maxlength="24" inputmode="tel" aria-describedby="err_phone">
+            <p class="field-error" id="err_phone"></p>
+          </div>
+          <div class="field">
+            <label for="qeCompany">Company</label>
+            <input id="qeCompany" name="company" type="text" autocomplete="organization" maxlength="120" aria-describedby="err_company">
+            <p class="field-error" id="err_company"></p>
+          </div>
+          <div class="field q-span-2">
+            <label for="qeQuestion">Your question <span class="req" aria-hidden="true">*</span></label>
+            <textarea id="qeQuestion" name="question" rows="5" maxlength="4000" aria-required="true" aria-describedby="err_question"></textarea>
+            <p class="field-error" id="err_question"></p>
+          </div>
+        </div>
+        <div id="qeScenarioBox" class="scenario-box" hidden>
+          <p class="scenario-kicker">Scenario from this visit</p>
+          <dl id="qeScenarioSummary" class="scenario-summary"></dl>
+          <label class="include-line" for="includeScenario">
+            <input type="checkbox" id="includeScenario" name="includeScenario">
+            <span>Include this scenario with my question</span>
+          </label>
+          <p class="scenario-hint">Uncheck the box to leave the scenario off.</p>
+        </div>
+        <button class="btn btn-gold question-send" id="questionSend" type="submit">Send question</button>
+      </form>
+      <div id="questionSuccess" class="question-success" hidden>
+        <p id="questionSuccessText" class="success-copy" role="status" tabindex="-1">Thanks. Dan will reply by email.</p>
+        <p class="fine">If it is urgent, call or text <a href="tel:4074765076">407-476-5076</a>.</p>
+      </div>
+    </section>
   </main>
   <footer class="site-footer">
     <p>Questions: <a href="tel:4074765076">407-476-5076</a></p>
   </footer>
+  <!--
+    QE_QUESTION_ENDPOINT
+    The Apps Script web app for this question form. This is the only place to change it.
+    Steps: qualifying-event/apps-script/SETUP.md
+    This web app is only for the qualifying event question form.
+  -->
+  <script>
+    var QE_QUESTION_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyQLz93oRRkrZV8Vj6DTbUvIXIyfZO3IfnJ92DHR3upMiNP9GIykZ23GoP5CZvlVMYStQ/exec';
+  </script>
   <script src="qe-model.js"></script>
   <script src="qe-ui.js"></script>
+  <script src="qe-form.js"></script>
 </body>
 </html>
