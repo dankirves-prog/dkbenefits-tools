@@ -10,6 +10,7 @@ var QEModel = (function () {
   var LATE60 = 'Past the standard 60-day window for Medicaid and CHIP. Generally not allowed unless your plan document allows a longer window.';
   var DOC = 'Your Section 125 plan document has to allow this kind of change for the premium to stay pre-tax.';
   var CARRIER_LINE = 'The carrier also has to be able to process the change.';
+  var DIVORCE_LATE_LINE = 'Ask the carrier whether it will accept a late or retro removal, and what its policy is.';
 
   var EVENTS = [
     { id: 'marriage', label: 'Marriage' },
@@ -23,7 +24,7 @@ var QEModel = (function () {
     { id: 'medicaid_chip', label: 'Medicaid or CHIP' },
     { id: 'medicare', label: 'Medicare' },
     { id: 'move', label: 'Move or network area' },
-    { id: 'cost_change', label: 'Cost of coverage changed' },
+    { id: 'cost_change', label: 'Employer changed the cost of coverage' },
     { id: 'coverage_change', label: 'Plan coverage changed' },
     { id: 'court_order', label: 'Court order or child support' },
     { id: 'marketplace', label: 'Marketplace enrollment' },
@@ -214,6 +215,7 @@ var QEModel = (function () {
         { value: 'fmla', label: 'FMLA leave' },
         { value: 'userra', label: 'Military leave (USERRA)' },
         { value: 'other_leave', label: 'Other unpaid leave, and eligibility did not change' },
+        { value: 'class_or_tier', label: 'The employee moved to a different class, status, or tier' },
         { value: 'unknown', label: 'Not sure' }
       ])];
       if (a.situation === 'gained_eligibility') {
@@ -251,6 +253,12 @@ var QEModel = (function () {
         job.push(q(event, 'change', 'What change is being requested?', [
           { value: 'drop', label: 'Drop coverage because of the leave' },
           { value: 'enroll', label: 'Start coverage because of the leave' }
+        ]));
+      }
+      if (a.situation === 'class_or_tier') {
+        job.push(q(event, 'change', 'What change is being requested?', [
+          { value: 'switch', label: 'Switch to the option that matches the new class or tier' },
+          { value: 'unrelated', label: 'Change the election in a way the new class or tier does not require' }
         ]));
       }
       return job;
@@ -358,15 +366,15 @@ var QEModel = (function () {
     }
     if (event === 'cost_change') {
       var sizes = [
-        { value: 'small', label: 'Small change. The paycheck amount needs an update.' },
-        { value: 'increase', label: 'Significant increase in what the employee pays' },
-        { value: 'decrease', label: 'Significant decrease in what the employee pays' }
+        { value: 'small', label: 'The employer made a small change. The paycheck amount needs an update.' },
+        { value: 'increase', label: 'The employer significantly raised what the employee pays, or cut its contribution' },
+        { value: 'decrease', label: 'The employer significantly lowered what the employee pays, or raised its contribution' }
       ];
       if (has(state, 'dcap')) {
         sizes.push({ value: 'daycare', label: 'The dependent care provider changed the rate or the hours of care' });
       }
       sizes.push({ value: 'unknown', label: 'Not sure' });
-      var cost = [q(event, 'size', 'What kind of cost change was it? The plan decides what counts as significant. The IRS rules do not set a percentage.', sizes)];
+      var cost = [q(event, 'size', 'What kind of cost change was it? Use this when the employer changed the cost during the year, or a dependent care provider changed the rate. If the employee switched their own tier or class, use Job, hours, or leave. The plan decides what counts as significant. The IRS rules do not set a percentage.', sizes)];
       if (a.size === 'increase') {
         cost.push(q(event, 'change', 'What change is being requested?', [
           { value: 'pay_more', label: 'Keep the plan and pay the higher amount' },
@@ -474,7 +482,6 @@ var QEModel = (function () {
     if (event === 'other') return 'none';
     if (event === 'death' || event === 'aged_out') return 'record';
     if (event === 'court_order' && a.change !== 'drop') return 'none';
-    if (event === 'divorce' && a.change === 'drop_spouse') return 'record';
     if (event === 'divorce' && a.change === 'drop_child' && a.child_reason === 'not_eligible') return 'record';
     if (event === 'job_leave' && (a.situation === 'fmla' || a.situation === 'userra' || a.situation === 'unknown')) return 'none';
     if (event === 'job_leave' && a.situation === 'lost_eligibility') return 'record';
@@ -550,15 +557,11 @@ var QEModel = (function () {
   }
 
   function cobraFamilyNote() {
-    return 'Federal COBRA applies if the employer had 20 or more employees on a typical business day in the prior year. Count part-time employees as a fraction of a full-time employee. Related employers under common control are counted together. Smaller employers in Florida and Georgia may have state continuation. Use the notice your carrier or administrator provides. Do not guess that deadline.';
+    return 'Federal COBRA applies when the employer had 20 or more employees on a typical business day in the prior year. Count part-time employees as a fraction of a full-time employee. Related employers under common control are counted together. Employers with fewer than 20 employees are generally outside federal COBRA. Small groups may have separate state continuation rules.';
   }
 
   function qbNoticeNote() {
     return 'For divorce or a child\'s loss of dependent status, the employee or the family member generally has 60 days after the later of the event or the loss of coverage to notify the plan (29 CFR 2590.606-3). The administrator then sends the COBRA election notice (29 CFR 2590.606-4). Do not treat the right as already lost until you check those dates and whether notice was given.';
-  }
-
-  function rescissionNote() {
-    return 'Do not assume you can erase coverage backward. A backward cancel can be a rescission under 45 CFR 147.128. Rescission is generally limited to fraud or an intentional misrepresentation of a material fact, with 30 days\' notice. Ask the carrier before you undo claims already paid.';
   }
 
   function decideHealth(state) {
@@ -641,19 +644,16 @@ var QEModel = (function () {
     if (event === 'divorce') {
       if (a.change === 'drop_spouse') {
         return decision(
-          'eligibility',
-          'Remove the former spouse. A divorce lets the employee cancel that person\'s coverage. It does not let the employee drop their own coverage, or a child who is still eligible. ' + rescissionNote() + ' ' + cobraFamilyNote() + ' ' + qbNoticeNote(),
+          'allowed',
+          'Remove the former spouse. Divorce allows that cancellation. The removal is effective under the plan\'s eligibility rule, and the Section 125 election uses the standard 30-day window. Do not drop the employee or a child who is still eligible.',
           [
-            'Check the plan for the date a former spouse stops being eligible. It is often the divorce date or the end of that month.',
-            'Move the employee to the tier that still covers the people who remain eligible.',
-            'Tell the carrier. Do not promise a backward premium refund.',
-            'Start the COBRA or state continuation process for the former spouse.',
-            'Premiums after eligibility ends should not stay pre-tax.'
+            'Remove only the former spouse. Use the date the plan says a former spouse stops being eligible.',
+            'Make the Section 125 election change within the standard 30-day window.',
+            'If federal COBRA applies, offer COBRA to the former spouse. The employee or family member generally has 60 days after the later of the divorce or the loss of coverage to notify the plan.'
           ],
           [
             'Treas. Reg. 1.125-4(c)(3)(iii) and Example 3 (divorce does not let the employee cancel their own coverage or a child who remains eligible)',
-            '29 CFR 2590.606-3 and 2590.606-4',
-            '45 CFR 147.128'
+            '29 CFR 2590.606-3 and 2590.606-4'
           ]
         );
       }
@@ -678,7 +678,7 @@ var QEModel = (function () {
           return decision(
             'eligibility',
             'If the child no longer meets the plan\'s rules, remove the child. Divorce by itself does not do that. For medical plans that cover children, coverage generally continues through age 26. ' + qbNoticeNote(),
-            ['Confirm the plan\'s dependent rule before you remove a child under 26.', 'Send the COBRA or state continuation notice if this is a loss of dependent status.', cobraFamilyNote()],
+            ['Confirm the plan\'s dependent rule before you remove a child under 26.', 'If federal COBRA applies, send the COBRA notice when this is a loss of dependent status.', cobraFamilyNote()],
             ['Treas. Reg. 1.125-4(c)(2)(iv)', '45 CFR 147.120 (age 26)', '29 CFR 2590.606-3']
           );
         }
@@ -731,12 +731,18 @@ var QEModel = (function () {
       }
       if (goodLoss(a.reason)) {
         var chip = a.reason === 'chip_or_medicaid';
+        var when = chip
+          ? 'Loss of Medicaid or CHIP eligibility is a special enrollment right. The request has to be made within 60 days after that eligibility ends. Coverage is effective no later than the first of the month after the plan receives the request. '
+          : 'This loss of other coverage can be a special enrollment right if the person declined this plan because they had that other coverage. ';
+        var effective = chip
+          ? ''
+          : 'Coverage starts no later than the first of the next month after the plan receives the request, unless the plan is more generous. ';
         return decision(
           'allowed',
-          (chip
-            ? 'Loss of Medicaid or CHIP eligibility is a special enrollment right. The request has to be made within 60 days after that eligibility ends. '
-            : 'This loss of other coverage can be a special enrollment right if the person declined this plan because they had that other coverage. ') +
-            'Enroll the person who lost coverage. If the employee lost coverage, dependents can enroll too. If a dependent lost coverage, enroll that dependent and the employee if the plan requires the employee to be enrolled. The health plan has to offer any benefit package. Coverage starts no later than the first of the next month after the plan receives the request, unless the plan is more generous. Ending COBRA early is not exhaustion. If the other employer stopped contributing, the right starts then, even if the person could have paid the full cost and kept that plan.',
+          when +
+            'Enroll the person who lost coverage. If the employee lost coverage, dependents can enroll too. If a dependent lost coverage, enroll that dependent and the employee if the plan requires the employee to be enrolled. The health plan has to offer any benefit package. ' +
+            effective +
+            'Ending COBRA early is not exhaustion. If the other employer stopped contributing, the right starts then, even if the person could have paid the full cost and kept that plan.',
           [
             'Confirm they declined this plan because of the other coverage. If your plan required a written statement then, check the file.',
             chip ? 'Count 60 days from the date Medicaid or CHIP eligibility ended.' : 'Count 30 days from the loss, from the date contributions stopped, or from the date COBRA was exhausted.',
@@ -790,11 +796,11 @@ var QEModel = (function () {
       if (a.situation === 'lost_eligibility') {
         return decision(
           'eligibility',
-          'End coverage if the employee is no longer eligible. Do not wait out a 30-day election window to take an ineligible person off the plan. If the change caused a loss of health coverage, COBRA or state continuation may apply. The employer generally notifies the plan administrator within 30 days for a termination or reduction of hours. ' + cobraFamilyNote(),
+          'End coverage if the employee is no longer eligible. Do not wait out a 30-day election window to take an ineligible person off the plan. If the change caused a loss of health coverage, federal COBRA may apply. The employer generally notifies the plan administrator within 30 days for a termination or reduction of hours. ' + cobraFamilyNote(),
           [
             'Use the plan\'s eligibility rule for the end date.',
             'Stop the pre-tax deduction when eligibility ends.',
-            'Send COBRA or state continuation notices if coverage was lost.'
+            'Send the federal COBRA notice if coverage was lost.'
           ],
           ['Treas. Reg. 1.125-4(c)(2)(iii)', '29 CFR 2590.606-2']
         );
@@ -833,7 +839,23 @@ var QEModel = (function () {
         return decision('allowed', 'On a timely return from military service, reinstate health coverage with no new waiting period if the USERRA return-to-work conditions are met and the employee is still in an eligible class.', ['Check the return date against the USERRA deadlines.', 'Do not impose a new waiting period.'], ['38 USC 4317']);
       }
       if (a.situation === 'other_leave') {
-        return decision('not_permitted', 'Other unpaid leave does not allow a mid-year drop or enrollment when eligibility stays the same. If this is FMLA or military leave, use that event. If eligibility changed, use gained eligibility or lost eligibility. A spouse or child\'s own job change belongs under lost or gained other coverage.', ['Pick the event that matches the eligibility change.'], ['Treas. Reg. 1.125-4(c)(2)(iii) and (c)(3)']);
+        return decision('not_permitted', 'Other unpaid leave does not allow a mid-year drop or enrollment when eligibility stays the same. If this is FMLA or military leave, use that event. If eligibility changed, use gained eligibility or lost eligibility. If their class or tier changed, use that situation. A spouse or child\'s own job change belongs under lost or gained other coverage.', ['Pick the event that matches the eligibility change.'], ['Treas. Reg. 1.125-4(c)(2)(iii) and (c)(3)']);
+      }
+      if (a.situation === 'class_or_tier') {
+        if (a.change === 'switch') {
+          return decision(
+            'allowed',
+            'A change in employment status can support an election change that matches the new class or tier. Switching to the option that class or tier can have is that kind of change. If the employee only wanted a different tier and their status did not change, this rule does not apply. A cost change the employer imposed belongs under Employer changed the cost of coverage.',
+            ['Confirm the plan treats the new class or tier as eligible for the option they want.', 'Make the election change consistent with that status change.', DOC],
+            ['Treas. Reg. 1.125-4(c)(2)(iii) and (c)(3)']
+          );
+        }
+        return decision(
+          'not_permitted',
+          'The election change has to correspond to the change in status. A switch that the new class or tier does not require is not permitted under this event.',
+          ['If the employer changed the cost for everyone, use Employer changed the cost of coverage. If they want a different option and their status did not change, this is not a mid-year right.'],
+          ['Treas. Reg. 1.125-4(c)(3)']
+        );
       }
     }
     if (event === 'aged_out') {
@@ -876,7 +898,7 @@ var QEModel = (function () {
           'The employee\'s coverage ends. A surviving spouse and dependent children may elect federal COBRA for up to 36 months if COBRA applies. The employer generally has 30 days to notify the plan administrator of the death. ' + cobraFamilyNote(),
           [
             'End the employee\'s coverage and stop deductions.',
-            'Offer COBRA or state continuation to the spouse and dependent children.',
+            'Offer federal COBRA to the spouse and dependent children.',
             'Do not use this screen to enroll survivors on a different employer\'s plan. That plan has its own special enrollment rule.'
           ],
           ['Treas. Reg. 1.125-4(c)(2)', '29 CFR 2590.606-2', 'COBRA death of the covered employee, generally up to 36 months']
@@ -896,8 +918,8 @@ var QEModel = (function () {
       if (a.what === 'lost_eligibility' && a.change === 'enroll_person') {
         return decision(
           'allowed',
-          'Loss of Medicaid or CHIP eligibility gives the employee or dependent a special enrollment right. The request must be made within 60 days after eligibility ends. Enroll the person who lost Medicaid or CHIP, and the employee if a dependent needs the employee enrolled. This is not the Medicare rule.',
-          ['Count 60 days from the date Medicaid or CHIP eligibility ended.', 'Confirm the effective date with the carrier. Do not assume it is retroactive to the Medicaid end date.', DOC, CARRIER_LINE],
+          'Loss of Medicaid or CHIP eligibility gives the employee or dependent a special enrollment right. The request must be made within 60 days after eligibility ends. Coverage is effective no later than the first of the month after the plan receives the request. Enroll the person who lost Medicaid or CHIP, and the employee if a dependent needs the employee enrolled. This is not the Medicare rule.',
+          ['Count 60 days from the date Medicaid or CHIP eligibility ended.', 'Make coverage effective no later than the first of the month after the plan receives the request.', DOC, CARRIER_LINE],
           ['ERISA section 701(f)(3)', 'Treas. Reg. 1.125-4(b) and (e)', '29 CFR 2590.701-6; 45 CFR 146.117'],
           true
         );
@@ -905,8 +927,8 @@ var QEModel = (function () {
       if (a.what === 'premium_assistance' && a.change === 'enroll_person') {
         return decision(
           'allowed',
-          'If the employee or dependent becomes eligible for a Medicaid or CHIP subsidy that helps pay for this employer plan, the group health plan has to allow enrollment. The request must be made within 60 days after they are found eligible for that assistance. This is a right to join the employer plan, not a right to drop it.',
-          ['Get the state\'s premium assistance determination.', 'Count 60 days from that determination.', 'Give employees the employer CHIP notice if your state has premium assistance.', DOC],
+          'If the employee or dependent becomes eligible for a Medicaid or CHIP subsidy that helps pay for this employer plan, the group health plan has to allow enrollment. The request must be made within 60 days after they are found eligible for that assistance. Coverage is effective no later than the first of the month after the plan receives the request. This is a right to join the employer plan, not a right to drop it.',
+          ['Get the premium assistance determination.', 'Count 60 days from that determination.', 'Make coverage effective no later than the first of the month after the plan receives the request.', DOC],
           ['ERISA section 701(f)(3)', 'Treas. Reg. 1.125-4(b)'],
           true
         );
@@ -974,10 +996,10 @@ var QEModel = (function () {
     }
     if (event === 'cost_change') {
       if (!a.size || a.size === 'unknown') {
-        return decision('need_fact', 'A small cost change and a significant cost change are treated differently. Your plan decides what is significant. There is no IRS percentage.', ['Classify the change, then run this again.'], ['Treas. Reg. 1.125-4(f)(2)']);
+        return decision('need_fact', 'A small employer cost change and a significant employer cost change are treated differently. Your plan decides what is significant. There is no IRS percentage. This event is the employer raising premiums or changing its contribution during the year. If the employee changed their own tier or class, use Job, hours, or leave.', ['Classify the employer\'s change, then run this again.'], ['Treas. Reg. 1.125-4(f)(2)']);
       }
       if (a.size === 'small') {
-        return decision('allowed', 'For a small change, the plan can update the paycheck amount to match the new cost. The employee does not get a new choice of plans. A health FSA cannot be changed because a premium changed.', ['Update deductions on a consistent, prospective basis.', 'Do not open a plan switch for a small change.'], ['Treas. Reg. 1.125-4(f)(1) and (f)(2)(i)']);
+        return decision('allowed', 'If the employer makes a small cost change, the plan can update the paycheck amount to match the new cost. The employee does not get a new choice of plans. A health FSA cannot be changed because a premium changed. An employee who changed their own tier or class is not in this rule.', ['Update deductions on a consistent, prospective basis.', 'Do not open a plan switch for a small change.', 'If the employee switched tier or class, use Job, hours, or leave.'], ['Treas. Reg. 1.125-4(f)(1) and (f)(2)(i)']);
       }
       if (a.size === 'daycare') {
         if (a.relative === 'yes') {
@@ -989,20 +1011,20 @@ var QEModel = (function () {
         return decision('need_fact', 'Ask whether the daycare provider is a relative. A relative\'s rate change does not qualify. A non-relative\'s rate change can.', ['IRC 152 is the relationship test used in the regulation.'], ['Treas. Reg. 1.125-4(f)(2)(iv)']);
       }
       if (a.size === 'decrease') {
-        return decision('allowed', 'If the employee\'s cost goes down significantly, employees can start that option, including people who had waived it, or the enrolled employee can pay the new lower amount. A health FSA cannot be changed for this.', ['Apply your plan\'s election window for the cost change.', DOC, CARRIER_LINE], ['Treas. Reg. 1.125-4(f)(2)(ii)']);
+        return decision('allowed', 'If the employer significantly lowers what the employee pays, or raises its contribution, employees can start that option, including people who had waived it, or the enrolled employee can pay the new lower amount. A health FSA cannot be changed for this. An employee who changed their own tier or class is not in this rule.', ['Apply your plan\'s election window for the cost change.', 'If the employee switched tier or class, use Job, hours, or leave.', DOC, CARRIER_LINE], ['Treas. Reg. 1.125-4(f)(2)(ii)']);
       }
       if (a.size === 'increase') {
         if (a.change === 'pay_more' || a.change === 'switch_similar') {
-          return decision('allowed', 'For a significant increase, the employee can pay the higher amount, or revoke that option and elect a similar benefit package. Similar coverage means the same kind of benefit for the same people. The plan may treat another employer\'s plan as similar. A health FSA is not similar coverage to major medical, and a health FSA election cannot change for this.', ['Confirm you have called the increase significant under the plan\'s own rule.', DOC, CARRIER_LINE], ['Treas. Reg. 1.125-4(f)(2)(ii) and (i)(9)']);
+          return decision('allowed', 'If the employer significantly raises premiums or cuts its contribution, the employee can pay the higher amount, or revoke that option and elect a similar benefit package. Similar coverage means the same kind of benefit for the same people. The plan may treat another employer\'s plan as similar. A health FSA is not similar coverage to major medical, and a health FSA election cannot change for this. An employee who changed their own tier or class, such as a downgrade to a class with a lower employer contribution, is not this event. Use Job, hours, or leave for that status change.', ['Confirm the employer made the increase and that you have called it significant under the plan\'s own rule.', 'If the employee switched their own tier or class, use Job, hours, or leave.', DOC, CARRIER_LINE], ['Treas. Reg. 1.125-4(f)(2)(ii) and (i)(9)']);
         }
         if (a.change === 'drop') {
           if (a.similar === 'no') {
-            return decision('allowed', 'The employee can drop the coverage when the cost went up significantly and no similar benefit package is available. The plan may treat a spouse\'s plan as similar. If it does, dropping with no replacement may not fit.', ['Document that no similar option is available.', DOC], ['Treas. Reg. 1.125-4(f)(2)(ii) and (i)(9)']);
+            return decision('allowed', 'The employee can drop the coverage when the employer\'s cost increase is significant and no similar benefit package is available. The plan may treat a spouse\'s plan as similar. If it does, dropping with no replacement may not fit. This is the employer\'s change in cost, not an employee tier change.', ['Document that no similar option is available.', 'If the employee switched their own tier or class, use Job, hours, or leave.', DOC], ['Treas. Reg. 1.125-4(f)(2)(ii) and (i)(9)']);
           }
           if (a.similar === 'yes') {
-            return decision('not_permitted', 'When a similar option is available, the employee can switch to it or pay the higher cost. They cannot simply drop because of a cost increase.', ['Offer the similar option instead of a drop.'], ['Treas. Reg. 1.125-4(f)(2)(ii)']);
+            return decision('not_permitted', 'When a similar option is available, the employee can switch to it or pay the higher cost the employer set. They cannot simply drop because of that cost increase.', ['Offer the similar option instead of a drop.', 'If the employee switched their own tier or class, use Job, hours, or leave.'], ['Treas. Reg. 1.125-4(f)(2)(ii)']);
           }
-          return decision('need_fact', 'A drop after a cost increase is allowed only if no similar option is available. Confirm that.', ['Similar coverage can include another option, and the plan may treat a spouse\'s plan as similar.'], ['Treas. Reg. 1.125-4(f)(2)(ii)']);
+          return decision('need_fact', 'A drop after the employer\'s cost increase is allowed only if no similar option is available. Confirm that. If the employee changed their own tier or class, use Job, hours, or leave instead.', ['Similar coverage can include another option, and the plan may treat a spouse\'s plan as similar.'], ['Treas. Reg. 1.125-4(f)(2)(ii)']);
         }
       }
     }
@@ -1399,6 +1421,7 @@ var QEModel = (function () {
       if (primary && primary.rawText && primary.code === 'late') {
         steps.push('Inside the usual window, the answer would have been: ' + clip(primary.rawText, 280));
       }
+      if (safe.event === 'divorce' && safe.answers.change === 'drop_spouse') steps.push(DIVORCE_LATE_LINE);
     } else if (code === 'split') {
       summary = 'Each benefit below has its own answer. Do not use one benefit\'s answer for the others.';
       steps = ['Read every benefit before you tell the employee yes or no.'];
@@ -1410,6 +1433,9 @@ var QEModel = (function () {
         if (steps.indexOf(step) === -1 && code !== 'late') steps.push(step);
       });
     });
+    if (code === 'split' && safe.event === 'divorce' && safe.answers.change === 'drop_spouse' && parts.some(function (item) { return item.code === 'late'; })) {
+      steps.push(DIVORCE_LATE_LINE);
+    }
     var bases = [];
     parts.forEach(function (item) {
       item.bases.forEach(function (basis) {
@@ -1567,28 +1593,25 @@ var QEModel = (function () {
     lines.push('- Gold actions use #16233A text and do not use a blue focus outline.');
     lines.push('- The page posts its height so the Wix shim can size the frame. The tool itself does not scroll inside a short panel.');
     lines.push('- Over 30 days now reads as past the standard window, generally not allowed unless the plan allows a longer window. It does not say the request is illegal.');
-    lines.push('- Medicaid and CHIP loss of eligibility, and premium assistance, use 60 days. Medicare is its own event and uses the normal window. Gaining Medicaid is a reason to drop or reduce that person, not a 60-day enrollment right.');
+    lines.push('- Medicaid and CHIP loss of eligibility, and premium assistance, use 60 days. Coverage is effective no later than the first of the month after the plan receives the request. Medicare is its own event and uses the normal window. Gaining Medicaid is a reason to drop or reduce that person, not a 60-day enrollment right.');
     lines.push('- A drop after someone gains other coverage is allowed only for the people that other plan covers.');
     lines.push('- Marriage can add the spouse\'s children, enroll an employee who had waived, and switch benefit package. Coverage starts no later than the first of the next month after the request, not on the wedding date.');
     lines.push('- Birth, adoption, and placement can enroll the employee and spouse as well as the child, and the elected coverage starts on the event date. A drop is not allowed for the birth itself.');
-    lines.push('- Divorce removes the former spouse even when the cafeteria window has passed, because eligibility ended. It does not let the employee drop themselves or a child who is still eligible. The tool no longer promises a backward cancel. It warns about rescission and states the COBRA notice rule without assuming the right is already lost at day 60.');
+    lines.push('- Divorce lets the employee remove the former spouse. The removal is effective under the plan\'s eligibility rule, and the Section 125 election uses the standard 30-day window. A late report gets that window answer, plus one line telling HR to ask the carrier whether it will accept a late or retro removal and what its policy is. The carrier question is not the main answer. Divorce still does not let the employee drop themselves or a child who is still eligible.');
     lines.push('- Loss of other coverage now asks why it ended. Eligibility losses, the other employer stopping contributions, and exhaustion of COBRA can be special enrollment. A chosen drop, nonpayment, or fraud is not. Ending COBRA early is not exhaustion.');
     lines.push('- Job and hours changes now separate a new eligibility, a lost eligibility, an hour cut where the employee stays eligible (Notice 2014-55 only if the plan was amended), FMLA, and USERRA.');
     lines.push('- Death asks who died. Removing someone still living is not allowed. Death of the employee points to COBRA for survivors.');
     lines.push('- A court order can enroll a child, and can remove a child only when the order requires someone else to cover the child and that coverage is in place.');
-    lines.push('- Cost and coverage changes follow the significant-cost, curtailment, new-option, and other-employer election rules. A health FSA cannot be changed for those events.');
+    lines.push('- Cost changes are changes the employer makes during the year, such as raising premiums or cutting its contribution, under Treas. Reg. 1.125-4(f). An employee who changes their own tier or class is handled as a change in employment status, not as a cost change. Coverage changes follow the curtailment, new-option, and other-employer rules. A health FSA cannot be changed for those events.');
     lines.push('- Dependent care has its own answers, including a non-relative rate change, a provider change, and a child turning 13.');
     lines.push('- An HSA paycheck change is prospective and does not need a qualifying event. After-tax benefits outside the cafeteria plan follow the carrier, not a blanket "generally allowed." Pre-tax voluntary benefits still follow Section 125.');
     lines.push('- The result screen keeps the link to the Section 125 plan document tool. No contact form was added. `window.QE.scenario` holds the event, change, timing, coverage, follow-ups, and result for a later form.');
     lines.push('');
     lines.push('## Points that need a human confirmation');
     lines.push('');
-    lines.push('- Retroactive removal after a late divorce report. The tool says not to assume a backward cancel, because of the rescission rule. Carrier practice still varies.');
-    lines.push('- Florida and Georgia continuation for employers under the federal COBRA threshold. The tool names that state rules may apply and does not state a number of months.');
     lines.push('- Whether a particular dental or vision plan is an excepted benefit. That decides whether HIPAA special enrollment forces the carrier to enroll.');
-    lines.push('- What a plan treats as a significant cost increase. The regulation does not set a percentage.');
+    lines.push('- What a plan treats as a significant cost increase. The regulation does not set a percentage. The tool treats the event as the employer changing the cost, and sends an employee tier or class change to the job event.');
     lines.push('- A health FSA decrease when medical coverage moves to a spouse\'s plan. An increase on marriage is in the examples. That decrease is less explicit, so the tool says to check the document.');
-    lines.push('- The effective date after a Medicaid or CHIP special enrollment. Birth and marriage dates are specified. The 60-day CHIP right is in ERISA section 701(f)(3) and DOL guidance. The tool tells HR to confirm the effective date with the carrier and does not call it retroactive.');
     lines.push('- Notice 2014-55 is optional, needs an amendment, and depends on the employee\'s other coverage starting on time. The tool does not decide affordability or full-time status under section 4980H.');
     lines.push('- Proposed cafeteria plan rules are widely followed for monthly HSA election changes. The solid cite used here is IRS Notice 2004-50, Q&A-58, which says the change must be prospective.');
     lines.push('');
@@ -1631,6 +1654,7 @@ var QEModel = (function () {
     PLAN_URL: PLAN_URL,
     LATE30: LATE30,
     LATE60: LATE60,
+    DIVORCE_LATE_LINE: DIVORCE_LATE_LINE,
     EVENTS: EVENTS,
     BENEFITS: BENEFITS,
     PROFILES: PROFILES,

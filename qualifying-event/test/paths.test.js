@@ -12,7 +12,7 @@ function go(event, benefits, answers, timing) {
 }
 
 test('every path is unique and returns a known result', function () {
-  assert.equal(paths.length, 6892);
+  assert.equal(paths.length, 6966);
   const ids = new Set();
   const codes = ['allowed', 'late', 'plan', 'eligibility', 'not_permitted', 'need_fact', 'carrier', 'split'];
   paths.forEach(function (state) {
@@ -105,7 +105,8 @@ test('critical headlines match the rules', function () {
     ['marriage switch', go('marriage', ['medical'], { change: 'switch_plan' }, 'within_30'), 'allowed', /benefit package/],
     ['birth add', go('birth', ['medical'], { change: 'add_or_switch' }, 'within_30'), 'allowed', /date of birth/],
     ['birth drop', go('birth', ['medical'], { change: 'drop' }, 'within_30'), 'not_permitted', /not a reason to drop/],
-    ['divorce spouse late', go('divorce', ['medical'], { change: 'drop_spouse' }, 'over_30'), 'eligibility', /rescission|COBRA/],
+    ['divorce spouse on time', go('divorce', ['medical'], { change: 'drop_spouse' }, 'within_30'), 'allowed', /standard 30-day window/],
+    ['divorce spouse late', go('divorce', ['medical'], { change: 'drop_spouse' }, 'over_30'), 'late', new RegExp(escapeRe(QE.LATE30))],
     ['divorce drop all', go('divorce', ['medical'], { change: 'drop_all' }, 'within_30'), 'not_permitted', /does not let the employee drop/],
     ['divorce child stays', go('divorce', ['medical'], { change: 'drop_child', child_reason: 'still_eligible' }, 'within_30'), 'not_permitted', /still eligible/],
     ['divorce child order', go('divorce', ['medical'], { change: 'drop_child', child_reason: 'other_parent' }, 'within_30'), 'allowed', /actually in place/],
@@ -232,7 +233,109 @@ test('source and scenario matrix have no em dashes and the matrix matches the en
   assert.match(embed, /qualifying-event/);
   const matrix = fs.readFileSync(path.join(root, 'SCENARIOS.md'), 'utf8');
   assert.equal(matrix, QE.scenariosMarkdown(paths));
-  assert.match(matrix, /Path count: 6892/);
+  assert.match(matrix, /Path count: 6966/);
+  assert.equal(matrix.indexOf('Florida'), -1);
+  assert.equal(matrix.indexOf('Georgia'), -1);
+});
+
+test('Dan\'s calls on the gray areas', function () {
+  const onTime = QE.evaluate(go('divorce', ['medical'], { change: 'drop_spouse' }, 'within_30'));
+  assert.equal(onTime.code, 'allowed');
+  assert.match(onTime.summary, /effective under the plan's eligibility rule/);
+  assert.match(onTime.summary, /standard 30-day window/);
+  assert.equal(onTime.summary.indexOf(QE.DIVORCE_LATE_LINE), -1);
+  assert.equal(QE.windowMode(go('divorce', ['medical'], { change: 'drop_spouse' }, 'within_30')), 'gate30');
+
+  const late = QE.evaluate(go('divorce', ['medical'], { change: 'drop_spouse' }, 'over_30'));
+  assert.equal(late.summary, QE.LATE30);
+  assert.ok(late.steps.indexOf(QE.DIVORCE_LATE_LINE) !== -1);
+  assert.equal(late.summary.indexOf('Ask the carrier'), -1);
+
+  const mixed = QE.evaluate(go('divorce', ['medical', 'aftertax'], { change: 'drop_spouse' }, 'over_30'));
+  assert.equal(mixed.code, 'split');
+  assert.ok(mixed.steps.indexOf(QE.DIVORCE_LATE_LINE) !== -1);
+  assert.equal(mixed.parts[0].text, QE.LATE30);
+
+  const chip = QE.evaluate(go('medicaid_chip', ['medical'], { what: 'lost_eligibility', who: 'employee', change: 'enroll_person' }, 'within_60'));
+  assert.match(chip.summary, /within 60 days/);
+  assert.match(chip.summary, /first of the month after the plan receives the request/);
+  assert.equal(/confirm the effective date with the carrier/i.test(chip.summary + chip.steps.join(' ')), false);
+
+  const assist = QE.evaluate(go('medicaid_chip', ['medical'], { what: 'premium_assistance', who: 'child', change: 'enroll_person' }, 'within_60'));
+  assert.match(assist.summary, /first of the month after the plan receives the request/);
+
+  const chipLoss = QE.evaluate(go('lost_coverage', ['medical'], { who: 'employee', reason: 'chip_or_medicaid', change: 'enroll' }, 'within_60'));
+  assert.match(chipLoss.summary, /first of the month after the plan receives the request/);
+
+  const increase = QE.evaluate(go('cost_change', ['medical'], { size: 'increase', change: 'pay_more' }, 'within_30'));
+  assert.match(increase.summary, /employer significantly raises premiums or cuts its contribution/);
+  assert.match(increase.summary, /tier or class/);
+  assert.ok(increase.bases.some(function (basis) { return basis.indexOf('1.125-4(f)') !== -1; }));
+
+  const tier = QE.evaluate(go('job_leave', ['medical'], { situation: 'class_or_tier', change: 'switch' }, 'within_30'));
+  assert.equal(tier.code, 'allowed');
+  assert.match(tier.summary, /class or tier/);
+  const unrelated = QE.evaluate(go('job_leave', ['medical'], { situation: 'class_or_tier', change: 'unrelated' }, 'within_30'));
+  assert.equal(unrelated.code, 'not_permitted');
+
+  paths.forEach(function (state) {
+    const packed = JSON.stringify(QE.evaluate(state));
+    assert.equal(packed.indexOf('Florida'), -1, state.id);
+    assert.equal(packed.indexOf('Georgia'), -1, state.id);
+  });
+  const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'qe-model.js'), 'utf8');
+  assert.equal(source.indexOf('Florida'), -1);
+  assert.equal(source.indexOf('Georgia'), -1);
+  assert.equal(source.indexOf('\u2014'), -1);
+  assert.equal(source.indexOf('\u2013'), -1);
+});
+
+test('every original tool path still has a home', function () {
+  const homes = [
+    ['marriage add spouse or family', go('marriage', ['medical'], { change: 'add_family' }, 'within_30'), 'allowed'],
+    ['marriage drop onto spouse plan', go('marriage', ['medical'], { change: 'drop_to_spouse', covered: 'family' }, 'within_30'), 'allowed'],
+    ['marriage drop with no spouse plan', go('marriage', ['medical'], { change: 'drop_to_spouse', covered: 'no' }, 'within_30'), 'not_permitted'],
+    ['marriage switch', go('marriage', ['medical'], { change: 'switch_plan' }, 'within_30'), 'allowed'],
+    ['divorce drop spouse', go('divorce', ['medical'], { change: 'drop_spouse' }, 'within_30'), 'allowed'],
+    ['divorce drop child affected', go('divorce', ['medical'], { change: 'drop_child', child_reason: 'other_parent' }, 'within_30'), 'allowed'],
+    ['divorce drop child not affected', go('divorce', ['medical'], { change: 'drop_child', child_reason: 'still_eligible' }, 'within_30'), 'not_permitted'],
+    ['divorce add child affected', go('divorce', ['medical'], { change: 'add_child', affected: 'lost_other' }, 'within_30'), 'allowed'],
+    ['divorce add child not affected', go('divorce', ['medical'], { change: 'add_child', affected: 'not_affected' }, 'within_30'), 'not_permitted'],
+    ['divorce switch', go('divorce', ['medical'], { change: 'switch_plan' }, 'within_30'), 'not_permitted'],
+    ['birth add child, family, or switch', go('birth', ['medical'], { change: 'add_or_switch' }, 'within_30'), 'allowed'],
+    ['employee lost other coverage', go('lost_coverage', ['medical'], { who: 'employee', reason: 'eligibility', change: 'enroll' }, 'within_30'), 'allowed'],
+    ['dependent lost other coverage', go('lost_coverage', ['medical'], { who: 'spouse', reason: 'eligibility', change: 'enroll' }, 'within_30'), 'allowed'],
+    ['employee gained coverage drop all', go('gained_coverage', ['medical'], { who: 'everyone', change: 'drop_all' }, 'within_30'), 'allowed'],
+    ['employee gained coverage drop spouse', go('gained_coverage', ['medical'], { who: 'spouse_only', change: 'drop_spouse' }, 'within_30'), 'allowed'],
+    ['employee gained coverage drop child', go('gained_coverage', ['medical'], { who: 'child_only', change: 'drop_child' }, 'within_30'), 'allowed'],
+    ['dependent gained coverage drop all', go('gained_coverage', ['medical'], { who: 'spouse_only', change: 'drop_all' }, 'within_30'), 'not_permitted'],
+    ['dependent aged off', go('aged_out', ['medical'], { status: 'no_longer' }, 'over_30'), 'eligibility'],
+    ['job change enroll after loss of other coverage', go('lost_coverage', ['medical'], { who: 'employee', reason: 'eligibility', change: 'enroll' }, 'within_30'), 'allowed'],
+    ['job change newly eligible', go('job_leave', ['medical'], { situation: 'gained_eligibility', change: 'enroll' }, 'within_30'), 'allowed'],
+    ['job change drop after gaining other coverage', go('gained_coverage', ['medical'], { who: 'employee_only', change: 'drop_employee' }, 'within_30'), 'allowed'],
+    ['job change switch for new class or tier', go('job_leave', ['medical'], { situation: 'class_or_tier', change: 'switch' }, 'within_30'), 'allowed'],
+    ['job change with no eligibility change', go('job_leave', ['medical'], { situation: 'other_leave', change: 'drop' }, 'within_30'), 'not_permitted'],
+    ['move switch when another option covers the area', go('move', ['medical'], { effect: 'out_other', change: 'switch' }, 'within_30'), 'allowed'],
+    ['move switch when nothing covers the area', go('move', ['medical'], { effect: 'out_none', change: 'switch' }, 'within_30'), 'not_permitted'],
+    ['move drop when nothing covers the area', go('move', ['medical'], { effect: 'out_none', change: 'drop' }, 'within_30'), 'allowed'],
+    ['move unsure', go('move', ['medical'], { effect: 'unknown', change: 'switch' }, 'within_30'), 'need_fact'],
+    ['death drop spouse', go('death', ['medical'], { who: 'spouse', change: 'remove_deceased' }, 'over_30'), 'eligibility'],
+    ['death drop child', go('death', ['medical'], { who: 'child', change: 'remove_deceased' }, 'over_30'), 'eligibility'],
+    ['court order add child', go('court_order', ['medical'], { change: 'enroll' }, 'not_applicable'), 'eligibility'],
+    ['medicaid or chip loss enroll', go('medicaid_chip', ['medical'], { what: 'lost_eligibility', who: 'employee', change: 'enroll_person' }, 'within_60'), 'allowed'],
+    ['medicare or medicaid gain drop', go('medicare', ['medical'], { what: 'gained', who: 'employee', change: 'reduce_person' }, 'within_30'), 'allowed'],
+    ['medicaid gain drop', go('medicaid_chip', ['medical'], { what: 'gained_medicaid', who: 'employee', change: 'drop_person' }, 'within_30'), 'allowed'],
+    ['medicaid change that does not match', go('medicaid_chip', ['medical'], { what: 'lost_eligibility', who: 'employee', change: 'drop_person' }, 'within_60'), 'not_permitted'],
+    ['employer cost change switch', go('cost_change', ['medical'], { size: 'increase', change: 'switch_similar' }, 'within_30'), 'allowed'],
+    ['employer cost change drop', go('cost_change', ['medical'], { size: 'increase', change: 'drop', similar: 'no' }, 'within_30'), 'allowed'],
+    ['plan or network change switch', go('coverage_change', ['medical'], { kind: 'partial', change: 'switch_similar' }, 'within_30'), 'allowed'],
+    ['plan or network change drop', go('coverage_change', ['medical'], { kind: 'loss', change: 'drop', similar: 'no' }, 'within_30'), 'allowed'],
+    ['other or unsure', go('other', ['medical'], { change: 'unspecified' }, 'not_applicable'), 'need_fact']
+  ];
+  homes.forEach(function (row) {
+    const result = QE.evaluate(row[1]);
+    assert.equal(result.code, row[2], row[0] + ' ' + result.summary);
+  });
 });
 
 function escapeRe(text) {
