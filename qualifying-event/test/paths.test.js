@@ -221,7 +221,7 @@ test('scenario object is one place a later form can read', function () {
 });
 
 test('source and scenario matrix have no em dashes and the matrix matches the engine', function () {
-  ['qe-model.js', 'qe-ui.js', 'qe.css', 'index.html', 'embed.html', 'SCENARIOS.md'].forEach(function (name) {
+  ['qe-model.js', 'qe-ui.js', 'qe-form.js', 'qe.css', 'index.html', 'embed.html', 'SCENARIOS.md', 'apps-script/Code.gs', 'apps-script/SETUP.md'].forEach(function (name) {
     const text = fs.readFileSync(path.join(root, name), 'utf8');
     assert.equal(text.indexOf('\u2014'), -1, name);
     assert.equal(text.indexOf('\u2013'), -1, name);
