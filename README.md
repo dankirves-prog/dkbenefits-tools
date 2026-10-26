@@ -56,15 +56,17 @@ http://localhost:8000/compliance-assessment-embed.html
 ## Qualifying Event Decision Tool
 
 - `qualifying-event/index.html` — Section 125 mid-year election change decision tool, hosted at `https://dankirves-prog.github.io/dkbenefits-tools/qualifying-event/` after this is on `main`. GitHub Pages serves `main` only.
-- `qualifying-event/embed.html` — Wix HtmlComponent shim. It iframes that Pages URL and forwards `postMessage` both ways (same pattern as `wrapplan/embed.html`).
-- The tool is the same page that is pasted into the HTML component on [dkbenefits.net/qualifying-event-decision-tool](https://www.dkbenefits.net/qualifying-event-decision-tool). It fills the iframe (`height: 100vh`) and scrolls inside the step. It does not post a resize height.
-- Keep the component size already set in Wix: **639×720** on desktop and **320×453** on mobile. The white frame grows with the iframe. A shorter frame scrolls inside the step, which is how the page works today.
+- `qualifying-event/embed.html` — Wix HtmlComponent shim. It iframes that Pages URL, sets the iframe height from `{ type: 'resize', height, tool: 'qualifying-event' }`, and forwards `postMessage` both ways. The iframe address stays the GitHub Pages URL, so the shim shows the new tool only after this is on `main`.
+- The tool page is full width and grows with the answers. Set the Wix component to full width, in place of the old 639 by 720 desktop size and 320 by 453 phone size. A height of about 1200px on desktop and 1700px on a phone covers the first screen. The shim grows its document to the tool. A taller component leaves empty space under the tool. A shorter component scrolls once, in the Wix frame.
+- The result keeps the link to the Section 125 plan document tool. There is no contact form. `window.QE.scenario` holds the event, change, timing, coverage, follow-ups, and result.
+- Every path, the result, and the legal basis are in `qualifying-event/SCENARIOS.md`. `npm test` in `qualifying-event/` checks them.
 - Paste this into the Wix HTML embed (website address): `https://dankirves-prog.github.io/dkbenefits-tools/qualifying-event/embed.html`
 
-Local preview of the tool (the embed iframe points at the Pages URL, so it stays blank until this is on `main`):
+Local preview of the tool (the embed iframe points at the Pages URL, so it shows the live `main` tool until this branch is merged):
 
 ```text
 http://localhost:8000/qualifying-event/
+http://localhost:8000/qualifying-event/test/harness.html
 ```
 
 ## Section 125 Plan Tool

@@ -2,9 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Qualifying event decision tool</title>
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; }
-    iframe { border: 0; width: 100%; height: 100%; display: block; }
+    html, body { margin: 0; padding: 0; background: #F5F7FB; height: auto; }
+    iframe { border: 0; width: 100%; height: 960px; display: block; }
   </style>
 </head>
 <body>
@@ -24,11 +26,29 @@
       ALLOWED.forEach(function (origin) {
         try { target.postMessage(data, origin); } catch (err) {}
       });
+      if (window.location.origin && ALLOWED.indexOf(window.location.origin) === -1) {
+        try { target.postMessage(data, window.location.origin); } catch (err) {}
+      }
+    }
+    function applyHeight(height) {
+      var next = Math.max(320, Math.ceil(height));
+      frame.style.height = next + 'px';
+      document.documentElement.style.height = next + 'px';
+      document.body.style.height = next + 'px';
     }
     window.addEventListener('message', function (event) {
-      if (ALLOWED.indexOf(event.origin) === -1) return;
-      if (event.source === frame.contentWindow) forward(window.parent, event.data);
-      else if (frame.contentWindow) frame.contentWindow.postMessage(event.data, 'https://dankirves-prog.github.io');
+      var known = ALLOWED.indexOf(event.origin) !== -1 || event.origin === window.location.origin;
+      if (!known) return;
+      var data = event.data || {};
+      if (event.source === frame.contentWindow) {
+        if (data.type === 'resize' && data.tool === 'qualifying-event' && typeof data.height === 'number') {
+          applyHeight(data.height);
+        }
+        if (data.type === 'scrollTop') window.scrollTo(0, 0);
+        forward(window.parent, data);
+      } else if (frame.contentWindow) {
+        frame.contentWindow.postMessage(data, 'https://dankirves-prog.github.io');
+      }
     });
   </script>
 </body>
