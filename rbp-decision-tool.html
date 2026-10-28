@@ -28,20 +28,22 @@ p,li{font:16px/1.5 Arial;color:#33404f}
 .who{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .f{display:grid;grid-template-columns:1fr 1fr;gap:10px}.f input,.f select{font:15px Arial;padding:11px;border:1px solid #cfd6dd;border-radius:8px;width:100%;box-sizing:border-box}
 .hp{position:absolute;left:-9999px}
+.risk{display:inline-block;font:700 12px Arial;border-radius:20px;padding:3px 10px;margin-left:6px}.risk.High{background:#f6d4cc}.risk.Medium{background:#f5e3b5}.risk.Low{background:#d9efe3}
+table.sh{width:100%;border-collapse:collapse;font:14px Arial;margin-top:8px}table.sh td{padding:6px 4px;border-bottom:1px solid #eef1f3}
 .q{font:12px/1.5 Arial;color:#7a8590}
 @media(max-width:600px){.grid,.who,.f{grid-template-columns:1fr}h1{font-size:26px}.tile{font-size:9px}}
 </style></head><body><div class="w">
 <div class="eb">For self-funded groups with 100+ employees</div>
 <h1>RBP Decision Tool</h1>
-<p>Reference-based pricing pays hospitals and doctors a set percentage of Medicare instead of a network discount. Search a hospital, system, city, or ZIP, or pick a state, and we will suggest a starting point, a floor, and a ceiling.</p>
+<p>Reference-based pricing pays hospitals and doctors a set percentage of Medicare instead of a network discount. Pick your state and market, or search a hospital or health system. Every market and system gets its own suggested starting point, floor, and ceiling, based on what local employer plans pay today.</p>
 
 <div class="card">
-<div class="srch"><input id="q" placeholder="Hospital, health system, city, or ZIP" autocomplete="off"><div class="res" id="res"></div></div>
-<div class="hint">Or tap a state below.</div>
+<div class="f"><select id="st"><option value="">Pick a state</option></select><select id="mk" disabled><option value="">Pick a market</option></select></div>
+<div class="srch" style="margin-top:10px"><input id="q" placeholder="Hospital, health system, city, or ZIP" autocomplete="off"><div class="res" id="res"></div></div>
+<div class="hint" id="sh">Search covers every state until you pick one. Or tap a state below.</div>
 <div class="tm" id="tm"></div>
 <div class="leg"><span style="background:#d9efe3"></span>under 200% <span style="background:#eef3c9"></span>200 to 249% <span style="background:#f5e3b5"></span>250 to 299% <span style="background:#f2c9a8"></span>300 to 349% <span style="background:#eaa79a"></span>350%+</div>
 </div>
-
 <div class="card" id="out"></div>
 
 <div class="card"><h2>Who this is for</h2><div class="who">
@@ -68,55 +70,67 @@ p,li{font:16px/1.5 Arial;color:#33404f}
 <div><button class="btn" type="submit">Send</button></div><div id="lmsg" class="hint"></div>
 </form></div>
 
-<p class="q">Market prices are from the RAND Hospital Price Transparency Study, Round 5.1 (2025): states use 2022 claims, hospitals and systems use 2020 to 2022 claims. Percentages are guidance, not a quote or legal advice. Savings compare to what employer plans pay hospitals today. Actual results depend on the plan, the vendor, and the providers your members use.</p>
+<p class="q">Market prices are from the RAND Hospital Price Transparency Study, Round 5.1 (2025): states use 2022 claims; markets, hospitals, and systems use 2020 to 2022 claims. Markets group hospitals within a set distance of each metro. Percentages are guidance, not a quote or legal advice. Savings compare to what employer plans pay hospitals today. Actual results depend on the plan, the vendor, and the providers your members use.</p>
 </div>
 <script src="config.js"></script>
 <script>
 var NAMES={AL:"Alabama",AK:"Alaska",AZ:"Arizona",AR:"Arkansas",CA:"California",CO:"Colorado",CT:"Connecticut",DE:"Delaware",DC:"District of Columbia",FL:"Florida",GA:"Georgia",HI:"Hawaii",ID:"Idaho",IL:"Illinois",IN:"Indiana",IA:"Iowa",KS:"Kansas",KY:"Kentucky",LA:"Louisiana",ME:"Maine",MD:"Maryland",MA:"Massachusetts",MI:"Michigan",MN:"Minnesota",MS:"Mississippi",MO:"Missouri",MT:"Montana",NE:"Nebraska",NV:"Nevada",NH:"New Hampshire",NJ:"New Jersey",NM:"New Mexico",NY:"New York",NC:"North Carolina",ND:"North Dakota",OH:"Ohio",OK:"Oklahoma",OR:"Oregon",PA:"Pennsylvania",RI:"Rhode Island",SC:"South Carolina",SD:"South Dakota",TN:"Tennessee",TX:"Texas",UT:"Utah",VT:"Vermont",VA:"Virginia",WA:"Washington",WV:"West Virginia",WI:"Wisconsin",WY:"Wyoming"};
 var GRID={AK:[0,0],ME:[11,0],WI:[6,1],VT:[10,1],NH:[11,1],WA:[1,2],ID:[2,2],MT:[3,2],ND:[4,2],MN:[5,2],IL:[6,2],MI:[7,2],NY:[9,2],MA:[10,2],RI:[11,2],OR:[1,3],NV:[2,3],WY:[3,3],SD:[4,3],IA:[5,3],IN:[6,3],OH:[7,3],PA:[8,3],NJ:[9,3],CT:[10,3],CA:[1,4],UT:[2,4],CO:[3,4],NE:[4,4],MO:[5,4],KY:[6,4],WV:[7,4],VA:[8,4],MD:[9,4],DE:[10,4],AZ:[2,5],NM:[3,5],KS:[4,5],AR:[5,5],TN:[6,5],NC:[7,5],SC:[8,5],DC:[9,5],OK:[4,6],LA:[5,6],MS:[6,6],AL:[7,6],GA:[8,6],HI:[0,7],TX:[4,7],FL:[9,7]};
-var D,last="";
+var D,last="",cur="";
 function col(v){return v==null?"#ddd":v<200?"#d9efe3":v<250?"#eef3c9":v<300?"#f5e3b5":v<350?"#f2c9a8":"#eaa79a"}
-function hosp(M){return{f:130,s:M<200?140:150,c:M>=300?185:175}}
-var PRO={f:110,s:125,c:140};
 function esc(t){return String(t==null?"":t).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 function save(x,base){return base?Math.round((1-x/base)*100):null}
-function cards(g,base,sub){function t(x){var s=save(x,base);return s==null?"":(s>0?"About "+s+"% below what plans pay today.":"At or above what plans pay today.")}
-return '<div class="grid"><div class="k"><span class="lab">Floor</span><b>'+g.f+'%</b><small>Do not go lower. '+t(g.f)+'</small></div><div class="k g"><span class="lab">Our suggestion</span><b>'+g.s+'%</b><small>'+t(g.s)+'</small></div><div class="k"><span class="lab">Ceiling</span><b>'+g.c+'%</b><small>Highest we would go. '+t(g.c)+'</small></div></div>'}
-function render(title,sub,M,ip,op,fac,prof,flag,st){var o=document.getElementById("out");
-if(M==null){o.innerHTML='<h2>'+esc(title)+'</h2><p>Maryland sets hospital rates for every payer, so RBP does not apply there.</p>';return}
-var g=hosp(M),base=fac||M,step=Math.round(10/g.s*100);
-var h='<div class="lab">'+esc(sub)+'</div><h2 style="margin-top:4px">'+esc(title)+'</h2>'+(flag?'<div class="flag">'+flag+'</div>':'')+
-'<p>Employer plans paid about <b>'+M+'% of Medicare</b> overall here (inpatient '+(ip||"n/a")+'%, outpatient '+(op||"n/a")+'%).</p>'+
-'<h3>Hospital rate</h3>'+cards(g,base)+
-(M<=g.s?'<div class="dev">Prices here are already close to our suggestion, so RBP would save little on hospital bills.</div>':'')+
-'<div class="dev"><b>Below '+g.f+'%:</b> close to what Medicare pays, which many hospitals say does not cover their costs. Expect more balance bills and more providers refusing scheduled care, for little extra savings.</div>'+
-'<div class="dev"><b>Above '+g.c+'%:</b> each 10 points adds roughly '+step+'% to hospital spend under RBP and may needlessly raise your stop-loss and renewal rates. A higher percentage does not stop balance bills. Contracts do.</div>'+
-'<h3>Doctor rate</h3>'+cards(PRO,null)+
-'<div class="dev">Doctor and other professional services are usually paid at a lower multiple than hospitals.'+(prof?' Hospital-based professional services here ran about '+prof+'% of Medicare.':'')+'</div>'+
-'<p style="margin-top:16px"><a class="btn" href="#lead">Talk to Dan about your group</a></p>';
-o.innerHTML=h;document.querySelectorAll(".tile").forEach(function(t){t.classList.toggle("on",t.textContent==st)})}
-function showState(k){var S=D.states[k];if(!S){render(NAMES[k],"State",null,null,null,null,null,null,k);return}
-last="State: "+NAMES[k]+" "+S.all+"%";render(NAMES[k],"State average",S.all,S.ip,S.op,S.fac,S.prof,null,k)}
-function showHosp(h){var S=D.states[h.s]||{},lim=h.lim||h.all==null,M=h.all!=null?h.all:S.all,flag=null;
-if(lim)flag=h.all==null?"Limited data for this hospital. We are using the "+NAMES[h.s]+" average instead.":"Limited data for this hospital, so treat its price as a rough guide. The "+NAMES[h.s]+" average is "+S.all+"%.";
-if(h.all==null){render(h.n,h.c+", "+h.s+(h.sys?" | "+h.sys:""),S.all,S.ip,S.op,S.fac,S.prof,flag,h.s)}
-else render(h.n,h.c+", "+h.s+(h.sys?" | "+h.sys:""),M,h.ip,h.op,h.fac,h.prof||S.prof,flag,h.s);
-last="Hospital: "+h.n+", "+h.c+" "+h.s+" "+M+"%"}
-function showSys(s){last="System: "+s.n+" "+s.all+"%";render(s.n,"Health system",s.all,s.ip,s.op,s.fac,s.prof,null,"")}
+function cards(f,s,c,base){function t(x){var v=save(x,base);return v==null?"":(v>0?"About "+v+"% below what plans pay today.":"At or above what plans pay today.")}
+return '<div class="grid"><div class="k"><span class="lab">Floor</span><b>'+f+'%</b><small>Do not go lower. '+t(f)+'</small></div><div class="k g"><span class="lab">Our suggestion</span><b>'+s+'%</b><small>'+t(s)+'</small></div><div class="k"><span class="lab">Ceiling</span><b>'+c+'%</b><small>Highest we would go. '+t(c)+'</small></div></div>'}
+var NOTE={"Concentrated market (+5)":"One system or a few systems control most local hospital care, so we start 5 points higher to cut pushback.","Wide price spread, real lower-cost options (-5)":"Prices vary widely here and lower-priced hospitals are close by, so we start 5 points lower.","Outpatient priced far above inpatient: biggest savings in outpatient and imaging":"Outpatient care is priced far above inpatient here, so most savings come from outpatient surgery, imaging, and labs.","Local prices already close to the suggested start: limited savings":"Prices here are already close to our suggestion, so RBP would save little on hospital bills."};
+function render(o){var el=document.getElementById("out"),r=o.r,M=o.all,step=Math.round(10/r.start*100);
+var h='<div class="lab">'+esc(o.sub)+'</div><h2 style="margin-top:4px">'+esc(o.title)+(o.risk?'<span class="risk '+o.risk+'">'+o.risk+' pushback risk</span>':'')+'</h2>'+(o.flag?'<div class="flag">'+o.flag+'</div>':'')+
+'<p>Employer plans paid about <b>'+M+'% of Medicare</b> here (inpatient '+(o.ip||"n/a")+'%, outpatient '+(o.op||"n/a")+'%).'+(o.extra||'')+'</p>'+
+'<h3>Hospital rate</h3>'+cards(r.floor,r.start,r.ceiling,M)+
+(r.notes||[]).map(function(n){return NOTE[n]?'<div class="dev">'+NOTE[n]+'</div>':''}).join('')+(o.why?'<div class="dev">'+o.why+'</div>':'')+
+'<div class="dev"><b>Below '+r.floor+'%:</b> too far under what local hospitals are paid today, including the lower-priced ones. Expect more balance bills and more providers refusing scheduled care, for little extra savings.</div>'+
+'<div class="dev"><b>Above '+r.ceiling+'%:</b> each 10 points adds roughly '+step+'% to hospital spend under RBP and may needlessly raise your stop-loss and renewal rates. A higher percentage does not stop balance bills. Contracts do.</div>'+
+(r.doctor?'<h3>Doctor rate</h3>'+cards(r.doctor.floor,r.doctor.start,r.doctor.ceiling,null)+'<div class="dev">Doctor and other professional services are usually paid at a lower multiple than hospitals.'+(o.prof?' Hospital-based professional services here ran about '+o.prof+'% of Medicare.':'')+'</div>':'')+
+(o.table||'')+'<p style="margin-top:16px"><a class="btn" href="#lead">Talk to Dan about your group</a></p>';el.innerHTML=h;
+document.querySelectorAll(".tile").forEach(function(t){t.classList.toggle("on",t.textContent==cur)})}
+function setState(k,quiet){cur=k;var sel=document.getElementById("st"),mk=document.getElementById("mk");sel.value=k||"";mk.innerHTML='<option value="">'+(k?"All of "+NAMES[k]:"Pick a market")+'</option>';
+var S=k&&D.states[k];mk.disabled=!(S&&S.m.length);if(S)S.m.forEach(function(id){var o=document.createElement("option");o.value=id;o.textContent=D.markets[id].n;mk.appendChild(o)});
+if(S&&S.rest){var o=document.createElement("option");o.value="_rest";o.textContent="Rest of "+NAMES[k];mk.appendChild(o)}
+document.getElementById("sh").textContent=k?"Search now shows "+NAMES[k]+" only.":"Search covers every state until you pick one. Or tap a state below.";
+if(!quiet)showState(k)}
+function showState(k){if(!k)return;var S=D.states[k];cur=k;if(!S){render({title:NAMES[k],sub:"State",all:"n/a",r:{floor:"-",start:"-",ceiling:"-"}});document.getElementById("out").innerHTML='<h2>'+NAMES[k]+'</h2><p>Maryland sets hospital rates for every payer, so RBP does not apply there.</p>';return}
+last="State: "+NAMES[k]+" "+S.all+"%";render({title:NAMES[k],sub:"State average",all:S.all,ip:S.ip,op:S.op,prof:S.prof,r:S.r,extra:S.m.length?' Pick a market above for a range built for your area.':''})}
+function showRest(k){var S=D.states[k].rest;last="Rest of "+NAMES[k]+" "+S.all+"%";render({title:"Rest of "+NAMES[k],sub:"Outside the major markets",all:S.all,r:S.r,prof:D.states[k].prof})}
+function sysTable(list){if(!list||!list.length)return"";return '<h3>Who runs hospital care here</h3><table class="sh">'+list.map(function(x){return '<tr><td>'+esc(x.sys)+'</td><td>'+x.pct+'% of spending</td><td>'+x.all+'% of Medicare</td></tr>'}).join('')+'</table>'}
+function showMkt(id){var m=D.markets[id];var flag=m.thin?"Only "+m.c+" hospitals with enough claims here, so treat this as a rough guide.":null;last="Market: "+m.n+" "+m.all+"%";
+render({title:m.n,sub:"Market, "+m.c+" hospitals",all:m.all,ip:m.ip,op:m.op,prof:m.prof,r:m.r,flag:flag,extra:(m.p75-m.p25>=15?' Lower-priced hospitals here run about '+m.p25+'%, higher-priced about '+m.p75+'%.':''),table:sysTable(m.sh)})}
+function showSys(s){last="System: "+s.n+" ("+s.s+") "+s.all+"%";render({title:s.n,sub:"Health system in "+NAMES[s.s]+", "+s.c+" hospitals",all:s.all,ip:s.ip,op:s.op,prof:s.prof,r:s.r,risk:s.risk,
+why:"Why "+s.risk.toLowerCase()+" risk: "+s.why.join(", and ")+". Expect stronger pushback from systems that lose the most at the suggested rate and that members have few alternatives to."+(s.bn?" "+s.bn:"")})}
+function showHosp(h){cur=h.s;var S=D.states[h.s],base=h.m?D.markets[h.m]:null,src=base||(S&&S.rest)||S;
+if(!src){showState(h.s);return}var flag=h.all==null?"Not enough claims for this hospital, so we show the range for its area.":null;
+var sy=h.sys&&D.systems.filter(function(x){return x.n==h.sys&&x.s==h.s})[0];
+last="Hospital: "+h.n+", "+h.c+" "+h.s+" "+(h.all||"")+"%";
+render({title:h.n,sub:h.c+", "+h.s+(base?" | "+base.n:"")+(h.sys&&h.sys.indexOf("Independent")!=0?" | "+h.sys:""),all:h.all||src.all,ip:h.ip,op:h.op,prof:h.prof||src.prof,r:src.r,flag:flag,risk:sy?sy.risk:null,
+extra:h.all!=null?' The '+(base?base.n+' market':'area')+' averages '+src.all+'%, so this hospital is '+(h.all>src.all*1.1?'priced above':h.all<src.all*0.9?'priced below':'close to')+' its market. The range is set for the market.':''})}
 function search(v){var r=document.getElementById("res");v=v.trim().toLowerCase();if(v.length<2){r.style.display="none";return}
-var out=[],isZip=/^\d{3,5}$/.test(v);
-D.systems.forEach(function(s){if(!isZip&&s.n.toLowerCase().indexOf(v)>=0)out.push({t:"s",o:s})});
-D.hospitals.forEach(function(h){if(isZip?h.z.indexOf(v)==0:(h.n.toLowerCase().indexOf(v)>=0||h.c.toLowerCase().indexOf(v)>=0))out.push({t:"h",o:h})});
-Object.keys(NAMES).forEach(function(k){if(!isZip&&NAMES[k].toLowerCase().indexOf(v)==0)out.unshift({t:"st",o:k})});
-out=out.slice(0,40);r.innerHTML=out.length?"":'<div>No match. Try a city or ZIP.</div>';
+var out=[],isZip=/^\d{3,5}$/.test(v),ok=function(s){return !cur||s==cur};
+Object.keys(D.markets).forEach(function(id){var m=D.markets[id];if(!isZip&&m.st.some(ok)&&m.n.toLowerCase().indexOf(v)>=0)out.push({t:"m",o:id})});
+D.systems.forEach(function(s){var hit=s.n.toLowerCase().indexOf(v)>=0||(s.rn&&s.rn.toLowerCase().indexOf(v)>=0)||(s.aka||[]).some(function(a){return a.toLowerCase().indexOf(v)>=0});if(!isZip&&ok(s.s)&&hit)out.push({t:"s",o:s})});
+D.hospitals.forEach(function(h){if(ok(h.s)&&(isZip?h.z.indexOf(v)==0:(h.n.toLowerCase().indexOf(v)>=0||h.c.toLowerCase().indexOf(v)>=0)))out.push({t:"h",o:h})});
+if(!cur)Object.keys(NAMES).forEach(function(k){if(!isZip&&NAMES[k].toLowerCase().indexOf(v)==0)out.unshift({t:"st",o:k})});
+out=out.slice(0,40);r.innerHTML=out.length?"":'<div>No match'+(cur?' in '+NAMES[cur]:'')+'. Try a city or ZIP.</div>';
 out.forEach(function(x){var d=document.createElement("div");
 if(x.t=="st")d.innerHTML="<b>"+NAMES[x.o]+"</b> <small>state</small>";
-else if(x.t=="s")d.innerHTML="<b>"+esc(x.o.n)+"</b> <small>health system</small>";
+else if(x.t=="m")d.innerHTML="<b>"+esc(D.markets[x.o].n)+"</b> <small>market</small>";
+else if(x.t=="s")d.innerHTML="<b>"+esc(x.o.n)+"</b> <small>health system, "+x.o.s+"</small>";
 else d.innerHTML="<b>"+esc(x.o.n)+"</b> <small>"+esc(x.o.c)+", "+x.o.s+" "+x.o.z+"</small>";
-d.onclick=function(){r.style.display="none";document.getElementById("q").value="";x.t=="st"?showState(x.o):x.t=="s"?showSys(x.o):showHosp(x.o)};r.appendChild(d)});r.style.display="block"}
-fetch("rbp-data.json").then(function(r){return r.json()}).then(function(d){D=d;var tm=document.getElementById("tm");
-Object.keys(GRID).forEach(function(k){var b=document.createElement("button");b.className="tile";b.textContent=k;b.title=NAMES[k];b.style.gridColumn=GRID[k][0]+1;b.style.gridRow=GRID[k][1]+1;b.style.background=col(D.states[k]&&D.states[k].all);b.onclick=function(){showState(k)};tm.appendChild(b)});
-showState("FL")});
+d.onclick=function(){r.style.display="none";document.getElementById("q").value="";if(x.t=="st"){setState(x.o)}else if(x.t=="m"){showMkt(x.o)}else if(x.t=="s"){showSys(x.o)}else showHosp(x.o)};r.appendChild(d)});r.style.display="block"}
+fetch("rbp-data.json").then(function(r){return r.json()}).then(function(d){D=d;var tm=document.getElementById("tm"),sel=document.getElementById("st");
+Object.keys(NAMES).forEach(function(k){var o=document.createElement("option");o.value=k;o.textContent=NAMES[k];sel.appendChild(o)});
+Object.keys(GRID).forEach(function(k){var b=document.createElement("button");b.className="tile";b.textContent=k;b.title=NAMES[k];b.style.gridColumn=GRID[k][0]+1;b.style.gridRow=GRID[k][1]+1;b.style.background=col(D.states[k]&&D.states[k].all);b.onclick=function(){setState(k)};tm.appendChild(b)});
+setState("FL")});
+document.getElementById("st").addEventListener("change",function(e){setState(e.target.value)});
+document.getElementById("mk").addEventListener("change",function(e){var v=e.target.value;if(!v)showState(cur);else if(v=="_rest")showRest(cur);else showMkt(v)});
 document.getElementById("q").addEventListener("input",function(e){search(e.target.value)});
 document.getElementById("lf").addEventListener("submit",function(e){e.preventDefault();var f=e.target,m=document.getElementById("lmsg"),v=function(n){return f.elements[n].value.trim()};
 if(!v("firstName")||!v("company")||(!v("email")&&!v("phone"))){m.textContent="Please add your first name, company, and an email or phone.";return}
