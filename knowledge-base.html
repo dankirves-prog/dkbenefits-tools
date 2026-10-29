@@ -1075,8 +1075,13 @@
   function toggle(questionEl) {
     const answer = questionEl.nextElementSibling;
     const isOpen = answer.classList.contains('open');
-    questionEl.classList.toggle('open', !isOpen);
-    answer.classList.toggle('open', !isOpen);
+    document.querySelectorAll('.qa-question.open, .qa-answer.open').forEach(function (el) {
+      el.classList.remove('open');
+    });
+    if (!isOpen) {
+      questionEl.classList.add('open');
+      answer.classList.add('open');
+    }
     sendHeight();
   }
 
