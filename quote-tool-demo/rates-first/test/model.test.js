@@ -704,7 +704,9 @@ test('the live entry posts without ?live=1 and the demo folder stays quiet', () 
   assert.doesNotMatch(livePage, /id="enrolling"[^>]*type="number"/);
   assert.match(demoPage, /id="enrolling"[^>]*type="text"[^>]*inputmode="numeric"/);
   assert.match(demoPage, /id="flat-custom-amount"[^>]*type="text"[^>]*inputmode="numeric"/);
-  assert.doesNotMatch(livePage, /utm_source=preview|noindex/);
+  assert.doesNotMatch(livePage, /utm_source=preview/);
+  assert.match(livePage, /<meta name="robots" content="noindex">/);
+  assert.match(livePage, /<meta name="googlebot" content="noindex, indexifembedded">/);
   assert.doesNotMatch(demoPage, /__rfLive/);
   assert.match(demoPage, /fetch\('\.\.\/plans\.json'/);
   assert.match(demoPage, /noindex/);
