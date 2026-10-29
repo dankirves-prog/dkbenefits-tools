@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RBP Decision Tool | DK Benefits</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Source+Sans+3:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="shared/tool-banner.css">
+<style>
+html{scroll-behavior:auto}
+:root{--navy:#1a2e4a;--gold:#c8a951;--gold-light:#e8c97a;--banner-max:940px}
+body{margin:0;background:#F3F6F4;font-family:Georgia,serif;color:#16233A}
+.site-header{box-sizing:border-box;font-family:"Source Sans 3","Segoe UI",sans-serif;font-size:16px;line-height:1.5}
+.w{max-width:940px;margin:0 auto;padding:28px 18px}
+h2{font-size:24px;margin:0 0 10px}h3{font-size:18px;margin:18px 0 6px}
+.w p,.w li{font:16px/1.5 Arial;color:#33404f}
+.card{background:#fff;border-radius:14px;padding:22px;margin:18px 0;box-shadow:0 2px 10px rgba(22,35,58,.06)}
+.srch{position:relative}.srch input{width:100%;box-sizing:border-box;font:16px Arial;padding:12px;border:1px solid #cfd6dd;border-radius:8px}
+.res{position:absolute;left:0;right:0;top:48px;background:#fff;border:1px solid #cfd6dd;border-radius:8px;max-height:300px;overflow:auto;z-index:5;display:none}
+.res div{padding:10px 12px;font:14px Arial;cursor:pointer;border-bottom:1px solid #eef1f3}.res div:hover{background:#F3F6F4}
+.res small{color:#5b6773}
+.btn{background:#C9A227;color:#16233A;font:700 15px Arial;border:none;outline:none;padding:12px 20px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn:focus,.btn:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(201,162,39,.4)}
+.hint{font:14px Arial;color:#5b6773;margin-top:8px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.k{border:1px solid #e3e8ec;border-radius:12px;padding:16px;font-family:Arial}.k.g{border:2px solid #C9A227;background:#fffaf0}
+.k b{display:block;font:700 30px Georgia;margin:4px 0}.k small{color:#5b6773;font-size:13px}
+.lab{font:700 13px Arial;text-transform:uppercase;letter-spacing:.06em}
+.dev{font:14px/1.5 Arial;color:#33404f;background:#F3F6F4;border-radius:10px;padding:12px 14px;margin-top:12px}
+.flag{font:13px/1.4 Arial;background:#fff4d6;border-radius:8px;padding:8px 12px;margin:8px 0;color:#5a4a12}
+.tm{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;max-width:620px;margin:10px auto}
+.tile{aspect-ratio:1;border:none;border-radius:6px;font:700 11px Arial;color:#16233A;padding:0;cursor:pointer}
+.tile.on{box-shadow:inset 0 0 0 3px #16233A}
+.leg{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;font:12px Arial;color:#5b6773}.leg span{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:middle;margin-right:4px}
+.who{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.f{display:grid;grid-template-columns:1fr 1fr;gap:10px}.f input,.f select{font:15px Arial;padding:11px;border:1px solid #cfd6dd;border-radius:8px;width:100%;box-sizing:border-box}
+.hp{position:absolute;left:-9999px}
+.risk{display:inline-block;font:700 12px Arial;border-radius:20px;padding:3px 10px;margin-left:6px}.risk.High{background:#f6d4cc}.risk.Medium{background:#f5e3b5}.risk.Low{background:#d9efe3}
+table.sh{width:100%;border-collapse:collapse;font:14px Arial;margin-top:8px}table.sh td{padding:6px 4px;border-bottom:1px solid #eef1f3}
+.q{font:12px/1.5 Arial;color:#7a8590}
+@media(max-width:600px){.grid,.who,.f{grid-template-columns:1fr}.tile{font-size:9px}}
+</style></head><body>
+<header class="site-header">
+  <div class="site-header-inner">
+    <p class="brand">DK Benefits LLC</p>
+    <h1>RBP Decision Tool</h1>
+    <p>Find a smart reference-based pricing level for your self-funded group, based on local hospital prices.</p>
+  </div>
+</header>
+<div class="w">
+<p>Reference-based pricing pays hospitals and doctors a set percentage of Medicare instead of a network discount. Pick your state and market, or search a hospital or health system. Every market and system gets its own suggested starting point, floor, and ceiling, based on what local employer plans pay today.</p>
+
+<div class="card">
+<div class="f"><select id="st"><option value="">Pick a state</option></select><select id="mk" disabled><option value="">Pick a market</option></select></div>
+<div class="srch" style="margin-top:10px"><input id="q" placeholder="Hospital, health system, city, or ZIP" autocomplete="off"><div class="res" id="res"></div></div>
+<div class="hint" id="sh">Search covers every state until you pick one. Or tap a state below.</div>
+<div class="tm" id="tm"></div>
+<div class="leg"><span style="background:#d9efe3"></span>under 200% <span style="background:#eef3c9"></span>200 to 249% <span style="background:#f5e3b5"></span>250 to 299% <span style="background:#f2c9a8"></span>300 to 349% <span style="background:#eaa79a"></span>350%+</div>
+</div>
+<div class="card" id="out"></div>
+
+<div class="card"><h2>Who this is for</h2><div class="who">
+<div><h3>A good fit</h3><p>Self-funded employers with 100 or more employees, stop-loss in place, and a plan that can carry an advocacy and balance-bill program.</p></div>
+<div><h3>Usually not a fit</h3><p>Small and level-funded groups. Their carrier or program usually sets the pricing, so there is no real choice to make here.</p></div></div></div>
+
+<div class="card"><h2>What makes RBP work</h2>
+<p>The percentage matters, but the support behind it matters more. Before any group moves to RBP, make sure the program includes:</p><ul>
+<li><b>Balance-bill handling.</b> Someone works every bill a member receives until it is resolved.</li>
+<li><b>Legal defense with no time limit.</b> If a provider sends a member to collections or court, the member is defended for as long as it takes.</li>
+<li><b>Direct contracts.</b> Agreements with key local hospitals and doctors. Contracts, not higher percentages, are what stop balance bills.</li>
+<li><b>Member education.</b> Members learn not to pay a balance bill and to send it to the advocacy team right away.</li>
+<li><b>Stop-loss that fits.</b> The stop-loss policy has to reimburse claims paid at the RBP level.</li>
+<li><b>The No Surprises Act has limits.</b> It protects members for emergency care and air ambulance. It does not cover scheduled care with an out-of-network provider.</li></ul></div>
+
+<div class="card" id="lead"><h2>Want us to look at your group?</h2>
+<p>Send your details and Dan will follow up with a plain read on whether RBP makes sense for you.</p>
+<form id="lf" class="f" novalidate>
+<input name="firstName" placeholder="First name" required><input name="company" placeholder="Company" required>
+<input name="email" type="email" placeholder="Email"><input name="phone" type="tel" placeholder="Phone">
+<select name="employees"><option value="">Employees on the plan</option><option>100 to 249</option><option>250 to 499</option><option>500 to 999</option><option>1,000+</option><option>Under 100</option></select>
+<select name="funding"><option value="">How is the plan funded?</option><option>Self-funded</option><option>Level-funded</option><option>Fully insured</option><option>Not sure</option></select>
+<input class="hp" name="company_website" tabindex="-1" autocomplete="off" aria-hidden="true">
+<div><button class="btn" type="submit">Send</button></div><div id="lmsg" class="hint"></div>
+</form></div>
+
+<p class="q">Market prices are from the RAND Hospital Price Transparency Study, Round 5.1 (2025): states use 2022 claims; markets, hospitals, and systems use 2020 to 2022 claims. Markets group hospitals within a set distance of each metro. Percentages are guidance, not a quote or legal advice. Savings compare to what employer plans pay hospitals today. Actual results depend on the plan, the vendor, and the providers your members use.</p>
+</div>
+<script src="config.js"></script>
+<script>
+var NAMES={AL:"Alabama",AK:"Alaska",AZ:"Arizona",AR:"Arkansas",CA:"California",CO:"Colorado",CT:"Connecticut",DE:"Delaware",DC:"District of Columbia",FL:"Florida",GA:"Georgia",HI:"Hawaii",ID:"Idaho",IL:"Illinois",IN:"Indiana",IA:"Iowa",KS:"Kansas",KY:"Kentucky",LA:"Louisiana",ME:"Maine",MD:"Maryland",MA:"Massachusetts",MI:"Michigan",MN:"Minnesota",MS:"Mississippi",MO:"Missouri",MT:"Montana",NE:"Nebraska",NV:"Nevada",NH:"New Hampshire",NJ:"New Jersey",NM:"New Mexico",NY:"New York",NC:"North Carolina",ND:"North Dakota",OH:"Ohio",OK:"Oklahoma",OR:"Oregon",PA:"Pennsylvania",RI:"Rhode Island",SC:"South Carolina",SD:"South Dakota",TN:"Tennessee",TX:"Texas",UT:"Utah",VT:"Vermont",VA:"Virginia",WA:"Washington",WV:"West Virginia",WI:"Wisconsin",WY:"Wyoming"};
+var GRID={AK:[0,0],ME:[11,0],WI:[6,1],VT:[10,1],NH:[11,1],WA:[1,2],ID:[2,2],MT:[3,2],ND:[4,2],MN:[5,2],IL:[6,2],MI:[7,2],NY:[9,2],MA:[10,2],RI:[11,2],OR:[1,3],NV:[2,3],WY:[3,3],SD:[4,3],IA:[5,3],IN:[6,3],OH:[7,3],PA:[8,3],NJ:[9,3],CT:[10,3],CA:[1,4],UT:[2,4],CO:[3,4],NE:[4,4],MO:[5,4],KY:[6,4],WV:[7,4],VA:[8,4],MD:[9,4],DE:[10,4],AZ:[2,5],NM:[3,5],KS:[4,5],AR:[5,5],TN:[6,5],NC:[7,5],SC:[8,5],DC:[9,5],OK:[4,6],LA:[5,6],MS:[6,6],AL:[7,6],GA:[8,6],HI:[0,7],TX:[4,7],FL:[9,7]};
+var D,last="",cur="";
+function col(v){return v==null?"#ddd":v<200?"#d9efe3":v<250?"#eef3c9":v<300?"#f5e3b5":v<350?"#f2c9a8":"#eaa79a"}
+function esc(t){return String(t==null?"":t).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function save(x,base){return base?Math.round((1-x/base)*100):null}
+function cards(f,s,c,base){function t(x){var v=save(x,base);return v==null?"":(v>0?"About "+v+"% below what plans pay today.":"At or above what plans pay today.")}
+return '<div class="grid"><div class="k"><span class="lab">Floor</span><b>'+f+'%</b><small>Do not go lower. '+t(f)+'</small></div><div class="k g"><span class="lab">Our suggestion</span><b>'+s+'%</b><small>'+t(s)+'</small></div><div class="k"><span class="lab">Ceiling</span><b>'+c+'%</b><small>Highest we would go. '+t(c)+'</small></div></div>'}
+var NOTE={"Concentrated market (+5)":"One system or a few systems control most local hospital care, so we start 5 points higher to cut pushback.","Wide price spread, real lower-cost options (-5)":"Prices vary widely here and lower-priced hospitals are close by, so we start 5 points lower.","Outpatient priced far above inpatient: biggest savings in outpatient and imaging":"Outpatient care is priced far above inpatient here, so most savings come from outpatient surgery, imaging, and labs.","Local prices already close to the suggested start: limited savings":"Prices here are already close to our suggestion, so RBP would save little on hospital bills."};
+function render(o){var el=document.getElementById("out"),r=o.r,M=o.all,step=Math.round(10/r.start*100);
+var h='<div class="lab">'+esc(o.sub)+'</div><h2 style="margin-top:4px">'+esc(o.title)+(o.risk?'<span class="risk '+o.risk+'">'+o.risk+' pushback risk</span>':'')+'</h2>'+(o.flag?'<div class="flag">'+o.flag+'</div>':'')+
+'<p>Employer plans paid about <b>'+M+'% of Medicare</b> here (inpatient '+(o.ip||"n/a")+'%, outpatient '+(o.op||"n/a")+'%).'+(o.extra||'')+'</p>'+
+'<h3>Hospital rate</h3>'+cards(r.floor,r.start,r.ceiling,M)+
+(r.notes||[]).map(function(n){return NOTE[n]?'<div class="dev">'+NOTE[n]+'</div>':''}).join('')+(o.why?'<div class="dev">'+o.why+'</div>':'')+
+'<div class="dev"><b>Below '+r.floor+'%:</b> too far under what local hospitals are paid today, including the lower-priced ones. Expect more balance bills and more providers refusing scheduled care, for little extra savings.</div>'+
+'<div class="dev"><b>Above '+r.ceiling+'%:</b> each 10 points adds roughly '+step+'% to hospital spend under RBP and may needlessly raise your stop-loss and renewal rates. A higher percentage does not stop balance bills. Contracts do.</div>'+
+(r.doctor?'<h3>Doctor rate</h3>'+cards(r.doctor.floor,r.doctor.start,r.doctor.ceiling,null)+'<div class="dev">Doctor and other professional services are usually paid at a lower multiple than hospitals.'+(o.prof?' Hospital-based professional services here ran about '+o.prof+'% of Medicare.':'')+'</div>':'')+
+(o.table||'')+'<p style="margin-top:16px"><a class="btn" href="#lead">Talk to Dan about your group</a></p>';el.innerHTML=h;
+document.querySelectorAll(".tile").forEach(function(t){t.classList.toggle("on",t.textContent==cur)})}
+function setState(k,quiet){cur=k;var sel=document.getElementById("st"),mk=document.getElementById("mk");sel.value=k||"";mk.innerHTML='<option value="">'+(k?"All of "+NAMES[k]:"Pick a market")+'</option>';
+var S=k&&D.states[k];mk.disabled=!(S&&S.m.length);if(S)S.m.forEach(function(id){var o=document.createElement("option");o.value=id;o.textContent=D.markets[id].n;mk.appendChild(o)});
+if(S&&S.rest){var o=document.createElement("option");o.value="_rest";o.textContent="Rest of "+NAMES[k];mk.appendChild(o)}
+document.getElementById("sh").textContent=k?"Search now shows "+NAMES[k]+" only.":"Search covers every state until you pick one. Or tap a state below.";
+if(!quiet)showState(k)}
+function showState(k){if(!k)return;var S=D.states[k];cur=k;if(!S){render({title:NAMES[k],sub:"State",all:"n/a",r:{floor:"-",start:"-",ceiling:"-"}});document.getElementById("out").innerHTML='<h2>'+NAMES[k]+'</h2><p>Maryland sets hospital rates for every payer, so RBP does not apply there.</p>';return}
+last="State: "+NAMES[k]+" "+S.all+"%";render({title:NAMES[k],sub:"State average",all:S.all,ip:S.ip,op:S.op,prof:S.prof,r:S.r,extra:S.m.length?' Pick a market above for a range built for your area.':''})}
+function showRest(k){var S=D.states[k].rest;last="Rest of "+NAMES[k]+" "+S.all+"%";render({title:"Rest of "+NAMES[k],sub:"Outside the major markets",all:S.all,r:S.r,prof:D.states[k].prof})}
+function sysTable(list){if(!list||!list.length)return"";return '<h3>Who runs hospital care here</h3><table class="sh">'+list.map(function(x){return '<tr><td>'+esc(x.sys)+'</td><td>'+x.pct+'% of spending</td><td>'+x.all+'% of Medicare</td></tr>'}).join('')+'</table>'}
+function showMkt(id){var m=D.markets[id];var flag=m.thin?"Only "+m.c+" hospitals with enough claims here, so treat this as a rough guide.":null;last="Market: "+m.n+" "+m.all+"%";
+render({title:m.n,sub:"Market, "+m.c+" hospitals",all:m.all,ip:m.ip,op:m.op,prof:m.prof,r:m.r,flag:flag,extra:(m.p75-m.p25>=15?' Lower-priced hospitals here run about '+m.p25+'%, higher-priced about '+m.p75+'%.':''),table:sysTable(m.sh)})}
+function showSys(s){last="System: "+s.n+" ("+s.s+") "+s.all+"%";render({title:s.n,sub:"Health system in "+NAMES[s.s]+", "+s.c+" hospitals",all:s.all,ip:s.ip,op:s.op,prof:s.prof,r:s.r,risk:s.risk,
+why:"Why "+s.risk.toLowerCase()+" risk: "+s.why.join(", and ")+". Expect stronger pushback from systems that lose the most at the suggested rate and that members have few alternatives to."+(s.bn?" "+s.bn:"")})}
+function showHosp(h){cur=h.s;var S=D.states[h.s],base=h.m?D.markets[h.m]:null,src=base||(S&&S.rest)||S;
+if(!src){showState(h.s);return}var flag=h.all==null?"Not enough claims for this hospital, so we show the range for its area.":null;
+var sy=h.sys&&D.systems.filter(function(x){return x.n==h.sys&&x.s==h.s})[0];
+last="Hospital: "+h.n+", "+h.c+" "+h.s+" "+(h.all||"")+"%";
+render({title:h.n,sub:h.c+", "+h.s+(base?" | "+base.n:"")+(h.sys&&h.sys.indexOf("Independent")!=0?" | "+h.sys:""),all:h.all||src.all,ip:h.ip,op:h.op,prof:h.prof||src.prof,r:src.r,flag:flag,risk:sy?sy.risk:null,
+extra:h.all!=null?' The '+(base?base.n+' market':'area')+' averages '+src.all+'%, so this hospital is '+(h.all>src.all*1.1?'priced above':h.all<src.all*0.9?'priced below':'close to')+' its market. The range is set for the market.':''})}
+function embeddedFrame(){try{return window.self!==window.top}catch(err){return true}}
+function documentOffsetTop(el){var top=0,node=el;while(node){top+=node.offsetTop||0;node=node.offsetParent}return top}
+function notifyParentScroll(el){if(!el||!embeddedFrame())return;window.parent.postMessage({type:"rbp-scroll",top:documentOffsetTop(el)},"*")}
+function search(v){var r=document.getElementById("res");v=v.trim().toLowerCase();if(v.length<2){r.style.display="none";return}
+var out=[],isZip=/^\d{3,5}$/.test(v),ok=function(s){return !cur||s==cur};
+Object.keys(D.markets).forEach(function(id){var m=D.markets[id];if(!isZip&&m.st.some(ok)&&m.n.toLowerCase().indexOf(v)>=0)out.push({t:"m",o:id})});
+D.systems.forEach(function(s){var hit=s.n.toLowerCase().indexOf(v)>=0||(s.rn&&s.rn.toLowerCase().indexOf(v)>=0)||(s.aka||[]).some(function(a){return a.toLowerCase().indexOf(v)>=0});if(!isZip&&ok(s.s)&&hit)out.push({t:"s",o:s})});
+D.hospitals.forEach(function(h){if(ok(h.s)&&(isZip?h.z.indexOf(v)==0:(h.n.toLowerCase().indexOf(v)>=0||h.c.toLowerCase().indexOf(v)>=0)))out.push({t:"h",o:h})});
+if(!cur)Object.keys(NAMES).forEach(function(k){if(!isZip&&NAMES[k].toLowerCase().indexOf(v)==0)out.unshift({t:"st",o:k})});
+out=out.slice(0,40);r.innerHTML=out.length?"":'<div>No match'+(cur?' in '+NAMES[cur]:'')+'. Try a city or ZIP.</div>';
+out.forEach(function(x){var d=document.createElement("div");
+if(x.t=="st")d.innerHTML="<b>"+NAMES[x.o]+"</b> <small>state</small>";
+else if(x.t=="m")d.innerHTML="<b>"+esc(D.markets[x.o].n)+"</b> <small>market</small>";
+else if(x.t=="s")d.innerHTML="<b>"+esc(x.o.n)+"</b> <small>health system, "+x.o.s+"</small>";
+else d.innerHTML="<b>"+esc(x.o.n)+"</b> <small>"+esc(x.o.c)+", "+x.o.s+" "+x.o.z+"</small>";
+d.onclick=function(){r.style.display="none";document.getElementById("q").value="";if(x.t=="st"){setState(x.o)}else if(x.t=="m"){showMkt(x.o)}else if(x.t=="s"){showSys(x.o)}else showHosp(x.o)};r.appendChild(d)});r.style.display="block"}
+fetch("rbp-data.json").then(function(r){return r.json()}).then(function(d){D=d;var tm=document.getElementById("tm"),sel=document.getElementById("st");
+Object.keys(NAMES).forEach(function(k){var o=document.createElement("option");o.value=k;o.textContent=NAMES[k];sel.appendChild(o)});
+Object.keys(GRID).forEach(function(k){var b=document.createElement("button");b.className="tile";b.textContent=k;b.title=NAMES[k];b.style.gridColumn=GRID[k][0]+1;b.style.gridRow=GRID[k][1]+1;b.style.background=col(D.states[k]&&D.states[k].all);b.onclick=function(){setState(k)};tm.appendChild(b)});
+setState("FL");
+// Initial paint must not focus or scroll. A focus, even with preventScroll,
+// and scrollIntoView both move the Wix page down into the tool.
+if(embeddedFrame())window.scrollTo(0,0)});
+document.getElementById("out").addEventListener("click",function(e){
+var a=e.target&&e.target.closest?e.target.closest('a[href="#lead"]'):null;
+if(!a||!embeddedFrame())return;
+e.preventDefault();
+var lead=document.getElementById("lead");
+if(lead&&lead.scrollIntoView)lead.scrollIntoView({block:"start",behavior:"auto"});
+notifyParentScroll(lead)});
+document.getElementById("st").addEventListener("change",function(e){setState(e.target.value)});
+document.getElementById("mk").addEventListener("change",function(e){var v=e.target.value;if(!v)showState(cur);else if(v=="_rest")showRest(cur);else showMkt(v)});
+document.getElementById("q").addEventListener("input",function(e){search(e.target.value)});
+document.getElementById("lf").addEventListener("submit",function(e){e.preventDefault();var f=e.target,m=document.getElementById("lmsg"),v=function(n){return f.elements[n].value.trim()};
+if(!v("firstName")||!v("company")||(!v("email")&&!v("phone"))){m.textContent="Please add your first name, company, and an email or phone.";return}
+var url=(typeof RBP_LEAD_ENDPOINT==="string"&&/^https?:\/\//.test(RBP_LEAD_ENDPOINT))?RBP_LEAD_ENDPOINT:"";
+var p={firstName:v("firstName"),company:v("company"),email:v("email"),phone:v("phone"),summary:"Employees: "+v("employees")+"\nFunding: "+v("funding"),findings:last,pageUrl:location.href,company_website:v("company_website")};
+if(!url){m.textContent="Thanks. The form is not connected yet, so please call or text 407-476-5076.";return}
+m.textContent="Sending...";fetch(url,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(p)}).then(function(){f.reset();m.textContent="Thanks. Dan will be in touch soon."}).catch(function(){m.textContent="Something went wrong. Please call or text 407-476-5076."})});
+</script></body></html>
