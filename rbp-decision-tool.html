@@ -4,6 +4,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Source+Sans+3:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="shared/tool-banner.css">
 <style>
+html{scroll-behavior:auto}
 :root{--navy:#1a2e4a;--gold:#c8a951;--gold-light:#e8c97a;--banner-max:940px}
 body{margin:0;background:#F3F6F4;font-family:Georgia,serif;color:#16233A}
 .site-header{box-sizing:border-box;font-family:"Source Sans 3","Segoe UI",sans-serif;font-size:16px;line-height:1.5}
@@ -121,6 +122,9 @@ var sy=h.sys&&D.systems.filter(function(x){return x.n==h.sys&&x.s==h.s})[0];
 last="Hospital: "+h.n+", "+h.c+" "+h.s+" "+(h.all||"")+"%";
 render({title:h.n,sub:h.c+", "+h.s+(base?" | "+base.n:"")+(h.sys&&h.sys.indexOf("Independent")!=0?" | "+h.sys:""),all:h.all||src.all,ip:h.ip,op:h.op,prof:h.prof||src.prof,r:src.r,flag:flag,risk:sy?sy.risk:null,
 extra:h.all!=null?' The '+(base?base.n+' market':'area')+' averages '+src.all+'%, so this hospital is '+(h.all>src.all*1.1?'priced above':h.all<src.all*0.9?'priced below':'close to')+' its market. The range is set for the market.':''})}
+function embeddedFrame(){try{return window.self!==window.top}catch(err){return true}}
+function documentOffsetTop(el){var top=0,node=el;while(node){top+=node.offsetTop||0;node=node.offsetParent}return top}
+function notifyParentScroll(el){if(!el||!embeddedFrame())return;window.parent.postMessage({type:"rbp-scroll",top:documentOffsetTop(el)},"*")}
 function search(v){var r=document.getElementById("res");v=v.trim().toLowerCase();if(v.length<2){r.style.display="none";return}
 var out=[],isZip=/^\d{3,5}$/.test(v),ok=function(s){return !cur||s==cur};
 Object.keys(D.markets).forEach(function(id){var m=D.markets[id];if(!isZip&&m.st.some(ok)&&m.n.toLowerCase().indexOf(v)>=0)out.push({t:"m",o:id})});
@@ -137,7 +141,17 @@ d.onclick=function(){r.style.display="none";document.getElementById("q").value="
 fetch("rbp-data.json").then(function(r){return r.json()}).then(function(d){D=d;var tm=document.getElementById("tm"),sel=document.getElementById("st");
 Object.keys(NAMES).forEach(function(k){var o=document.createElement("option");o.value=k;o.textContent=NAMES[k];sel.appendChild(o)});
 Object.keys(GRID).forEach(function(k){var b=document.createElement("button");b.className="tile";b.textContent=k;b.title=NAMES[k];b.style.gridColumn=GRID[k][0]+1;b.style.gridRow=GRID[k][1]+1;b.style.background=col(D.states[k]&&D.states[k].all);b.onclick=function(){setState(k)};tm.appendChild(b)});
-setState("FL")});
+setState("FL");
+// Initial paint must not focus or scroll. A focus, even with preventScroll,
+// and scrollIntoView both move the Wix page down into the tool.
+if(embeddedFrame())window.scrollTo(0,0)});
+document.getElementById("out").addEventListener("click",function(e){
+var a=e.target&&e.target.closest?e.target.closest('a[href="#lead"]'):null;
+if(!a||!embeddedFrame())return;
+e.preventDefault();
+var lead=document.getElementById("lead");
+if(lead&&lead.scrollIntoView)lead.scrollIntoView({block:"start",behavior:"auto"});
+notifyParentScroll(lead)});
 document.getElementById("st").addEventListener("change",function(e){setState(e.target.value)});
 document.getElementById("mk").addEventListener("change",function(e){var v=e.target.value;if(!v)showState(cur);else if(v=="_rest")showRest(cur);else showMkt(v)});
 document.getElementById("q").addEventListener("input",function(e){search(e.target.value)});
