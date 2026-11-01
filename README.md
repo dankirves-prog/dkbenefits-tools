@@ -2,6 +2,18 @@
 
 The quote tool demo is now isolated in its own folder so existing files (including `wrapplan.html`) are not affected.
 
+## ACA Employer Penalty Calculator
+
+- `aca-penalty-calculator.html` is a new, unlinked preview. Nothing else in this repo points at it. GitHub Pages serves `main` only, so the public URL works after this file is on `main`: `https://dankirves-prog.github.io/dkbenefits-tools/aca-penalty-calculator.html`
+- It does not replace any live tool. The lead endpoint in `aca-penalty/config.js` is blank until Dan deploys `aca-penalty/apps-script/Code.gs`.
+- Wix page title, meta description, slug, and FAQ copy are in `docs/aca-penalty-wix-copy.md`.
+
+Local preview:
+
+```text
+http://localhost:8000/aca-penalty-calculator.html
+```
+
 ## Benefits compliance checkup
 
 Scoring lives in `compliance-quiz/quiz-engine.js`. The pages are thin shells.

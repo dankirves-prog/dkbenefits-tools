@@ -1,0 +1,54 @@
+.print-report { display: none; }
+
+@page {
+  size: letter portrait;
+  margin: 0.6in;
+  @bottom-center {
+    content: "DK Benefits ACA Employer Penalty Calculator | Page " counter(page);
+    font-family: "Source Sans 3", "Segoe UI", sans-serif;
+    font-size: 9pt;
+    color: #5a6a7e;
+  }
+}
+
+@media print {
+  html, body { background: #fff !important; }
+  .site-header, .skip, .wrap { display: none !important; }
+  a[href]::after { content: "" !important; }
+  .print-report {
+    display: block !important;
+    color: #1a2e4a;
+    font-family: "Source Sans 3", "Segoe UI", sans-serif;
+    font-size: 11pt;
+    line-height: 1.45;
+  }
+  .print-banner {
+    background: #1a2e4a;
+    color: #fff;
+    border-bottom: 4px solid #c8a951;
+    padding: 16px 18px 14px;
+    margin: 0 0 16px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .print-brand {
+    margin: 0;
+    color: #c8a951;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 10pt;
+  }
+  .print-banner h1 {
+    margin: 4px 0 0;
+    color: #fff;
+    font-family: Merriweather, Georgia, serif;
+    font-size: 18pt;
+  }
+  .print-report h2 {
+    font-family: Merriweather, Georgia, serif;
+    font-size: 13pt;
+    margin: 16px 0 6px;
+  }
+  .print-report p { margin: 0 0 8px; }
+}
