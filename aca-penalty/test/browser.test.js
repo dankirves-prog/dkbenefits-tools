@@ -60,7 +60,7 @@ test('calculator examples, blank endpoint, and both viewports', async function (
     await page.goto('http://127.0.0.1:8765/aca-penalty-calculator.html', { waitUntil: 'networkidle0' });
     const robots = await page.$eval('meta[name="robots"]', function (el) { return el.content; });
     const googlebot = await page.$eval('meta[name="googlebot"]', function (el) { return el.content; });
-    assert.equal(robots, 'noindex');
+    assert.equal(robots, 'noindex, indexifembedded');
     assert.equal(googlebot, 'noindex, indexifembedded');
     const gold = await page.$eval('.btn-gold', function (el) {
       const style = getComputedStyle(el);
