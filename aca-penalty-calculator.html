@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, indexifembedded">
+  <meta name="googlebot" content="noindex, indexifembedded">
+  <title>ACA Employer Penalty Calculator | DK Benefits</title>
+  <meta name="description" content="A free estimate of 2026 ACA employer shared responsibility payments for applicable large employers. DK Benefits LLC.">
+  <link rel="stylesheet" href="aca-penalty/aca.css">
+  <link rel="stylesheet" href="aca-penalty/print.css">
+</head>
+<body>
+  <a class="skip" href="#aca">Skip to the calculator</a>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <p class="brand">DK Benefits LLC</p>
+      <h1>ACA Employer Penalty Calculator</h1>
+      <p>Estimate the employer shared responsibility payment, and check whether coverage looks affordable.</p>
+    </div>
+  </header>
+  <main class="wrap">
+    <p>This estimate is for employers, including companies in Florida and Georgia. It uses the indexed amounts for the year you pick. It is not a tax bill.</p>
+    <p id="rate-line" class="lede"></p>
+
+    <form id="aca" novalidate>
+      <section class="card">
+        <h2>Are you likely an applicable large employer?</h2>
+        <p class="lede">ALE status uses the prior calendar year. A full-time employee works 30 or more hours a week, or 130 hours in a month. Add part-time hours, count no more than 120 hours for any one person, and divide by 120. Round the year's average down.</p>
+        <div class="grid">
+          <div class="field">
+            <label for="year">Penalty year</label>
+            <select id="year" name="year">
+              <option value="2026" selected>2026</option>
+              <option value="2027">2027</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="averageFullTime">Average full-time employees</label>
+            <input id="averageFullTime" name="averageFullTime" type="number" inputmode="decimal" min="0" step="0.01" value="0">
+          </div>
+          <div class="field span-2">
+            <label for="averagePartTimeHours">Part-time hours in an average month</label>
+            <input id="averagePartTimeHours" name="averagePartTimeHours" type="number" inputmode="decimal" min="0" step="1" value="0">
+            <p class="hint">Count no more than 120 hours for each person who is not full-time. Twenty people at 60 hours are 1,200 hours, or 10 full-time equivalents.</p>
+          </div>
+        </div>
+        <label class="check"><input id="newEmployer" name="newEmployer" type="checkbox"> <span>This company did not exist on any business day last year. Use this year's workforce instead.</span></label>
+        <label class="check"><input id="controlledGroup" name="controlledGroup" type="checkbox"> <span>This company is part of a controlled or affiliated group. Related companies are counted together for the 50-employee test, and they share the 30-employee reduction.</span></label>
+        <div id="group-fields" class="grid hidden">
+          <div class="field">
+            <label for="otherMembersAverage">Other companies' average full-time plus equivalents</label>
+            <input id="otherMembersAverage" name="otherMembersAverage" type="number" inputmode="decimal" min="0" step="0.01">
+            <p class="hint">Use the average before rounding down. Enter 0 if the other companies have no employees.</p>
+          </div>
+          <div class="field">
+            <label for="otherMembersFullTime">Other companies' full-time employees</label>
+            <input id="otherMembersFullTime" name="otherMembersFullTime" type="number" inputmode="numeric" min="0" step="1">
+            <p class="hint">Full-time only, not equivalents. This splits the 30-employee reduction. The share rounds up to the next whole number.</p>
+          </div>
+        </div>
+        <label class="check"><input id="seasonalAttest" name="seasonalAttest" type="checkbox"> <span>The workforce was over 50 for 120 days or fewer (four months count), and everyone above 50 during that time was a seasonal worker.</span></label>
+        <label class="check"><input id="priorVary" name="priorVary" type="checkbox"> <span>Enter the prior year month by month</span></label>
+        <div id="prior-months" class="mini-grid hidden"></div>
+      </section>
+
+      <section class="card">
+        <h2>This year's full-time employees and the offer</h2>
+        <p class="lede">The payment uses full-time employees only. Equivalents are not in the penalty math. An offer counts for an employee only if dependents are offered too. Spouses do not have to be offered. The A penalty applies when the offer misses more than 5 percent of full-time employees, or more than five when five is greater, and at least one full-time employee gets a premium tax credit.</p>
+        <div class="grid">
+          <div class="field">
+            <label for="fullTime">Full-time employees</label>
+            <input id="fullTime" name="fullTime" type="number" inputmode="numeric" min="0" step="1" value="0">
+          </div>
+          <div class="field">
+            <label for="nonAssessment">In a limited non-assessment period</label>
+            <input id="nonAssessment" name="nonAssessment" type="number" inputmode="numeric" min="0" step="1" value="0">
+            <p class="hint">Waiting period or first partial month, if you want them left out. Leave 0 if you are not sure.</p>
+          </div>
+          <div class="field">
+            <label for="notOffered">Full-time employees not offered coverage</label>
+            <input id="notOffered" name="notOffered" type="number" inputmode="numeric" min="0" step="1" placeholder="Optional">
+            <p class="hint">Include people whose dependents were not offered. Leave blank to use the answer below.</p>
+          </div>
+          <div class="field">
+            <label for="ptcCount">Full-time employees who received a premium tax credit</label>
+            <input id="ptcCount" name="ptcCount" type="number" inputmode="numeric" min="0" step="1" value="0">
+          </div>
+        </div>
+        <p id="offer-hint" class="hint"></p>
+        <fieldset>
+          <legend class="choice-legend">What was offered?</legend>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="offer" value="below" checked> <span>Coverage was not offered to enough full-time employees and their dependents</span></label>
+            <label class="choice"><input type="radio" name="offer" value="unaffordable"> <span>Coverage was offered, but it was unaffordable or it was not minimum value</span></label>
+            <label class="choice"><input type="radio" name="offer" value="affordable"> <span>Affordable, minimum-value coverage was offered</span></label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend class="choice-legend">Did at least one full-time employee get a premium tax credit?</legend>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="anyCredit" value="yes" checked> <span>Yes. Without a credit, neither penalty is triggered.</span></label>
+            <label class="choice"><input type="radio" name="anyCredit" value="no"> <span>No</span></label>
+          </div>
+        </fieldset>
+        <p class="hint" style="margin-top:12px">Months this situation applies</p>
+        <div id="months" class="months"></div>
+        <label class="check"><input id="penaltyVary" name="penaltyVary" type="checkbox"> <span>Use different full-time and credit counts for each month</span></label>
+        <div id="penalty-months" class="mini-grid hidden"></div>
+      </section>
+
+      <section class="card">
+        <h2>Affordability check</h2>
+        <p class="lede">Affordability uses the employee's lowest-cost self-only premium for a plan that provides minimum value, not the family premium. The three safe harbors are Form W-2 wages, rate of pay, and the federal poverty line. A safe harbor can protect the employer even when household income would still allow a credit.</p>
+        <div class="grid">
+          <div class="field">
+            <label for="premium">Lowest-cost self-only monthly premium</label>
+            <input id="premium" name="premium" type="text" inputmode="decimal" placeholder="Leave blank to skip" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="harbor">Safe harbor</label>
+            <select id="harbor" name="harbor">
+              <option value="fpl">Federal poverty line</option>
+              <option value="w2">Form W-2, Box 1</option>
+              <option value="rate">Rate of pay</option>
+            </select>
+          </div>
+        </div>
+        <label class="check"><input id="minimumValue" name="minimumValue" type="checkbox" checked> <span>The plan provides minimum value. It pays at least 60 percent of the total allowed cost of benefits.</span></label>
+        <div id="w2-fields" class="field hidden" style="margin-top:12px">
+          <label for="w2Wages">Form W-2, Box 1 wages</label>
+          <input id="w2Wages" name="w2Wages" type="text" inputmode="decimal" autocomplete="off">
+          <p class="hint">Box 1 is after pre-tax deductions, so this safe harbor can be harder to meet. It is checked after the year ends.</p>
+        </div>
+        <div id="rate-fields" class="hidden">
+          <fieldset>
+            <legend class="choice-legend">Pay</legend>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="payType" value="hourly" checked> <span>Hourly. The test uses the rate times 130 hours.</span></label>
+              <label class="choice"><input type="radio" name="payType" value="salary"> <span>Salaried. The test uses the monthly salary.</span></label>
+            </div>
+          </fieldset>
+          <div class="grid">
+            <div class="field" id="hourly-wrap">
+              <label for="hourlyRate">Hourly rate</label>
+              <input id="hourlyRate" name="hourlyRate" type="text" inputmode="decimal" autocomplete="off">
+              <p class="hint">Use the rate at the start of the coverage period. If hourly pay was cut, use the lower rate.</p>
+            </div>
+            <div class="field hidden" id="salary-wrap">
+              <label for="monthlySalary">Monthly salary</label>
+              <input id="monthlySalary" name="monthlySalary" type="text" inputmode="decimal" autocomplete="off">
+            </div>
+          </div>
+        </div>
+        <div id="fpl-fields" class="grid" style="margin-top:12px">
+          <div class="field">
+            <label for="location">Where the employee works</label>
+            <select id="location" name="location">
+              <option value="mainland">48 states and DC</option>
+              <option value="alaska">Alaska</option>
+              <option value="hawaii">Hawaii</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="planStart">Plan year</label>
+            <select id="planStart" name="planStart">
+              <option value="calendar">Starts January 1</option>
+              <option value="later">Starts February 1 or later</option>
+            </select>
+          </div>
+        </div>
+        <p id="fpl-note" class="hint"></p>
+      </section>
+
+      <div class="examples">
+        <button type="button" class="btn-secondary" id="ex-120">Example: 120 full-time, no offer</button>
+        <button type="button" class="btn-secondary" id="ex-80">Example: 80 full-time, 6 credits</button>
+        <button type="button" class="btn-secondary" id="ex-40">Example: under 50</button>
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn-gold">Calculate estimate</button>
+      </div>
+      <p id="form-error" class="form-error" role="alert"></p>
+    </form>
+
+    <div id="results" hidden></div>
+
+    <section class="card" id="lead" hidden>
+      <h2>Get a free ACA compliance review</h2>
+      <p class="lede">Email me this report and Dan will follow up. The note includes the numbers on this page.</p>
+      <form id="lead-form" novalidate>
+        <label class="hp">Company website<input name="company_website" tabindex="-1" autocomplete="off"></label>
+        <div class="grid">
+          <div class="field">
+            <label for="lead-name">Name</label>
+            <input id="lead-name" name="name" type="text" autocomplete="name" required>
+          </div>
+          <div class="field">
+            <label for="lead-company">Company</label>
+            <input id="lead-company" name="company" type="text" autocomplete="organization" required>
+          </div>
+          <div class="field">
+            <label for="lead-email">Email</label>
+            <input id="lead-email" name="email" type="email" autocomplete="email" inputmode="email" required>
+          </div>
+          <div class="field">
+            <label for="lead-phone">Phone, optional</label>
+            <input id="lead-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel">
+          </div>
+          <div class="field span-2">
+            <label for="lead-employees">Employee count</label>
+            <input id="lead-employees" name="employees" type="number" inputmode="numeric" min="0" step="1">
+          </div>
+        </div>
+        <label class="check"><input id="lead-consent" name="consent" type="checkbox" required> <span>I agree DK Benefits may email me this estimate and contact me about a free ACA compliance review. This is an estimate, not tax advice.</span></label>
+        <div class="actions">
+          <button type="submit" class="btn-gold">Email me this report</button>
+        </div>
+        <p id="lead-status" class="form-error" role="status"></p>
+      </form>
+    </section>
+
+    <section class="card" id="reporting">
+      <h2>Letter 226-J and the filing forms</h2>
+      <p>Letter 226-J is the IRS letter that proposes an employer shared responsibility payment. It is based on Forms 1094-C and 1095-C and on premium tax credits the IRS allowed. The response date is generally 30 days from the date of the letter. If the employer responds, the IRS replies with a Letter 227. If there is no response, the IRS can assess the payment and send Notice CP 220J.</p>
+      <p>An applicable large employer files Form 1094-C with the IRS and furnishes Form 1095-C for full-time employees. Those are information returns. The IRS lists a separate penalty for not filing a correct return and for not furnishing a correct statement. For returns and statements due in 2027, the general penalty is $340 per return or statement. It is $60 if corrected within 30 days, and $130 if corrected after 30 days but by August 1. Intentional disregard is $690 per return or statement, with no annual maximum. The same $340, $60, and $130 amounts apply to returns due in 2026, and intentional disregard for that year is $680. Reasonable cause can remove a penalty. Filing with the IRS and furnishing the employee statement are separate.</p>
+    </section>
+
+    <section class="card sources" id="sources">
+      <h2>Sources</h2>
+      <ul>
+        <li><a href="https://www.irs.gov/pub/irs-drop/rp-25-26.pdf">Rev. Proc. 2025-26</a> and <a href="https://www.irs.gov/irb/2025-33_IRB">Internal Revenue Bulletin 2025-33</a>. For 2026, section 4980H(a) is $3,340 a year and section 4980H(b) is $5,010 a year.</li>
+        <li><a href="https://www.irs.gov/pub/irs-drop/rp-25-25.pdf">Rev. Proc. 2025-25</a>. For plan years beginning in 2026, the required contribution percentage is 9.96 percent.</li>
+        <li><a href="https://www.irs.gov/pub/irs-drop/rp-26-22.pdf">Rev. Proc. 2026-22</a>. For 2027, section 4980H(a) is $3,780 and section 4980H(b) is $5,670. Effective for years beginning after December 31, 2026.</li>
+        <li><a href="https://www.irs.gov/pub/irs-drop/rp-26-26.pdf">Rev. Proc. 2026-26</a>. For plan years beginning in 2027, the required contribution percentage is 10.22 percent.</li>
+        <li><a href="https://www.irs.gov/affordable-care-act/employers/questions-and-answers-on-employer-shared-responsibility-provisions-under-the-affordable-care-act">IRS questions and answers on the employer shared responsibility provisions</a>, including ALE status, the seasonal-worker exception, controlled groups, the two payments, the safe harbors, and Letter 226-J.</li>
+        <li><a href="https://www.ecfr.gov/current/title-26/chapter-I/subchapter-D/part-54/section-54.4980H-2">Treas. Reg. § 54.4980H-2</a>. The average rounds down. The seasonal-worker exception treats four months as 120 days.</li>
+        <li><a href="https://www.ecfr.gov/current/title-26/chapter-I/subchapter-D/part-54/section-54.4980H-4">Treas. Reg. § 54.4980H-4</a>. The offer test is all but 5 percent, or five if five is greater. A controlled group's share of the 30-employee reduction rounds up.</li>
+        <li><a href="https://www.ecfr.gov/current/title-26/chapter-I/subchapter-D/part-54/section-54.4980H-5">Treas. Reg. § 54.4980H-5</a>. The B payment cannot exceed the A payment for that month. Safe harbors use W-2 wages, rate of pay, or the federal poverty line.</li>
+        <li><a href="https://www.govinfo.gov/content/pkg/FR-2025-01-17/html/2025-01377.htm">2025 HHS poverty guidelines</a>, 90 Fed. Reg. 5917 (Jan. 17, 2025). One person: $15,650 in the 48 states and DC, $19,550 in Alaska, $17,990 in Hawaii. Used for a plan year that starts January 1, 2026.</li>
+        <li><a href="https://www.govinfo.gov/content/pkg/FR-2026-01-15/html/2026-00755.htm">2026 HHS poverty guidelines</a>, 91 Fed. Reg. 1797 (Jan. 15, 2026). One person: $15,960, $19,950 in Alaska, and $18,360 in Hawaii.</li>
+        <li><a href="https://www.irs.gov/payments/information-return-penalties">IRS, Information return penalties</a>. Penalty amounts for returns due in 2026 and 2027. The 2027 figures also appear in <a href="https://www.irs.gov/pub/irs-drop/rp-25-32.pdf">Rev. Proc. 2025-32</a>.</li>
+      </ul>
+    </section>
+
+    <section class="card disclaimer">
+      <h2>Disclaimer</h2>
+      <p>This calculator is an estimate only. It is not legal, tax, or accounting advice, and it does not create a client relationship. DK Benefits is a licensed insurance agency, not a tax advisor. The result depends on the numbers you enter. It does not know who was in a limited non-assessment period unless you say so, and it does not decide whether a particular employee could receive a premium tax credit. Rules and indexed amounts change. Confirm them with your tax advisor, counsel, or payroll provider before you file or change a plan.</p>
+      <p>Questions about DK Benefits' services? <a href="tel:4074765076">407-476-5076</a> · <a href="mailto:dan@dkbenefits.net">dan@dkbenefits.net</a></p>
+    </section>
+  </main>
+  <div id="print-report" class="print-report"></div>
+  <script src="aca-penalty/config.js"></script>
+  <script src="aca-penalty/aca-model.js"></script>
+  <script src="aca-penalty/aca-leads.js"></script>
+  <script src="aca-penalty/aca-ui.js"></script>
+</body>
+</html>
