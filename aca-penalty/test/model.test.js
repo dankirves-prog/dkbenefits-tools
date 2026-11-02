@@ -309,6 +309,109 @@ test('a 200-employee no-offer example matches the full-year formula', function (
   assert.equal(ACA.money(result.aMonthlyCents), '$47,316.67');
 });
 
+test('credits for employees left out of the offer trigger the B penalty when the offer test is met', function () {
+  const result = ACA.calculate(base({
+    averageFullTime: 100,
+    fullTime: 100,
+    offer: '',
+    offerCoverage: 'most',
+    notOffered: 4,
+    ptcCount: 2,
+    creditsNotOffered: 2,
+    anyCredit: false,
+    premium: '100',
+    affordUse: true,
+    harbor: 'fpl',
+    location: 'mainland',
+    planStart: 'calendar',
+    minimumValue: 'yes'
+  }));
+  assert.equal(result.ok, true);
+  assert.equal(result.prior.isAle, true);
+  assert.equal(result.offerMet, true);
+  assert.equal(result.afford.passes, true);
+  assert.equal(result.kind, 'b');
+  assert.equal(result.actualCents, 2 * 5010 * 100);
+  assert.equal(ACA.money(result.actualCents), '$10,020');
+});
+
+test('affordable coverage for everyone produces no B penalty', function () {
+  const result = ACA.calculate(base({
+    averageFullTime: 100,
+    fullTime: 100,
+    offer: '',
+    offerCoverage: 'all',
+    ptcCount: 3,
+    anyCredit: false,
+    premium: '100',
+    affordUse: true,
+    harbor: 'fpl',
+    minimumValue: 'yes'
+  }));
+  assert.equal(result.kind, 'zero');
+  assert.equal(result.actualCents, 0);
+  assert.equal(result.afford.passes, true);
+  assert.equal(result.afford.maxCents, 12989);
+});
+
+test('minimum value No counts every credit toward the B penalty', function () {
+  const result = ACA.calculate(base({
+    averageFullTime: 100,
+    fullTime: 100,
+    offer: '',
+    offerCoverage: 'all',
+    ptcCount: 3,
+    anyCredit: false,
+    minimumValue: 'no'
+  }));
+  assert.equal(result.kind, 'b');
+  assert.equal(result.actualCents, 3 * 5010 * 100);
+  assert.equal(ACA.money(result.actualCents), '$15,030');
+});
+
+test('the offer hint rounds the 5 percent allowance down to whole people', function () {
+  assert.equal(ACA.offerAllowance(130).allowedWhole, 6);
+  assert.match(ACA.offerHint(130), /up to 6/);
+});
+
+test('the worked examples still match 120 with no offer and 80 with six credits', function () {
+  const noOffer = ACA.calculate(base({
+    offer: '',
+    offerCoverage: 'none',
+    anyCredit: false,
+    ptcCount: 1
+  }));
+  assert.equal(noOffer.actualCents, 30060000);
+  const unaffordable = ACA.calculate(base({
+    averageFullTime: 80,
+    fullTime: 80,
+    offer: '',
+    offerCoverage: 'all',
+    anyCredit: false,
+    ptcCount: 6,
+    premium: '450',
+    affordUse: true,
+    harbor: 'fpl',
+    minimumValue: 'yes'
+  }));
+  assert.equal(unaffordable.actualCents, 3006000);
+  assert.equal(unaffordable.afford.passes, false);
+});
+
+test('a controlled group seasonal check says it only sees this company', function () {
+  const months = [];
+  for (let i = 0; i < 12; i++) months.push({ fullTime: 40, partTimeHours: 0 });
+  const result = ACA.calculate(base({
+    priorMode: 'months',
+    priorMonths: months,
+    controlledGroup: true,
+    otherMembersAverage: 20,
+    otherMembersFullTime: 20,
+    fullTime: 40
+  }));
+  assert.match(result.prior.groupMonthsNote, /only uses this company's months/);
+});
+
 test('minimum value is required before a safe harbor can pass', function () {
   const result = ACA.calculate(base({
     offer: 'affordable',
