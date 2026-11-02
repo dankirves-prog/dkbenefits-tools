@@ -66,7 +66,7 @@
       year: 'The year you might owe a penalty for. Whether the rules apply depends on your headcount the year before. IRS penalty letters often arrive more than a year later.',
       ale: 'An employer that averaged 50 or more full-time employees last year, counting part-time hours as equivalents. Only ALEs can owe these penalties.',
       ftPrior: 'Anyone with 130 or more hours of service in a month (about 30 a week). Paid time off counts as hours: vacation, holidays, sick days.',
-      partTime: 'Add the monthly hours of everyone who isn\'t full-time, including seasonal and variable-hour staff. Count no more than 120 hours per person. Every 120 hours = one full-time equivalent.',
+      partTime: 'Count everyone who averages under 30 hours a week, including seasonal and variable-hour staff. We convert this to monthly hours, capped at 120 per person. Every 120 hours = one full-time equivalent.',
       newCompany: 'Check this only if the business didn\'t exist on any business day last year. Then enter the average you expect this year. You\'re an ALE if you expect 50 or more and actually reach it.',
       group: 'Companies under common ownership or control (often 80% or more) count as one employer for the 50-employee test. Each company still figures its own penalty. The rules are technical, so confirm with your CPA.',
       otherAverage: 'The other companies\' combined full-time employees plus equivalents, averaged over last year, before rounding.',
@@ -204,9 +204,11 @@
     document.getElementById('w2-fields').classList.toggle('hidden', harbor !== 'w2');
     document.getElementById('rate-fields').classList.toggle('hidden', harbor !== 'rate');
     document.getElementById('fpl-fields').classList.toggle('hidden', harbor !== 'fpl');
+    document.getElementById('fpl-note').classList.toggle('hidden', harbor !== 'fpl');
+    document.getElementById('poverty-tip').classList.toggle('hidden', harbor !== 'fpl');
     document.getElementById('salary-wrap').classList.toggle('hidden', checked('payType') !== 'salary');
     document.getElementById('hourly-wrap').classList.toggle('hidden', checked('payType') === 'salary');
-    if (harbor === 'w2' || harbor === 'rate') document.getElementById('less-common').open = true;
+    document.getElementById('hours-warning').hidden = !(Number(val('hoursPerWeek')) >= 30);
     var later = document.querySelector('#planStart option[value="later"]');
     later.disabled = String(year) === '2027';
     if (String(year) === '2027' && val('planStart') === 'later') document.getElementById('planStart').value = 'calendar';
@@ -216,20 +218,26 @@
     var offerCoverage = checked('offerCoverage');
     var missed = Number(val('notOffered') || 0);
     document.getElementById('not-offered-wrap').classList.toggle('hidden', offerCoverage !== 'most');
-    document.getElementById('credits-not-wrap').classList.toggle('hidden', offerCoverage !== 'most' || !(missed > 0));
+    document.getElementById('credits-not-wrap').classList.toggle('hidden', offerCoverage !== 'most' || !(missed >= 1));
     document.getElementById('step-3').classList.toggle('hidden', offerCoverage === 'none');
     var counted = Math.max(0, Number(val('fullTime') || 0) - Number(val('nonAssessment') || 0));
     document.getElementById('offer-hint').textContent = ACA.offerHint(counted);
-    var preview = ACA.calculate(readForm());
     var live = document.getElementById('ale-live');
     var small = document.getElementById('small-group');
-    if (preview.ok) {
-      live.textContent = preview.summary.aleStatus + '. Rounded average: ' + preview.prior.rounded + '.';
-      var under = !preview.prior.isAle;
-      small.classList.toggle('hidden', !under);
-      document.getElementById('step-2').classList.toggle('hidden', under);
-      if (under) document.getElementById('step-3').classList.add('hidden');
-      if (preview.prior.groupMonthsNote) live.textContent += ' ' + preview.prior.groupMonthsNote;
+    if (!headcountStarted()) {
+      live.textContent = '';
+      small.classList.add('hidden');
+      document.getElementById('step-2').classList.remove('hidden');
+    } else {
+      var preview = ACA.calculate(readForm());
+      if (preview.ok) {
+        live.textContent = preview.summary.aleStatus + '. Rounded average: ' + preview.prior.rounded + '.';
+        var under = !preview.prior.isAle;
+        small.classList.toggle('hidden', !under);
+        document.getElementById('step-2').classList.toggle('hidden', under);
+        if (under) document.getElementById('step-3').classList.add('hidden');
+        if (preview.prior.groupMonthsNote) live.textContent += ' ' + preview.prior.groupMonthsNote;
+      }
     }
     postHeight();
   }
@@ -247,11 +255,34 @@
     if (field) { field.setAttribute('aria-invalid', 'true'); field.focus(); }
   }
 
+  function headcountStarted() {
+    if (Number(val('averageFullTime')) > 0) return true;
+    if (Number(val('partTimeCount')) > 0) return true;
+    if (Number(val('hoursPerWeek')) > 0) return true;
+    if (!document.getElementById('exact-hours').classList.contains('hidden') && Number(val('exactHours')) > 0) return true;
+    if (document.getElementById('priorVary').checked) {
+      for (var i = 0; i < 12; i++) {
+        if (Number(val('priorFt' + i)) > 0 || Number(val('priorHours' + i)) > 0) return true;
+      }
+    }
+    return false;
+  }
+
   function activeScenario(result) {
-    if (result.kind === 'a' || result.kind === 'unsure') return 'nothing';
-    if (result.kind === 'b' || result.kind === 'mixed') return 'unaffordable';
-    if (result.kind === 'zero') return 'affordable';
+    if ((result.kind === 'a' || result.kind === 'unsure') && result.actualCents === result.scenarioNothingCents) return 'nothing';
+    if (result.kind === 'b' && result.actualCents === result.scenarioUnaffordableCents) return 'unaffordable';
+    if (result.kind === 'zero' && result.actualCents === 0) return 'affordable';
     return '';
+  }
+
+  function monthTable(result) {
+    if (!result.monthRows.length || (result.identical && result.kind !== 'mixed')) return '';
+    var rows = result.monthRows.map(function (row) {
+      var label = row.kind === 'a' ? 'No-offer (A)' : (row.kind === 'b' ? 'Unaffordable-offer (B)' : 'None');
+      var amount = row.kind === 'a' ? row.aCents : (row.kind === 'b' ? row.bCents : 0);
+      return '<tr><td>' + esc(row.name) + '</td><td>' + row.fullTime + '</td><td>' + row.ptc + '</td><td>' + esc(label) + '</td><td>' + esc(ACA.money(amount)) + '</td></tr>';
+    }).join('');
+    return '<table class="month-table"><thead><tr><th>Month</th><th>Full-time</th><th>Credits</th><th>Penalty</th><th>Amount</th></tr></thead><tbody>' + rows + '</tbody></table>';
   }
 
   function formulaLine(result) {
@@ -297,9 +328,10 @@
       '<section class="card" id="result-card">' + hero + aleLine + harborLine + unsure + extra +
         '<div class="scenarios">' +
           scenarioCard('nothing', 'Miss the 95% offer test', result.scenarioNothingCents, 'No-offer penalty (A), if at least one employee got a credit.', active) +
-          scenarioCard('unaffordable', 'Unaffordable-offer penalty (B)', result.scenarioUnaffordableCents, 'Credits for people who were left out, plus credits for an offer that fails, capped at the A amount.', active) +
+          scenarioCard('unaffordable', 'If your offer failed affordability', result.scenarioUnaffordableCents, 'What the B penalty would be if every credit failed affordability or minimum value, capped at the A amount.', active) +
           scenarioCard('affordable', 'Affordable minimum-value coverage', 0, 'No B penalty for employees whose offer passes a safe harbor.', active) +
         '</div>' +
+        monthTable(result) +
         '<p>' + esc(formulaLine(result)) + '</p>' +
         '<p>No-offer penalty (A) and unaffordable-offer penalty (B) <button type="button" class="info-btn" data-tip="penalties" aria-label="More about A and B penalty (results)" aria-expanded="false">i</button></p>' +
         '<p>30-employee reduction <button type="button" class="info-btn" data-tip="reduction" aria-label="More about 30-employee reduction (results)" aria-expanded="false">i</button></p>' +

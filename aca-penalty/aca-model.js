@@ -302,6 +302,12 @@
     if (value.nonAssessment > value.fullTime && value.penaltyMode !== 'months') {
       errors.push({ field: 'nonAssessment', message: 'The limited non-assessment count cannot be larger than the full-time count.' });
     }
+    if (value.offerCoverage === 'most' && !(value.notOffered >= 1)) {
+      errors.push({ field: 'notOffered', message: 'Enter at least 1 full-time employee who was not offered coverage.' });
+    }
+    if (value.offerCoverage === 'most' && value.notOffered >= 1 && value.ptcCount > 0 && !value.creditUnsure && value.creditsNotOffered == null) {
+      errors.push({ field: 'creditsNotOffered', message: 'Enter how many of them were among those not offered coverage.' });
+    }
     if (value.ptcCount != null && value.ptcCount > value.fullTime && value.penaltyMode !== 'months') {
       errors.push({ field: 'ptcCount', message: 'The credit count cannot be larger than the full-time count.' });
     }
@@ -417,9 +423,9 @@
     var offerMet = level === 'none' ? counted === 0 : meetsOffer(missed, counted);
     var unsure = !!value.creditUnsure;
     var credits = ptcCount == null ? null : ptcCount;
-    var hasCredit = unsure || value.anyCredit || (credits != null && credits > 0);
+    var hasCredit = unsure || (credits != null && credits > 0) || (credits == null && !!value.anyCredit);
     if (unsure) {
-      return { offerMet: offerMet, missed: missed, kind: 'unsure', bCount: 0, needPremium: false };
+      return { offerMet: offerMet, missed: missed, kind: offerMet ? 'unsureMet' : 'unsure', bCount: 0, needPremium: false };
     }
     if (credits == null && !value.anyCredit) {
       return { offerMet: offerMet, missed: missed, kind: 'needCredits', bCount: 0, needPremium: false };
@@ -474,6 +480,23 @@
       bCents: b,
       capped: bRaw > a && bCount > 0
     };
+  }
+
+  function owedForKind_(rows, kindName, rates) {
+    var picked = rows.filter(function (row) { return row.kind === kindName; });
+    if (!picked.length) return 0;
+    var same = picked.every(function (row) {
+      return row.assessed === picked[0].assessed && row.bCount === picked[0].bCount;
+    });
+    if (!same) {
+      return picked.reduce(function (sum, row) {
+        return sum + (kindName === 'a' ? row.aCents : row.bCents);
+      }, 0);
+    }
+    if (kindName === 'a') return periodCents(picked[0].assessed, rates.aAnnual, picked.length);
+    var raw = periodCents(picked[0].bCount, rates.bAnnual, picked.length);
+    var cap = periodCents(picked[0].assessed, rates.aAnnual, picked.length);
+    return Math.min(raw, cap);
   }
 
   function affordabilityOf(value) {
@@ -592,7 +615,8 @@
     var kind = 'zero';
     if (!prior.isAle) kind = 'notAle';
     else if (!flags.some(Boolean)) kind = 'noMonths';
-    else if (value.creditUnsure) kind = 'unsure';
+    else if (specs.some(function (row) { return row.kind === 'unsure'; })) kind = 'unsure';
+    else if (specs.length && specs.every(function (row) { return row.kind === 'unsureMet'; })) kind = 'unsureMet';
     else if (specs.some(function (row) { return row.kind === 'needCredits'; })) kind = 'needCredits';
     else if (specs.every(function (row) { return row.kind === 'noCredit'; })) kind = 'noCredit';
     else if (specs.some(function (row) { return row.kind === 'a'; })) kind = specs.every(function (row) { return row.kind === 'a' || row.kind === 'noCredit'; }) ? 'a' : 'mixed';
@@ -643,19 +667,27 @@
       bCapped = false;
       kind = 'notAle';
     }
+    var aOwed = owedForKind_(monthRows, 'a', rates);
+    var bOwed = owedForKind_(monthRows, 'b', rates);
     var actual = 0;
     var actualLabel = 'No section 4980H payment on these inputs';
     var why = '';
-    if (kind === 'a' || kind === 'unsure') {
-      actual = aTotal;
+    if (kind === 'unsureMet') {
+      actual = 0;
+      actualLabel = 'No-offer penalty (A)';
+      why = 'No-offer penalty: $0 — you met the 95% offer test. Unaffordable-offer penalty: ' + money(rates.bAnnual * 100) + ' a year for each full-time employee who gets a credit and wasn\'t offered affordable, minimum-value coverage.';
+    } else if (kind === 'a' || kind === 'unsure') {
+      actual = kind === 'a' ? aOwed : aTotal;
       actualLabel = 'No-offer penalty (A)';
       why = kind === 'unsure'
         ? 'The credit count is not sure. This is the no-offer penalty if at least one employee got a credit and the 95% offer test was missed.'
         : 'You missed the 95% offer test and at least one employee got a credit.';
-    } else if (kind === 'b' || kind === 'mixed') {
-      actual = kind === 'mixed' ? monthRows.reduce(function (sum, row) {
-        return sum + (row.kind === 'a' ? row.aCents : row.bCents);
-      }, 0) : actualB;
+    } else if (kind === 'mixed') {
+      actual = aOwed + bOwed;
+      actualLabel = 'No-offer (A) and unaffordable-offer (B) penalties';
+      why = 'Some months are the no-offer penalty and some are the unaffordable-offer penalty.';
+    } else if (kind === 'b') {
+      actual = bOwed;
       actualLabel = 'Unaffordable-offer penalty (B)';
       why = 'Some full-time employees who got a credit were not offered affordable, minimum-value coverage.';
     } else if (kind === 'needCredits') {

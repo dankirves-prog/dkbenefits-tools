@@ -46,6 +46,7 @@
           <div class="field">
             <label for="hoursPerWeek">About how many hours a week each?</label>
             <input id="hoursPerWeek" name="hoursPerWeek" type="number" inputmode="decimal" min="0" step="0.5" value="0">
+            <p id="hours-warning" class="field-error" hidden>30+ hours a week is full-time. Count these people in the full-time field instead.</p>
           </div>
           <div class="field span-2">
             <button type="button" class="linkish" id="exact-toggle">Enter exact hours</button>
@@ -82,19 +83,17 @@
         </fieldset>
         <div id="not-offered-wrap" class="field hidden">
           <label for="notOffered">Full-time employees not offered coverage</label>
-          <input id="notOffered" name="notOffered" type="number" inputmode="numeric" min="0" step="1" value="0">
+          <input id="notOffered" name="notOffered" type="number" inputmode="numeric" min="1" step="1" placeholder="At least 1">
         </div>
-        <div class="grid">
-          <div class="field">
-            <label for="ptcCount">How many full-time employees got a premium tax credit? <button type="button" class="info-btn" data-tip="credits" aria-label="More about How many got a credit" aria-expanded="false">i</button></label>
-            <input id="ptcCount" name="ptcCount" type="number" inputmode="numeric" min="0" step="1" placeholder="Enter a number">
-          </div>
-          <div class="field hidden" id="credits-not-wrap">
-            <label for="creditsNotOffered">How many of them were among those not offered coverage?</label>
-            <input id="creditsNotOffered" name="creditsNotOffered" type="number" inputmode="numeric" min="0" step="1" value="0">
-          </div>
+        <div class="field">
+          <label for="ptcCount">How many full-time employees got a premium tax credit? <button type="button" class="info-btn" data-tip="credits" aria-label="More about How many got a credit" aria-expanded="false">i</button></label>
+          <input id="ptcCount" name="ptcCount" type="number" inputmode="numeric" min="0" step="1" placeholder="Enter a number">
+          <label class="check"><input id="creditUnsure" name="creditUnsure" type="checkbox"> <span>Not sure <button type="button" class="info-btn" data-tip="credit" aria-label="More about Premium tax credit" aria-expanded="false">i</button></span></label>
         </div>
-        <label class="check"><input id="creditUnsure" name="creditUnsure" type="checkbox"> <span>Not sure <button type="button" class="info-btn" data-tip="credit" aria-label="More about Premium tax credit" aria-expanded="false">i</button></span></label>
+        <div class="field hidden" id="credits-not-wrap">
+          <label for="creditsNotOffered">How many of them were among those not offered coverage?</label>
+          <input id="creditsNotOffered" name="creditsNotOffered" type="number" inputmode="numeric" min="0" step="1" placeholder="Required">
+        </div>
       </section>
 
       <section class="card" id="step-3">
@@ -105,12 +104,37 @@
             <input id="premium" name="premium" type="text" inputmode="decimal" autocomplete="off">
           </div>
           <div class="field">
-            <label for="harbor">Safe harbor <button type="button" class="info-btn" data-tip="harbor" aria-label="More about Safe harbor" aria-expanded="false">i</button></label>
+            <label for="harbor">Safe harbor <button type="button" class="info-btn" data-tip="harbor" aria-label="More about Safe harbor" aria-expanded="false">i</button> <button type="button" class="info-btn" id="poverty-tip" data-tip="poverty" aria-label="More about Poverty-line safe harbor" aria-expanded="false">i</button></label>
             <select id="harbor" name="harbor">
               <option value="fpl" selected>Poverty line</option>
               <option value="w2">Form W-2</option>
               <option value="rate">Rate of pay</option>
             </select>
+          </div>
+        </div>
+        <div id="w2-fields" class="field hidden">
+          <label for="w2Wages">Form W-2, Box 1 wages <button type="button" class="info-btn" data-tip="w2" aria-label="More about W-2 safe harbor" aria-expanded="false">i</button></label>
+          <input id="w2Wages" name="w2Wages" type="text" inputmode="decimal" autocomplete="off">
+        </div>
+        <div id="rate-fields" class="hidden">
+          <fieldset>
+            <legend class="choice-legend">Rate of pay <button type="button" class="info-btn" data-tip="rate" aria-label="More about Rate-of-pay safe harbor" aria-expanded="false">i</button></legend>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="payType" value="hourly" checked> <span>Hourly. The test uses the rate times 130 hours.</span></label>
+              <label class="choice"><input type="radio" name="payType" value="salary"> <span>Salaried. The test uses the monthly salary. Not available if the salary was cut during the year.</span></label>
+            </div>
+          </fieldset>
+          <div class="grid">
+            <div class="field" id="hourly-wrap">
+              <label for="hourlyRate">Hourly rate</label>
+              <input id="hourlyRate" name="hourlyRate" type="text" inputmode="decimal" autocomplete="off">
+              <p class="hint">Use the rate on the first day of the plan year. If an hourly rate drops, use the lowest rate that month.</p>
+            </div>
+            <div class="field hidden" id="salary-wrap">
+              <label for="monthlySalary">Monthly salary</label>
+              <input id="monthlySalary" name="monthlySalary" type="text" inputmode="decimal" autocomplete="off">
+              <p class="hint">Not available if the salary was cut during the year.</p>
+            </div>
           </div>
         </div>
         <fieldset>
@@ -168,33 +192,6 @@
         <div id="months" class="months"></div>
         <label class="check"><input id="penaltyVary" name="penaltyVary" type="checkbox"> <span>Use different counts for each month. The offer test runs separately each month.</span></label>
         <div id="penalty-months" class="mini-grid hidden"></div>
-        <div id="w2-fields" class="field hidden">
-          <label for="w2Wages">Form W-2, Box 1 wages <button type="button" class="info-btn" data-tip="w2" aria-label="More about W-2 safe harbor" aria-expanded="false">i</button></label>
-          <input id="w2Wages" name="w2Wages" type="text" inputmode="decimal" autocomplete="off">
-        </div>
-        <div id="rate-fields" class="hidden">
-          <fieldset>
-            <legend class="choice-legend">Rate of pay <button type="button" class="info-btn" data-tip="rate" aria-label="More about Rate-of-pay safe harbor" aria-expanded="false">i</button></legend>
-            <div class="choices">
-              <label class="choice"><input type="radio" name="payType" value="hourly" checked> <span>Hourly. The test uses the rate times 130 hours.</span></label>
-              <label class="choice"><input type="radio" name="payType" value="salary"> <span>Salaried. The test uses the monthly salary. Not available if the salary was cut during the year.</span></label>
-            </div>
-          </fieldset>
-          <div class="grid">
-            <div class="field" id="hourly-wrap">
-              <label for="hourlyRate">Hourly rate</label>
-              <input id="hourlyRate" name="hourlyRate" type="text" inputmode="decimal" autocomplete="off">
-              <p class="hint">Use the rate on the first day of the plan year. If an hourly rate drops, use the lowest rate that month.</p>
-            </div>
-            <div class="field hidden" id="salary-wrap">
-              <label for="monthlySalary">Monthly salary</label>
-              <input id="monthlySalary" name="monthlySalary" type="text" inputmode="decimal" autocomplete="off">
-              <p class="hint">Not available if the salary was cut during the year.</p>
-            </div>
-          </div>
-        </div>
-        <p id="poverty-bubble" class="hint"></p>
-        <button type="button" class="info-btn" data-tip="poverty" aria-label="More about Poverty-line safe harbor" aria-expanded="false">i</button>
       </details>
 
       <div class="examples">
