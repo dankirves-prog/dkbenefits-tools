@@ -20,141 +20,110 @@
     </div>
   </header>
   <main class="wrap">
-    <p>This estimate is for employers, including companies in Florida and Georgia. It uses the indexed amounts for the year you pick. It is not a tax bill.</p>
+    <p>This estimate uses the indexed amounts for the year you pick. It is not a tax bill.</p>
     <p id="rate-line" class="lede"></p>
 
     <form id="aca" novalidate>
-      <section class="card">
-        <h2>Are you likely an applicable large employer?</h2>
+      <section class="card" id="step-1">
+        <h2>1. Do the rules apply to you? <button type="button" class="info-btn" data-tip="ale" aria-label="More about Applicable large employer (ALE)" aria-expanded="false">i</button></h2>
         <p class="lede">ALE status uses the prior calendar year. A full-time employee works 30 or more hours a week, or 130 hours in a month. Add part-time hours, count no more than 120 hours for any one person, and divide by 120. Round the year's average down.</p>
         <div class="grid">
           <div class="field">
-            <label for="year">Penalty year</label>
+            <label for="year">Year you're checking <button type="button" class="info-btn" data-tip="year" aria-label="More about Year you're checking" aria-expanded="false">i</button></label>
             <select id="year" name="year">
               <option value="2026" selected>2026</option>
               <option value="2027">2027</option>
             </select>
           </div>
           <div class="field">
-            <label for="averageFullTime">Average full-time employees</label>
+            <label for="averageFullTime" id="ft-prior-label">Full-time employees in a typical month of 2025 <button type="button" class="info-btn" data-tip="ftPrior" aria-label="More about Full-time employees (last year)" aria-expanded="false">i</button></label>
             <input id="averageFullTime" name="averageFullTime" type="number" inputmode="decimal" min="0" step="0.01" value="0">
           </div>
+          <div class="field">
+            <label for="partTimeCount">Part-time staff, how many? <button type="button" class="info-btn" data-tip="partTime" aria-label="More about Part-time hours" aria-expanded="false">i</button></label>
+            <input id="partTimeCount" name="partTimeCount" type="number" inputmode="numeric" min="0" step="1" value="0">
+          </div>
+          <div class="field">
+            <label for="hoursPerWeek">About how many hours a week each?</label>
+            <input id="hoursPerWeek" name="hoursPerWeek" type="number" inputmode="decimal" min="0" step="0.5" value="0">
+          </div>
           <div class="field span-2">
-            <label for="averagePartTimeHours">Part-time hours in an average month</label>
-            <input id="averagePartTimeHours" name="averagePartTimeHours" type="number" inputmode="decimal" min="0" step="1" value="0">
-            <p class="hint">Count no more than 120 hours for each person who is not full-time. Twenty people at 60 hours are 1,200 hours, or 10 full-time equivalents.</p>
+            <button type="button" class="linkish" id="exact-toggle">Enter exact hours</button>
+            <div id="exact-hours" class="hidden">
+              <label for="exactHours">Exact part-time hours in a typical month</label>
+              <input id="exactHours" name="exactHours" type="number" inputmode="decimal" min="0" step="1" value="0">
+              <p class="hint">Use this when you already added the hours and capped each person at 120. It replaces the weekly estimate.</p>
+            </div>
           </div>
         </div>
-        <label class="check"><input id="newEmployer" name="newEmployer" type="checkbox"> <span>This company did not exist on any business day last year. Use this year's workforce instead.</span></label>
-        <label class="check"><input id="controlledGroup" name="controlledGroup" type="checkbox"> <span>This company is part of a controlled or affiliated group. Related companies are counted together for the 50-employee test, and they share the 30-employee reduction.</span></label>
-        <div id="group-fields" class="grid hidden">
-          <div class="field">
-            <label for="otherMembersAverage">Other companies' average full-time plus equivalents</label>
-            <input id="otherMembersAverage" name="otherMembersAverage" type="number" inputmode="decimal" min="0" step="0.01">
-            <p class="hint">Use the average before rounding down. Enter 0 if the other companies have no employees.</p>
-          </div>
-          <div class="field">
-            <label for="otherMembersFullTime">Other companies' full-time employees</label>
-            <input id="otherMembersFullTime" name="otherMembersFullTime" type="number" inputmode="numeric" min="0" step="1">
-            <p class="hint">Full-time only, not equivalents. This splits the 30-employee reduction. The share rounds up to the next whole number.</p>
-          </div>
+        <div id="ale-live" class="callout" aria-live="polite"></div>
+        <div id="small-group" class="soft hidden">
+          <p>You are under 50, so the employer mandate does not apply. Small-group coverage can still be a fit.</p>
+          <p><a class="btn btn-gold" id="rates-link" href="https://www.dkbenefits.net/instant-group-quote" target="_blank" rel="noopener">See small-group rates</a></p>
         </div>
-        <label class="check"><input id="seasonalAttest" name="seasonalAttest" type="checkbox"> <span>The workforce was over 50 for 120 days or fewer (four months count), and everyone above 50 during that time was a seasonal worker.</span></label>
-        <label class="check"><input id="priorVary" name="priorVary" type="checkbox"> <span>Enter the prior year month by month</span></label>
-        <div id="prior-months" class="mini-grid hidden"></div>
       </section>
 
-      <section class="card">
-        <h2>This year's full-time employees and the offer</h2>
-        <p class="lede">The payment uses full-time employees only. Equivalents are not in the penalty math. An offer counts for an employee only if dependents are offered too. Spouses do not have to be offered. The A penalty applies when the offer misses more than 5 percent of full-time employees, or more than five when five is greater, and at least one full-time employee gets a premium tax credit.</p>
+      <section class="card" id="step-2">
+        <h2>2. What did you offer?</h2>
         <div class="grid">
           <div class="field">
-            <label for="fullTime">Full-time employees</label>
+            <label for="fullTime">Full-time employees this year <button type="button" class="info-btn" data-tip="ftNow" aria-label="More about Full-time employees (this year)" aria-expanded="false">i</button></label>
             <input id="fullTime" name="fullTime" type="number" inputmode="numeric" min="0" step="1" value="0">
-          </div>
-          <div class="field">
-            <label for="nonAssessment">In a limited non-assessment period</label>
-            <input id="nonAssessment" name="nonAssessment" type="number" inputmode="numeric" min="0" step="1" value="0">
-            <p class="hint">Waiting period or first partial month, if you want them left out. Leave 0 if you are not sure.</p>
-          </div>
-          <div class="field">
-            <label for="notOffered">Full-time employees not offered coverage</label>
-            <input id="notOffered" name="notOffered" type="number" inputmode="numeric" min="0" step="1" placeholder="Optional">
-            <p class="hint">Include people whose dependents were not offered. Leave blank to use the answer below.</p>
-          </div>
-          <div class="field">
-            <label for="ptcCount">Full-time employees who received a premium tax credit</label>
-            <input id="ptcCount" name="ptcCount" type="number" inputmode="numeric" min="0" step="1" value="0">
           </div>
         </div>
         <p id="offer-hint" class="hint"></p>
         <fieldset>
-          <legend class="choice-legend">What was offered?</legend>
+          <legend class="choice-legend">Did you offer coverage to full-time employees and their children? <button type="button" class="info-btn" data-tip="notOffered" aria-label="More about Full-time employees not offered coverage" aria-expanded="false">i</button></legend>
           <div class="choices">
-            <label class="choice"><input type="radio" name="offer" value="below" checked> <span>Coverage was not offered to enough full-time employees and their dependents</span></label>
-            <label class="choice"><input type="radio" name="offer" value="unaffordable"> <span>Coverage was offered, but it was unaffordable or it was not minimum value</span></label>
-            <label class="choice"><input type="radio" name="offer" value="affordable"> <span>Affordable, minimum-value coverage was offered</span></label>
+            <label class="choice"><input type="radio" name="offerCoverage" value="all" checked> <span>All</span></label>
+            <label class="choice"><input type="radio" name="offerCoverage" value="most"> <span>Most</span></label>
+            <label class="choice"><input type="radio" name="offerCoverage" value="none"> <span>None</span></label>
           </div>
         </fieldset>
-        <fieldset>
-          <legend class="choice-legend">Did at least one full-time employee get a premium tax credit?</legend>
-          <div class="choices">
-            <label class="choice"><input type="radio" name="anyCredit" value="yes" checked> <span>Yes. Without a credit, neither penalty is triggered.</span></label>
-            <label class="choice"><input type="radio" name="anyCredit" value="no"> <span>No</span></label>
-          </div>
-        </fieldset>
-        <p class="hint" style="margin-top:12px">Months this situation applies</p>
-        <div id="months" class="months"></div>
-        <label class="check"><input id="penaltyVary" name="penaltyVary" type="checkbox"> <span>Use different full-time and credit counts for each month</span></label>
-        <div id="penalty-months" class="mini-grid hidden"></div>
-      </section>
-
-      <section class="card">
-        <h2>Affordability check</h2>
-        <p class="lede">Affordability uses the employee's lowest-cost self-only premium for a plan that provides minimum value, not the family premium. The three safe harbors are Form W-2 wages, rate of pay, and the federal poverty line. A safe harbor can protect the employer even when household income would still allow a credit.</p>
+        <div id="not-offered-wrap" class="field hidden">
+          <label for="notOffered">Full-time employees not offered coverage</label>
+          <input id="notOffered" name="notOffered" type="number" inputmode="numeric" min="0" step="1" value="0">
+        </div>
         <div class="grid">
           <div class="field">
-            <label for="premium">Lowest-cost self-only monthly premium</label>
-            <input id="premium" name="premium" type="text" inputmode="decimal" placeholder="Leave blank to skip" autocomplete="off">
+            <label for="ptcCount">How many full-time employees got a premium tax credit? <button type="button" class="info-btn" data-tip="credits" aria-label="More about How many got a credit" aria-expanded="false">i</button></label>
+            <input id="ptcCount" name="ptcCount" type="number" inputmode="numeric" min="0" step="1" placeholder="Enter a number">
+          </div>
+          <div class="field hidden" id="credits-not-wrap">
+            <label for="creditsNotOffered">How many of them were among those not offered coverage?</label>
+            <input id="creditsNotOffered" name="creditsNotOffered" type="number" inputmode="numeric" min="0" step="1" value="0">
+          </div>
+        </div>
+        <label class="check"><input id="creditUnsure" name="creditUnsure" type="checkbox"> <span>Not sure <button type="button" class="info-btn" data-tip="credit" aria-label="More about Premium tax credit" aria-expanded="false">i</button></span></label>
+      </section>
+
+      <section class="card" id="step-3">
+        <h2>3. Was it affordable?</h2>
+        <div class="grid">
+          <div class="field">
+            <label for="premium">Employee's monthly cost, cheapest employee-only plan <button type="button" class="info-btn" data-tip="premium" aria-label="More about Employee's monthly cost" aria-expanded="false">i</button></label>
+            <input id="premium" name="premium" type="text" inputmode="decimal" autocomplete="off">
           </div>
           <div class="field">
-            <label for="harbor">Safe harbor</label>
+            <label for="harbor">Safe harbor <button type="button" class="info-btn" data-tip="harbor" aria-label="More about Safe harbor" aria-expanded="false">i</button></label>
             <select id="harbor" name="harbor">
-              <option value="fpl">Federal poverty line</option>
-              <option value="w2">Form W-2, Box 1</option>
+              <option value="fpl" selected>Poverty line</option>
+              <option value="w2">Form W-2</option>
               <option value="rate">Rate of pay</option>
             </select>
           </div>
         </div>
-        <label class="check"><input id="minimumValue" name="minimumValue" type="checkbox" checked> <span>The plan provides minimum value. It pays at least 60 percent of the total allowed cost of benefits.</span></label>
-        <div id="w2-fields" class="field hidden" style="margin-top:12px">
-          <label for="w2Wages">Form W-2, Box 1 wages</label>
-          <input id="w2Wages" name="w2Wages" type="text" inputmode="decimal" autocomplete="off">
-          <p class="hint">Box 1 is after pre-tax deductions, so this safe harbor can be harder to meet. It is checked after the year ends.</p>
-        </div>
-        <div id="rate-fields" class="hidden">
-          <fieldset>
-            <legend class="choice-legend">Pay</legend>
-            <div class="choices">
-              <label class="choice"><input type="radio" name="payType" value="hourly" checked> <span>Hourly. The test uses the rate times 130 hours.</span></label>
-              <label class="choice"><input type="radio" name="payType" value="salary"> <span>Salaried. The test uses the monthly salary.</span></label>
-            </div>
-          </fieldset>
-          <div class="grid">
-            <div class="field" id="hourly-wrap">
-              <label for="hourlyRate">Hourly rate</label>
-              <input id="hourlyRate" name="hourlyRate" type="text" inputmode="decimal" autocomplete="off">
-              <p class="hint">Use the rate at the start of the coverage period. If hourly pay was cut, use the lower rate.</p>
-            </div>
-            <div class="field hidden" id="salary-wrap">
-              <label for="monthlySalary">Monthly salary</label>
-              <input id="monthlySalary" name="monthlySalary" type="text" inputmode="decimal" autocomplete="off">
-            </div>
+        <fieldset>
+          <legend class="choice-legend">Minimum value <button type="button" class="info-btn" data-tip="mv" aria-label="More about Minimum value" aria-expanded="false">i</button></legend>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="minimumValue" value="yes" checked> <span>Yes. It pays at least 60 percent of total allowed costs and covers hospital and doctor services.</span></label>
+            <label class="choice"><input type="radio" name="minimumValue" value="no"> <span>No</span></label>
+            <label class="choice"><input type="radio" name="minimumValue" value="unsure"> <span>Not sure</span></label>
           </div>
-        </div>
-        <div id="fpl-fields" class="grid" style="margin-top:12px">
+        </fieldset>
+        <div id="fpl-fields" class="grid">
           <div class="field">
-            <label for="location">Where the employee works</label>
+            <label for="location">Where the employee works <button type="button" class="info-btn" data-tip="location" aria-label="More about Where the employee works" aria-expanded="false">i</button></label>
             <select id="location" name="location">
               <option value="mainland">48 states and DC</option>
               <option value="alaska">Alaska</option>
@@ -162,7 +131,7 @@
             </select>
           </div>
           <div class="field">
-            <label for="planStart">Plan year</label>
+            <label for="planStart">Plan year start <button type="button" class="info-btn" data-tip="planStart" aria-label="More about Plan year start" aria-expanded="false">i</button></label>
             <select id="planStart" name="planStart">
               <option value="calendar">Starts January 1</option>
               <option value="later">Starts February 1 or later</option>
@@ -171,6 +140,62 @@
         </div>
         <p id="fpl-note" class="hint"></p>
       </section>
+
+      <details class="card" id="less-common">
+        <summary>Less common situations</summary>
+        <label class="check"><input id="newEmployer" name="newEmployer" type="checkbox"> <span>New company <button type="button" class="info-btn" data-tip="newCompany" aria-label="More about New company" aria-expanded="false">i</button></span></label>
+        <label class="check"><input id="controlledGroup" name="controlledGroup" type="checkbox"> <span>Controlled or affiliated group <button type="button" class="info-btn" data-tip="group" aria-label="More about Controlled or affiliated group" aria-expanded="false">i</button></span></label>
+        <div id="group-fields" class="grid hidden">
+          <div class="field">
+            <label for="otherMembersAverage">Other companies' average <button type="button" class="info-btn" data-tip="otherAverage" aria-label="More about Other companies' average" aria-expanded="false">i</button></label>
+            <input id="otherMembersAverage" name="otherMembersAverage" type="number" inputmode="decimal" min="0" step="0.01">
+            <p class="hint">Use the average before rounding down. Enter 0 if the other companies have no employees.</p>
+          </div>
+          <div class="field">
+            <label for="otherMembersFullTime">Other companies' full-time employees <button type="button" class="info-btn" data-tip="otherFt" aria-label="More about Other companies' full-time employees" aria-expanded="false">i</button></label>
+            <input id="otherMembersFullTime" name="otherMembersFullTime" type="number" inputmode="numeric" min="0" step="1">
+            <p class="hint">Full-time only, not equivalents. This splits the 30-employee reduction. The share rounds up to the next whole number.</p>
+          </div>
+        </div>
+        <label class="check"><input id="seasonalAttest" name="seasonalAttest" type="checkbox"> <span>Seasonal workers: over 50 for 120 days or fewer (4 calendar months count as 120 days), and everyone above 50 was a seasonal worker. <button type="button" class="info-btn" data-tip="seasonal" aria-label="More about Seasonal workers" aria-expanded="false">i</button></span></label>
+        <label class="check"><input id="priorVary" name="priorVary" type="checkbox"> <span>Enter the prior year month by month</span></label>
+        <div id="prior-months" class="mini-grid hidden"></div>
+        <div class="field">
+          <label for="nonAssessment">New hires still in their waiting period <button type="button" class="info-btn" data-tip="waiting" aria-label="More about New hires in waiting period" aria-expanded="false">i</button></label>
+          <input id="nonAssessment" name="nonAssessment" type="number" inputmode="numeric" min="0" step="1" value="0">
+        </div>
+        <p class="hint">Months this situation applies <button type="button" class="info-btn" data-tip="months" aria-label="More about Months" aria-expanded="false">i</button></p>
+        <div id="months" class="months"></div>
+        <label class="check"><input id="penaltyVary" name="penaltyVary" type="checkbox"> <span>Use different counts for each month. The offer test runs separately each month.</span></label>
+        <div id="penalty-months" class="mini-grid hidden"></div>
+        <div id="w2-fields" class="field hidden">
+          <label for="w2Wages">Form W-2, Box 1 wages <button type="button" class="info-btn" data-tip="w2" aria-label="More about W-2 safe harbor" aria-expanded="false">i</button></label>
+          <input id="w2Wages" name="w2Wages" type="text" inputmode="decimal" autocomplete="off">
+        </div>
+        <div id="rate-fields" class="hidden">
+          <fieldset>
+            <legend class="choice-legend">Rate of pay <button type="button" class="info-btn" data-tip="rate" aria-label="More about Rate-of-pay safe harbor" aria-expanded="false">i</button></legend>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="payType" value="hourly" checked> <span>Hourly. The test uses the rate times 130 hours.</span></label>
+              <label class="choice"><input type="radio" name="payType" value="salary"> <span>Salaried. The test uses the monthly salary. Not available if the salary was cut during the year.</span></label>
+            </div>
+          </fieldset>
+          <div class="grid">
+            <div class="field" id="hourly-wrap">
+              <label for="hourlyRate">Hourly rate</label>
+              <input id="hourlyRate" name="hourlyRate" type="text" inputmode="decimal" autocomplete="off">
+              <p class="hint">Use the rate on the first day of the plan year. If an hourly rate drops, use the lowest rate that month.</p>
+            </div>
+            <div class="field hidden" id="salary-wrap">
+              <label for="monthlySalary">Monthly salary</label>
+              <input id="monthlySalary" name="monthlySalary" type="text" inputmode="decimal" autocomplete="off">
+              <p class="hint">Not available if the salary was cut during the year.</p>
+            </div>
+          </div>
+        </div>
+        <p id="poverty-bubble" class="hint"></p>
+        <button type="button" class="info-btn" data-tip="poverty" aria-label="More about Poverty-line safe harbor" aria-expanded="false">i</button>
+      </details>
 
       <div class="examples">
         <button type="button" class="btn-secondary" id="ex-120">Example: 120 full-time, no offer</button>
@@ -246,6 +271,7 @@
     <section class="card disclaimer">
       <h2>Disclaimer</h2>
       <p>This calculator is an estimate only. It is not legal, tax, or accounting advice, and it does not create a client relationship. DK Benefits is a licensed insurance agency, not a tax advisor. The result depends on the numbers you enter. It does not know who was in a limited non-assessment period unless you say so, and it does not decide whether a particular employee could receive a premium tax credit. Rules and indexed amounts change. Confirm them with your tax advisor, counsel, or payroll provider before you file or change a plan.</p>
+      <p>Serving employers in Florida and Georgia.</p>
       <p>Questions about DK Benefits' services? <a href="tel:4074765076">407-476-5076</a> · <a href="mailto:dan@dkbenefits.net">dan@dkbenefits.net</a></p>
     </section>
   </main>

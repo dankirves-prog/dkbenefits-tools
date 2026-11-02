@@ -112,7 +112,7 @@ test('calculator examples, blank endpoint, and both viewports', async function (
     const extra = await overflow(page);
     assert.ok(extra <= 1, 'horizontal overflow ' + extra);
     await page.screenshot({ path: path.join(outDir, 'mobile-390-results.png'), fullPage: true });
-    const buttonWidth = await page.$eval('.btn-gold', function (el) { return el.getBoundingClientRect().width; });
+    const buttonWidth = await page.$eval('#lead-form .btn-gold', function (el) { return el.getBoundingClientRect().width; });
     assert.ok(buttonWidth > 300, 'gold button should be full width on a phone');
   } finally {
     await browser.close();

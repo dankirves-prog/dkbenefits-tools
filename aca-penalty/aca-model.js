@@ -147,17 +147,29 @@
 
   function offerAllowance(counted) {
     var ft = Math.max(0, Math.round(counted) || 0);
-    if (!ft) return { counted: 0, percent: 0, allowed: 0, fiveGreater: false };
+    if (!ft) return { counted: 0, percent: 0, allowed: 0, allowedWhole: 0, fiveGreater: false };
     var percent = ft * 0.05;
-    var fiveGreater = 5 > percent;
-    return { counted: ft, percent: percent, allowed: fiveGreater ? 5 : percent, fiveGreater: fiveGreater };
+    var floored = Math.floor(percent + 1e-9);
+    var allowedWhole = Math.max(5, floored);
+    var fiveGreater = 5 > floored;
+    return { counted: ft, percent: percent, allowed: allowedWhole, allowedWhole: allowedWhole, fiveGreater: fiveGreater };
+  }
+
+  function offerHint(counted) {
+    var allowance = offerAllowance(counted);
+    if (!allowance.counted) return '';
+    return 'You can miss up to ' + allowance.allowedWhole + '.';
   }
 
   function meetsOffer(notOffered, counted) {
     var allowance = offerAllowance(counted);
     if (!allowance.counted) return true;
-    if (allowance.fiveGreater) return notOffered <= 5;
-    return notOffered * 100 <= allowance.counted * 5;
+    return notOffered <= allowance.allowedWhole;
+  }
+
+  function monthlyFromWeekly(count, hoursPerWeek) {
+    var each = Math.min(hoursPerWeek * 52 / 12, 120);
+    return count * each;
   }
 
   function periodCents(count, annualDollars, monthCount) {
@@ -214,10 +226,25 @@
       penaltyMonths.push({
         include: pen.include === true || pen.include === '1' || pen.include === 1 || pen.include === 'on',
         fullTime: whole(pen.fullTime, 'each penalty month\'s full-time count', errors, 'penFt' + p, { blankZero: true }),
-        ptcCount: whole(pen.ptcCount, 'each month\'s credit count', errors, 'penPtc' + p, { blankZero: true })
+        ptcCount: whole(pen.ptcCount, 'each month\'s credit count', errors, 'penPtc' + p, { optional: true }),
+        notOffered: whole(pen.notOffered, 'each month\'s not-offered count', errors, 'penMiss' + p, { optional: true }),
+        creditsNotOffered: whole(pen.creditsNotOffered, 'each month\'s credits among those not offered', errors, 'penMissCredits' + p, { optional: true })
       });
     }
-    var offer = src.offer === 'unaffordable' || src.offer === 'affordable' ? src.offer : 'below';
+    var offer = src.offer === 'unaffordable' || src.offer === 'affordable' || src.offer === 'below' ? src.offer : '';
+    var offerCoverage = src.offerCoverage === 'all' || src.offerCoverage === 'most' || src.offerCoverage === 'none' ? src.offerCoverage : '';
+    var mvChoice = 'yes';
+    if (src.minimumValue === false || src.minimumValue === 'no' || src.minimumValue === '0') mvChoice = 'no';
+    else if (src.minimumValue === 'unsure') mvChoice = 'unsure';
+    var useWeekly = (src.partTimeCount != null && String(src.partTimeCount).trim() !== '') || (src.hoursPerWeek != null && String(src.hoursPerWeek).trim() !== '');
+    var useExact = src.useExactHours === true || src.useExactHours === 'yes' || src.useExactHours === '1';
+    var partTimeCount = whole(src.partTimeCount, 'part-time employees', errors, 'partTimeCount', { blankZero: true });
+    var hoursPerWeek = averageOf(src.hoursPerWeek, errors, 'hoursPerWeek', 'hours a week');
+    var monthlyHours = useExact
+      ? hoursOf(src.exactHours != null ? src.exactHours : src.averagePartTimeHours, errors, 'exactHours')
+      : (useWeekly ? monthlyFromWeekly(partTimeCount, hoursPerWeek) : hoursOf(src.averagePartTimeHours, errors, 'averagePartTimeHours'));
+    var creditUnsure = src.creditUnsure === true || src.creditUnsure === 'yes' || src.creditUnsure === '1';
+    var ptcBlank = src.ptcCount == null || String(src.ptcCount).trim() === '';
     var harbor = src.harbor === 'w2' || src.harbor === 'rate' ? src.harbor : 'fpl';
     var location = LOCATIONS[src.location] ? src.location : 'mainland';
     var planStart = src.planStart === 'later' ? 'later' : 'calendar';
@@ -225,7 +252,10 @@
       year: year,
       priorMode: priorMode,
       averageFullTime: averageOf(src.averageFullTime, errors, 'averageFullTime', 'the prior-year full-time average'),
-      averagePartTimeHours: hoursOf(src.averagePartTimeHours, errors, 'averagePartTimeHours'),
+      averagePartTimeHours: monthlyHours,
+      partTimeCount: partTimeCount,
+      hoursPerWeek: hoursPerWeek,
+      useExactHours: useExact,
       priorMonths: priorMonths,
       newEmployer: !!src.newEmployer,
       seasonalAttest: !!src.seasonalAttest,
@@ -237,15 +267,19 @@
       nonAssessment: whole(src.nonAssessment, 'employees in a limited non-assessment period', errors, 'nonAssessment', { blankZero: true }),
       notOffered: whole(src.notOffered, 'the number not offered coverage', errors, 'notOffered', { optional: true }),
       offer: offer,
+      offerCoverage: offerCoverage,
       anyCredit: src.anyCredit === true || src.anyCredit === 'yes' || src.anyCredit === '1',
-      ptcCount: whole(src.ptcCount, 'the premium tax credit count', errors, 'ptcCount', { blankZero: true }),
+      creditUnsure: creditUnsure,
+      ptcCount: ptcBlank ? null : whole(src.ptcCount, 'the premium tax credit count', errors, 'ptcCount'),
+      creditsNotOffered: whole(src.creditsNotOffered, 'credits among employees not offered coverage', errors, 'creditsNotOffered', { optional: true }),
       months: selected,
       penaltyMonths: penaltyMonths,
       affordability: {
         use: src.affordUse === true || src.affordUse === 'yes' || src.affordUse === '1' || !!src.premium,
         premiumCents: parseCents(src.premium),
         harbor: harbor,
-        minimumValue: src.minimumValue !== false && src.minimumValue !== 'no' && src.minimumValue !== '0',
+        minimumValue: mvChoice !== 'no',
+        mvChoice: mvChoice,
         w2Cents: parseCents(src.w2Wages),
         payType: src.payType === 'salary' ? 'salary' : 'hourly',
         hourlyCents: parseCents(src.hourlyRate),
@@ -268,8 +302,11 @@
     if (value.nonAssessment > value.fullTime && value.penaltyMode !== 'months') {
       errors.push({ field: 'nonAssessment', message: 'The limited non-assessment count cannot be larger than the full-time count.' });
     }
-    if (value.ptcCount > value.fullTime && value.penaltyMode !== 'months') {
+    if (value.ptcCount != null && value.ptcCount > value.fullTime && value.penaltyMode !== 'months') {
       errors.push({ field: 'ptcCount', message: 'The credit count cannot be larger than the full-time count.' });
+    }
+    if (value.creditsNotOffered != null && value.ptcCount != null && value.creditsNotOffered > value.ptcCount) {
+      errors.push({ field: 'creditsNotOffered', message: 'The credits among employees not offered coverage cannot be more than the total credit count.' });
     }
     var aff = value.affordability;
     if (aff.use) {
@@ -335,6 +372,11 @@
         seasonalNote = 'You said the workforce was over 50 for 120 days or fewer, and that everyone above 50 in that stretch was a seasonal worker. This estimate cannot see the monthly payroll behind that answer.';
       }
     }
+    var groupMonthsNote = '';
+    if (value.priorMode === 'months' && value.controlledGroup) {
+      groupMonthsNote = 'This seasonal check only uses this company\'s months. It does not include the other companies in the controlled group.';
+      seasonalNote = seasonalNote ? (seasonalNote + ' ' + groupMonthsNote) : groupMonthsNote;
+    }
     var isAle = rounded >= 50 && !seasonalApplied;
     return {
       months: months,
@@ -348,28 +390,89 @@
       monthsOver: monthsOver,
       seasonalApplied: seasonalApplied,
       seasonalNote: seasonalNote,
+      groupMonthsNote: groupMonthsNote,
       isAle: isAle
     };
+  }
+
+  function resolveOffer(value) {
+    if (value.offerCoverage) return value.offerCoverage;
+    if (value.offer === 'below' && value.notOffered == null) return 'none';
+    if (value.offer === 'below') return 'most';
+    return 'all';
+  }
+
+  function coverageFails(value, afford) {
+    if (value.affordability.mvChoice === 'no') return true;
+    if (value.offer === 'unaffordable') return true;
+    if (afford.used) return afford.passes === false;
+    if (value.offer === 'affordable') return false;
+    return false;
+  }
+
+  function classifyHeadcount(ft, nonAssessment, notOffered, ptcCount, creditsNotOffered, value, afford) {
+    var counted = Math.max(0, ft - (nonAssessment || 0));
+    var level = resolveOffer(value);
+    var missed = level === 'none' ? counted : (level === 'all' ? 0 : (notOffered == null ? 0 : notOffered));
+    var offerMet = level === 'none' ? counted === 0 : meetsOffer(missed, counted);
+    var unsure = !!value.creditUnsure;
+    var credits = ptcCount == null ? null : ptcCount;
+    var hasCredit = unsure || value.anyCredit || (credits != null && credits > 0);
+    if (unsure) {
+      return { offerMet: offerMet, missed: missed, kind: 'unsure', bCount: 0, needPremium: false };
+    }
+    if (credits == null && !value.anyCredit) {
+      return { offerMet: offerMet, missed: missed, kind: 'needCredits', bCount: 0, needPremium: false };
+    }
+    if (!hasCredit) {
+      return { offerMet: offerMet, missed: missed, kind: 'noCredit', bCount: 0, needPremium: false };
+    }
+    if (!offerMet) {
+      return { offerMet: false, missed: missed, kind: 'a', bCount: 0, needPremium: false };
+    }
+    var amongNot = 0;
+    var unknownSplit = false;
+    if (missed > 0) {
+      if (creditsNotOffered == null) unknownSplit = true;
+      else amongNot = Math.min(creditsNotOffered, credits || 0, missed);
+    }
+    var amongOffered = Math.max(0, (credits || 0) - amongNot);
+    var fails = coverageFails(value, afford);
+    var judged = afford.used || value.offer === 'unaffordable' || value.offer === 'affordable' || value.affordability.mvChoice === 'no';
+    var bCount = amongNot + (fails ? amongOffered : 0);
+    var needPremium = !judged && amongOffered > 0;
+    if (unknownSplit && !judged) {
+      return { offerMet: true, missed: missed, kind: 'needCredits', bCount: 0, needPremium: true };
+    }
+    if (needPremium && bCount === 0) {
+      return { offerMet: true, missed: missed, kind: 'needPremium', bCount: 0, needPremium: true };
+    }
+    if (bCount > 0) {
+      return { offerMet: true, missed: missed, kind: 'b', bCount: bCount, needPremium: needPremium };
+    }
+    return { offerMet: true, missed: missed, kind: 'zero', bCount: 0, needPremium: false };
   }
 
   function assessMonth(spec, rates, controlled, otherFt) {
     var ft = Math.max(0, spec.fullTime - (spec.nonAssessment || 0));
     var reduction = controlled ? allocableReduction(spec.fullTime, otherFt) : 30;
     var assessed = Math.max(0, ft - reduction);
-    var ptc = Math.max(0, Math.min(spec.ptcCount || 0, ft));
+    var bCount = Math.max(0, spec.bCount || 0);
     var a = oneMonthCents(assessed, rates.aAnnual);
-    var bRaw = oneMonthCents(ptc, rates.bAnnual);
+    var bRaw = oneMonthCents(bCount, rates.bAnnual);
     var b = Math.min(bRaw, a);
     return {
       fullTime: spec.fullTime,
       counted: ft,
       reduction: reduction,
       assessed: assessed,
-      ptc: ptc,
+      ptc: spec.ptcCount || 0,
+      bCount: bCount,
+      kind: spec.kind,
       aCents: a,
       bRawCents: bRaw,
       bCents: b,
-      capped: bRaw > a && a >= 0 && ptc > 0
+      capped: bRaw > a && bCount > 0
     };
   }
 
@@ -389,7 +492,7 @@
         passes: false,
         harborBlocked: true,
         harborLabel: 'Not available',
-        detail: 'The safe harbors apply only when the offer provides minimum value. A plan that pays less than 60 percent of allowed costs does not.',
+        detail: 'The safe harbors apply only when the plan pays at least 60 percent of total allowed costs and covers hospital and doctor services. This plan was marked as not meeting minimum value, so every credit counts toward the unaffordable-offer penalty.',
         maxCents: null,
         premiumCents: aff.premiumCents
       };
@@ -452,7 +555,9 @@
           index: i,
           fullTime: value.penaltyMonths[i].fullTime,
           nonAssessment: 0,
-          ptcCount: value.penaltyMonths[i].ptcCount
+          ptcCount: value.penaltyMonths[i].ptcCount,
+          notOffered: value.penaltyMonths[i].notOffered,
+          creditsNotOffered: value.penaltyMonths[i].creditsNotOffered
         });
       } else {
         specs.push({
@@ -463,36 +568,51 @@
         });
       }
     }
+    var afford = affordabilityOf(value);
+    if (value.affordability.mvChoice === 'unsure') afford.mvNote = 'Minimum value was marked not sure, so this estimate treats the plan as meeting minimum value.';
     var countedForOffer = value.penaltyMode === 'months'
       ? specs.reduce(function (max, row) { return Math.max(max, row.fullTime); }, 0)
       : Math.max(0, value.fullTime - value.nonAssessment);
-    var offerMet;
-    if (value.notOffered == null) offerMet = value.offer !== 'below';
-    else offerMet = meetsOffer(value.notOffered, countedForOffer);
-    var afford = affordabilityOf(value);
-    var anyCredit = value.anyCredit || value.ptcCount > 0 || specs.some(function (row) { return row.ptcCount > 0; });
+    for (i = 0; i < specs.length; i++) {
+      var spec = specs[i];
+      var monthNot = value.penaltyMode === 'months' ? spec.notOffered : value.notOffered;
+      var monthCreditsNot = value.penaltyMode === 'months' ? spec.creditsNotOffered : value.creditsNotOffered;
+      var monthPtc = spec.ptcCount;
+      if (value.penaltyMode !== 'months') monthPtc = value.ptcCount;
+      else if (monthPtc == null) monthPtc = value.ptcCount;
+      var classified = classifyHeadcount(spec.fullTime, spec.nonAssessment, monthNot, monthPtc, monthCreditsNot, value, afford);
+      spec.kind = classified.kind;
+      spec.bCount = classified.bCount;
+      spec.ptcCount = monthPtc || 0;
+      spec.offerMet = classified.offerMet;
+      spec.needPremium = classified.needPremium;
+    }
+    var offerMet = specs.length ? specs.every(function (row) { return row.offerMet; }) : meetsOffer(value.notOffered || 0, countedForOffer);
+    var anyCredit = value.creditUnsure || value.anyCredit || (value.ptcCount != null && value.ptcCount > 0) || specs.some(function (row) { return row.ptcCount > 0; });
     var kind = 'zero';
     if (!prior.isAle) kind = 'notAle';
     else if (!flags.some(Boolean)) kind = 'noMonths';
-    else if (!anyCredit) kind = 'noCredit';
-    else if (!offerMet) kind = 'a';
-    else if (value.offer === 'affordable' && afford.used && afford.passes) kind = 'zero';
-    else if (value.offer === 'affordable' && !afford.used) kind = 'zero';
-    else kind = 'b';
+    else if (value.creditUnsure) kind = 'unsure';
+    else if (specs.some(function (row) { return row.kind === 'needCredits'; })) kind = 'needCredits';
+    else if (specs.every(function (row) { return row.kind === 'noCredit'; })) kind = 'noCredit';
+    else if (specs.some(function (row) { return row.kind === 'a'; })) kind = specs.every(function (row) { return row.kind === 'a' || row.kind === 'noCredit'; }) ? 'a' : 'mixed';
+    else if (specs.some(function (row) { return row.kind === 'needPremium' && row.bCount === 0; }) && specs.every(function (row) { return row.kind === 'needPremium' || row.kind === 'zero' || row.kind === 'noCredit'; })) kind = 'needPremium';
+    else if (specs.some(function (row) { return row.kind === 'b'; })) kind = 'b';
+    else kind = 'zero';
 
     var monthRows = [];
     var aTotal = 0;
     var scenarioBTotal = 0;
-    var bUncapped = 0;
+    var actualB = 0;
     var identical = true;
     var first = null;
     for (i = 0; i < specs.length; i++) {
       var assessed = assessMonth(specs[i], rates, value.controlledGroup, value.otherMembersFullTime);
       if (!first) first = assessed;
-      else if (assessed.assessed !== first.assessed || assessed.ptc !== first.ptc || assessed.reduction !== first.reduction) identical = false;
+      else if (assessed.assessed !== first.assessed || assessed.bCount !== first.bCount || assessed.ptc !== first.ptc || assessed.reduction !== first.reduction || assessed.kind !== first.kind) identical = false;
       aTotal += assessed.aCents;
+      actualB += assessed.bCents;
       scenarioBTotal += assessed.bCents;
-      bUncapped += assessed.bRawCents;
       monthRows.push({
         index: specs[i].index,
         name: MONTHS[specs[i].index],
@@ -500,32 +620,54 @@
         reduction: assessed.reduction,
         assessed: assessed.assessed,
         ptc: assessed.ptc,
+        bCount: assessed.bCount,
+        kind: assessed.kind,
         aCents: assessed.aCents,
         bCents: assessed.bCents,
         capped: assessed.capped
       });
     }
     var bCapped = monthRows.some(function (row) { return row.capped; });
-    if (identical && specs.length) {
+    if (identical && specs.length && first) {
       aTotal = periodCents(first.assessed, rates.aAnnual, specs.length);
-      bUncapped = periodCents(first.ptc, rates.bAnnual, specs.length);
-      scenarioBTotal = Math.min(bUncapped, aTotal);
-      bCapped = bUncapped > aTotal;
+      var actualUncapped = periodCents(first.bCount, rates.bAnnual, specs.length);
+      var scenarioUncapped = periodCents(first.ptc, rates.bAnnual, specs.length);
+      actualB = Math.min(actualUncapped, aTotal);
+      scenarioBTotal = Math.min(scenarioUncapped, aTotal);
+      bCapped = actualUncapped > aTotal && first.bCount > 0;
     }
     if (!prior.isAle) {
       aTotal = 0;
       scenarioBTotal = 0;
-      bUncapped = 0;
+      actualB = 0;
       bCapped = false;
+      kind = 'notAle';
     }
     var actual = 0;
     var actualLabel = 'No section 4980H payment on these inputs';
-    if (kind === 'a') {
+    var why = '';
+    if (kind === 'a' || kind === 'unsure') {
       actual = aTotal;
-      actualLabel = 'Section 4980H(a)';
-    } else if (kind === 'b') {
-      actual = scenarioBTotal;
-      actualLabel = 'Section 4980H(b)';
+      actualLabel = 'No-offer penalty (A)';
+      why = kind === 'unsure'
+        ? 'The credit count is not sure. This is the no-offer penalty if at least one employee got a credit and the 95% offer test was missed.'
+        : 'You missed the 95% offer test and at least one employee got a credit.';
+    } else if (kind === 'b' || kind === 'mixed') {
+      actual = kind === 'mixed' ? monthRows.reduce(function (sum, row) {
+        return sum + (row.kind === 'a' ? row.aCents : row.bCents);
+      }, 0) : actualB;
+      actualLabel = 'Unaffordable-offer penalty (B)';
+      why = 'Some full-time employees who got a credit were not offered affordable, minimum-value coverage.';
+    } else if (kind === 'needCredits') {
+      why = 'Enter how many full-time employees got a premium tax credit.';
+    } else if (kind === 'needPremium') {
+      why = 'Enter the employee\'s monthly cost to check affordability.';
+    } else if (kind === 'noCredit') {
+      why = 'No full-time employee got a premium tax credit, so neither penalty applies.';
+    } else if (kind === 'notAle') {
+      why = 'The employer mandate does not apply. The rounded average is under 50.';
+    } else if (kind === 'zero') {
+      why = 'The offer passes the safe harbor, so these credits do not trigger the unaffordable-offer penalty.';
     }
     var monthlyDivisor = specs.length || 1;
     var result = {
@@ -554,6 +696,8 @@
       scenarioAffordableCents: 0,
       actualCents: actual,
       actualLabel: actualLabel,
+      why: why,
+      needPremium: specs.some(function (row) { return row.needPremium; }),
       reductionLabel: value.controlledGroup && first ? String(first.reduction) + ' (this company\'s share of 30)' : '30'
     };
     result.report = buildReport(result);
@@ -674,6 +818,8 @@
     floorAverage: floorAverage,
     allocableReduction: allocableReduction,
     offerAllowance: offerAllowance,
+    offerHint: offerHint,
+    monthlyFromWeekly: monthlyFromWeekly,
     meetsOffer: meetsOffer,
     periodCents: periodCents,
     fplMaxMonthlyCents: fplMaxMonthlyCents,
