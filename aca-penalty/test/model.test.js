@@ -412,6 +412,63 @@ test('a controlled group seasonal check says it only sees this company', functio
   assert.match(result.prior.groupMonthsNote, /only uses this company's months/);
 });
 
+test('not sure about credits does not charge the A penalty when the offer test is met', function () {
+  const result = ACA.calculate(base({
+    averageFullTime: 100,
+    fullTime: 100,
+    offer: '',
+    offerCoverage: 'all',
+    anyCredit: false,
+    ptcCount: '',
+    creditUnsure: true
+  }));
+  assert.equal(result.ok, true);
+  assert.equal(result.offerMet, true);
+  assert.equal(result.kind, 'unsureMet');
+  assert.equal(result.actualCents, 0);
+  assert.match(result.why, /No-offer penalty: \$0/);
+  assert.match(result.why, /you met the 95% offer test/);
+  assert.match(result.why, /\$5,010 a year for each full-time employee/);
+});
+
+test('the A penalty is charged only in months that have a premium tax credit', function () {
+  const penaltyMonths = [];
+  for (let i = 0; i < 12; i++) {
+    penaltyMonths.push({ include: true, fullTime: 100, ptcCount: i < 6 ? 1 : 0 });
+  }
+  const result = ACA.calculate(base({
+    averageFullTime: 100,
+    fullTime: 100,
+    offer: '',
+    offerCoverage: 'none',
+    anyCredit: false,
+    ptcCount: '',
+    penaltyMode: 'months',
+    penaltyMonths: penaltyMonths
+  }));
+  assert.equal(result.ok, true);
+  assert.equal(result.actualCents, 11690000);
+  assert.equal(ACA.money(result.actualCents), '$116,900');
+});
+
+test('a blank credit split is required when some employees were not offered coverage', function () {
+  const result = ACA.calculate(base({
+    averageFullTime: 100,
+    fullTime: 100,
+    offer: '',
+    offerCoverage: 'most',
+    notOffered: 4,
+    ptcCount: 2,
+    anyCredit: false,
+    premium: '100',
+    affordUse: true,
+    harbor: 'fpl',
+    minimumValue: 'yes'
+  }));
+  assert.equal(result.ok, false);
+  assert.match(result.errors.map(function (item) { return item.message; }).join(' '), /among those not offered/);
+});
+
 test('minimum value is required before a safe harbor can pass', function () {
   const result = ACA.calculate(base({
     offer: 'affordable',
