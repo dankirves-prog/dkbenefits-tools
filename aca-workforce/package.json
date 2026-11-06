@@ -1,0 +1,12 @@
+{
+  "name": "dkb-aca-workforce",
+  "private": true,
+  "description": "ACA workforce size (ATNE) and ALE status calculator. Unit tests use Node. Browser checks use puppeteer-core and the system Chrome.",
+  "devDependencies": {
+    "puppeteer-core": "24.15.0"
+  },
+  "scripts": {
+    "test": "node --test test/model.test.js test/page.test.js",
+    "test:browser": "node --test test/browser.test.js"
+  }
+}

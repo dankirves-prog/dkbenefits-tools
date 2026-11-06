@@ -4,7 +4,7 @@ The quote tool demo is now isolated in its own folder so existing files (includi
 
 ## ACA Employer Penalty Calculator
 
-- `aca-penalty-calculator.html` is a new, unlinked preview. Nothing else in this repo points at it. GitHub Pages serves `main` only, so the public URL works after this file is on `main`: `https://dankirves-prog.github.io/dkbenefits-tools/aca-penalty-calculator.html`
+- `aca-penalty-calculator.html` is the employer penalty preview. The workforce size calculator links to the live page and to this file's GitHub Pages URL. GitHub Pages serves `main` only, so the public URL works after this file is on `main`: `https://dankirves-prog.github.io/dkbenefits-tools/aca-penalty-calculator.html`
 - It does not replace any live tool. The lead endpoint in `aca-penalty/config.js` is blank until Dan deploys `aca-penalty/apps-script/Code.gs`.
 - Wix page title, meta description, slug, and FAQ copy are in `docs/aca-penalty-wix-copy.md`.
 
@@ -12,6 +12,20 @@ Local preview:
 
 ```text
 http://localhost:8000/aca-penalty-calculator.html
+```
+
+## ACA Workforce Size Calculator
+
+- `aca-workforce-calculator.html` is an unlinked preview. Nothing else in this repo links to the file. GitHub Pages serves `main` only, so the public URL works after this file is on `main`: `https://dankirves-prog.github.io/dkbenefits-tools/aca-workforce-calculator.html`
+- It is the workforce-size companion to the ACA Employer Penalty Calculator. Applicable large employer status for a calendar year uses the prior year's average total number of employees (ATNE): full-time employees plus full-time equivalents.
+- It does not collect the count. There is no spreadsheet and no Apps Script. Contact buttons open `https://www.dkbenefits.net/contact` in the top window, the same way the checkup does from an iframe.
+- Wix page title, meta description, slug, and H1 are in `docs/aca-workforce-wix-copy.md`.
+- `npm test` in `aca-workforce/` checks the IRS count, including the 120-hour cap, the annual round-down, and the seasonal-worker examples.
+
+Local preview:
+
+```text
+http://localhost:8000/aca-workforce-calculator.html
 ```
 
 ## Benefits compliance checkup
@@ -103,6 +117,7 @@ python3 -m http.server 8000
 Then open:
 
 ```text
+http://localhost:8000/aca-workforce-calculator.html
 http://localhost:8000/compliance-assessment.html
 http://localhost:8000/quote-tool-demo/
 ```

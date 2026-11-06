@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, indexifembedded">
+  <meta name="googlebot" content="noindex, indexifembedded">
+  <title>ACA Workforce Size Calculator | DK Benefits</title>
+  <meta name="description" content="See if an employer is an applicable large employer. ATNE means the average total number of employees: full-time plus full-time equivalents. DK Benefits LLC.">
+  <link rel="stylesheet" href="aca-workforce/atne.css">
+</head>
+<body>
+  <a class="skip" href="#atne">Skip to the calculator</a>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <p class="brand">DK Benefits LLC</p>
+      <h1>ACA Workforce Size Calculator</h1>
+      <p>Employers often call this ATNE, the average total number of employees. That is full-time employees plus full-time equivalents.</p>
+    </div>
+  </header>
+  <main class="wrap">
+    <p>This estimates applicable large employer status for a calendar year from the prior year's workforce. It is an educational estimate for Florida and Georgia employers. It is not legal, tax, or accounting advice.</p>
+    <p id="year-line" class="lede"></p>
+
+    <form id="atne" novalidate>
+      <section class="card" id="how">
+        <h2>How the count works <button type="button" class="info-btn" data-tip="atne" aria-label="More about ATNE" aria-expanded="false">i</button></h2>
+        <ol class="steps">
+          <li>For each month, count full-time employees. Full-time means an average of at least 30 hours of service a week, or 130 hours in the month.</li>
+          <li>Add full-time equivalents. Take hours of service for everyone who is not full-time, count no more than 120 hours for any one person, and divide by 120.</li>
+          <li>Add the 12 monthly totals, divide by 12, and round down to the next lowest whole number. That whole number is the ATNE used for the 50-employee line.</li>
+          <li>50 or more means applicable large employer status for the next calendar year, unless the seasonal worker exception applies.</li>
+        </ol>
+      </section>
+
+      <section class="card">
+        <h2>1. Workforce <button type="button" class="info-btn" data-tip="year" aria-label="More about the year being checked" aria-expanded="false">i</button></h2>
+        <div class="grid">
+          <div class="field">
+            <div class="label-row">
+              <label for="year">Calendar year to check</label>
+            </div>
+            <select id="year" name="year">
+              <option value="2025">2025</option>
+              <option value="2026" selected>2026</option>
+              <option value="2027">2027</option>
+            </select>
+          </div>
+        </div>
+        <fieldset>
+          <legend class="choice-legend">How should we read the workforce?</legend>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="mode" value="quick" checked> <span>Same counts every month. Use this when the workforce is stable.</span></label>
+            <label class="choice"><input type="radio" name="mode" value="months"> <span>12-month grid. Use this when headcount or hours change, including a seasonal spike.</span></label>
+          </div>
+        </fieldset>
+
+        <div id="quick-panel">
+          <div class="grid">
+            <div class="field">
+              <div class="label-row">
+                <label id="ft-label" for="fullTime">Full-time employees in a typical month</label>
+                <button type="button" class="info-btn" data-tip="fullTime" aria-label="More about full-time employees" aria-expanded="false">i</button>
+              </div>
+              <input id="fullTime" name="fullTime" type="number" inputmode="numeric" min="0" step="1" autocomplete="off">
+            </div>
+            <div class="field">
+              <div class="label-row">
+                <label for="nonFtCount">Non-full-time employees</label>
+                <button type="button" class="info-btn" data-tip="nonFt" aria-label="More about non-full-time employees" aria-expanded="false">i</button>
+              </div>
+              <input id="nonFtCount" name="nonFtCount" type="number" inputmode="numeric" min="0" step="1" autocomplete="off">
+            </div>
+            <div class="field">
+              <div class="label-row">
+                <label for="hoursBasis">Hours are entered</label>
+              </div>
+              <select id="hoursBasis" name="hoursBasis">
+                <option value="month" selected>Per month</option>
+                <option value="week">Per week</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="label-row">
+                <label id="hours-each-label" for="hoursEach">Hours each person works in a month</label>
+                <button type="button" class="info-btn" data-tip="cap" aria-label="More about the 120-hour cap" aria-expanded="false">i</button>
+              </div>
+              <input id="hoursEach" name="hoursEach" type="number" inputmode="decimal" min="0" step="0.5" autocomplete="off">
+            </div>
+          </div>
+          <p id="hours-warning" class="field-error" hidden></p>
+          <p class="hint">Each person is capped at 120 hours in the month before the hours are divided by 120. Leave non-full-time blank if everyone is full-time.</p>
+        </div>
+
+        <div id="months-panel" class="hidden">
+          <p class="lede">Enter full-time headcount and the total non-full-time hours for each month. Cap each person at 120 hours before you add. Blank months are not treated as zero until you say so.</p>
+          <div class="cap-box">
+            <p class="hint">Cap helper. For one month, enter the people and the hours each. This writes the capped total into that month.</p>
+            <div class="grid">
+              <div class="field">
+                <label for="cap-month">Month</label>
+                <select id="cap-month"></select>
+              </div>
+              <div class="field">
+                <label for="cap-count">Non-full-time people</label>
+                <input id="cap-count" type="number" inputmode="numeric" min="0" step="1" autocomplete="off">
+              </div>
+              <div class="field">
+                <label for="cap-basis">Their hours are</label>
+                <select id="cap-basis">
+                  <option value="month">Per month</option>
+                  <option value="week">Per week</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="cap-each">Hours each</label>
+                <input id="cap-each" type="number" inputmode="decimal" min="0" step="0.5" autocomplete="off">
+              </div>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn-secondary" id="cap-apply">Apply the 120-hour cap</button>
+              <button type="button" class="btn-secondary" id="fill-grid">Fill all 12 months from the stable-workforce numbers</button>
+            </div>
+            <p id="cap-error" class="field-error"></p>
+          </div>
+          <div id="month-grid" class="month-grid"></div>
+          <label class="check"><input id="blankMonthsZero" type="checkbox"> <span>Months left blank had no employees. Count them as zero and divide by 12.</span></label>
+        </div>
+        <p id="input-hint" class="hint"></p>
+      </section>
+
+      <section class="card seasonal-card" id="seasonal">
+        <h2>2. Seasonal worker exception <button type="button" class="info-btn" data-tip="seasonal" aria-label="More about the seasonal worker exception" aria-expanded="false">i</button></h2>
+        <p>If the workforce exceeds 50 for 120 days or fewer, and the employees in excess of 50 during that stretch are seasonal workers, the employer is not an applicable large employer. Four calendar months may be treated as 120 days. Those months do not have to be consecutive.</p>
+        <p id="seasonal-status" class="callout" aria-live="polite">Enter a workforce above. This line will say how many months are over 50.</p>
+        <label class="check"><input id="seasonalAttest" type="checkbox" aria-describedby="seasonal-status"> <span id="seasonal-label">The employees who put the count over 50 in that stretch were seasonal workers.</span></label>
+      </section>
+
+      <section class="card" id="other-rules">
+        <h2>3. Rules that change who is counted</h2>
+        <label class="check"><input id="newEmployer" type="checkbox"> <span>The company was not in business on any day last year. <button type="button" class="info-btn" data-tip="newEmployer" aria-label="More about new employers" aria-expanded="false">i</button></span></label>
+        <label class="check"><input id="controlledGroup" type="checkbox"> <span>Part of a controlled group or affiliated service group. <button type="button" class="info-btn" data-tip="group" aria-label="More about controlled groups" aria-expanded="false">i</button></span></label>
+        <div id="group-fields" class="grid hidden">
+          <div class="field span-2">
+            <div class="label-row">
+              <label for="otherAverage">Other companies' average, full-time plus equivalents, before rounding down</label>
+              <button type="button" class="info-btn" data-tip="otherAverage" aria-label="More about the other companies' average" aria-expanded="false">i</button>
+            </div>
+            <input id="otherAverage" name="otherAverage" type="number" inputmode="decimal" min="0" step="0.01" autocomplete="off">
+            <p class="hint">Add the related companies together first. Use 0 if they have no employees. This is not an ownership quiz.</p>
+          </div>
+        </div>
+        <div class="callout">
+          <p><strong>TRICARE and VA coverage.</strong> <button type="button" class="info-btn" data-tip="tricare" aria-label="More about TRICARE and VA coverage" aria-expanded="false">i</button> An employee is left out of the 50-employee count for a month in which the employee has medical coverage through the military, including TRICARE, or through the Veterans Administration. Leave those employees out of the numbers you type. This exclusion is only for applicable large employer status.</p>
+        </div>
+      </section>
+
+      <div class="examples">
+        <button type="button" class="btn-secondary" id="ex-line">Example: exactly 50</button>
+        <button type="button" class="btn-secondary" id="ex-ale">Example: 80 full-time</button>
+        <button type="button" class="btn-secondary" id="ex-under">Example: under 50</button>
+        <button type="button" class="btn-secondary" id="ex-seasonal">Example: seasonal crew</button>
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn-gold">Show ALE status</button>
+      </div>
+      <p id="form-error" class="form-error" role="alert"></p>
+    </form>
+
+    <div id="results" hidden aria-live="polite"></div>
+
+    <section class="card sources" id="sources">
+      <h2>Sources</h2>
+      <ul>
+        <li><a href="https://www.irs.gov/affordable-care-act/employers/determining-if-an-employer-is-an-applicable-large-employer" target="_blank" rel="noopener">IRS: Determining if an employer is an applicable large employer</a>. Prior-year average, the 30-hour and 130-hour full-time tests, the 120-hour FTE cap, the seasonal worker exception, and the TRICARE / VA exclusion.</li>
+        <li><a href="https://www.ecfr.gov/current/title-26/chapter-I/subchapter-D/part-54/section-54.4980H-2" target="_blank" rel="noopener">Treas. Reg. § 54.4980H-2</a>. Divide the sum of the 12 monthly totals by 12 and round down. Four calendar months may be treated as 120 days. Examples 2, 3, and 4 are the size, seasonal, and fifth-month illustrations.</li>
+        <li><a href="https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4980H&amp;num=0&amp;edition=prelim" target="_blank" rel="noopener">Internal Revenue Code § 4980H(c)(2)</a>. Applicable large employer, the seasonal worker exception, full-time equivalents, the aggregation rule, and the TRICARE / VA exclusion in subparagraph (F).</li>
+      </ul>
+    </section>
+
+    <section class="card disclaimer">
+      <h2>Disclaimer</h2>
+      <p>This calculator is an educational estimate. It is not legal, tax, or accounting advice, and it does not create a client relationship. DK Benefits is a licensed insurance agency, not a tax advisor. The result depends on the numbers you enter. It does not decide who is a seasonal worker, who is in a controlled group, or who had TRICARE or VA coverage unless you say so. Rules change. Confirm the count with your tax advisor, counsel, or payroll provider before you rely on it.</p>
+      <p>DK Benefits LLC, Orlando, Florida. Serving employers in Florida and Georgia.</p>
+      <p>Questions about DK Benefits' services? <a href="https://www.dkbenefits.net/contact" target="_top">Talk to our team</a></p>
+    </section>
+  </main>
+  <noscript><p>This calculator needs JavaScript.</p></noscript>
+  <script src="aca-workforce/config.js"></script>
+  <script src="aca-workforce/atne-model.js"></script>
+  <script src="aca-workforce/atne-ui.js"></script>
+</body>
+</html>
