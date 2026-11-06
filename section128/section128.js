@@ -636,7 +636,13 @@
     $('openTerms').addEventListener('click', function (event) {
       event.preventDefault();
       event.stopPropagation();
-      $('termsDialog').showModal();
+      var dialog = $('termsDialog');
+      dialog.showModal();
+      var heading = dialog.querySelector('h2');
+      if (heading) {
+        heading.setAttribute('tabindex', '-1');
+        if (heading.focus) heading.focus();
+      }
     });
     $('closeTerms').addEventListener('click', function () { $('termsDialog').close(); });
   }
