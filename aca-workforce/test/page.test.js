@@ -20,14 +20,18 @@ test('the preview page spells out ATNE and points ALE results at the penalty cal
   assert.match(html, /Seasonal worker exception/);
   assert.match(html, /120 days/);
   assert.match(html, /noindex, indexifembedded/);
-  assert.match(config, /endpoint:\s*''/);
   assert.match(config, /https:\/\/www\.dkbenefits\.net\/aca-penalty-calculator/);
+  assert.match(config, /contactUrl: 'https:\/\/www\.dkbenefits\.net\/contact'/);
   assert.match(ui, /penaltyCalculatorUrl/);
+  assert.match(ui, /Talk to our team/);
   assert.match(ui, /aca-workforce/);
   assert.match(css, /#1a2e4a/);
   assert.match(css, /#c8a951/);
   assert.match(css, /#16233A/);
+  assert.doesNotMatch(config, /endpoint/);
   assert.doesNotMatch(config, /script\.google\.com/);
+  assert.doesNotMatch(html, /lead-form|id="lead"/);
+  assert.doesNotMatch(ui, /lead-form|endpointOf|script\.google/);
 });
 
 test('the new tool copy has no phone number', function () {
@@ -37,9 +41,7 @@ test('the new tool copy has no phone number', function () {
     'aca-workforce/atne-model.js',
     'aca-workforce/config.js',
     'aca-workforce/atne.css',
-    'docs/aca-workforce-wix-copy.md',
-    'aca-workforce/apps-script/README.md',
-    'aca-workforce/apps-script/Code.gs'
+    'docs/aca-workforce-wix-copy.md'
   ];
   const phone = /\b\d{3}[-.)\s]\d{3}[-.)\s]\d{4}\b|tel:/i;
   files.forEach(function (rel) {

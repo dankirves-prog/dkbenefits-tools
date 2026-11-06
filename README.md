@@ -18,7 +18,7 @@ http://localhost:8000/aca-penalty-calculator.html
 
 - `aca-workforce-calculator.html` is an unlinked preview. Nothing else in this repo links to the file. GitHub Pages serves `main` only, so the public URL works after this file is on `main`: `https://dankirves-prog.github.io/dkbenefits-tools/aca-workforce-calculator.html`
 - It is the workforce-size companion to the ACA Employer Penalty Calculator. Applicable large employer status for a calendar year uses the prior year's average total number of employees (ATNE): full-time employees plus full-time equivalents.
-- The lead endpoint in `aca-workforce/config.js` stays blank until Dan deploys `aca-workforce/apps-script/Code.gs`.
+- It does not collect the count. There is no spreadsheet and no Apps Script. Contact buttons open `https://www.dkbenefits.net/contact` in the top window, the same way the checkup does from an iframe.
 - Wix page title, meta description, slug, and H1 are in `docs/aca-workforce-wix-copy.md`.
 - `npm test` in `aca-workforce/` checks the IRS count, including the 120-hour cap, the annual round-down, and the seasonal-worker examples.
 

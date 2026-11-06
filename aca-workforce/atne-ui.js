@@ -3,10 +3,7 @@
   if (!form || !window.ATNE) return;
   var cfg = window.ATNE_CONFIG || {};
   var resultsEl = document.getElementById('results');
-  var leadEl = document.getElementById('lead');
-  var leadForm = document.getElementById('lead-form');
   var lastResult = null;
-  var endpoint = endpointOf(cfg.endpoint || '');
   var penaltyUrl = cfg.penaltyCalculatorUrl || 'https://www.dkbenefits.net/aca-penalty-calculator';
   var pagesUrl = cfg.penaltyCalculatorPagesUrl || 'https://dankirves-prog.github.io/dkbenefits-tools/aca-penalty-calculator.html';
   var quizUrl = cfg.complianceQuizUrl || 'https://dankirves-prog.github.io/dkbenefits-tools/compliance-assessment.html';
@@ -19,11 +16,6 @@
   pop.hidden = true;
   pop.setAttribute('role', 'note');
   document.body.appendChild(pop);
-
-  function endpointOf(value) {
-    var url = typeof value === 'string' ? value.trim() : '';
-    return /^https?:\/\//i.test(url) ? url : '';
-  }
 
   function val(id) {
     var el = document.getElementById(id);
@@ -191,7 +183,6 @@
     lastResult = null;
     resultsEl.hidden = true;
     resultsEl.innerHTML = '';
-    leadEl.hidden = true;
   }
 
   function siteLink(url, label, gold) {
@@ -231,9 +222,9 @@
     if (result.showPenaltyCta) {
       buttons.push(siteLink(penaltyUrl, 'Estimate ACA employer penalties', true));
       buttons.push(siteLink(pagesUrl, 'Penalty calculator on GitHub Pages', false));
-      buttons.push(siteLink(contactUrl, 'Contact DK Benefits', false));
+      buttons.push(siteLink(contactUrl, 'Talk to our team', false));
     } else {
-      buttons.push(siteLink(contactUrl, 'Contact DK Benefits', true));
+      buttons.push(siteLink(contactUrl, 'Talk to our team', true));
       buttons.push(siteLink(quizUrl, 'Benefits compliance checkup', false));
       buttons.push(siteLink(quoteUrl, 'See small-group rates', false));
     }
@@ -259,19 +250,16 @@
         fullTimeNote +
         '<h2>Next steps</h2>' +
         '<ol class="next-steps">' + steps + '</ol>' +
-        '<div class="actions">' + buttons.join('') + '</div>' +
-        seasonalLink +
+        '<div id="result-actions">' +
+          '<div class="actions">' + buttons.join('') + '</div>' +
+          seasonalLink +
+        '</div>' +
         monthTable(result) +
         '<div class="footnotes">' + groupNote +
           '<p>TRICARE or VA coverage is left out of this count for a month the employee has that coverage. Take those employees out of the numbers above. The exclusion is only for this size test.</p>' +
         '</div>' +
         '<div class="actions"><button type="button" class="btn-secondary" id="download-btn">Download summary</button></div>' +
       '</section>';
-    leadEl.hidden = false;
-    var status = document.getElementById('lead-status');
-    if (!endpoint && !status.dataset.sent) {
-      status.textContent = 'This form is not connected yet. Email dan@dkbenefits.net and attach the downloaded summary.';
-    }
     postHeight();
   }
 
@@ -409,67 +397,6 @@
     sync();
   }
 
-  function submitLead(event) {
-    event.preventDefault();
-    var status = document.getElementById('lead-status');
-    if (!lastResult) {
-      status.textContent = 'Enter a workforce first.';
-      return;
-    }
-    if (leadForm.elements.company_website.value.trim()) {
-      status.dataset.sent = '1';
-      status.textContent = 'Thanks. Your note is on its way.';
-      return;
-    }
-    var contact = {
-      name: leadForm.elements.name.value.trim(),
-      company: leadForm.elements.company.value.trim(),
-      email: leadForm.elements.email.value.trim(),
-      consent: leadForm.elements.consent.checked
-    };
-    if (!contact.name || !contact.company || !contact.email || !contact.consent) {
-      status.textContent = 'Enter your name, company, and email, and check the consent line.';
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email)) {
-      status.textContent = 'Enter a valid email.';
-      return;
-    }
-    if (!endpoint) {
-      status.textContent = 'This form is not connected yet. Email dan@dkbenefits.net and attach the downloaded summary.';
-      return;
-    }
-    status.textContent = 'Sending...';
-    fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        name: contact.name,
-        company: contact.company,
-        email: contact.email,
-        consent: true,
-        year: lastResult.year,
-        floored: lastResult.floored,
-        headline: lastResult.headline,
-        report: lastResult.report,
-        pageUrl: location.href,
-        company_website: ''
-      })
-    }).then(function (response) {
-      if (!response.ok) throw new Error('status');
-      return response.json();
-    }).then(function (body) {
-      if (body && body.ok) {
-        status.dataset.sent = '1';
-        status.textContent = 'Thanks. Dan has this count. Your result stays on the page.';
-      } else {
-        status.textContent = 'That did not send. Email dan@dkbenefits.net and attach the downloaded summary.';
-      }
-    }).catch(function () {
-      status.textContent = 'That did not send. Email dan@dkbenefits.net and attach the downloaded summary.';
-    });
-  }
-
   buildGrid();
   form.addEventListener('submit', function (event) {
     event.preventDefault();
@@ -477,7 +404,6 @@
   });
   form.addEventListener('input', function () { sync(); });
   form.addEventListener('change', function () { sync(); });
-  leadForm.addEventListener('submit', submitLead);
   resultsEl.addEventListener('click', function (event) {
     var btn = event.target.closest ? event.target.closest('#download-btn') : null;
     if (btn) downloadSummary();

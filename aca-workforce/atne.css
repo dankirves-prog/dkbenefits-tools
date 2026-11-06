@@ -190,13 +190,6 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
 .disclaimer { color: var(--text-light); font-size: 0.92rem; }
 .next-steps { margin: 8px 0 0; padding-left: 1.2rem; }
 .next-steps li { margin: 0 0 6px; }
-.hp {
-  position: absolute;
-  left: -9999px;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-}
 .hidden { display: none !important; }
 .info-btn {
   display: inline-flex;

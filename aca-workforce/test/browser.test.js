@@ -100,8 +100,14 @@ test('workforce calculator: empty start, months, ALE, and seasonal exception', a
     const penalty = await page.$eval('#result-card a.btn-gold', function (el) { return el.href; });
     assert.equal(penalty, 'https://www.dkbenefits.net/aca-penalty-calculator');
     assert.match(text, /GitHub Pages/);
-    const aleCard = await page.$('#result-card');
-    await aleCard.screenshot({ path: path.join(outDir, 'screenshot_ale_result.png') });
+    assert.match(text, /Talk to our team/);
+    const aleContact = await page.$eval('#result-actions a[href="https://www.dkbenefits.net/contact"]', function (el) {
+      return { target: el.getAttribute('target'), text: el.textContent };
+    });
+    assert.equal(aleContact.target, '_top');
+    assert.equal(aleContact.text, 'Talk to our team');
+    assert.equal(await page.$('#lead'), null);
+    await (await page.$('#result-actions')).screenshot({ path: path.join(outDir, 'screenshot_contact_ale.png') });
 
     await page.click('#ex-seasonal');
     await page.waitForSelector('#result-card');
@@ -109,8 +115,13 @@ test('workforce calculator: empty start, months, ALE, and seasonal exception', a
     assert.match(text, /seasonal exception/i);
     assert.match(text, /seasonal-worker exception/i);
     assert.match(text, /66/);
-    const goldHref = await page.$eval('#result-card a.btn-gold', function (el) { return el.href; });
-    assert.equal(goldHref, 'https://www.dkbenefits.net/contact');
+    const goldContact = await page.$eval('#result-card a.btn-gold', function (el) {
+      return { href: el.href, target: el.getAttribute('target'), text: el.textContent };
+    });
+    assert.equal(goldContact.href, 'https://www.dkbenefits.net/contact');
+    assert.equal(goldContact.target, '_top');
+    assert.equal(goldContact.text, 'Talk to our team');
+    assert.match(text, /Benefits compliance checkup/);
     const seasonalPenalty = await page.$eval('#result-card a.text-link', function (el) { return el.href; });
     assert.equal(seasonalPenalty, 'https://www.dkbenefits.net/aca-penalty-calculator');
     const september = await page.$eval('#ft8', function (el) { return el.value; });
@@ -119,15 +130,24 @@ test('workforce calculator: empty start, months, ALE, and seasonal exception', a
     assert.equal(september, '120');
     const grid = await page.$('#month-grid');
     await grid.screenshot({ path: path.join(outDir, 'screenshot_months_filled.png') });
-    const seasonalCard = await page.$('#result-card');
-    await seasonalCard.screenshot({ path: path.join(outDir, 'screenshot_seasonal_not_ale.png') });
+    await (await page.$('#result-actions')).screenshot({ path: path.join(outDir, 'screenshot_contact_seasonal.png') });
 
-    await page.setViewport({ width: 390, height: 844 });
     await page.click('#ex-under');
     await page.waitForSelector('#result-card');
     text = await page.$eval('#result-card', function (el) { return el.innerText; });
     assert.match(text, /Not an applicable large employer/);
     assert.match(text, /40/);
+    const underContact = await page.$eval('#result-card a.btn-gold', function (el) {
+      return { href: el.href, target: el.getAttribute('target'), text: el.textContent };
+    });
+    assert.equal(underContact.href, 'https://www.dkbenefits.net/contact');
+    assert.equal(underContact.target, '_top');
+    assert.equal(underContact.text, 'Talk to our team');
+    const checkup = await page.$eval('#result-actions a[href*="compliance-assessment"]', function (el) { return el.textContent; });
+    assert.equal(checkup, 'Benefits compliance checkup');
+    await (await page.$('#result-actions')).screenshot({ path: path.join(outDir, 'screenshot_contact_under_50.png') });
+
+    await page.setViewport({ width: 390, height: 844 });
     assert.equal(await overflow(page), 0);
   } finally {
     await browser.close();
