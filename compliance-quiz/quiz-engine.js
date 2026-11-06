@@ -12,6 +12,7 @@ var DKQuiz = (function () {
     section128: 'https://www.dkbenefits.net/section-128-tool',
     qualifyingEvent: 'https://www.dkbenefits.net/qualifying-event-decision-tool',
     rbp: 'https://www.dkbenefits.net/rbp-decision-tool',
+    acaPenalty: 'https://www.dkbenefits.net/aca-penalty-calculator',
     quote: 'https://www.dkbenefits.net/instant-group-quote',
     partD: 'https://www.cms.gov/medicare/employers-plan-sponsors/creditable-coverage/model-notice-letters',
     chip: 'https://www.dol.gov/agencies/ebsa/laws-and-regulations/laws/chipra',
@@ -680,7 +681,7 @@ var DKQuiz = (function () {
           description: 'Applicable large employers are generally required to offer affordable, minimum-value medical coverage to full-time employees.',
           finding: 'You reported 50 or more full-time employees and no current benefits.',
           action: 'Two different employer-shared-responsibility penalties can apply. One is for not offering coverage to enough full-time employees. The other is for coverage that is unaffordable or not minimum value when a full-time employee receives a premium tax credit.',
-          cta: toolCta('quote', 'Open the free quote tool')
+          cta: toolCta('acaPenalty', 'Estimate your ACA penalty')
         }));
       } else if (flags.ale === 'confirmAle') {
         cards.push(card({
@@ -692,7 +693,7 @@ var DKQuiz = (function () {
           description: 'Applicable large employer status uses full-time employees plus full-time equivalents from part-time hours.',
           finding: 'Part-time hours are significant or not confirmed, so the full-time-equivalent count may cross the applicable large employer line.',
           action: 'Add part-time hours into full-time equivalents before you assume the employer mandate does not apply.',
-          cta: toolCta('quote', 'Open the free quote tool')
+          cta: toolCta('acaPenalty', 'Check ALE status in the penalty calculator')
         }));
       } else if (flags.ale === 'confirmSize') {
         cards.push(card({
@@ -704,7 +705,7 @@ var DKQuiz = (function () {
           description: 'ACA size and federal COBRA size use different counts. Neither one is settled until the headcount is known.',
           finding: 'Full-time headcount was marked not sure.',
           action: 'Count full-time employees, then add part-time hours as full-time equivalents for ACA size. Federal COBRA commonly applies at 20 employees on a prior-year typical business day.',
-          cta: toolCta('quote', 'Open the free quote tool')
+          cta: toolCta('acaPenalty', 'Estimate ACA exposure once you have a count')
         }));
       }
       if (flags.ale === 'confirmSize' || flags.ale === 'confirmAle' || flags.empCount === '20to49' || flags.empCount === '50plus') {
@@ -1077,7 +1078,7 @@ var DKQuiz = (function () {
           ? 'You offer medical coverage. Confirm it is offered widely enough to full-time employees.'
           : 'Medical coverage is not offered, and the group looks like an applicable large employer.',
         action: 'Confirm who is full-time and who received an offer of medical coverage. This is separate from the affordability penalty.',
-        cta: flags.medicalOffered ? null : toolCta('quote', 'Open the free quote tool')
+        cta: flags.medicalOffered ? null : toolCta('acaPenalty', 'Estimate your ACA offer penalty')
       }));
       if (flags.medicalOffered) {
         cards.push(card({
@@ -1088,7 +1089,8 @@ var DKQuiz = (function () {
           summary: 'A second penalty can apply when coverage is unaffordable or not minimum value and a full-time employee gets a premium tax credit.',
           description: 'The affordability penalty is not the same as the offer penalty. It can apply when coverage fails affordability or minimum value and a full-time employee receives a premium tax credit.',
           finding: 'Affordability and minimum value were not confirmed in this checkup.',
-          action: 'The affordability measure is indexed. Confirm the current figure and the safe harbor you use with your advisor. Do not rely on a percentage printed in an old checklist.'
+          action: 'The affordability measure is indexed. Confirm the current figure and the safe harbor you use with your advisor. Do not rely on a percentage printed in an old checklist.',
+          cta: toolCta('acaPenalty', 'Estimate the affordability penalty')
         }));
       }
       cards.push(acaReportingCard());
@@ -1104,7 +1106,7 @@ var DKQuiz = (function () {
           ? 'You reported 20 to 49 full-time employees, with part-time hours that are significant or not confirmed.'
           : 'Full-time headcount is under 20, and part-time hours are significant or not confirmed.',
         action: 'Finish the full-time-equivalent count before you treat the employer mandate as off.',
-        cta: toolCta('quote', 'Open the free quote tool')
+        cta: toolCta('acaPenalty', 'Check ALE status in the penalty calculator')
       }));
     } else if (flags.ale === 'confirmSize') {
       cards.push(card({
@@ -1116,7 +1118,7 @@ var DKQuiz = (function () {
         description: 'ACA size uses full-time equivalents. Federal COBRA uses a different employee count.',
         finding: 'Full-time headcount was marked not sure.',
         action: 'Confirm the counts. Include COBRA in that review if the group may be at 20 employees.',
-        cta: toolCta('quote', 'Open the free quote tool')
+        cta: toolCta('acaPenalty', 'Estimate ACA exposure once you have a count')
       }));
     }
 

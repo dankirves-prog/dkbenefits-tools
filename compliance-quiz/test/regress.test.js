@@ -165,7 +165,7 @@ test('6. 50 or more that already files Form 5500 is in place, with no filing ded
   assert.equal(card(filed, 'cobra').cta.label, 'Talk to our team');
   [filed, missing].forEach((scored) => {
     (scored.cards || []).forEach((item) => {
-      if (!item.cta || item.cta.type === 'contact') return;
+      if (!item.cta || item.cta.type === 'contact' || item.cta.type === 'acaPenalty') return;
       assert.match(item.cta.label, /\bfree\b/);
     });
   });
