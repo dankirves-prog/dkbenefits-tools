@@ -167,6 +167,68 @@ test('top priorities are the three highest action or confirm items', () => {
   }
 });
 
+test('ACA-risk result cards point at the penalty calculator', () => {
+  assert.equal(quiz.URLS.acaPenalty, 'https://www.dkbenefits.net/aca-penalty-calculator');
+
+  function cta(scored, key) {
+    const item = card(scored, key);
+    return item ? item.cta : undefined;
+  }
+
+  const noCoverage = quiz.scoreAnswers(noBenefits({
+    employeeCount: '50plus',
+    nobenGrowth: 'yes',
+    nobenCompetition: 'yes'
+  }));
+  assert.deepEqual(cta(noCoverage, 'aca_no_coverage'), {
+    type: 'acaPenalty',
+    label: 'Estimate your ACA penalty'
+  });
+  assert.equal(cta(noCoverage, 'aca_reporting'), null);
+  assert.equal(cta(noCoverage, 'growth').type, 'quote');
+  assert.equal(cta(noCoverage, 'growth').label, 'Open the free quote tool');
+  assert.equal(cta(noCoverage, 'competition').type, 'quote');
+  assert.equal(cta(noCoverage, 'cobra_consideration').type, 'contact');
+
+  assert.deepEqual(cta(quiz.scoreAnswers(noBenefits({ partTime: 'yes' })), 'confirm_ale'), {
+    type: 'acaPenalty',
+    label: 'Check ALE status in the penalty calculator'
+  });
+  assert.deepEqual(cta(quiz.scoreAnswers(noBenefits({ employeeCount: 'notSure' })), 'confirm_size'), {
+    type: 'acaPenalty',
+    label: 'Estimate ACA exposure once you have a count'
+  });
+
+  const offerOnly = quiz.scoreAnswers(benefits({
+    employeeCount: '50plus',
+    benefitsOffered: ['dentalVision']
+  }));
+  assert.deepEqual(cta(offerOnly, 'aca_4980h_a'), {
+    type: 'acaPenalty',
+    label: 'Estimate your ACA offer penalty'
+  });
+  assert.equal(card(offerOnly, 'aca_4980h_b'), undefined);
+  assert.equal(cta(offerOnly, 'aca_reporting'), null);
+
+  const affordability = quiz.scoreAnswers(benefits({ employeeCount: '50plus' }));
+  assert.equal(cta(affordability, 'aca_4980h_a'), null);
+  assert.deepEqual(cta(affordability, 'aca_4980h_b'), {
+    type: 'acaPenalty',
+    label: 'Estimate the affordability penalty'
+  });
+  assert.equal(cta(affordability, 'cobra').type, 'contact');
+  assert.equal(cta(affordability, 'aca_reporting'), null);
+
+  assert.deepEqual(cta(quiz.scoreAnswers(benefits({ partTime: 'yes' })), 'confirm_ale'), {
+    type: 'acaPenalty',
+    label: 'Check ALE status in the penalty calculator'
+  });
+  assert.deepEqual(cta(quiz.scoreAnswers(benefits({ employeeCount: 'notSure' })), 'confirm_size'), {
+    type: 'acaPenalty',
+    label: 'Estimate ACA exposure once you have a count'
+  });
+});
+
 test('visitor copy has no em dashes, prices, indexed percentages, or calendar years', () => {
   const files = [
     'quiz-engine.js',
